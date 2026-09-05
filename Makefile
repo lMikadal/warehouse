@@ -98,22 +98,22 @@ backend-migrate-status:
 	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
 	cd $(BACKEND_DIR) && $(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DATABASE_URL)" status
 
-## docker-up: docker compose up from infrastructure/ (includes --profile dev admin tools)
+## docker-up: docker compose up --build (dev images; includes --profile dev admin tools)
 docker-up:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose --profile dev up
+	cd $(INFRA_DIR) && docker compose --profile dev up --build
 
-## docker-up-d: docker compose up -d (detached, includes --profile dev)
+## docker-up-d: docker compose up -d --build (detached; rebuilds Dockerfile.dev tags)
 docker-up-d:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose --profile dev up -d
+	cd $(INFRA_DIR) && docker compose --profile dev up -d --build
 
 ## docker-down: Tear down compose stack
 docker-down:
 	$(call require_dir,$(INFRA_DIR))
 	cd $(INFRA_DIR) && docker compose --profile dev down
 
-## docker-build: Rebuild compose images
+## docker-build: Rebuild compose images (warehouse-*:dev from Dockerfile.dev)
 docker-build:
 	$(call require_dir,$(INFRA_DIR))
 	cd $(INFRA_DIR) && docker compose --profile dev build

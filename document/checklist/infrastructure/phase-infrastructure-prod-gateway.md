@@ -11,6 +11,7 @@ Give the production Compose overlay a plain `nginx:alpine` gateway on port 80, s
 - [x] Disable backend healthcheck in prod overlay (distroless has no `curl`)
 - [x] Hardcode prod `NEXT_PUBLIC_API_URL=/api/v1` (overlay build arg + `Dockerfile.prod` default)
 - [x] Update `make docker-prod-up` (`--build`) and add `make docker-prod-down` (matching `-f` pair)
+- [x] Tag prod images as `warehouse-frontend:prod` / `warehouse-backend:prod` (separate from `:dev`)
 
 ## Required checklist
 

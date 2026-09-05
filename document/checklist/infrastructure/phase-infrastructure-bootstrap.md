@@ -13,6 +13,8 @@ Scaffold Docker Compose for the Warehouse dev stack: postgres, redis, backend, f
 - [x] Add `frontend/Dockerfile.dev` and `frontend/Dockerfile.prod`
 - [x] Update Makefile docker targets to use `--profile dev`
 - [x] Version backend API under `/api/v1` and update Postman `baseUrl`
+- [x] Tag `warehouse-*:dev` / `warehouse-*:prod` so prod `--build` does not overwrite hot-reload images
+- [x] `make docker-up` / `make docker-up-d` always pass `--build`
 
 ## Required checklist
 

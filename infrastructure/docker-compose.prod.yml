@@ -10,6 +10,7 @@ services:
     ports: !reset []
 
   backend:
+    image: warehouse-backend:prod
     build:
       context: ../backend
       dockerfile: Dockerfile.prod
@@ -26,6 +27,7 @@ services:
       REDIS_URL: redis://redis:6379
 
   frontend:
+    image: warehouse-frontend:prod
     build:
       context: ../frontend
       dockerfile: Dockerfile.prod

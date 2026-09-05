@@ -21,8 +21,11 @@ Prefer `make` targets over raw `docker compose` from `infrastructure/`.
 | Published ports | apps + DB + admin tools | **only** gateway (`NGINX_PORT`, default `80`) |
 | Extra services | design, nginx-ui, pgAdmin, redis-commander (`--profile dev`) | none |
 | Frontend API URL | `http://localhost:1323/api/v1` | `/api/v1` (same-origin via nginx) |
+| Image tags | `warehouse-frontend:dev`, `warehouse-backend:dev` (`Dockerfile.dev`) | `warehouse-frontend:prod`, `warehouse-backend:prod` (`Dockerfile.prod`) |
 
 TLS is out of scope for now (HTTP `:80` only).
+
+**Do not mix stacks without the right images:** `docker-prod-up` builds `:prod` tags; `docker-up` / `docker-up-d` always pass `--build` so they recreate `:dev` (air / `next dev`). After a prod run, tear down with `make docker-prod-down` (or `make docker-down` if you were on the dev profile), then `make docker-up-d`. If frontend hot reload fails after a prod build left a root-owned `frontend/.next` on the host, delete that directory and restart the frontend container.
 
 ## Dev services (`--profile dev`)
 
@@ -132,12 +135,12 @@ infrastructure/
 
 | Target | Purpose |
 |--------|---------|
-| `make run` / `make docker-up` | Full stack + dev profile |
-| `make docker-up-d` | Detached |
+| `make run` / `make docker-up` | Full stack + dev profile (`--build` → `:dev` images) |
+| `make docker-up-d` | Detached + `--build` (`warehouse-*:dev`) |
 | `make docker-down` | Tear down (dev) |
-| `make docker-build` | Rebuild images |
+| `make docker-build` | Rebuild `:dev` images from `Dockerfile.dev` |
 | `make docker-logs` / `SERVICE=backend make docker-logs` | Follow logs |
-| `make docker-prod-up` | Prod overlay `--build` (nginx gateway; no `--profile dev`) |
+| `make docker-prod-up` | Prod overlay `--build` (`warehouse-*:prod`; nginx gateway; no `--profile dev`) |
 | `make docker-prod-down` | Tear down prod overlay (same `-f` pair) |
 
 ## Docs
