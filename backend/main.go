@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
+	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/config"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
 )
@@ -21,7 +22,7 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		Skipper: func(c *echo.Context) bool {
-			return c.Request().URL.Path == "/health"
+			return c.Request().URL.Path == api.V1Prefix+"/health"
 		},
 		LogMethod: true,
 		LogURI:    true,
@@ -32,7 +33,8 @@ func main() {
 		},
 	}))
 
-	health.RegisterRoutes(e)
+	v1 := e.Group(api.V1Prefix)
+	health.RegisterRoutes(v1)
 
 	if err := e.Start(":" + cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

@@ -6,14 +6,15 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v5"
+	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
 )
 
 func TestHealth(t *testing.T) {
 	e := echo.New()
-	health.RegisterRoutes(e)
+	health.RegisterRoutes(e.Group(api.V1Prefix))
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, api.V1Prefix+"/health", nil)
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

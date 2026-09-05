@@ -1,5 +1,5 @@
-# Production multi-stage build (used by future infrastructure compose).
-FROM golang:1.25-bookworm AS build
+# Production multi-stage build (used by infrastructure compose).
+FROM golang:1.27-bookworm AS build
 
 WORKDIR /src
 

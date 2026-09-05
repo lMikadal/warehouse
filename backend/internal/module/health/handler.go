@@ -6,8 +6,8 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func RegisterRoutes(e *echo.Echo) {
-	e.GET("/health", Health)
+func RegisterRoutes(g *echo.Group) {
+	g.GET("/health", Health)
 }
 
 func Health(c *echo.Context) error {

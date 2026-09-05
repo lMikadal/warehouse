@@ -19,7 +19,7 @@ document/
 ├── knowledge/              # shared knowledge per project area
 ├── postman/                # Postman collection for handoff/import
 │   ├── postman.json
-│   └── .env.example
+│   └── env.example
 └── test/                   # test notes/results (when present)
 ```
 
@@ -29,7 +29,7 @@ document/
 |------|------|---------|
 | `document/checklist/<area>/` | Start/end a phase, new required work, reorder work | Phase checklist + required checklist (mark `[x]` when done); `<area>` is `design`, `frontend`, `backend`, or `infrastructure` |
 | `document/knowledge/` | New patterns, architecture decisions, limits/how-to | Per-area notes — e.g. `design.md`, `frontend.md`, `backend.md`, `infrastructure.md` |
-| `document/postman/` | API added/changed/removed | `postman.json` (+ `.env.example` if new variables) — use skill `/tester` |
+| `document/postman/` | API added/changed/removed | `postman.json` (+ `env.example` if new variables) — use skill `/tester` |
 
 ## Rules
 

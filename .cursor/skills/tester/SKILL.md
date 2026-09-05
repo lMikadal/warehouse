@@ -14,7 +14,7 @@ Test the **backend first** and keep `document/postman/postman.json` ready for us
 
 - Read API contracts from `backend/` (handlers, DTOs, swagger if present)
 - Design and run API tests against a running backend
-- Create/update `document/postman/postman.json` (Collection v2.1) + `document/postman/.env.example`
+- Create/update `document/postman/postman.json` (Collection v2.1) + `document/postman/env.example`
 - Keep the relevant `document/checklist/<area>/` and `document/knowledge/` in sync when tests reveal contract or phase changes (see `.cursor/rules/document.mdc`)
 - Do **not** change backend business logic unless the user asks after a bug report
 
@@ -22,7 +22,7 @@ Test the **backend first** and keep `document/postman/postman.json` ready for us
 
 1. **Warehouse app** — Test warehouse domain (auth, users, products, orders, …)
 2. **Reusable + maintainable** — Folder the collection by module; reuse variables for repeated requests
-3. **Strong security** — **Never** commit real passwords / JWTs; use `{{accessToken}}` and `.env.example` only
+3. **Strong security** — **Never** commit real passwords / JWTs; use `{{accessToken}}` and `env.example` only
 4. **Responsive / theme** — Not required (this is not a UI skill)
 5. **i18n: th + en** — Include `Accept-Language: th` or `en` on samples that involve localized responses
 
@@ -31,7 +31,7 @@ Test the **backend first** and keep `document/postman/postman.json` ready for us
 ```
 warehouse/document/postman/
 ├── postman.json       # Collection v2.1 — import into Postman immediately
-└── .env.example       # baseUrl, accessToken placeholders — no real secrets
+└── env.example        # baseUrl, accessToken placeholders — no real secrets
 ```
 
 ## Postman collection rules
@@ -65,7 +65,7 @@ warehouse/document/postman/
 ## Handoff to user
 
 1. Deliver `document/postman/postman.json`
-2. Import in Postman → set `baseUrl` / `accessToken` from `document/postman/.env.example`
+2. Import in Postman → set `baseUrl` / `accessToken` from `document/postman/env.example`
 3. Run folders or the collection in order (login first if a token is required)
 
 ## Do not

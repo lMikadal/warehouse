@@ -22,7 +22,7 @@ endef
 	frontend-bootstrap frontend-dev frontend-build frontend-lint frontend-shadcn-add \
 	backend-dev backend-run backend-test \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
-	docker-up docker-up-d docker-down docker-build docker-logs docker-prod-up
+	docker-up docker-up-d docker-down docker-build docker-logs docker-prod-up docker-prod-down
 
 ## help: Show this help
 help:
@@ -98,32 +98,37 @@ backend-migrate-status:
 	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
 	cd $(BACKEND_DIR) && $(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DATABASE_URL)" status
 
-## docker-up: docker compose up from infrastructure/
+## docker-up: docker compose up from infrastructure/ (includes --profile dev admin tools)
 docker-up:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose up
+	cd $(INFRA_DIR) && docker compose --profile dev up
 
-## docker-up-d: docker compose up -d (detached)
+## docker-up-d: docker compose up -d (detached, includes --profile dev)
 docker-up-d:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose up -d
+	cd $(INFRA_DIR) && docker compose --profile dev up -d
 
 ## docker-down: Tear down compose stack
 docker-down:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose down
+	cd $(INFRA_DIR) && docker compose --profile dev down
 
 ## docker-build: Rebuild compose images
 docker-build:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose build
+	cd $(INFRA_DIR) && docker compose --profile dev build
 
 ## docker-logs: Follow compose logs (SERVICE= optional)
 docker-logs:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose logs -f $(SERVICE)
+	cd $(INFRA_DIR) && docker compose --profile dev logs -f $(SERVICE)
 
-## docker-prod-up: Dev + prod overlay compose up
+## docker-prod-up: Prod overlay compose up --build (nginx gateway; no --profile dev)
 docker-prod-up:
 	$(call require_dir,$(INFRA_DIR))
-	cd $(INFRA_DIR) && docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+	cd $(INFRA_DIR) && docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+
+## docker-prod-down: Tear down prod overlay stack (same -f pair as docker-prod-up)
+docker-prod-down:
+	$(call require_dir,$(INFRA_DIR))
+	cd $(INFRA_DIR) && docker compose -f docker-compose.yml -f docker-compose.prod.yml down

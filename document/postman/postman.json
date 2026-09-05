@@ -7,7 +7,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:1323"
+      "value": "http://localhost:1323/api/v1"
     },
     {
       "key": "accessToken",
@@ -45,7 +45,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["health"]
             },
-            "description": "Liveness probe — no auth."
+            "description": "Liveness probe — no auth. Versioned under /api/v1."
           },
           "response": [
             {

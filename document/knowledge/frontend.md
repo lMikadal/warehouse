@@ -10,9 +10,16 @@ One-time scaffold from repo root:
 make frontend-bootstrap   # Next.js + shadcn init + next-themes / next-intl / lucide-react
 ```
 
-Env sample: `frontend/env.example` → `NEXT_PUBLIC_API_URL` (default `http://localhost:1323`).
+Env sample: `frontend/env.example` → `NEXT_PUBLIC_API_URL=http://localhost:1323/api/v1`.
 
 Default create-next-app starter page is present; Warehouse pages are not built yet.
+
+## Docker
+
+- `frontend/Dockerfile.dev` — bun + Next.js hot reload (compose volume-mounts source)
+- `frontend/Dockerfile.prod` — multi-stage build for prod overlay; default `NEXT_PUBLIC_API_URL=/api/v1`
+- Dev compose publishes `:3000`; also reachable via nginx-ui gateway at `http://localhost/`
+- Prod overlay does **not** publish `:3000` — traffic enters via `nginx:alpine` on `:80` with same-origin `/api/v1`
 
 ## Dev commands
 
@@ -25,6 +32,7 @@ From repo root (`make help` for the full list):
 | `make frontend-build` | Production build |
 | `make frontend-lint` | Lint |
 | `make frontend-shadcn-add COMPONENT=<name>` | Add a shadcn component |
+| `make run` / `make docker-up` | Full Docker stack |
 
 Prefer these make targets over raw `bun` / `bunx`.
 
@@ -40,6 +48,7 @@ Prefer these make targets over raw `bun` / `bunx`.
 | Theme | `next-themes` installed — provider wiring deferred |
 | i18n | `next-intl` installed — middleware / `[locale]` deferred |
 | Icons | `lucide-react` from [Lucide](https://lucide.dev/icons/) |
+| API base | Dev: `NEXT_PUBLIC_API_URL` → `http://localhost:1323/api/v1`; prod Docker bakes `/api/v1` |
 
 ## Deferred (next phases)
 
@@ -47,7 +56,6 @@ Prefer these make targets over raw `bun` / `bunx`.
 - `next-themes` `ThemeProvider` + no-flash dark mode
 - Map design tokens (blue-white) into Tailwind/shadcn CSS
 - Warehouse pages from `design/`
-- Docker / infrastructure compose for frontend
 
 ## Icons
 
@@ -59,3 +67,4 @@ Prefer these make targets over raw `bun` / `bunx`.
 
 - Phase checklists: `document/checklist/frontend/`
 - Bootstrap phase: `document/checklist/frontend/phase-frontend-bootstrap.md`
+- Infrastructure: `document/knowledge/infrastructure.md`

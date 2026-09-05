@@ -4,7 +4,7 @@ Warehouse API under `backend/` — Go 1.25+, Echo v5, env config via `caarlos0/e
 
 ## Bootstrap (done)
 
-Scaffolded API with liveness probe only (no DB/Redis yet):
+Scaffolded API with liveness probe only (no DB/Redis client wiring yet):
 
 ```bash
 make backend-test   # go test ./...
@@ -14,13 +14,19 @@ make backend-dev    # air hot reload (needs air installed)
 
 Env sample: `backend/env.example` → `PORT=1323`, `APP_ENV=development`.
 
+## API versioning
+
+All public routes live under **`/api/v1`** (`internal/api.V1Prefix`). Register domain modules on the v1 group in `main.go`.
+
 ## Health
 
 | Method | Path | Auth | Response |
 |--------|------|------|----------|
-| `GET` | `/health` | none | `200` `{"status":"ok"}` |
+| `GET` | `/api/v1/health` | none | `200` `{"status":"ok"}` |
 
-Liveness only — readiness (DB) deferred until postgres is wired.
+Also via gateway: `http://localhost/api/v1/health`.
+
+Liveness only — readiness (DB) deferred until postgres is wired in the app.
 
 ## Dev commands
 
@@ -32,6 +38,7 @@ From repo root (`make help` for the full list):
 | `make backend-run` | Run once (`go run .`) |
 | `make backend-test` | `go test ./...` |
 | `make backend-migrate-up/down/status` | Goose (needs `DATABASE_URL`) |
+| `make run` / `make docker-up` | Full Docker stack (see infrastructure knowledge) |
 
 Prefer these make targets over raw `go` / `air` / goose.
 
@@ -46,9 +53,10 @@ backend/
 ├── Dockerfile.dev
 ├── Dockerfile.prod
 └── internal/
+    ├── api/                         # V1Prefix = /api/v1
     ├── config/
     ├── infra/postgres/migrations/   # empty until schema migrations
-    └── module/health/               # GET /health
+    └── module/health/               # GET /api/v1/health
 ```
 
 Module path: `github.com/lMikadal/warehouse/backend`.
@@ -60,21 +68,23 @@ Module path: `github.com/lMikadal/warehouse/backend`.
 | Go | 1.25+ |
 | HTTP | Echo v5 |
 | Config | `caarlos0/env` |
-| Port | `1323` |
+| Port | `1323` (directly published in compose) |
+| API prefix | `/api/v1` |
 | Dev reload | air (`.air.toml`) |
-| DB | PostgreSQL + goose — deferred |
-| Cache | Redis — deferred |
+| DB | PostgreSQL available in compose — app wiring deferred |
+| Cache | Redis available in compose — app wiring deferred |
 
 ## Deferred (next phases)
 
-- `infrastructure/docker-compose.yml` (postgres, redis, backend, frontend)
 - Goose migrations from `db/schema/`
 - Auth / domain modules
 - th/en API error i18n catalog
 - Request readiness checks against postgres
+- Backend Redis client
 
 ## Docs
 
 - Phase checklists: `document/checklist/backend/`
 - Bootstrap phase: `document/checklist/backend/phase-backend-bootstrap.md`
-- Postman: `document/postman/postman.json`
+- Infrastructure: `document/knowledge/infrastructure.md`
+- Postman: `document/postman/postman.json` (`baseUrl=http://localhost:1323/api/v1`)

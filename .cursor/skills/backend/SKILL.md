@@ -79,7 +79,7 @@ One domain module = handler + service + repository. Keep packages small; reuse s
 infrastructure/
 ├── docker-compose.yml       # dev: postgres, redis, backend, frontend
 ├── docker-compose.prod.yml  # optional prod overlay
-└── .env.example             # commit this; never commit real `.env`
+└── env.example              # commit this; never commit real `.env`
 ```
 
 No application source under `infrastructure/` — compose `build.context` points at `../backend` and `../frontend`.
@@ -90,7 +90,7 @@ No application source under `infrastructure/` — compose `build.context` points
 - Healthcheck postgres (and other deps) before starting backend
 - Volume-mount source for hot reload in dev
 - Single network (e.g. `warehouse_network`), timezone `Asia/Bangkok`
-- Secrets only in `.env` (gitignored); document keys in `.env.example`
+- Secrets only in `.env` (gitignored); document keys in `env.example`
 
 Reference sibling Warehouse `infrastructure/docker-compose.yml` for shape — adapt names/ports; do not copy unrelated services blindly.
 

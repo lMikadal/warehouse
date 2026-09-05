@@ -1,0 +1,55 @@
+# Production overlay — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+# Do not activate --profile dev (excludes nginx-ui, design, pgAdmin, redis-commander).
+
+services:
+  postgres:
+    ports: !reset []
+
+  redis:
+    ports: !reset []
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.prod
+    ports: !reset []
+    volumes: !reset []
+    # Distroless image has no curl; base compose healthcheck does not apply.
+    healthcheck:
+      disable: true
+    environment:
+      TZ: ${TZ:-Asia/Bangkok}
+      PORT: "1323"
+      APP_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: /api/v1
+    ports: !reset []
+    volumes: !reset []
+    environment:
+      TZ: ${TZ:-Asia/Bangkok}
+      NEXT_PUBLIC_API_URL: /api/v1
+    command: ["bun", "run", "start", "--", "-H", "0.0.0.0"]
+
+  nginx:
+    image: nginx:alpine
+    container_name: warehouse-nginx
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Bangkok}
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - warehouse_network
