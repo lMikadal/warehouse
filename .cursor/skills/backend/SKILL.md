@@ -16,7 +16,7 @@ Warehouse app API in `backend/` (Go + Echo v5) and Docker in `infrastructure/`.
 - Work in `backend/**` and `infrastructure/**`
 - Treat `db/schema/*.sql` as the **source of truth** for tables — turn into goose migrations
 - Do not implement UI in this skill
-- When behavior/knowledge/API changes → update `document/checklist/`, `document/knowledge/backend.md` (or `infrastructure.md`), and `document/postman/` via `/tester` (see `.cursor/rules/document.mdc`)
+- When behavior/knowledge/API changes → update `document/checklist/backend/` (API) or `document/checklist/infrastructure/` (Docker/compose), `document/knowledge/backend.md` (or `infrastructure.md`), and `document/postman/` via `/tester` (see `.cursor/rules/document.mdc`)
 
 ## Shared principles
 

@@ -16,7 +16,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 - Work in `frontend/**`
 - Source UI from `design/` mockups when converting approved screens
 - Call backend via env — do not invent parallel APIs
-- When behavior/knowledge changes → update `document/checklist/` and `document/knowledge/frontend.md` (see `.cursor/rules/document.mdc`)
+- When behavior/knowledge changes → update `document/checklist/frontend/` and `document/knowledge/frontend.md` (see `.cursor/rules/document.mdc`)
 
 ## Shared principles
 
@@ -27,6 +27,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 5. **Theme: blue + white** — map design tokens into Tailwind/shadcn consistently
 6. **Light + dark mode** — `next-themes` + shadcn dark; default from `prefers-color-scheme`; no wrong-theme flash on load
 7. **i18n: th + en** — `next-intl`; messages `th`/`en`; default `th`; language switcher required
+8. **Icons: Lucide** — `lucide-react` from [Lucide](https://lucide.dev/icons/); match design icon names on handoff
 
 ### Breakpoints (mobile-first)
 
@@ -55,6 +56,13 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 - `next-intl` (same idea as parent Warehouse frontend)
 - Locale in route or cookie; do not hardcode Thai-only copy in components
 
+### Icons (frontend)
+
+- Source: [Lucide](https://lucide.dev/icons/) via `lucide-react` only
+- Import components (`import { Sun } from "lucide-react"`); size/stroke via props or `className`
+- Match design Lucide names on handoff (`design/assets/icons/sun.svg` → `Sun`)
+- Do not add parallel icon packs or commit raw SVG trees for icons already in Lucide
+
 ## Stack
 
 | Tech | Approach |
@@ -63,7 +71,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 | Package manager | bun |
 | CSS | Tailwind CSS v4 |
 | Components | shadcn/ui → `components/ui/` |
-| Icons | lucide-react |
+| Icons | lucide-react ([Lucide](https://lucide.dev/icons/)) |
 | Utils | `clsx` + `tailwind-merge` → `lib/utils.ts` (`cn`) |
 | Theme | `next-themes` + shadcn dark mode |
 | i18n | `next-intl` (`th`, `en`) |
@@ -96,7 +104,8 @@ frontend/
 2. Map layout to React + Tailwind (all four breakpoints)
 3. Prefer shadcn (`Button`, `Input`, `Dialog`, `Table`, …) over custom CSS clones
 4. Port theme tokens (blue-white, light/dark) and i18n keys from design
-5. Do not keep mock `store.js` / `localStorage` in production — call the real API
+5. Map `design/assets/icons/<name>.svg` → PascalCase `lucide-react` component (same Lucide name)
+6. Do not keep mock `store.js` / `localStorage` in production — call the real API
 
 ## API
 
@@ -114,4 +123,5 @@ When unsure about patterns, peek at the sibling Warehouse `frontend/` — **do n
 - Bypass shadcn with raw form controls when a component already exists
 - Hardcode single-language or light-only UI
 - Add a second CSS framework or replace bun with npm/yarn without being asked
+- Use other icon libraries or duplicate Lucide SVGs under `frontend/`
 - Commit secrets; use `.env.local` / compose env

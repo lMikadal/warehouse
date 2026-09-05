@@ -16,7 +16,7 @@ Warehouse app prototype for customer demos — change data locally without a bui
 - Work in `design/**`
 - Read `db/schema/**` so seed/store fields match real schema
 - Do **not** touch `frontend/`, `backend/`, or call a real API
-- When behavior/knowledge changes → update `document/checklist/` and `document/knowledge/design.md` (see `.cursor/rules/document.mdc`)
+- When behavior/knowledge changes → update `document/checklist/design/` and `document/knowledge/design.md` (see `.cursor/rules/document.mdc`)
 
 ## Shared principles
 
@@ -27,6 +27,7 @@ Warehouse app prototype for customer demos — change data locally without a bui
 5. **Theme: blue + white** — White background (light) + blue accent; tokens in `css/style.css`
 6. **Light + dark mode** — Toggleable; default from `prefers-color-scheme`; persist in `localStorage`; paired light/dark tokens
 7. **i18n: th + en** — Dictionaries in `js/i18n/`; language switcher; default `th`; do not hardcode a single language in UI
+8. **Icons: Lucide SVG** — From [Lucide](https://lucide.dev/icons/); store under `assets/icons/`; no emoji-as-UI-icons or other packs
 
 ### Breakpoints (mobile-first)
 
@@ -56,6 +57,14 @@ Warehouse app prototype for customer demos — change data locally without a bui
 - `js/i18n/th.js`, `js/i18n/en.js`, `js/i18n/i18n.js`
 - UI labels / seed display strings follow locale
 - Load i18n before page scripts
+
+### Icons (design)
+
+- Source: [Lucide icons](https://lucide.dev/icons/) only
+- Path: `design/assets/icons/<lucide-name>.svg` (kebab-case, e.g. `sun.svg`, `languages.svg`)
+- Use `<img src="assets/icons/….svg">` for simple assets; inline the same SVG markup when color must follow theme (`currentColor` + CSS)
+- Keep Lucide stroke defaults; theme via CSS so light/dark stays readable
+- No npm icon packages, icon font CDNs, or emoji for chrome/actions
 
 ## Project structure (required)
 
@@ -111,6 +120,7 @@ Add new pages under `pages/` with the same pattern. Add matching seed files and 
 | `js/store.js` | Mock DB: init from seed, CRUD, persist `localStorage` |
 | `js/realtime.js` | On store change → `BroadcastChannel` → other tabs re-render |
 | `js/components/` | Reusable DOM (sidebar, modal, toast) — no framework |
+| `assets/icons/` | Lucide SVGs only (`<lucide-name>.svg`) |
 | `db/schema/*.sql` | Source of truth for data shape — read before seed/store; backend uses for migrations |
 
 ## Stack
@@ -186,3 +196,4 @@ cd design && python -m http.server 8080
 - Edit `frontend/` or `backend/` from this skill
 - Add heavy business logic beyond demo CRUD
 - Introduce a framework or package manager under `design/`
+- Use non-Lucide icon libraries or emoji as UI icons

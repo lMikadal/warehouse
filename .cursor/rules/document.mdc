@@ -11,25 +11,29 @@ Any work that changes system behavior, APIs, structure, or team agreements **mus
 
 ```
 document/
-├── checklist/     # phase + required checklists
-├── knowledge/     # shared knowledge per project area
-├── postman/       # Postman collection for handoff/import
+├── checklist/              # phase + required checklists by area
+│   ├── design/
+│   ├── frontend/
+│   ├── backend/
+│   └── infrastructure/
+├── knowledge/              # shared knowledge per project area
+├── postman/                # Postman collection for handoff/import
 │   ├── postman.json
 │   └── .env.example
-└── test/          # test notes/results (when present)
+└── test/                   # test notes/results (when present)
 ```
 
 ## When to update what
 
 | Path | When | Content |
 |------|------|---------|
-| `document/checklist/` | Start/end a phase, new required work, reorder work | Phase checklist + required checklist (mark `[x]` when done) |
+| `document/checklist/<area>/` | Start/end a phase, new required work, reorder work | Phase checklist + required checklist (mark `[x]` when done); `<area>` is `design`, `frontend`, `backend`, or `infrastructure` |
 | `document/knowledge/` | New patterns, architecture decisions, limits/how-to | Per-area notes — e.g. `design.md`, `frontend.md`, `backend.md`, `infrastructure.md` |
 | `document/postman/` | API added/changed/removed | `postman.json` (+ `.env.example` if new variables) — use skill `/tester` |
 
 ## Rules
 
-1. After changing `design/` / `frontend/` / `backend/` / `infrastructure/` → update `checklist` and/or `knowledge/<area>.md` immediately when needed
+1. After changing `design/` / `frontend/` / `backend/` / `infrastructure/` → update `document/checklist/<area>/` and/or `knowledge/<area>.md` immediately when needed
 2. After changing APIs in `backend/` → update `document/postman/postman.json` (via `/tester`)
 3. Checklists must include at least: **phase checklist** + **required checklist** (must-do items before the work is done)
 4. **Never** put real secrets / passwords / JWTs in `document/`

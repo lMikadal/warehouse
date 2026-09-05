@@ -18,5 +18,6 @@ Notes:
 
 - `db/schema/` = real DB schema (SQL) — the design skill reads it for mock data shape; the backend skill turns it into real migrations
 - Any change to system behavior → follow `.cursor/rules/document.mdc` and update `document/` (checklist / knowledge / postman) in the same turn
+- Phase checklists live under `document/checklist/<area>/` where `<area>` is `design`, `frontend`, `backend`, or `infrastructure`
 - Cross-cutting work → read every related skill
 - Invoke directly with `/design`, `/frontend`, `/backend`, `/tester`

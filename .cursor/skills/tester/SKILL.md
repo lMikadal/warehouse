@@ -15,7 +15,7 @@ Test the **backend first** and keep `document/postman/postman.json` ready for us
 - Read API contracts from `backend/` (handlers, DTOs, swagger if present)
 - Design and run API tests against a running backend
 - Create/update `document/postman/postman.json` (Collection v2.1) + `document/postman/.env.example`
-- Keep `document/checklist/` and `document/knowledge/` in sync when tests reveal contract or phase changes (see `.cursor/rules/document.mdc`)
+- Keep the relevant `document/checklist/<area>/` and `document/knowledge/` in sync when tests reveal contract or phase changes (see `.cursor/rules/document.mdc`)
 - Do **not** change backend business logic unless the user asks after a bug report
 
 ## Shared principles
