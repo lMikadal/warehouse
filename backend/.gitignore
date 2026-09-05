@@ -1,0 +1,11 @@
+# Binaries
+/tmp/
+/main
+*.exe
+
+# Local env (use env.example)
+.env
+
+# Air
+tmp/
+build-errors.log

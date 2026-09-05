@@ -1,0 +1,27 @@
+package health_test
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/labstack/echo/v5"
+	"github.com/lMikadal/warehouse/backend/internal/module/health"
+)
+
+func TestHealth(t *testing.T) {
+	e := echo.New()
+	health.RegisterRoutes(e)
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d want %d", rec.Code, http.StatusOK)
+	}
+	want := `{"status":"ok"}` + "\n"
+	if got := rec.Body.String(); got != want {
+		t.Fatalf("body: got %q want %q", got, want)
+	}
+}
