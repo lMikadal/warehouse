@@ -78,13 +78,15 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 
 ## Bootstrap (empty folder only)
 
+From repo root (see root `Makefile`):
+
 ```bash
-cd frontend
-bun create next-app .   # App Router, TypeScript, Tailwind, ESLint
-bunx shadcn@latest init
+make frontend-bootstrap   # bun create next-app + shadcn init
+make frontend-dev         # bun dev
+make frontend-shadcn-add COMPONENT=<name>
 ```
 
-Keep default shadcn config; enable dark mode; add `next-themes` + `next-intl`; add components with `bunx shadcn@latest add <name>`.
+Keep default shadcn config; enable dark mode; add `next-themes` + `next-intl`. Do not run raw `bun` / `bunx` when a make target exists — use `make help`.
 
 ## Layout
 

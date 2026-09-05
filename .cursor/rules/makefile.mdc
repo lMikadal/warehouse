@@ -1,0 +1,21 @@
+# Makefile for framework commands
+
+Framework and Docker commands used by skills live in the root `Makefile`. Agents must use those targets from the repo root.
+
+## Rules
+
+1. Prefer `make <target>` over raw `bun`, `bunx`, `go`, `air`, goose, `docker compose`, or `python -m http.server` when an equivalent target exists
+2. Run `make help` when unsure which target to use
+3. Default full-stack start: `make run` (same as `make docker-up`)
+4. Design preview: `make design-serve`
+5. Do not invent parallel scripts or one-off shell wrappers that duplicate Makefile targets
+
+## Common targets
+
+| Area | Targets |
+|------|---------|
+| Meta | `help`, `run` |
+| Design | `design-serve` |
+| Frontend | `frontend-bootstrap`, `frontend-dev`, `frontend-build`, `frontend-lint`, `frontend-shadcn-add` |
+| Backend | `backend-dev`, `backend-run`, `backend-test`, `backend-migrate-up/down/status` |
+| Docker | `docker-up`, `docker-up-d`, `docker-down`, `docker-build`, `docker-logs`, `docker-prod-up` |

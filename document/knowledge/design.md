@@ -16,10 +16,10 @@ Customer-facing Warehouse prototype under `design/` — HTML/CSS/vanilla JS only
 ## Preview
 
 ```bash
-cd design && python -m http.server 8080
+make design-serve
 ```
 
-Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and `BroadcastChannel` behave correctly.
+Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and `BroadcastChannel` behave correctly. Do not run raw `python -m http.server` when this target exists.
 
 ## Script load order (every page)
 

@@ -14,7 +14,7 @@ Scaffold the Warehouse design prototype and ship a working Hello World homepage.
 
 Must pass before this phase is done:
 
-- [x] Preview via HTTP (`cd design && python -m http.server 8080`)
+- [x] Preview via HTTP (`make design-serve`)
 - [x] Default locale is Thai; language toggle switches th ↔ en and persists
 - [x] Theme toggle switches light ↔ dark and persists (`data-theme` on `<html>`)
 - [x] `store.init()` runs with empty seed without console errors

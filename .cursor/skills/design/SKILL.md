@@ -177,10 +177,10 @@ store.reset() // optional: clear localStorage and re-seed
 
 ## Preview
 
-Serve with HTTP (localStorage / BroadcastChannel work better than `file://`):
+Serve with HTTP (localStorage / BroadcastChannel work better than `file://`). From repo root:
 
 ```bash
-cd design && python -m http.server 8080
+make design-serve
 ```
 
 ## Handoff

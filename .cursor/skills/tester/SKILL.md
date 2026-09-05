@@ -50,7 +50,7 @@ warehouse/document/postman/
 
 1. Read the contract from `backend/` (handler + DTO; or swagger if present)
 2. Group cases: health, auth, CRUD per resource, permission denied, bad input
-3. Hit a running backend (`docker compose` from `infrastructure/` or local) — curl / httpie / Postman
+3. Hit a running backend — start with `make run` (full stack) or `make backend-dev` (local air), then curl / httpie / Postman
 4. Short summary: pass/fail + cause
 5. Sync into `document/postman/postman.json` for handoff
 

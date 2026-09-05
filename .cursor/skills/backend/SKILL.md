@@ -100,7 +100,21 @@ Reference sibling Warehouse `infrastructure/docker-compose.yml` for shape — ad
 2. Implement handler → service → repository
 3. Add goose SQL under `internal/infra/postgres/migrations/` from `db/schema/`
 4. Update `docker-compose.yml` when adding a service
-5. Smoke-test: from `infrastructure/`, `docker compose up`
+5. Smoke-test from repo root: `make run` (or `make docker-up`)
+
+### Dev / migrate commands (root Makefile)
+
+```bash
+make run                      # full stack: docker compose up
+make backend-dev              # air hot reload
+make backend-run              # go run .
+make backend-test             # go test ./...
+make backend-migrate-up       # needs DATABASE_URL (from infrastructure/.env)
+make backend-migrate-down
+make backend-migrate-status
+```
+
+Do not run raw `docker compose`, `air`, `go run`, or goose when a make target exists — use `make help`.
 
 ## Migrations vs design schema
 
