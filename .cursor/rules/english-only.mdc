@@ -1,0 +1,12 @@
+---
+description: Require English-only content for everything under warehouse/.cursor (rules and skills).
+alwaysApply: true
+---
+
+# English only in `.cursor`
+
+Everything under `.cursor/` — rules, skills, frontmatter, and any future files in this folder — must be written in **English only**.
+
+- Do not add Thai or other non-English prose when creating or editing files under `.cursor/`
+- Locale codes such as `th` / `en` in i18n instructions are fine; surrounding explanation must be English
+- This rule covers Cursor agent config only — app UI copy may still use `th`/`en` i18n in `design/` and `frontend/`

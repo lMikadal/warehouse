@@ -1,0 +1,22 @@
+---
+description: Map folders to skills for design, db, frontend, backend, infrastructure, and document/postman.
+alwaysApply: true
+---
+
+# Subproject skills
+
+This project splits skills by folder. **Read that side's `SKILL.md` before writing or changing code.**
+
+| Folder | Skill to read |
+|--------|----------------|
+| `design/**`, `db/schema/**` | `.cursor/skills/design/SKILL.md` |
+| `frontend/**` | `.cursor/skills/frontend/SKILL.md` |
+| `backend/**`, `infrastructure/**` | `.cursor/skills/backend/SKILL.md` |
+| `document/postman/**` or API test / Postman work | `.cursor/skills/tester/SKILL.md` |
+
+Notes:
+
+- `db/schema/` = real DB schema (SQL) — the design skill reads it for mock data shape; the backend skill turns it into real migrations
+- Any change to system behavior → follow `.cursor/rules/document.mdc` and update `document/` (checklist / knowledge / postman) in the same turn
+- Cross-cutting work → read every related skill
+- Invoke directly with `/design`, `/frontend`, `/backend`, `/tester`

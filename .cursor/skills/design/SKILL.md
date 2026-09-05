@@ -1,0 +1,188 @@
+---
+name: design
+description: >-
+  Build Warehouse app HTML/CSS/JS prototypes with local mock DB (seed, store,
+  realtime), blue-white theme, light/dark mode, th/en i18n, and responsive
+  layouts. Use when working under design/ or db/schema/, creating mockups,
+  pages, seed data, or demo CRUD without a real database.
+---
+
+# Design (customer prototype)
+
+Warehouse app prototype for customer demos — change data locally without a build or a real DB.
+
+## Scope
+
+- Work in `design/**`
+- Read `db/schema/**` so seed/store fields match real schema
+- Do **not** touch `frontend/`, `backend/`, or call a real API
+- When behavior/knowledge changes → update `document/checklist/` and `document/knowledge/design.md` (see `.cursor/rules/document.mdc`)
+
+## Shared principles
+
+1. **Warehouse app** — Everything is about the Warehouse app (users, products, orders, …); do not ship a generic off-domain template
+2. **Reusable + maintainable** — Share UI in `js/components/`, name clearly, avoid duplication
+3. **Strong security** — No real passwords/secrets in seed; do not inject unsanitized user HTML; mock only — no live DB
+4. **Responsive** — mobile / tablet / computer / computer-wide (breakpoints below)
+5. **Theme: blue + white** — White background (light) + blue accent; tokens in `css/style.css`
+6. **Light + dark mode** — Toggleable; default from `prefers-color-scheme`; persist in `localStorage`; paired light/dark tokens
+7. **i18n: th + en** — Dictionaries in `js/i18n/`; language switcher; default `th`; do not hardcode a single language in UI
+
+### Breakpoints (mobile-first)
+
+| Name | Width | Notes |
+|------|-------|-------|
+| mobile | &lt; 640px | base |
+| tablet | ≥ 640px | |
+| computer | ≥ 1024px | desktop |
+| computer-wide | ≥ 1440px | wide |
+
+### Theme tokens
+
+| Token | Role |
+|-------|------|
+| `--color-primary` | Primary blue |
+| `--color-primary-foreground` | Text on primary |
+| `--color-background` | Surface (light = white, dark = dark) |
+| `--color-foreground` | Text on surface |
+| `--color-muted` | Muted surface / soft borders |
+
+- Light: white surface + clear blue; Dark: dark surface + blue with enough contrast
+- Toggle with `data-theme="light|dark"` on `html` (same as frontend)
+- Theme toggle in the shell; light/dark hex pairs live in one place in `style.css`
+
+### i18n (design)
+
+- `js/i18n/th.js`, `js/i18n/en.js`, `js/i18n/i18n.js`
+- UI labels / seed display strings follow locale
+- Load i18n before page scripts
+
+## Project structure (required)
+
+```
+warehouse/
+├── design/
+│   ├── index.html
+│   ├── pages/
+│   │   ├── dashboard.html
+│   │   ├── products.html
+│   │   ├── product-approval.html
+│   │   ├── users.html
+│   │   └── orders.html
+│   ├── css/
+│   │   └── style.css
+│   ├── js/
+│   │   ├── i18n/
+│   │   │   ├── th.js
+│   │   │   ├── en.js
+│   │   │   └── i18n.js
+│   │   ├── seed/
+│   │   │   ├── users.js
+│   │   │   ├── products.js
+│   │   │   ├── orders.js
+│   │   │   └── index.js
+│   │   ├── store.js
+│   │   ├── realtime.js
+│   │   └── components/
+│   │       ├── sidebar.js
+│   │       ├── modal.js
+│   │       └── toast.js
+│   └── assets/
+│       ├── images/
+│       └── icons/
+├── db/
+│   └── schema/
+│       ├── users.sql
+│       ├── products.sql
+│       ├── orders.sql
+│       └── ...
+└── README.md
+```
+
+Add new pages under `pages/` with the same pattern. Add matching seed files and schema SQL when new entities appear.
+
+## Layer roles
+
+| Path | Role |
+|------|------|
+| `pages/*.html` | One screen per file — load `style.css` + shared scripts |
+| `css/style.css` | Shared CSS + variables (`--color-primary`, `--spacing`, …) for fast theme tweaks |
+| `js/seed/` | Initial mock data only — align shapes with `db/schema/` |
+| `js/store.js` | Mock DB: init from seed, CRUD, persist `localStorage` |
+| `js/realtime.js` | On store change → `BroadcastChannel` → other tabs re-render |
+| `js/components/` | Reusable DOM (sidebar, modal, toast) — no framework |
+| `db/schema/*.sql` | Source of truth for data shape — read before seed/store; backend uses for migrations |
+
+## Stack
+
+- HTML + CSS + vanilla JS only
+- No React, Next, bundler, npm, or backend API calls
+- No PostgreSQL / Redis connection from design
+
+## Mock DB flow
+
+1. Page load → `store.init()` — load seed into `localStorage` if empty
+2. Page uses `store.getAll` / `getById` / `create` / `update` / `delete`
+3. Persist to `localStorage`
+4. `realtime.broadcast()` → other tabs update
+
+### Script load order (every page)
+
+1. `js/i18n/th.js` + `en.js` + `i18n.js`
+2. `js/seed/index.js`
+3. `js/store.js`
+4. `js/realtime.js`
+5. `js/components/*.js` (sidebar, modal, toast)
+6. Page-specific script (inline or `js/pages/<name>.js` if needed)
+
+### Store API (keep small)
+
+```js
+store.init()
+store.getAll(table)
+store.getById(table, id)
+store.create(table, row)
+store.update(table, id, patch)
+store.delete(table, id)
+store.reset() // optional: clear localStorage and re-seed
+```
+
+### Realtime
+
+- Channel name: one constant (e.g. `warehouse-design`)
+- Payload: `{ type, table }` or full snapshot — keep listeners dumb: re-read from `store` and re-render
+
+## Schema sync
+
+- Field names/types in seed must match `db/schema/` (e.g. `users.id`, `products.status`)
+- When schema changes → update seed + store usage in the same change
+- Design never runs SQL against a live DB
+
+## Page pattern
+
+- Shared shell: sidebar + main + toast + language toggle + theme toggle
+- Mobile-first across all four breakpoints; copy via i18n (`th`/`en`)
+- Placeholder data realistic enough to demo CRUD
+- Theme tweaks only via CSS variables (light/dark pairs) at the top of `style.css`
+
+## Preview
+
+Serve with HTTP (localStorage / BroadcastChannel work better than `file://`):
+
+```bash
+cd design && python -m http.server 8080
+```
+
+## Handoff
+
+| After | Next skill |
+|-------|------------|
+| Customer approves UI | `/frontend` — implement in Next.js |
+| Schema in `db/schema/` is ready | `/backend` — migrations + API |
+
+## Do not
+
+- Connect real DB or Redis
+- Edit `frontend/` or `backend/` from this skill
+- Add heavy business logic beyond demo CRUD
+- Introduce a framework or package manager under `design/`
