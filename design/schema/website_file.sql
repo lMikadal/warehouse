@@ -5,7 +5,9 @@
 --   - all uploads reference this table; no image_url TEXT columns elsewhere
 --   - purpose tags: product_attribute_logo, member_avatar, member_tier_badge,
 --     setting_bank_logo, setting_sale_channel_logo, purchase_order_payment_proof,
---     product_item_image (gallery via product_item_file), member_document, purchase_order_attachment
+--     product_item_image (gallery via product_item_file),
+--     purchase_request_item_image (gallery via purchase_request_item_file),
+--     member_document, purchase_order_attachment
 CREATE TABLE website_file (
     id            BIGSERIAL    PRIMARY KEY,              -- surrogate PK
     bucket        TEXT         NOT NULL,                 -- object storage bucket
