@@ -4,7 +4,7 @@ description: >-
   Build Warehouse app Go Echo APIs in backend/ and Docker in infrastructure/
   with strong security, reusable domain modules, and th/en API messages. Use
   when working under backend/ or infrastructure/, adding handlers, migrations
-  from db/schema/, compose services, or Dockerfiles.
+  from design/schema/, compose services, or Dockerfiles.
 ---
 
 # Backend + Infrastructure
@@ -14,7 +14,7 @@ Warehouse app API in `backend/` (Go + Echo v5) and Docker in `infrastructure/`.
 ## Scope
 
 - Work in `backend/**` and `infrastructure/**`
-- Treat `db/schema/*.sql` as the **source of truth** for tables — turn into goose migrations
+- Treat `design/schema/*.sql` as the **source of truth** for tables — turn into goose migrations
 - Do not implement UI in this skill
 - When behavior/knowledge/API changes → update `document/checklist/backend/` (API) or `document/checklist/infrastructure/` (Docker/compose), `document/knowledge/backend.md` (or `infrastructure.md`), and `document/postman/` via `/tester` (see `.cursor/rules/document.mdc`)
 
@@ -98,7 +98,7 @@ Reference sibling Warehouse `infrastructure/docker-compose.yml` for shape — ad
 
 1. Agree API contract (method, path, request/response)
 2. Implement handler → service → repository
-3. Add goose SQL under `internal/infra/postgres/migrations/` from `db/schema/`
+3. Add goose SQL under `internal/infra/postgres/migrations/` from `design/schema/`
 4. Update `docker-compose.yml` when adding a service
 5. Smoke-test from repo root: `make run` (or `make docker-up`)
 
@@ -118,11 +118,11 @@ Do not run raw `docker compose`, `air`, `go run`, or goose when a make target ex
 
 ## Migrations vs design schema
 
-| `db/schema/*.sql` | Design / planning shape (human-readable) |
-|-------------------|------------------------------------------|
+| `design/schema/*.sql` | Design / planning shape (human-readable) |
+|-----------------------|------------------------------------------|
 | `backend/.../migrations/` | What goose actually runs |
 
-When schema drifts, update `db/schema/` and add a new migration — do not edit old applied migrations.
+When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
 
 ## Do not
 

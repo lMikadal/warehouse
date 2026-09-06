@@ -11,6 +11,7 @@ Customer-facing Warehouse prototype under `design/` — HTML/CSS/vanilla JS only
 | Scripts | Vanilla JS on `window` |
 | Icons | Lucide SVG in `assets/icons/<name>.svg` ([lucide.dev/icons](https://lucide.dev/icons/)) |
 | Mock DB | `js/seed/` → `js/store.js` → `localStorage` |
+| Schema | `design/schema/*.sql` — table/field source of truth for seed shapes |
 | Cross-tab | `js/realtime.js` via `BroadcastChannel` |
 
 ## Preview
@@ -55,7 +56,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed: `window.SEED` (currently `{}` until `db/schema/` entities exist)
+- Seed: `window.SEED` (currently `{}` until `design/schema/` entities exist)
 - Channel name: `warehouse-design`
 - API: `store.init|getAll|getById|create|update|delete|reset`
 
@@ -75,5 +76,5 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 ## Next
 
 - Add screens under `pages/` and shared UI in `js/components/`
-- Add `db/schema/*.sql` then matching seed tables
+- Add `design/schema/*.sql` then matching seed tables
 - Hand off approved UI to `/frontend`; schema-ready work to `/backend`

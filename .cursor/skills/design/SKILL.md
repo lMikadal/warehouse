@@ -3,8 +3,8 @@ name: design
 description: >-
   Build Warehouse app HTML/CSS/JS prototypes with local mock DB (seed, store,
   realtime), blue-white theme, light/dark mode, th/en i18n, and responsive
-  layouts. Use when working under design/ or db/schema/, creating mockups,
-  pages, seed data, or demo CRUD without a real database.
+  layouts. Use when working under design/, creating mockups, pages, seed data,
+  schema SQL, or demo CRUD without a real database.
 ---
 
 # Design (customer prototype)
@@ -14,7 +14,7 @@ Warehouse app prototype for customer demos — change data locally without a bui
 ## Scope
 
 - Work in `design/**`
-- Read `db/schema/**` so seed/store fields match real schema
+- Read `design/schema/**` so seed/store fields match real schema
 - Do **not** touch `frontend/`, `backend/`, or call a real API
 - When behavior/knowledge changes → update `document/checklist/design/` and `document/knowledge/design.md` (see `.cursor/rules/document.mdc`)
 
@@ -78,6 +78,11 @@ warehouse/
 │   │   ├── product-approval.html
 │   │   ├── users.html
 │   │   └── orders.html
+│   ├── schema/
+│   │   ├── users.sql
+│   │   ├── products.sql
+│   │   ├── orders.sql
+│   │   └── ...
 │   ├── css/
 │   │   └── style.css
 │   ├── js/
@@ -99,12 +104,6 @@ warehouse/
 │   └── assets/
 │       ├── images/
 │       └── icons/
-├── db/
-│   └── schema/
-│       ├── users.sql
-│       ├── products.sql
-│       ├── orders.sql
-│       └── ...
 └── README.md
 ```
 
@@ -116,12 +115,12 @@ Add new pages under `pages/` with the same pattern. Add matching seed files and 
 |------|------|
 | `pages/*.html` | One screen per file — load `style.css` + shared scripts |
 | `css/style.css` | Shared CSS + variables (`--color-primary`, `--spacing`, …) for fast theme tweaks |
-| `js/seed/` | Initial mock data only — align shapes with `db/schema/` |
+| `js/seed/` | Initial mock data only — align shapes with `design/schema/` |
 | `js/store.js` | Mock DB: init from seed, CRUD, persist `localStorage` |
 | `js/realtime.js` | On store change → `BroadcastChannel` → other tabs re-render |
 | `js/components/` | Reusable DOM (sidebar, modal, toast) — no framework |
 | `assets/icons/` | Lucide SVGs only (`<lucide-name>.svg`) |
-| `db/schema/*.sql` | Source of truth for data shape — read before seed/store; backend uses for migrations |
+| `schema/*.sql` | Source of truth for data shape — read before seed/store; backend uses for migrations |
 
 ## Stack
 
@@ -164,7 +163,7 @@ store.reset() // optional: clear localStorage and re-seed
 
 ## Schema sync
 
-- Field names/types in seed must match `db/schema/` (e.g. `users.id`, `products.status`)
+- Field names/types in seed must match `design/schema/` (e.g. `users.id`, `products.status`)
 - When schema changes → update seed + store usage in the same change
 - Design never runs SQL against a live DB
 
@@ -188,7 +187,7 @@ make design-serve
 | After | Next skill |
 |-------|------------|
 | Customer approves UI | `/frontend` — implement in Next.js |
-| Schema in `db/schema/` is ready | `/backend` — migrations + API |
+| Schema in `design/schema/` is ready | `/backend` — migrations + API |
 
 ## Do not
 

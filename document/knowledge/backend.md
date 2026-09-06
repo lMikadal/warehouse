@@ -76,7 +76,7 @@ Module path: `github.com/lMikadal/warehouse/backend`.
 
 ## Deferred (next phases)
 
-- Goose migrations from `db/schema/`
+- Goose migrations from `design/schema/`
 - Auth / domain modules
 - th/en API error i18n catalog
 - Request readiness checks against postgres
