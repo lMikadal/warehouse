@@ -70,7 +70,8 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 |--------|--------|-----------|
 | website (10) | `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang | locale registry; geo hierarchy via typed FK + sort_order (no LTREE) |
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
-| setting (10) | vat, sale_channel+lang, bank+lang, payment_method+lang, location+lang, code | `setting_payment` + `setting_pay` merged into `setting_payment_method` |
+| setting (8) | vat, sale_channel+lang, bank+lang, payment_method+lang, code | `setting_payment` + `setting_pay` merged into `setting_payment_method` |
+| location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
 | product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | `is_fake` → `product_attribute` type='grade'; FK brand/model/engine on product_car restored |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | supplier, address, contact, bank | v2 had only supplier — address/contact/bank gaps restored |

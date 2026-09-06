@@ -10,7 +10,8 @@ Consolidate 180 tables from v1 + v2 (`backend/internal/infra/postgres/migrations
 - [x] Write website module (10 files): `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang
 - [x] Write admin module (9 files): user, session, role, role_language, permission, role_permission, menu, menu_language, menu_permission
 - [x] Refactor admin_user: `is_superadmin` → `type` enum (`superadmin`|`owner`|`manager`|`staff`, default `staff`); drop `admin_audit_log`
-- [x] Write setting module (10 files): vat, sale_channel+language, bank+language, payment_method+language, location+language, code
+- [x] Write setting module (8 files): vat, sale_channel+language, bank+language, payment_method+language, code
+- [x] Write location module (2 files): location_location+language (moved from setting; v1 location_locations)
 - [x] Write product module (13 files): attribute+language+relation, product+language+code+car+supplier, item+language+price+stock+stop_log
 - [x] Write member module (15 files): setting+language+relation, tier+language+item+item_attribute, member+setting+owner+address+file+discount+history+history_language
 - [x] Write supplier module (4 files): supplier, address, contact, bank
