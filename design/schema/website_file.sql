@@ -7,6 +7,8 @@
 --     setting_bank_logo, setting_sale_channel_logo, purchase_order_payment_proof,
 --     product_item_image (gallery via product_item_file),
 --     purchase_request_item_image (gallery via purchase_request_item_file),
+--     purchase_order_item_image (gallery via purchase_order_item_file),
+--     purchase_order_item_reject_image (gallery via purchase_order_item_reject_file),
 --     member_document, purchase_order_attachment
 CREATE TABLE website_file (
     id            BIGSERIAL    PRIMARY KEY,              -- surrogate PK
