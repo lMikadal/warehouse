@@ -2,9 +2,10 @@
 --   - renamed: sale_platform → sale_channel (v2 naming)
 --   - member_setting_id: links sale channel to member setting type (e.g. retail / wholesale)
 --   - indexes added (v2 had none at all)
+--   - image_url → website_file_id (purpose: setting_sale_channel_logo)
 CREATE TABLE setting_sale_channel (
     id                BIGSERIAL    PRIMARY KEY,              -- surrogate PK
-    image_url         TEXT,                                   -- channel logo URL
+    website_file_id   BIGINT       REFERENCES website_file(id) ON DELETE RESTRICT, -- channel logo (purpose: setting_sale_channel_logo)
     is_active         BOOLEAN      NOT NULL DEFAULT TRUE,    -- available for orders
     is_default        BOOLEAN      NOT NULL DEFAULT FALSE,   -- default channel for new orders
     member_setting_id BIGINT       REFERENCES member_setting(id) ON DELETE SET NULL, -- linked member pricing group
@@ -16,6 +17,8 @@ CREATE TABLE setting_sale_channel (
     updated_by        BIGINT       REFERENCES admin_user(id) ON DELETE SET NULL
 );
 
+CREATE INDEX idx_setting_sale_channel_file
+    ON setting_sale_channel (website_file_id) WHERE website_file_id IS NOT NULL;
 CREATE INDEX idx_setting_sale_channel_active
     ON setting_sale_channel (sort_order)
     WHERE deleted_at IS NULL AND is_active = TRUE;

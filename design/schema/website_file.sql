@@ -2,13 +2,17 @@
 --   - unique on object_key restored (v2 had dropped it)
 --   - created_by FK restored (v2 had no FK)
 --   - updated_at / deleted_at added (v2 was append-only, design is full CRUD)
+--   - all uploads reference this table; no image_url TEXT columns elsewhere
+--   - purpose tags: product_attribute_logo, member_avatar, member_tier_badge,
+--     setting_bank_logo, setting_sale_channel_logo, purchase_order_payment_proof,
+--     product_item_image (gallery via product_item_file), member_document, purchase_order_attachment
 CREATE TABLE website_file (
     id            BIGSERIAL    PRIMARY KEY,              -- surrogate PK
     bucket        TEXT         NOT NULL,                 -- object storage bucket
     object_key    TEXT         NOT NULL,                 -- unique key within bucket
     content_type  TEXT         NOT NULL,                 -- MIME type
     size_bytes    BIGINT       NOT NULL,                 -- file size
-    purpose       TEXT         NOT NULL,                 -- usage tag e.g. product_image, avatar
+    purpose       TEXT         NOT NULL,                 -- usage tag; see file header for allowed values
     original_name TEXT         NOT NULL,                 -- client filename at upload
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -64,7 +64,34 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - `check:skip-audit` comment in a file exempts it from audit-5 check (use for session/log/junction tables)
 - **Column comments:** inline `--` on every non-audit column; English; audit skip sets per table kind (base five / language two / junction `created_at` only)
 
-## Schema modules (86 files in `design/schema/`)
+## File storage
+
+All uploaded files go through [`website_file`](../../design/schema/website_file.sql). Do **not** use `image_url TEXT` or `image_url[]` in new schema.
+
+| Case | Pattern | Examples |
+|------|---------|----------|
+| Single image (logo, avatar, slip) | `website_file_id BIGINT` FK on parent table | `product_attribute`, `member_member`, `setting_bank` |
+| Multiple files / reorder | junction `{entity}_file` + `sort_order` | `product_item_file`, `member_file`, `purchase_order_file` |
+
+- Gallery cover = row with lowest `sort_order` (tie-break `id`)
+- `ON DELETE RESTRICT` on `website_file_id` — cannot delete a file still referenced
+- API resolves `website_file_id` → signed/public URL from `object_key` at read time
+
+**`website_file.purpose` values:**
+
+| Purpose | Used by |
+|---------|---------|
+| `product_attribute_logo` | `product_attribute.website_file_id` |
+| `member_avatar` | `member_member.website_file_id` |
+| `member_tier_badge` | `member_tier.website_file_id` |
+| `setting_bank_logo` | `setting_bank.website_file_id` |
+| `setting_sale_channel_logo` | `setting_sale_channel.website_file_id` |
+| `purchase_order_payment_proof` | `purchase_order_payment.website_file_id` |
+| `product_item_image` | `product_item_file` (gallery) |
+| `member_document` | `member_file` |
+| `purchase_order_attachment` | `purchase_order_file` |
+
+## Schema modules (87 files in `design/schema/`)
 
 | Module | Tables | Key notes |
 |--------|--------|-----------|
@@ -72,7 +99,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
 | setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
-| product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | product_product: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_car |
+| product (14) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log+file | product_product: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_car; gallery via product_item_file |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | supplier, information, contact, bank | v2 had only supplier — information/contact/bank gaps restored; type information/tax_invoice/delivery |
 | warehouse (3) | warehouse+lang+condition | barcode/qrcode/rfid/capacity restored; occupancy from product_item_stock; condition: amount + amount_active (inactive/empty derived) |
