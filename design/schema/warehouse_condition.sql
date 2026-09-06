@@ -7,7 +7,7 @@
 --     where capacity > SUM(remain_quantity) from product_item_stock via product_item_warehouse.bin_id
 CREATE TABLE warehouse_condition (
     warehouse_warehouse_id  BIGINT         NOT NULL REFERENCES warehouse_warehouse(id) ON DELETE CASCADE, -- parent warehouse node
-    type                    warehouse_type NOT NULL,  -- child node type this quota row applies to
+    type                    warehouse_warehouse_type NOT NULL,  -- child node type this quota row applies to
     amount                  INTEGER        NOT NULL DEFAULT 0,  -- max creatable child nodes of this type under parent
     amount_active           INTEGER        NOT NULL DEFAULT 0,  -- max active child nodes of this type at a given time
     PRIMARY KEY (warehouse_warehouse_id, type)

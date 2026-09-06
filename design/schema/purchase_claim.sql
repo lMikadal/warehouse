@@ -2,14 +2,13 @@
 --   - claim: supplier compensation; return: send goods back to supplier
 --   - lines via purchase_claim_item → purchase_order_item_reject
 --   - sku: null in draft (status='draft')
-CREATE TYPE purchase_claim_type   AS ENUM ('claim', 'return');
-CREATE TYPE purchase_claim_status AS ENUM ('draft', 'success', 'cancel');
+CREATE TYPE purchase_claim_status AS ENUM ('draft', 'success', 'cancelled');
 
 CREATE TABLE purchase_claim (
     id                BIGSERIAL               PRIMARY KEY,              -- surrogate PK
     sku               VARCHAR(50),                                    -- claim document number; null in draft
     purchase_order_id BIGINT                  NOT NULL REFERENCES purchase_order(id) ON DELETE RESTRICT, -- parent PO
-    type              purchase_claim_type     NOT NULL,                 -- claim vs return
+    type              claim_type              NOT NULL,                 -- claim vs return
     status            purchase_claim_status   NOT NULL DEFAULT 'draft', -- claim workflow state
     note              TEXT                    NOT NULL DEFAULT '',      -- header notes
     deleted_at        TIMESTAMPTZ,

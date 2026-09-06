@@ -13,9 +13,9 @@ CREATE TABLE purchase_order_item (
     purchase_request_item_id     BIGINT                       REFERENCES purchase_request_item(id) ON DELETE SET NULL, -- source request line
     parent_id                    BIGINT                       REFERENCES purchase_order_item(id) ON DELETE SET NULL, -- split-line parent
     status                       purchase_order_item_status   NOT NULL DEFAULT 'pending', -- line receive/approval state
-    type                         purchase_request_item_type   NOT NULL,                 -- new vs existing product
-    product_item_id              BIGINT                       REFERENCES product_item(id) ON DELETE SET NULL, -- catalog product when type='old'
-    name                         VARCHAR(255),                                          -- product name when type='new'
+    type                         purchase_request_item_type   NOT NULL,                 -- catalog vs custom product
+    product_item_id              BIGINT                       REFERENCES product_item(id) ON DELETE SET NULL, -- catalog product when type='catalog'
+    name                         VARCHAR(255),                                          -- product name when type='custom'
     product_attribute_brand_id   BIGINT                       REFERENCES product_attribute(id) ON DELETE SET NULL, -- brand attribute
     product_attribute_model_id   BIGINT                       REFERENCES product_attribute(id) ON DELETE SET NULL, -- model attribute
     product_attribute_engine_id  BIGINT                       REFERENCES product_attribute(id) ON DELETE SET NULL, -- engine attribute

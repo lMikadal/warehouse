@@ -1,18 +1,19 @@
 -- source: v1 order_ticket_items (renamed)
---   - type: new (requested item not yet in system) | old (existing product_item)
+--   - type: catalog (existing product_item) | custom (requested item not yet in system)
+--   - type: catalog (existing product_item) | custom (requested item not yet in system)
 --   - brand/model/engine FKs to product_attribute (replaces product_car_categories FKs)
 --   - store_data JSONB removed (was unstructured; explicit columns preferred)
---   - image_url[] removed → purchase_request_item_file (gallery for type='new')
+--   - image_url[] removed → purchase_request_item_file (gallery for type='custom')
 --   - approved_by/rejected_by/approved_at/rejected_at removed: status + purchase_history instead
-CREATE TYPE purchase_request_item_type AS ENUM ('new', 'old');
+CREATE TYPE purchase_request_item_type AS ENUM ('catalog', 'custom');
 
 CREATE TABLE purchase_request_item (
     id                           BIGSERIAL                    PRIMARY KEY,              -- surrogate PK
     purchase_request_id          BIGINT                       NOT NULL REFERENCES purchase_request(id) ON DELETE CASCADE, -- parent request
     status                       purchase_request_status      NOT NULL DEFAULT 'pending', -- line workflow state
-    type                         purchase_request_item_type   NOT NULL,                 -- new vs existing product
-    product_item_id              BIGINT                       REFERENCES product_item(id) ON DELETE SET NULL,  -- when type='old'
-    name                         VARCHAR(255),                -- when type='new'
+    type                         purchase_request_item_type   NOT NULL,                 -- catalog vs custom product
+    product_item_id              BIGINT                       REFERENCES product_item(id) ON DELETE SET NULL,  -- when type='catalog'
+    name                         VARCHAR(255),                -- when type='custom'
     product_attribute_brand_id   BIGINT                       REFERENCES product_attribute(id) ON DELETE SET NULL, -- type='car', type_car='brand'
     product_attribute_model_id   BIGINT                       REFERENCES product_attribute(id) ON DELETE SET NULL, -- type='car', type_car='model'
     product_attribute_engine_id  BIGINT                       REFERENCES product_attribute(id) ON DELETE SET NULL, -- type='car', type_car='engine'

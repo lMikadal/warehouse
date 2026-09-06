@@ -2,7 +2,7 @@
 --   - restored: explicit brand_id, model_id FKs (v2 only stored engine; brand/model recovered by LTREE walk — too slow for filter queries)
 --   - restored: gear_type, year_start, year_end (fitment detail)
 --   - removed:  is_stopped — use product_attribute.is_stopped on car brand/model instead
-CREATE TYPE product_gear_type AS ENUM ('auto', 'manual', 'cvt', 'dct', 'other');
+CREATE TYPE product_product_car_gear_type AS ENUM ('auto', 'manual', 'cvt', 'dct', 'other');
 
 CREATE TABLE product_product_car (
     id                          BIGSERIAL             PRIMARY KEY,              -- surrogate PK
@@ -10,7 +10,7 @@ CREATE TABLE product_product_car (
     product_attribute_brand_id  BIGINT                REFERENCES product_attribute(id) ON DELETE RESTRICT,  -- type='car', type_car='brand'
     product_attribute_model_id  BIGINT                REFERENCES product_attribute(id) ON DELETE RESTRICT,  -- type='car', type_car='model'
     product_attribute_engine_id BIGINT                NOT NULL REFERENCES product_attribute(id) ON DELETE RESTRICT, -- type='car', type_car='engine'
-    gear_type                   product_gear_type,                              -- transmission type
+    gear_type                   product_product_car_gear_type,                    -- transmission type
     year_start                  SMALLINT,                                       -- fitment year range start
     year_end                    SMALLINT,                                       -- fitment year range end
     deleted_at                  TIMESTAMPTZ,

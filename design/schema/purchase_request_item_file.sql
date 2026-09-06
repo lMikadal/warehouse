@@ -1,5 +1,5 @@
 -- source: v1 order_ticket_items.image_url[] → normalized via website_file
---   - gallery for purchase_request_item (intended for type='new'; enforced by application)
+--   - gallery for purchase_request_item (intended for type='custom'; enforced by application)
 --   - sort_order: gallery display order (lowest = cover)
 --   - purpose on website_file: 'purchase_request_item_image'
 CREATE TABLE purchase_request_item_file (

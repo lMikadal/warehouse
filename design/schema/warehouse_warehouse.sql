@@ -6,11 +6,11 @@
 --   - removed:  shelf_maximum / rack_maximum / box_maximum columns (v2's premature optimization)
 --   - spelling fixed: 'shelfs' → 'shelf' in enum
 --   - created_by/updated_by FK restored (v2 had columns but no FK constraint)
-CREATE TYPE warehouse_type AS ENUM ('warehouse', 'zone', 'shelf', 'rack', 'bin');
+CREATE TYPE warehouse_warehouse_type AS ENUM ('warehouse', 'zone', 'shelf', 'rack', 'bin');
 
 CREATE TABLE warehouse_warehouse (
-    id              BIGSERIAL         PRIMARY KEY,              -- surrogate PK
-    type            warehouse_type    NOT NULL,                 -- node kind: warehouse, zone, shelf, rack, bin
+    id              BIGSERIAL              PRIMARY KEY,              -- surrogate PK
+    type            warehouse_warehouse_type NOT NULL,                 -- node kind: warehouse, zone, shelf, rack, bin
     sku             TEXT              NOT NULL,                 -- location code
     barcode         VARCHAR(255),                               -- barcode identifier
     qrcode          VARCHAR(255),                               -- QR code identifier

@@ -1,7 +1,5 @@
 -- source: v1 product_item_suppliers (reshaped — cost only; stock on product_item_stock)
 -- check:skip-audit (child cost row; hard delete, no soft-delete)
-CREATE TYPE product_item_supplier_discount_type AS ENUM ('baht', 'percent');
-
 CREATE TABLE product_item_supplier (
     id                   BIGSERIAL                             PRIMARY KEY,              -- surrogate PK
     product_item_id      BIGINT        NOT NULL REFERENCES product_item(id)       ON DELETE CASCADE, -- parent variant
@@ -9,7 +7,7 @@ CREATE TABLE product_item_supplier (
     cost_price           NUMERIC(15,4) NOT NULL DEFAULT 0,    -- ex-VAT supplier cost
     vat_rate             NUMERIC(5,2)  NOT NULL DEFAULT 0,    -- VAT rate snapshot at save time
     discount             NUMERIC(15,4) NOT NULL DEFAULT 0,    -- discount value
-    discount_type        product_item_supplier_discount_type NOT NULL DEFAULT 'baht', -- baht or percent
+    discount_type        discount_unit NOT NULL DEFAULT 'baht', -- baht or percent
     created_at           TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           BIGINT        REFERENCES admin_user(id) ON DELETE SET NULL,

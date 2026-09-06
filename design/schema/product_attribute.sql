@@ -4,6 +4,8 @@
 --   - tree_path LTREE for hierarchy within each type
 --   - is_stopped (car fitment): replaces v1 product_product_car_categories.is_stoped (spelling fixed)
 --   - image_url → website_file_id (purpose: product_attribute_logo)
+--   - type: brand (product-level, not car tree) | category | car
+--   - type_car: car sub-level when type='car' — brand/model/engine (brand here ≠ product brand above)
 CREATE TYPE product_attribute_type     AS ENUM ('brand', 'category', 'car');
 CREATE TYPE product_attribute_car_type AS ENUM ('brand', 'model', 'engine');
 

@@ -3,8 +3,8 @@
 -- check:skip-audit (append-only receipt-discrepancy log; no updated_at/deleted_at)
 CREATE TYPE purchase_order_item_reject_type         AS ENUM ('overage', 'shortage', 'damaged', 'wrong', 'other');
 CREATE TYPE purchase_order_item_reject_overage_type AS ENUM ('receive', 'return');
-CREATE TYPE purchase_order_item_reject_resolution   AS ENUM ('claim', 'return', 'reject');
-CREATE TYPE purchase_order_item_reject_status       AS ENUM ('pending', 'process', 'completed', 'cancelled');
+CREATE TYPE purchase_order_item_reject_resolution   AS ENUM ('claim', 'return', 'accept_loss');
+CREATE TYPE purchase_order_item_reject_status       AS ENUM ('pending', 'in_progress', 'completed', 'cancelled');
 
 CREATE TABLE purchase_order_item_reject (
     id                        BIGSERIAL                             PRIMARY KEY,              -- surrogate PK
@@ -14,7 +14,7 @@ CREATE TABLE purchase_order_item_reject (
     sku                       VARCHAR(50)                           NOT NULL,                 -- reject number
     type                      purchase_order_item_reject_type       NOT NULL,                 -- discrepancy type
     overage_type              purchase_order_item_reject_overage_type,          -- required iff type='overage'
-    resolution                purchase_order_item_reject_resolution  NOT NULL DEFAULT 'claim', -- claim/return/reject outcome
+    resolution                purchase_order_item_reject_resolution  NOT NULL DEFAULT 'claim', -- claim/return/accept_loss outcome
     status                    purchase_order_item_reject_status      NOT NULL DEFAULT 'pending', -- resolution workflow state
     qty                       INTEGER                               NOT NULL,                 -- affected quantity
     unit                      product_unit                          NOT NULL DEFAULT 'piece', -- measurement unit

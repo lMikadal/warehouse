@@ -2,14 +2,12 @@
 --   - purchase_order_item_reject_id: receipt discrepancy being claimed
 --   - amount: claimed amount (qty/value per business rules)
 --   - status: confirmed | rejected per line (nullable until reviewed)
-CREATE TYPE purchase_claim_item_status AS ENUM ('confirmed', 'rejected');
-
 CREATE TABLE purchase_claim_item (
     id                            BIGSERIAL                    PRIMARY KEY,              -- surrogate PK
     purchase_claim_id             BIGINT                       NOT NULL REFERENCES purchase_claim(id) ON DELETE CASCADE, -- parent claim
     purchase_order_item_reject_id BIGINT                       NOT NULL REFERENCES purchase_order_item_reject(id) ON DELETE RESTRICT, -- source reject
     amount                        NUMERIC(15,4)                NOT NULL DEFAULT 0,       -- claimed amount
-    status                        purchase_claim_item_status,                            -- confirmed or rejected per line
+    status                        claim_item_status,                                     -- confirmed or rejected per line
     note                          TEXT                         NOT NULL DEFAULT '',      -- line notes
     deleted_at                    TIMESTAMPTZ,
     created_at                    TIMESTAMPTZ                  NOT NULL DEFAULT CURRENT_TIMESTAMP,

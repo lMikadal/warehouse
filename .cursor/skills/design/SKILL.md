@@ -209,6 +209,39 @@ Every `CREATE TABLE` column gets a trailing inline `--` comment (English). **Ski
 
 Short business meaning; FKs note target; snapshots note “at order/PO time”. Multi-line `GENERATED` columns: comment on the first line. Do not comment `CREATE TYPE`, indexes, or constraints.
 
+### Enums
+
+Shared cross-module types live in [`design/schema/_enum_shared.sql`](../../design/schema/_enum_shared.sql):
+
+| Type | Values | Used for |
+|------|--------|----------|
+| `entity_branch` | `headquarter`, `branch` | member/supplier branch columns |
+| `discount_unit` | `percent`, `baht` | discount_type columns |
+| `claim_type` | `claim`, `return` | order/purchase claim headers and lines |
+| `claim_item_status` | `confirmed`, `rejected` | per-line claim review |
+
+**Type naming:** `{owning_table}_{column_name}` — e.g. `purchase_order_status`, `order_order_fulfill_status`, `warehouse_warehouse_type`. Shared types are the exception.
+
+**Status values:**
+
+| Pattern | Example |
+|---------|---------|
+| In progress | `pending` → `in_progress` → terminal |
+| Terminal (past participle) | `completed`, `cancelled`, `rejected` |
+| Sub-outcome OK | `success`, `fail` on line/fulfill enums |
+| Domain-specific OK | `paying`, `receive_partial`, `receive_completed` on PO workflow |
+
+Avoid verb-base terminal states (`cancel`, `reject`) and inconsistent synonyms (`wait`, `waiting`, `process`) on `*_status` enums.
+
+**Non-status renames (clarity):**
+
+| Old | New | Context |
+|-----|-----|---------|
+| `new` / `old` | `catalog` / `custom` | purchase request line type |
+| `general` / `legal` | `individual` / `company` | member type |
+| `information` | `contact` | supplier information type |
+| `reject` (resolution) | `accept_loss` | PO item reject resolution |
+
 ### Hierarchy and sort
 
 **Self-FK tree tables** (nav, warehouse layout, attribute trees, …) use **all three** together:
@@ -238,7 +271,7 @@ Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier
 - Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`, `setting_claim_reason`, `setting_prefix` (filter by `type`: `person` | `company`)
 - Language / junction / log / session tables: neither
 
-**Warehouse child quotas** ([`warehouse_condition`](../../design/schema/warehouse_condition.sql)) — per parent node × child `warehouse_type`:
+**Warehouse child quotas** ([`warehouse_condition`](../../design/schema/warehouse_condition.sql)) — per parent node × child `warehouse_warehouse_type`:
 
 | Stored | Role |
 |--------|------|

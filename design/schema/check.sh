@@ -4,22 +4,31 @@
 # Exit 0 = all clear. Exit 1 = violations found.
 #
 # Rules checked:
-#   1. Filename matches the CREATE TABLE name in the file
+#   1. Filename matches the CREATE TABLE name in the file (_*.sql exempt — shared enums only)
 #   2. Base tables (have "id BIGSERIAL PRIMARY KEY", not *_language.sql, not check:skip-audit)
 #      must contain all five audit columns: created_at, updated_at, deleted_at, created_by, updated_by
 #   3. *_language.sql files must contain "locale", a UNIQUE constraint, and must NOT contain "deleted_at"
 #   4. Every REFERENCES <table>(…) target must have a matching <table>.sql file in this directory
 #   5. Files with tree_path must have sort_order and parent_id (self-FK tree trio)
+#   6. Enum conventions: shared types live in _enum_shared.sql; status enums avoid verb/inconsistent values
 
 set -euo pipefail
 SCHEMA_DIR="$(cd "$(dirname "$0")" && pwd)"
 ERRORS=0
+SHARED_ENUM_FILE="_enum_shared.sql"
+SHARED_TYPES=(entity_branch discount_unit claim_type claim_item_status)
 
 err() { echo "  FAIL: $1"; ERRORS=$((ERRORS + 1)); }
 
 for f in "$SCHEMA_DIR"/*.sql; do
   [ -f "$f" ] || continue
   filename=$(basename "$f" .sql)
+
+  # ── Shared enum file: types only, skip table rules ───────────────────────
+  if [[ "$filename" == _* ]]; then
+    continue
+  fi
+
   content=$(cat "$f")
 
   # ── Rule 1: filename == CREATE TABLE name ─────────────────────────────────
@@ -69,12 +78,30 @@ for f in "$SCHEMA_DIR"/*.sql; do
       fi
     done
   fi
+
+  # ── Rule 6a: shared enum types defined only in _enum_shared.sql ───────────
+  for st in "${SHARED_TYPES[@]}"; do
+    if grep -qE "CREATE TYPE ${st} AS ENUM" "$f"; then
+      err "[$filename] shared enum '$st' must be defined only in $SHARED_ENUM_FILE"
+    fi
+  done
+
+  # ── Rule 6b: status enum values use past participle / pending/in_progress ─
+  while IFS= read -r enum_line; do
+    if echo "$enum_line" | grep -qE "'(wait|waiting|process)'"; then
+      err "[$filename] status enum uses wait/waiting/process — prefer pending/in_progress: $enum_line"
+    fi
+    if echo "$enum_line" | grep -qE "'cancel'|'reject'"; then
+      err "[$filename] status enum uses verb cancel/reject — prefer cancelled/rejected: $enum_line"
+    fi
+  done < <(grep -E 'CREATE TYPE [a-z0-9_]*status AS ENUM' "$f" || true)
 done
 
 # ── Rule 4: REFERENCES targets have .sql files ────────────────────────────
 for f in "$SCHEMA_DIR"/*.sql; do
   [ -f "$f" ] || continue
   filename=$(basename "$f" .sql)
+  [[ "$filename" == _* ]] && continue
   while IFS= read -r ref; do
     target=$(echo "$ref" | grep -oiE 'REFERENCES [a-z0-9_]+' | awk '{print $2}')
     [ -z "$target" ] && continue
