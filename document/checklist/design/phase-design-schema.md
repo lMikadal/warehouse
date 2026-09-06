@@ -7,10 +7,10 @@ Consolidate 180 tables from v1 + v2 (`backend/internal/infra/postgres/migrations
 - [x] List all v1 and v2 tables per module (admin/website/setting/product/member/supplier/warehouse/order/purchase)
 - [x] Decide merge strategy: redesign using v1+v2 as reference, v2 direction (BIGSERIAL, LTREE)
 - [x] Decide naming: `{module}_{entity}` singular, no `v2_` prefix, flat files under `schema/`
-- [x] Write website module (2 files): `website_language`, `website_file`
+- [x] Write website module (10 files): `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang
 - [x] Write admin module (9 files): user, session, role, role_language, permission, role_permission, menu, menu_language, menu_permission
 - [x] Refactor admin_user: `is_superadmin` → `type` enum (`superadmin`|`owner`|`manager`|`staff`, default `staff`); drop `admin_audit_log`
-- [x] Write setting module (12 files): address+language, vat, sale_channel+language, bank+language, payment_method+language, location+language, code
+- [x] Write setting module (10 files): vat, sale_channel+language, bank+language, payment_method+language, location+language, code
 - [x] Write product module (13 files): attribute+language+relation, product+language+code+car+supplier, item+language+price+stock+stop_log
 - [x] Write member module (15 files): setting+language+relation, tier+language+item+item_attribute, member+setting+owner+address+file+discount+history+history_language
 - [x] Write supplier module (4 files): supplier, address, contact, bank
@@ -24,11 +24,12 @@ Consolidate 180 tables from v1 + v2 (`backend/internal/infra/postgres/migrations
 
 Must pass before this phase is done:
 
-- [x] `make design-schema-check` exits 0 (77 files, all rules green)
+- [x] `make design-schema-check` exits 0 (83 files, all rules green)
 - [x] Every `*_language.sql` has `locale` column + UNIQUE constraint + no `deleted_at`
 - [x] Every base entity table has all 5 audit columns (created_at/updated_at/deleted_at/created_by/updated_by)
 - [x] All `REFERENCES <table>` targets have a matching `.sql` file
 - [x] `purchase` module exists (v2 had none; sourced from v1)
 - [x] `supplier_address`, `supplier_contact`, `supplier_bank` restored (v2 had none)
-- [x] Tree tables use `parent_id` + `tree_path` + `sort_order` (6 tables aligned; rule 5 in check.sh)
+- [x] Tree tables use `parent_id` + `tree_path` + `sort_order` (self-FK trees only)
+- [x] Geo split: `website_*` chain uses typed parent FK + `sort_order` (no `tree_path`)
 - [x] Every non-audit column in `design/schema/*.sql` has an inline `--` comment (English)

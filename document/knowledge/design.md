@@ -55,21 +55,22 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Base audit: `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`
 - `*_language` audit: `created_at`, `updated_at` only (soft-delete / attribution on parent)
 - PK: `id BIGSERIAL`
-- **Tree tables** (`tree_path`): always `parent_id` + `tree_path` (LTREE) + `sort_order`; self-FK `ON DELETE RESTRICT`; list `ORDER BY tree_path, sort_order`. Examples: `admin_menu`, `setting_address`, `warehouse_warehouse`, `product_attribute`, `member_tier`, `order_claim_reason`
-- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`website_language`, `setting_bank`, …)
+- **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`, `order_claim_reason`
+- **Geo chain** (`website_*`): `website_country` → `website_province` → `website_district` → `website_sub_district`; typed parent FK + `sort_order` only (not tree tables)
+- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`website_language`, `website_country`, `setting_bank`, …)
 - Money: `NUMERIC(15,4)` · Rate/percent: `NUMERIC(5,2)` · Quantities: `NUMERIC(15,4)` or `INTEGER`
 - Root entities may repeat module in name: `product_product`, `member_member`, `supplier_supplier`
   Children drop the repetition: `product_item` (not `product_product_item`), `member_address` (not `member_member_address`)
 - `check:skip-audit` comment in a file exempts it from audit-5 check (use for session/log/junction tables)
 - **Column comments:** inline `--` on every non-audit column; English; audit skip sets per table kind (base five / language two / junction `created_at` only)
 
-## Schema modules (77 files in `design/schema/`)
+## Schema modules (83 files in `design/schema/`)
 
 | Module | Tables | Key notes |
 |--------|--------|-----------|
-| website (2) | `website_language`, `website_file` | locale registry; all `*_language` FK here |
+| website (10) | `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang | locale registry; geo hierarchy via typed FK + sort_order (no LTREE) |
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
-| setting (12) | address+lang (LTREE, replaces geo 4-table), vat, sale_channel+lang, bank+lang, payment_method+lang, location+lang, code | `setting_payment` + `setting_pay` merged into `setting_payment_method` |
+| setting (10) | vat, sale_channel+lang, bank+lang, payment_method+lang, location+lang, code | `setting_payment` + `setting_pay` merged into `setting_payment_method` |
 | product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | `is_fake` → `product_attribute` type='grade'; FK brand/model/engine on product_car restored |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | supplier, address, contact, bank | v2 had only supplier — address/contact/bank gaps restored |
@@ -88,7 +89,7 @@ Checks per file:
 2. Base entity tables have all 5 audit columns (skip: `check:skip-audit`, junction tables, `*_language`)
 3. `*_language` tables have `locale` + UNIQUE constraint + no `deleted_at`
 4. Every `REFERENCES <table>` has a matching `<table>.sql`
-5. Every `tree_path` table also has `parent_id` and `sort_order`
+5. Every `tree_path` table has `parent_id` and `sort_order` (self-FK trees only)
 
 ## Icons
 

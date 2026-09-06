@@ -9,7 +9,7 @@
 #      must contain all five audit columns: created_at, updated_at, deleted_at, created_by, updated_by
 #   3. *_language.sql files must contain "locale", a UNIQUE constraint, and must NOT contain "deleted_at"
 #   4. Every REFERENCES <table>(…) target must have a matching <table>.sql file in this directory
-#   5. Files with tree_path must also have parent_id and sort_order (tree table trio)
+#   5. Files with tree_path must have sort_order and parent_id (self-FK tree trio)
 
 set -euo pipefail
 SCHEMA_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -61,7 +61,7 @@ for f in "$SCHEMA_DIR"/*.sql; do
     fi
   done
 
-  # ── Rule 5: tree tables need parent_id + tree_path + sort_order ───────────
+  # ── Rule 5: self-FK tree tables need parent_id + tree_path + sort_order ───
   if grep -q '\btree_path\b' "$f"; then
     for col in parent_id sort_order; do
       if ! grep -q "\b${col}\b" "$f"; then
