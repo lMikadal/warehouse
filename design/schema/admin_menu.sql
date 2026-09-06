@@ -5,11 +5,11 @@
 --   - tree: parent_id + tree_path + sort_order (drag-reorder + LTREE queries)
 CREATE TABLE admin_menu (
     id               BIGSERIAL    PRIMARY KEY,              -- surrogate PK
-    parent_id        BIGINT       REFERENCES admin_menu(id) ON DELETE RESTRICT, -- direct parent; NULL = root
-    tree_path        LTREE        NOT NULL,                 -- LTREE path for subtree queries
+    icon             VARCHAR(100),                          -- Lucide icon name
     module           VARCHAR(100) NOT NULL,                 -- permission module key
     path             VARCHAR(255),                          -- frontend route path
-    icon             VARCHAR(100),                          -- Lucide icon name
+    parent_id        BIGINT       REFERENCES admin_menu(id) ON DELETE RESTRICT, -- direct parent; NULL = root
+    tree_path        LTREE        NOT NULL,                 -- LTREE path for subtree queries
     sort_order       INTEGER      NOT NULL DEFAULT 100,     -- sibling order under parent
     is_active        BOOLEAN      NOT NULL DEFAULT TRUE,    -- visible in nav when true
     is_superadmin_only BOOLEAN    NOT NULL DEFAULT FALSE,   -- hidden from non-superadmin users
