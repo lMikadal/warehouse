@@ -1,0 +1,37 @@
+-- source: v1 order_purchases (renamed; v2 had no equivalent)
+--   - sku: PO number (null in draft; unique when set — replaces purchase_number)
+--   - purchase_number_draft removed: draft state is sku IS NULL + status='draft'
+--   - is_waiting removed: status enum covers all states
+--   - 12 workflow *_by/*_at columns removed: status transitions tracked in purchase_history instead
+--   - pricing: vat_rate + discount (Σ line item discounts) + special_discount → total_price
+--   - ordered_at: PO placement timestamp (v2 order_at)
+--   - receive_partial: some lines receive_approved but not all; receive flow: completed → receive_partial → receive_completed
+CREATE TYPE purchase_order_status AS ENUM (
+    'draft', 'pending', 'paying', 'completed', 'receive_partial', 'receive_completed', 'rejected', 'cancelled'
+);
+
+CREATE TABLE purchase_order (
+    id                  BIGSERIAL             PRIMARY KEY,              -- surrogate PK
+    sku                 VARCHAR(50),          -- null until leaving draft
+    purchase_request_id BIGINT                REFERENCES purchase_request(id) ON DELETE SET NULL, -- source requisition
+    supplier_supplier_id BIGINT               REFERENCES supplier_supplier(id) ON DELETE SET NULL, -- supplier
+    status              purchase_order_status NOT NULL DEFAULT 'draft', -- PO workflow state
+    ordered_at          TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP, -- PO placement timestamp
+    vat_rate            NUMERIC(5,2)          NOT NULL DEFAULT 0,       -- VAT rate snapshot
+    discount            NUMERIC(15,4)         NOT NULL DEFAULT 0,       -- Σ line discounts (from purchase_order_item; maintained by app)
+    special_discount    NUMERIC(15,4)         NOT NULL DEFAULT 0,       -- additional header discount
+    total_price         NUMERIC(15,4)         NOT NULL DEFAULT 0,       -- final PO total
+    note                TEXT                  NOT NULL DEFAULT '',      -- free-text notes
+    deleted_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by          BIGINT                REFERENCES admin_user(id) ON DELETE SET NULL,
+    updated_by          BIGINT                REFERENCES admin_user(id) ON DELETE SET NULL,
+    CONSTRAINT uq_purchase_order_sku UNIQUE (sku)
+);
+
+CREATE INDEX idx_purchase_order_status           ON purchase_order (status)              WHERE deleted_at IS NULL;
+CREATE INDEX idx_purchase_order_request          ON purchase_order (purchase_request_id) WHERE purchase_request_id IS NOT NULL;
+CREATE INDEX idx_purchase_order_supplier         ON purchase_order (supplier_supplier_id) WHERE supplier_supplier_id IS NOT NULL;
+CREATE INDEX idx_purchase_order_created_by       ON purchase_order (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX idx_purchase_order_updated_by       ON purchase_order (updated_by) WHERE updated_by IS NOT NULL;
