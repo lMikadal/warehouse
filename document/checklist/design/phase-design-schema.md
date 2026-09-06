@@ -31,3 +31,4 @@ Must pass before this phase is done:
 - [x] `purchase` module exists (v2 had none; sourced from v1)
 - [x] `supplier_address`, `supplier_contact`, `supplier_bank` restored (v2 had none)
 - [x] Tree tables use `parent_id` + `tree_path` + `sort_order` (6 tables aligned; rule 5 in check.sh)
+- [x] Every non-audit column in `design/schema/*.sql` has an inline `--` comment (English)

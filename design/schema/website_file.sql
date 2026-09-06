@@ -1,0 +1,23 @@
+-- source: v1 website_upload + v2 v2_upload_files merged
+--   - unique on object_key restored (v2 had dropped it)
+--   - created_by FK restored (v2 had no FK)
+--   - updated_at / deleted_at added (v2 was append-only, design is full CRUD)
+CREATE TABLE website_file (
+    id            BIGSERIAL    PRIMARY KEY,              -- surrogate PK
+    bucket        TEXT         NOT NULL,                 -- object storage bucket
+    object_key    TEXT         NOT NULL,                 -- unique key within bucket
+    content_type  TEXT         NOT NULL,                 -- MIME type
+    size_bytes    BIGINT       NOT NULL,                 -- file size
+    purpose       TEXT         NOT NULL,                 -- usage tag e.g. product_image, avatar
+    original_name TEXT         NOT NULL,                 -- client filename at upload
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at    TIMESTAMPTZ,
+    created_by    BIGINT       REFERENCES admin_user(id) ON DELETE SET NULL,
+    updated_by    BIGINT       REFERENCES admin_user(id) ON DELETE SET NULL,
+    CONSTRAINT uq_website_file_object_key UNIQUE (object_key)
+);
+
+CREATE INDEX idx_website_file_purpose     ON website_file (purpose, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_website_file_created_by  ON website_file (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX idx_website_file_updated_by  ON website_file (updated_by) WHERE updated_by IS NOT NULL;

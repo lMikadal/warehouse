@@ -1,7 +1,7 @@
 -- source: v1 admin_roles + v2 v2_admin_roles (UUID→BIGSERIAL; name moved to admin_role_language)
 CREATE TABLE admin_role (
-    id          BIGSERIAL   PRIMARY KEY,
-    is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
+    id          BIGSERIAL   PRIMARY KEY,              -- surrogate PK
+    is_active   BOOLEAN     NOT NULL DEFAULT TRUE,     -- assignable when true
     deleted_at  TIMESTAMPTZ,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

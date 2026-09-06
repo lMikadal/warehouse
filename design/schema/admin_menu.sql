@@ -4,16 +4,16 @@
 --   - name moved to admin_menu_language for i18n (v2 inlined — reverted)
 --   - tree: parent_id + tree_path + sort_order (drag-reorder + LTREE queries)
 CREATE TABLE admin_menu (
-    id               BIGSERIAL    PRIMARY KEY,
-    parent_id        BIGINT       REFERENCES admin_menu(id) ON DELETE RESTRICT,
-    tree_path        LTREE        NOT NULL,
-    module           VARCHAR(100) NOT NULL,
-    path             VARCHAR(255),
-    icon             VARCHAR(100),
-    sort_order       INTEGER      NOT NULL DEFAULT 100,
-    is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
-    is_superadmin_only BOOLEAN    NOT NULL DEFAULT FALSE,
-    is_dialog        BOOLEAN      NOT NULL DEFAULT FALSE,
+    id               BIGSERIAL    PRIMARY KEY,              -- surrogate PK
+    parent_id        BIGINT       REFERENCES admin_menu(id) ON DELETE RESTRICT, -- direct parent; NULL = root
+    tree_path        LTREE        NOT NULL,                 -- LTREE path for subtree queries
+    module           VARCHAR(100) NOT NULL,                 -- permission module key
+    path             VARCHAR(255),                          -- frontend route path
+    icon             VARCHAR(100),                          -- Lucide icon name
+    sort_order       INTEGER      NOT NULL DEFAULT 100,     -- sibling order under parent
+    is_active        BOOLEAN      NOT NULL DEFAULT TRUE,    -- visible in nav when true
+    is_superadmin_only BOOLEAN    NOT NULL DEFAULT FALSE,   -- hidden from non-superadmin users
+    is_dialog        BOOLEAN      NOT NULL DEFAULT FALSE,   -- opens as modal instead of page
     deleted_at       TIMESTAMPTZ,
     created_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,

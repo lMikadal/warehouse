@@ -193,6 +193,20 @@ Tables, columns, `design/schema/*.sql` filenames, and seed/store keys use the **
 | Timestamps: `*_at` | `created_at` |
 | On `*_language`: `locale` (`th` \| `en`) + translated fields only | `locale`, `name`, `description` |
 
+### Column comments
+
+Every `CREATE TABLE` column gets a trailing inline `--` comment (English). **Skip audit columns** only:
+
+| Table kind | No comment on |
+|------------|---------------|
+| Base entity | `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by` |
+| `*_language` | `created_at`, `updated_at` |
+| Junction (trace only) | `created_at` |
+| `check:skip-audit` session | `created_at` |
+| No audit columns | comment all columns |
+
+Short business meaning; FKs note target; snapshots note “at order/PO time”. Multi-line `GENERATED` columns: comment on the first line. Do not comment `CREATE TYPE`, indexes, or constraints.
+
 ### Hierarchy and sort
 
 Tree tables (nav, geo, warehouse layout, attribute trees, …) use **all three** columns together:

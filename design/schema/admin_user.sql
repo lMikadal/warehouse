@@ -7,16 +7,16 @@ CREATE TYPE admin_user_status AS ENUM ('active', 'inactive', 'suspended', 'locke
 CREATE TYPE admin_user_type   AS ENUM ('superadmin', 'owner', 'manager', 'staff');
 
 CREATE TABLE admin_user (
-    id                     BIGSERIAL         PRIMARY KEY,
-    username               VARCHAR(100)      NOT NULL,
-    email                  VARCHAR(255),
-    password_hash          VARCHAR(255)      NOT NULL,
-    status                 admin_user_status NOT NULL DEFAULT 'active',
-    type                   admin_user_type   NOT NULL DEFAULT 'staff',
-    admin_role_id          BIGINT            REFERENCES admin_role(id) ON DELETE SET NULL,
-    last_login_at          TIMESTAMPTZ,
-    failed_login_attempts  INTEGER           NOT NULL DEFAULT 0,
-    locked_until           TIMESTAMPTZ,
+    id                     BIGSERIAL         PRIMARY KEY,              -- surrogate PK
+    username               VARCHAR(100)      NOT NULL,                 -- login name
+    email                  VARCHAR(255),                               -- optional contact email
+    password_hash          VARCHAR(255)      NOT NULL,                 -- bcrypt/argon hash
+    status                 admin_user_status NOT NULL DEFAULT 'active', -- account lifecycle
+    type                   admin_user_type   NOT NULL DEFAULT 'staff', -- org hierarchy tier
+    admin_role_id          BIGINT            REFERENCES admin_role(id) ON DELETE SET NULL, -- RBAC role
+    last_login_at          TIMESTAMPTZ,                                -- last successful login
+    failed_login_attempts  INTEGER           NOT NULL DEFAULT 0,       -- lockout counter
+    locked_until           TIMESTAMPTZ,                                -- auto-unlock time
     deleted_at             TIMESTAMPTZ,
     created_at             TIMESTAMPTZ       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at             TIMESTAMPTZ       NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -126,6 +126,7 @@ Do not run raw `docker compose`, `air`, `go run`, or goose when a make target ex
 - Multilingual: companion `{base}_language` tables — do not flatten to `name_th` / `name_en` columns
 - Columns: English snake_case; base tables include `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`; `*_language` tables include only `created_at`, `updated_at` (no soft-delete / by columns)
 - Tree tables: `parent_id` + `tree_path` (LTREE) + `sort_order` together; self-FK `ON DELETE RESTRICT`; GIST + unique active `tree_path` indexes (see design skill)
+- Column comments: inline `--` on every non-audit column in `design/schema/` (English; skip audit sets per table kind — see design skill)
 - When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
 
 ## Do not

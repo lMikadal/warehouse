@@ -61,6 +61,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Root entities may repeat module in name: `product_product`, `member_member`, `supplier_supplier`
   Children drop the repetition: `product_item` (not `product_product_item`), `member_address` (not `member_member_address`)
 - `check:skip-audit` comment in a file exempts it from audit-5 check (use for session/log/junction tables)
+- **Column comments:** inline `--` on every non-audit column; English; audit skip sets per table kind (base five / language two / junction `created_at` only)
 
 ## Schema modules (77 files in `design/schema/`)
 
