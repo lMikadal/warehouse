@@ -217,7 +217,7 @@ Short business meaning; FKs note target; snapshots note “at order/PO time”. 
 | `tree_path` | `LTREE NOT NULL` | Materialized path for ancestor/descendant queries |
 | `sort_order` | `INTEGER NOT NULL` | Sibling order under the same parent |
 
-Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`, `order_claim_reason`.
+Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`.
 
 **Typed geo chain** (`website_*`) — one table per level, **typed parent FK** + `sort_order` only (flat lists; no `tree_path`):
 
@@ -233,7 +233,7 @@ Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier
 **Not tree tables** (do not add all three):
 
 - Split-document self-FKs: `parent_id` only — e.g. `order_order`, `purchase_order_item`
-- Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`
+- Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`, `setting_claim_reason`
 - Language / junction / log / session tables: neither
 
 ### Audit columns

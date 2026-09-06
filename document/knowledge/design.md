@@ -55,9 +55,9 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Base audit: `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`
 - `*_language` audit: `created_at`, `updated_at` only (soft-delete / attribution on parent)
 - PK: `id BIGSERIAL`
-- **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`, `order_claim_reason`
+- **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`
 - **Geo chain** (`website_*`): `website_country` → `website_province` → `website_district` → `website_sub_district`; typed parent FK + `sort_order` only (not tree tables)
-- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`website_language`, `website_country`, `setting_bank`, …)
+- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`website_language`, `website_country`, `setting_bank`, `setting_claim_reason`, …)
 - Money: `NUMERIC(15,4)` · Rate/percent: `NUMERIC(5,2)` · Quantities: `NUMERIC(15,4)` or `INTEGER`
 - Root entities may repeat module in name: `product_product`, `member_member`, `supplier_supplier`
   Children drop the repetition: `product_item` (not `product_product_item`), `member_address` (not `member_member_address`)
@@ -70,14 +70,14 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 |--------|--------|-----------|
 | website (10) | `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang | locale registry; geo hierarchy via typed FK + sort_order (no LTREE) |
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
-| setting (8) | vat, sale_channel+lang, bank+lang, payment_method+lang, code | `setting_payment` + `setting_pay` merged into `setting_payment_method` |
+| setting (10) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang | `setting_payment` + `setting_pay` merged into `setting_payment_method`; claim reasons moved from order |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
 | product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | `is_fake` → `product_attribute` type='grade'; FK brand/model/engine on product_car restored |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | supplier, address, contact, bank | v2 had only supplier — address/contact/bank gaps restored |
 | warehouse (2) | warehouse+lang | barcode/qrcode/rfid/capacity restored; warehouse_condition removed |
 | purchase (10) | request+item+item_reject, order+item+item_reject+payment+file, history+lang | entire module absent in v2; sourced from v1 |
-| order (10) | order, item, shipping, payment+method+item, claim+item, claim_reason+lang | v2 bill+order 1:1 merged; `is_payed` → `is_paid` |
+| order (8) | order, item, shipping, payment+method+item, claim+item | v2 bill+order 1:1 merged; `is_payed` → `is_paid`; claim reasons in setting module |
 
 ## Schema validation
 
