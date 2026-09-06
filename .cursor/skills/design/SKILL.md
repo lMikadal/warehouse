@@ -209,7 +209,7 @@ Short business meaning; FKs note target; snapshots note “at order/PO time”. 
 
 ### Hierarchy and sort
 
-Tree tables (nav, geo, warehouse layout, attribute trees, …) use **all three** columns together:
+**Self-FK tree tables** (nav, warehouse layout, attribute trees, …) use **all three** together:
 
 | Column | Type | Role |
 |--------|------|------|
@@ -217,14 +217,23 @@ Tree tables (nav, geo, warehouse layout, attribute trees, …) use **all three**
 | `tree_path` | `LTREE NOT NULL` | Materialized path for ancestor/descendant queries |
 | `sort_order` | `INTEGER NOT NULL` | Sibling order under the same parent |
 
-- List order: `ORDER BY tree_path, sort_order`
-- Indexes: GIST on `tree_path`; unique `tree_path` among active rows (`WHERE deleted_at IS NULL`); `(parent_id, sort_order)` for sibling lists
-- Requires PostgreSQL `ltree` extension when migrations run
+Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`, `order_claim_reason`.
+
+**Typed geo chain** (`website_*`) — one table per level, **typed parent FK** + `sort_order` only (flat lists; no `tree_path`):
+
+| Table | Parent FK | List order |
+|-------|-----------|------------|
+| `website_country` | — (root) | `ORDER BY sort_order` |
+| `website_province` | `website_country_id` | `ORDER BY sort_order` under country |
+| `website_district` | `website_province_id` | `ORDER BY sort_order` under province |
+| `website_sub_district` | `website_district_id` (+ `postcode`) | `ORDER BY sort_order` under district |
+
+- Indexes: `(typed_parent_fk, sort_order)` on child levels; active `sort_order` lists
 
 **Not tree tables** (do not add all three):
 
 - Split-document self-FKs: `parent_id` only — e.g. `order_order`, `purchase_order_item`
-- Flat UI lists: `sort_order` only — e.g. `website_language`, `setting_bank`, `setting_payment_method`
+- Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`
 - Language / junction / log / session tables: neither
 
 ### Audit columns
