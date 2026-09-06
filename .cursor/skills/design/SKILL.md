@@ -188,7 +188,9 @@ Tables, columns, `design/schema/*.sql` filenames, and seed/store keys use the **
 | Rule | Example |
 |------|---------|
 | English snake_case | `sku`, `created_at` |
-| PK: `id`; FK: `{referenced_table}_id` | `product_item_id` |
+| PK: `id BIGSERIAL` (numeric surrogate; **not UUID**) | `id BIGSERIAL PRIMARY KEY` |
+| FK: `{referenced_table}_id BIGINT` | `warehouse_warehouse_id BIGINT` |
+| Seed/store ids: plain numbers | `{ id: 1, warehouse_warehouse_id: 3 }` |
 | Booleans: `is_` / `has_` prefix | `is_active` |
 | Timestamps: `*_at` | `created_at` |
 | On `*_language`: `locale` (`th` \| `en`) + translated fields only | `locale`, `name`, `description` |
@@ -235,6 +237,15 @@ Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier
 - Split-document self-FKs: `parent_id` only — e.g. `order_order`, `purchase_order_item`
 - Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`, `setting_claim_reason`
 - Language / junction / log / session tables: neither
+
+**Warehouse child quotas** ([`warehouse_condition`](../../design/schema/warehouse_condition.sql)) — per parent node × child `warehouse_type`:
+
+| Stored | Role |
+|--------|------|
+| `amount` | Max child nodes of this type allowed under the parent |
+| `amount_active` | Max active (usable) child nodes |
+
+Derived at query time (do not add columns): inactive = `amount - amount_active`; empty slots = count child `warehouse_warehouse` rows of matching `type` where `capacity` > stock occupancy (`SUM(remain_quantity)` from `product_item_stock` per child).
 
 ### Audit columns
 

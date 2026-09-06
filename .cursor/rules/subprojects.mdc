@@ -17,6 +17,7 @@ This project splits skills by folder. **Read that side's `SKILL.md` before writi
 Notes:
 
 - `design/schema/` = human-readable table definitions (SQL) — the design skill uses them for mock data shape; the backend skill turns them into real migrations
+- `design/schema/` IDs are `BIGSERIAL`/`BIGINT` (not UUID); new backend migrations follow design schema when adding tables
 - Any change to system behavior → follow `.cursor/rules/document.mdc` and update `document/` (checklist / knowledge / postman) in the same turn
 - Phase checklists live under `document/checklist/<area>/` where `<area>` is `design`, `frontend`, `backend`, or `infrastructure`
 - Cross-cutting work → read every related skill

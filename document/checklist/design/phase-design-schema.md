@@ -15,7 +15,7 @@ Consolidate 180 tables from v1 + v2 (`backend/internal/infra/postgres/migrations
 - [x] Write product module (13 files): attribute+language+relation, product+language+code+car+supplier, item+language+price+stock+stop_log
 - [x] Write member module (15 files): setting+language+relation, tier+language+item+item_attribute, member+setting+owner+address+file+discount+history+history_language
 - [x] Write supplier module (4 files): supplier, address, contact, bank
-- [x] Write warehouse module (2 files): warehouse+language
+- [x] Write warehouse module (3 files): warehouse+language+condition; drop capacity_used; occupancy from product_item_stock
 - [x] Write purchase module (10 files): request+item+item_reject, order+item+item_reject+payment+file, history+history_language
 - [x] Write order module (8 files): order, item, shipping, payment+method+item, claim+item
 - [x] Move claim_reason+language from order → setting module (`setting_claim_reason`)
@@ -26,7 +26,7 @@ Consolidate 180 tables from v1 + v2 (`backend/internal/infra/postgres/migrations
 
 Must pass before this phase is done:
 
-- [x] `make design-schema-check` exits 0 (83 files, all rules green)
+- [x] `make design-schema-check` exits 0 (84 files, all rules green)
 - [x] Every `*_language.sql` has `locale` column + UNIQUE constraint + no `deleted_at`
 - [x] Every base entity table has all 5 audit columns (created_at/updated_at/deleted_at/created_by/updated_by)
 - [x] All `REFERENCES <table>` targets have a matching `.sql` file
