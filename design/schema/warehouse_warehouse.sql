@@ -1,6 +1,6 @@
 -- source: v1 warehouse_warehouses + v2 v2_warehouse_warehouses (UUID→BIGSERIAL)
 --   - tree: parent_id + tree_path + sort_order (LTREE + direct parent for drag-reorder)
---   - restored: code_barcode, code_qrcode, code_rfid (v2 dropped — needed for scan-in/scan-out)
+--   - restored: barcode, qrcode, rfid (v2 dropped — needed for scan-in/scan-out)
 --   - restored: capacity (v2 dropped); occupancy derived from product_item_stock.remain_quantity — not stored
 --   - restored: warehouse_condition (separate table; child-type quotas; inactive/empty derived at query time)
 --   - removed:  shelf_maximum / rack_maximum / box_maximum columns (v2's premature optimization)
@@ -12,9 +12,9 @@ CREATE TABLE warehouse_warehouse (
     id              BIGSERIAL         PRIMARY KEY,              -- surrogate PK
     type            warehouse_type    NOT NULL,                 -- node kind: warehouse, zone, shelf, rack, bin
     sku             TEXT              NOT NULL,                 -- location code
-    code_barcode    VARCHAR(255),                               -- barcode identifier
-    code_qrcode     VARCHAR(255),                               -- QR code identifier
-    code_rfid       VARCHAR(255),                               -- RFID tag identifier
+    barcode         VARCHAR(255),                               -- barcode identifier
+    qrcode          VARCHAR(255),                               -- QR code identifier
+    rfid            VARCHAR(255),                               -- RFID tag identifier
     parent_id       BIGINT            REFERENCES warehouse_warehouse(id) ON DELETE RESTRICT, -- parent node in hierarchy
     tree_path       LTREE             NOT NULL,                 -- LTREE path for subtree queries
     sort_order      INTEGER           NOT NULL DEFAULT 0,       -- sibling display order
