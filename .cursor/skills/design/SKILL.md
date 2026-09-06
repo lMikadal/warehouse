@@ -55,7 +55,8 @@ Warehouse app prototype for customer demos — change data locally without a bui
 ### i18n (design)
 
 - `js/i18n/th.js`, `js/i18n/en.js`, `js/i18n/i18n.js`
-- UI labels / seed display strings follow locale
+- UI chrome (labels, buttons, nav) lives in dictionaries — not in SQL
+- Stored multilingual content uses `*_language` tables (see Schema naming); pick rows by current locale
 - Load i18n before page scripts
 
 ### Icons (design)
@@ -79,9 +80,8 @@ warehouse/
 │   │   ├── users.html
 │   │   └── orders.html
 │   ├── schema/
-│   │   ├── users.sql
-│   │   ├── products.sql
-│   │   ├── orders.sql
+│   │   ├── product_item.sql
+│   │   ├── product_item_language.sql
 │   │   └── ...
 │   ├── css/
 │   │   └── style.css
@@ -91,9 +91,8 @@ warehouse/
 │   │   │   ├── en.js
 │   │   │   └── i18n.js
 │   │   ├── seed/
-│   │   │   ├── users.js
-│   │   │   ├── products.js
-│   │   │   ├── orders.js
+│   │   │   ├── product_item.js
+│   │   │   ├── product_item_language.js
 │   │   │   └── index.js
 │   │   ├── store.js
 │   │   ├── realtime.js
@@ -161,9 +160,64 @@ store.reset() // optional: clear localStorage and re-seed
 - Channel name: one constant (e.g. `warehouse-design`)
 - Payload: `{ type, table }` or full snapshot — keep listeners dumb: re-read from `store` and re-render
 
+## Schema naming
+
+Tables, columns, `design/schema/*.sql` filenames, and seed/store keys use the **same** English snake_case string.
+
+### Tables
+
+| Rule | Example |
+|------|---------|
+| `{module}_{entity}` snake_case, English only | `product_item` |
+| Singular entity | `product_item` not `product_items` |
+| No Thai / spaces / PascalCase | bad: `สินค้า`, `ProductItem` |
+| Language companion = `{base}_language` | `product_item_language` |
+| File = table name + `.sql` | `design/schema/product_item.sql` |
+| Seed/store key = table name | `store.getAll('product_item')` |
+| No bare unprefixed names | `item` alone is wrong |
+
+**How to pick module / entity**
+
+1. **Module** = domain bucket (maps to backend `internal/module/<domain>/`) — short English noun: `product`, `auth`, `order`
+2. **Entity** = the thing stored — singular: `item`, `user`, `status`
+3. If unsure: name the screen/domain first, then the row type → `product_item`
+4. Prefer clear English words; abbreviations only when domain-standard (`sku`, `id`)
+
+### Columns
+
+| Rule | Example |
+|------|---------|
+| English snake_case | `sku`, `created_at` |
+| PK: `id`; FK: `{referenced_table}_id` | `product_item_id` |
+| Booleans: `is_` / `has_` prefix | `is_active` |
+| Timestamps: `*_at` | `created_at` |
+| On `*_language`: `locale` (`th` \| `en`) + translated fields only | `locale`, `name`, `description` |
+
+### Audit columns
+
+**Base tables** (e.g. `product_item`) — all five:
+
+| Column | Role |
+|--------|------|
+| `created_at` | Row created |
+| `updated_at` | Last update |
+| `deleted_at` | Soft delete (`NULL` = active) |
+| `created_by` | Creator user id |
+| `updated_by` | Last updater user id |
+
+**`*_language` tables** — timestamps only: `created_at`, `updated_at`. Do **not** add `deleted_at` / `created_by` / `updated_by`. Soft-delete the parent; drop a locale by deleting that language row.
+
+### Multilingual content
+
+- Do **not** use `name_th` / `name_en` on the base table
+- Base = locale-neutral fields + full audit set
+- Companion `{base}_language`: `id`, `{base}_id`, `locale`, translated columns, `created_at`, `updated_at`; unique `(parent_id, locale)`
+- UI chrome → i18n dictionaries; stored translations → `*_language` rows filtered by current locale
+- List/get on base tables: treat `deleted_at IS NULL` as active
+
 ## Schema sync
 
-- Field names/types in seed must match `design/schema/` (e.g. `users.id`, `products.status`)
+- Field names/types in seed must match `design/schema/` (e.g. `product_item.id`, `product_item_language.locale`)
 - When schema changes → update seed + store usage in the same change
 - Design never runs SQL against a live DB
 

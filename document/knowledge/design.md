@@ -11,7 +11,7 @@ Customer-facing Warehouse prototype under `design/` — HTML/CSS/vanilla JS only
 | Scripts | Vanilla JS on `window` |
 | Icons | Lucide SVG in `assets/icons/<name>.svg` ([lucide.dev/icons](https://lucide.dev/icons/)) |
 | Mock DB | `js/seed/` → `js/store.js` → `localStorage` |
-| Schema | `design/schema/*.sql` — table/field source of truth for seed shapes |
+| Schema | `design/schema/*.sql` — `{module}_{entity}` snake_case (singular); files/seed keys match; translations in `*_language` |
 | Cross-tab | `js/realtime.js` via `BroadcastChannel` |
 
 ## Preview
@@ -45,6 +45,15 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Default locale: `th`
 - Persist key: `warehouse-design-locale`
 - Mark copy with `data-i18n="key"` for automatic re-render on locale change
+- UI chrome → dictionaries; stored multilingual fields → `{base}_language` rows (`locale` = `th` \| `en`)
+
+## Schema naming
+
+- Tables: `{module}_{entity}` English snake_case, singular (e.g. `product_item`); companion `product_item_language` for translations
+- Same name for SQL table, `design/schema/<name>.sql`, and seed/store key
+- Columns: English snake_case; FK `{referenced_table}_id`
+- Base audit: `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`
+- `*_language` audit: `created_at`, `updated_at` only (soft-delete / attribution on parent)
 
 ## Icons
 

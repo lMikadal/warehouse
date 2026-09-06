@@ -122,7 +122,10 @@ Do not run raw `docker compose`, `air`, `go run`, or goose when a make target ex
 |-----------------------|------------------------------------------|
 | `backend/.../migrations/` | What goose actually runs |
 
-When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
+- Table names: `{module}_{entity}` all snake_case, singular entity (e.g. `product_item`) — goose `CREATE TABLE` must match; do not rename when migrating
+- Multilingual: companion `{base}_language` tables — do not flatten to `name_th` / `name_en` columns
+- Columns: English snake_case; base tables include `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`; `*_language` tables include only `created_at`, `updated_at` (no soft-delete / by columns)
+- When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
 
 ## Do not
 
