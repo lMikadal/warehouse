@@ -72,7 +72,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
 | setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
-| product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | `is_fake` → `product_attribute` type='grade'; FK brand/model/engine on product_car restored |
+| product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | product_product: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_car |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | supplier, information, contact, bank | v2 had only supplier — information/contact/bank gaps restored; type information/tax_invoice/delivery |
 | warehouse (3) | warehouse+lang+condition | barcode/qrcode/rfid/capacity restored; occupancy from product_item_stock; condition: amount + amount_active (inactive/empty derived) |
