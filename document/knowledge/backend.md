@@ -76,7 +76,7 @@ Module path: `github.com/lMikadal/warehouse/backend`.
 
 ## Deferred (next phases)
 
-- Goose migrations from `design/schema/` — keep `{module}_{entity}` names; `*_language` for translations; base audit five / language timestamps only
+- Goose migrations from `design/schema/` — keep `{module}_{entity}` names; `*_language` for translations; base audit five / language timestamps only; tree tables use `parent_id` + `tree_path` + `sort_order`
 - Auth / domain modules
 - th/en API error i18n catalog
 - Request readiness checks against postgres

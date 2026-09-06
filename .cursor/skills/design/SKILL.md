@@ -193,6 +193,26 @@ Tables, columns, `design/schema/*.sql` filenames, and seed/store keys use the **
 | Timestamps: `*_at` | `created_at` |
 | On `*_language`: `locale` (`th` \| `en`) + translated fields only | `locale`, `name`, `description` |
 
+### Hierarchy and sort
+
+Tree tables (nav, geo, warehouse layout, attribute trees, …) use **all three** columns together:
+
+| Column | Type | Role |
+|--------|------|------|
+| `parent_id` | `BIGINT` NULL, self-FK `ON DELETE RESTRICT` | Direct parent (`NULL` = root) |
+| `tree_path` | `LTREE NOT NULL` | Materialized path for ancestor/descendant queries |
+| `sort_order` | `INTEGER NOT NULL` | Sibling order under the same parent |
+
+- List order: `ORDER BY tree_path, sort_order`
+- Indexes: GIST on `tree_path`; unique `tree_path` among active rows (`WHERE deleted_at IS NULL`); `(parent_id, sort_order)` for sibling lists
+- Requires PostgreSQL `ltree` extension when migrations run
+
+**Not tree tables** (do not add all three):
+
+- Split-document self-FKs: `parent_id` only — e.g. `order_order`, `purchase_order_item`
+- Flat UI lists: `sort_order` only — e.g. `website_language`, `setting_bank`, `setting_payment_method`
+- Language / junction / log / session tables: neither
+
 ### Audit columns
 
 **Base tables** (e.g. `product_item`) — all five:

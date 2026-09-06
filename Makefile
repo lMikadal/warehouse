@@ -18,7 +18,7 @@ define require_dir
 endef
 
 .PHONY: help run \
-	design-serve \
+	design-schema-check design-serve \
 	frontend-bootstrap frontend-dev frontend-build frontend-lint frontend-shadcn-add \
 	backend-dev backend-run backend-test \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
@@ -30,6 +30,11 @@ help:
 
 ## run: Start full dev stack (docker compose up)
 run: docker-up
+
+## design-schema-check: Validate design/schema/*.sql conventions (filename, audit-5, *_language rules, FK targets)
+design-schema-check:
+	$(call require_dir,$(DESIGN_DIR)/schema)
+	bash $(DESIGN_DIR)/schema/check.sh
 
 ## design-serve: Serve design/ prototype on DESIGN_PORT (default 8080)
 design-serve:
