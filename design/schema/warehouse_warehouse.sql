@@ -1,7 +1,7 @@
 -- source: v1 warehouse_warehouses + v2 v2_warehouse_warehouses (UUID→BIGSERIAL)
 --   - tree: parent_id + tree_path + sort_order (LTREE + direct parent for drag-reorder)
 --   - restored: barcode, qrcode, rfid (v2 dropped — needed for scan-in/scan-out)
---   - restored: capacity (v2 dropped); occupancy derived from product_item_stock.remain_quantity — not stored
+--   - restored: capacity (v2 dropped); occupancy derived via product_item_warehouse.bin_id + product_item_stock — not stored
 --   - restored: warehouse_condition (separate table; child-type quotas; inactive/empty derived at query time)
 --   - removed:  shelf_maximum / rack_maximum / box_maximum columns (v2's premature optimization)
 --   - spelling fixed: 'shelfs' → 'shelf' in enum

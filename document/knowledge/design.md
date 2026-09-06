@@ -91,7 +91,7 @@ All uploaded files go through [`website_file`](../../design/schema/website_file.
 | `member_document` | `member_file` |
 | `purchase_order_attachment` | `purchase_order_file` |
 
-## Schema modules (87 files in `design/schema/`)
+## Schema modules (89 files in `design/schema/`)
 
 | Module | Tables | Key notes |
 |--------|--------|-----------|
@@ -99,10 +99,10 @@ All uploaded files go through [`website_file`](../../design/schema/website_file.
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
 | setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
-| product (14) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log+file | product_product: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_car; gallery via product_item_file |
+| product (16) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log+file+supplier+warehouse | product_product: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_car; gallery via product_item_file |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | supplier, information, contact, bank | v2 had only supplier — information/contact/bank gaps restored; type information/tax_invoice/delivery |
-| warehouse (3) | warehouse+lang+condition | barcode/qrcode/rfid/capacity restored; occupancy from product_item_stock; condition: amount + amount_active (inactive/empty derived) |
+| warehouse (3) | warehouse+lang+condition | barcode/qrcode/rfid/capacity restored; occupancy from product_item_stock via product_item_warehouse.bin_id; condition: amount + amount_active (inactive/empty derived) |
 | purchase (10) | request+item+item_reject, order+item+item_reject+payment+file, history+lang | entire module absent in v2; sourced from v1 |
 | order (8) | order, item, shipping, payment+method+item, claim+item | v2 bill+order 1:1 merged; `is_payed` → `is_paid`; claim reasons in setting module |
 

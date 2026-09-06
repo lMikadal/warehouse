@@ -242,8 +242,8 @@ Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier
 
 | Stored | Role |
 |--------|------|
-| `amount` | Max child nodes of this type allowed under the parent |
-| `amount_active` | Max active (usable) child nodes |
+| `amount` | Max child nodes of this type creatable under the parent warehouse |
+| `amount_active` | Max child nodes of this type that may be active at a given time |
 
 Derived at query time (do not add columns): inactive = `amount - amount_active`; empty slots = count child `warehouse_warehouse` rows of matching `type` where `capacity` > stock occupancy (`SUM(remain_quantity)` from `product_item_stock` per child).
 

@@ -3,14 +3,13 @@
 --   - type_car discriminates car-attribute level: brand | model | engine (only when type='car')
 --   - tree_path LTREE for hierarchy within each type
 --   - is_stopped (car fitment): replaces v1 product_product_car_categories.is_stoped (spelling fixed)
---   - grade type added to replace v1 product_items.is_fake boolean (true product quality attribute)
 --   - image_url → website_file_id (purpose: product_attribute_logo)
-CREATE TYPE product_attribute_type     AS ENUM ('brand', 'category', 'car', 'grade');
+CREATE TYPE product_attribute_type     AS ENUM ('brand', 'category', 'car');
 CREATE TYPE product_attribute_car_type AS ENUM ('brand', 'model', 'engine');
 
 CREATE TABLE product_attribute (
     id          BIGSERIAL                   PRIMARY KEY,              -- surrogate PK
-    type        product_attribute_type      NOT NULL,                 -- attribute kind: brand | category | car | grade
+    type        product_attribute_type      NOT NULL,                 -- attribute kind: brand | category | car
     type_car    product_attribute_car_type,                           -- car sub-level when type='car': brand | model | engine
     website_file_id BIGINT                      REFERENCES website_file(id) ON DELETE RESTRICT, -- logo or icon (purpose: product_attribute_logo)
     parent_id   BIGINT                      REFERENCES product_attribute(id) ON DELETE RESTRICT, -- parent node in hierarchy
