@@ -64,17 +64,17 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - `check:skip-audit` comment in a file exempts it from audit-5 check (use for session/log/junction tables)
 - **Column comments:** inline `--` on every non-audit column; English; audit skip sets per table kind (base five / language two / junction `created_at` only)
 
-## Schema modules (84 files in `design/schema/`)
+## Schema modules (86 files in `design/schema/`)
 
 | Module | Tables | Key notes |
 |--------|--------|-----------|
 | website (10) | `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang | locale registry; geo hierarchy via typed FK + sort_order (no LTREE) |
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
-| setting (10) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang | `setting_payment` + `setting_pay` merged into `setting_payment_method`; claim reasons moved from order |
+| setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
 | product (13) | attribute+lang+relation, product+lang+code+car+supplier, item+lang+price+stock+stop_log | `is_fake` → `product_attribute` type='grade'; FK brand/model/engine on product_car restored |
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
-| supplier (4) | supplier, address, contact, bank | v2 had only supplier — address/contact/bank gaps restored |
+| supplier (4) | supplier, information, contact, bank | v2 had only supplier — information/contact/bank gaps restored; type information/tax_invoice/delivery |
 | warehouse (3) | warehouse+lang+condition | barcode/qrcode/rfid/capacity restored; occupancy from product_item_stock; condition: amount + amount_active (inactive/empty derived) |
 | purchase (10) | request+item+item_reject, order+item+item_reject+payment+file, history+lang | entire module absent in v2; sourced from v1 |
 | order (8) | order, item, shipping, payment+method+item, claim+item | v2 bill+order 1:1 merged; `is_payed` → `is_paid`; claim reasons in setting module |

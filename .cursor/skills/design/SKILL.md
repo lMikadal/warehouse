@@ -235,7 +235,7 @@ Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier
 **Not tree tables** (do not add all three):
 
 - Split-document self-FKs: `parent_id` only — e.g. `order_order`, `purchase_order_item`
-- Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`, `setting_claim_reason`
+- Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`, `setting_claim_reason`, `setting_prefix` (filter by `type`: `person` | `company`)
 - Language / junction / log / session tables: neither
 
 **Warehouse child quotas** ([`warehouse_condition`](../../design/schema/warehouse_condition.sql)) — per parent node × child `warehouse_type`:
