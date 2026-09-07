@@ -6,16 +6,16 @@
 --   - removed:  shelf_maximum / rack_maximum / box_maximum columns (v2's premature optimization)
 --   - spelling fixed: 'shelfs' → 'shelf' in enum
 --   - created_by/updated_by FK restored (v2 had columns but no FK constraint)
-CREATE TYPE warehouse_warehouse_type AS ENUM ('warehouse', 'zone', 'shelf', 'rack', 'bin');
+CREATE TYPE warehouse_list_type AS ENUM ('warehouse', 'zone', 'shelf', 'rack', 'bin');
 
-CREATE TABLE warehouse_warehouse (
+CREATE TABLE warehouse_list (
     id              BIGSERIAL              PRIMARY KEY,              -- surrogate PK
-    type            warehouse_warehouse_type NOT NULL,                 -- node kind: warehouse, zone, shelf, rack, bin
+    type            warehouse_list_type NOT NULL,                 -- node kind: warehouse, zone, shelf, rack, bin
     sku             TEXT              NOT NULL,                 -- location code
     barcode         VARCHAR(255),                               -- barcode identifier
     qrcode          VARCHAR(255),                               -- QR code identifier
     rfid            VARCHAR(255),                               -- RFID tag identifier
-    parent_id       BIGINT            REFERENCES warehouse_warehouse(id) ON DELETE RESTRICT, -- parent node in hierarchy
+    parent_id       BIGINT            REFERENCES warehouse_list(id) ON DELETE RESTRICT, -- parent node in hierarchy
     tree_path       LTREE             NOT NULL,                 -- LTREE path for subtree queries
     sort_order      INTEGER           NOT NULL DEFAULT 0,       -- sibling display order
     capacity        INTEGER           NOT NULL DEFAULT 0,       -- max storage units
@@ -27,18 +27,18 @@ CREATE TABLE warehouse_warehouse (
     updated_by      BIGINT            REFERENCES admin_user(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_warehouse_warehouse_tree_path USING GIST ON warehouse_warehouse (tree_path);
-CREATE UNIQUE INDEX uq_warehouse_warehouse_sku
-    ON warehouse_warehouse (sku)
+CREATE INDEX idx_warehouse_list_tree_path USING GIST ON warehouse_list (tree_path);
+CREATE UNIQUE INDEX uq_warehouse_list_sku
+    ON warehouse_list (sku)
     WHERE deleted_at IS NULL;
-CREATE UNIQUE INDEX uq_warehouse_warehouse_tree_path
-    ON warehouse_warehouse (tree_path)
+CREATE UNIQUE INDEX uq_warehouse_list_tree_path
+    ON warehouse_list (tree_path)
     WHERE deleted_at IS NULL;
-CREATE INDEX idx_warehouse_warehouse_parent_sort
-    ON warehouse_warehouse (parent_id, sort_order)
+CREATE INDEX idx_warehouse_list_parent_sort
+    ON warehouse_list (parent_id, sort_order)
     WHERE deleted_at IS NULL;
-CREATE INDEX idx_warehouse_warehouse_type_active
-    ON warehouse_warehouse (type, sort_order)
+CREATE INDEX idx_warehouse_list_type_active
+    ON warehouse_list (type, sort_order)
     WHERE deleted_at IS NULL AND is_active = TRUE;
-CREATE INDEX idx_warehouse_warehouse_created_by ON warehouse_warehouse (created_by) WHERE created_by IS NOT NULL;
-CREATE INDEX idx_warehouse_warehouse_updated_by ON warehouse_warehouse (updated_by) WHERE updated_by IS NOT NULL;
+CREATE INDEX idx_warehouse_list_created_by ON warehouse_list (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX idx_warehouse_list_updated_by ON warehouse_list (updated_by) WHERE updated_by IS NOT NULL;

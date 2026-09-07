@@ -14,7 +14,7 @@ CREATE TABLE purchase_order (
     id                  BIGSERIAL             PRIMARY KEY,              -- surrogate PK
     sku                 VARCHAR(50),          -- null until leaving draft
     purchase_request_id BIGINT                REFERENCES purchase_request(id) ON DELETE SET NULL, -- source requisition
-    supplier_supplier_id BIGINT               REFERENCES supplier_supplier(id) ON DELETE SET NULL, -- supplier
+    supplier_user_id     BIGINT               REFERENCES supplier_user(id) ON DELETE SET NULL, -- supplier
     status              purchase_order_status NOT NULL DEFAULT 'draft', -- PO workflow state
     ordered_at          TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP, -- PO placement timestamp
     vat_rate            NUMERIC(5,2)          NOT NULL DEFAULT 0,       -- VAT rate snapshot
@@ -32,6 +32,6 @@ CREATE TABLE purchase_order (
 
 CREATE INDEX idx_purchase_order_status           ON purchase_order (status)              WHERE deleted_at IS NULL;
 CREATE INDEX idx_purchase_order_request          ON purchase_order (purchase_request_id) WHERE purchase_request_id IS NOT NULL;
-CREATE INDEX idx_purchase_order_supplier         ON purchase_order (supplier_supplier_id) WHERE supplier_supplier_id IS NOT NULL;
+CREATE INDEX idx_purchase_order_supplier         ON purchase_order (supplier_user_id) WHERE supplier_user_id IS NOT NULL;
 CREATE INDEX idx_purchase_order_created_by       ON purchase_order (created_by) WHERE created_by IS NOT NULL;
 CREATE INDEX idx_purchase_order_updated_by       ON purchase_order (updated_by) WHERE updated_by IS NOT NULL;

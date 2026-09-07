@@ -189,8 +189,8 @@ Tables, columns, `design/schema/*.sql` filenames, and seed/store keys use the **
 |------|---------|
 | English snake_case | `sku`, `created_at` |
 | PK: `id BIGSERIAL` (numeric surrogate; **not UUID**) | `id BIGSERIAL PRIMARY KEY` |
-| FK: `{referenced_table}_id BIGINT` | `warehouse_warehouse_id BIGINT` |
-| Seed/store ids: plain numbers | `{ id: 1, warehouse_warehouse_id: 3 }` |
+| FK: `{referenced_table}_id BIGINT` | `warehouse_list_id BIGINT` |
+| Seed/store ids: plain numbers | `{ id: 1, warehouse_list_id: 3 }` |
 | Booleans: `is_` / `has_` prefix | `is_active` |
 | Timestamps: `*_at` | `created_at` |
 | On `*_language`: `locale` (`th` \| `en`) + translated fields only | `locale`, `name`, `description` |
@@ -220,7 +220,7 @@ Shared cross-module types live in [`design/schema/_enum_shared.sql`](../../desig
 | `claim_type` | `claim`, `return` | order/purchase claim headers and lines |
 | `claim_item_status` | `confirmed`, `rejected` | per-line claim review |
 
-**Type naming:** `{owning_table}_{column_name}` — e.g. `purchase_order_status`, `order_order_fulfill_status`, `warehouse_warehouse_type`. Shared types are the exception.
+**Type naming:** `{owning_table}_{column_name}` — e.g. `purchase_order_status`, `order_order_fulfill_status`, `warehouse_list_type`. Shared types are the exception.
 
 **Status values:**
 
@@ -252,7 +252,7 @@ Avoid verb-base terminal states (`cancel`, `reject`) and inconsistent synonyms (
 | `tree_path` | `LTREE NOT NULL` | Materialized path for ancestor/descendant queries |
 | `sort_order` | `INTEGER NOT NULL` | Sibling order under the same parent |
 
-Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier`.
+Examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`.
 
 **Typed geo chain** (`website_*`) — one table per level, **typed parent FK** + `sort_order` only (flat lists; no `tree_path`):
 
@@ -271,14 +271,14 @@ Examples: `admin_menu`, `warehouse_warehouse`, `product_attribute`, `member_tier
 - Flat UI lists: `sort_order` only — e.g. `website_language`, `website_country`, `setting_bank`, `setting_payment_method`, `setting_claim_reason`, `setting_prefix` (filter by `type`: `person` | `company`)
 - Language / junction / log / session tables: neither
 
-**Warehouse child quotas** ([`warehouse_condition`](../../design/schema/warehouse_condition.sql)) — per parent node × child `warehouse_warehouse_type`:
+**Warehouse child quotas** ([`warehouse_condition`](../../design/schema/warehouse_condition.sql)) — per parent node × child `warehouse_list_type`:
 
 | Stored | Role |
 |--------|------|
 | `amount` | Max child nodes of this type creatable under the parent warehouse |
 | `amount_active` | Max child nodes of this type that may be active at a given time |
 
-Derived at query time (do not add columns): inactive = `amount - amount_active`; empty slots = count child `warehouse_warehouse` rows of matching `type` where `capacity` > stock occupancy (`SUM(remain_quantity)` from `product_item_stock` per child).
+Derived at query time (do not add columns): inactive = `amount - amount_active`; empty slots = count child `warehouse_list` rows of matching `type` where `capacity` > stock occupancy (`SUM(remain_quantity)` from `product_item_stock` per child).
 
 ### Audit columns
 

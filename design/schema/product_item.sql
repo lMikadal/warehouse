@@ -13,7 +13,7 @@ CREATE TYPE product_item_type_price AS ENUM ('manual', 'stock');
 
 CREATE TABLE product_item (
     id                    BIGSERIAL               PRIMARY KEY,              -- surrogate PK
-    product_product_id    BIGINT                  NOT NULL REFERENCES product_product(id) ON DELETE RESTRICT, -- parent product
+    product_list_id       BIGINT                  NOT NULL REFERENCES product_list(id) ON DELETE RESTRICT, -- parent product
     sku                   VARCHAR(255),                                    -- variant SKU (optional)
     barcode               VARCHAR(255),                                    -- scannable barcode
     qrcode                VARCHAR(255),                                    -- QR code value
@@ -41,7 +41,7 @@ CREATE TABLE product_item (
 );
 
 CREATE UNIQUE INDEX uq_product_item_sku         ON product_item (sku) WHERE sku IS NOT NULL AND deleted_at IS NULL;
-CREATE INDEX idx_product_item_product           ON product_item (product_product_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_item_product           ON product_item (product_list_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_product_item_new_item          ON product_item (new_product_item_id) WHERE new_product_item_id IS NOT NULL;
 CREATE INDEX idx_product_item_stopped           ON product_item (is_stopped) WHERE is_stopped = TRUE AND deleted_at IS NULL;
 CREATE INDEX idx_product_item_created_by        ON product_item (created_by) WHERE created_by IS NOT NULL;

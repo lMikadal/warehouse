@@ -2,7 +2,7 @@
 --   - type discriminates: brand | category | car
 --   - type_car discriminates car-attribute level: brand | model | engine (only when type='car')
 --   - tree_path LTREE for hierarchy within each type
---   - is_stopped (car fitment): replaces v1 product_product_car_categories.is_stoped (spelling fixed)
+--   - is_stopped (car fitment): replaces v1 product_list_car fitment stop-sell (was product_product_car_categories.is_stoped; spelling fixed)
 --   - image_url → website_file_id (purpose: product_attribute_logo)
 --   - type: brand (product-level, not car tree) | category | car
 --   - type_car: car sub-level when type='car' — brand/model/engine (brand here ≠ product brand above)

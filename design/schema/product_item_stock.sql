@@ -5,8 +5,8 @@
 --   - restored: is_used (marks the single active stock lot per item; partial unique enforces one active lot)
 --   - received_at: replaces v1 "receipted_at" (spelling fixed)
 --   - qty columns use NUMERIC(15,4) for fractional unit support
---   - placement via product_item_warehouse (not warehouse_warehouse directly)
---   - bin occupancy: SUM(remain_quantity) JOIN product_item_warehouse ON bin_id; compare to warehouse_warehouse.capacity
+--   - placement via product_item_warehouse (not warehouse_list directly)
+--   - bin occupancy: SUM(remain_quantity) JOIN product_item_warehouse ON bin_id; compare to warehouse_list.capacity
 CREATE TABLE product_item_stock (
     id                      BIGSERIAL     PRIMARY KEY,              -- surrogate PK
     product_item_id         BIGINT        NOT NULL REFERENCES product_item(id)              ON DELETE RESTRICT, -- stocked variant

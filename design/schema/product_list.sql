@@ -1,8 +1,8 @@
 -- source: v1 product_products + v2 v2_product_products (UUID→BIGSERIAL)
 --   - kept:    sku, product_brand_id, product_category_id, is_active, audit
---   - restored: tag, supplier_sku, note, is_new (v1); product_product_code still holds factory/other codes
+--   - restored: tag, supplier_sku, note, is_new (v1); product_list_code still holds factory/other codes
 --   - removed: sort_order (compute from name)
-CREATE TABLE product_product (
+CREATE TABLE product_list (
     id                   BIGSERIAL    PRIMARY KEY,              -- surrogate PK
     sku                  TEXT         NOT NULL,                 -- unique product SKU
     product_brand_id     BIGINT       REFERENCES product_attribute(id) ON DELETE SET NULL,   -- type='brand'
@@ -19,8 +19,8 @@ CREATE TABLE product_product (
     updated_by           BIGINT       REFERENCES admin_user(id) ON DELETE SET NULL
 );
 
-CREATE UNIQUE INDEX uq_product_product_sku    ON product_product (sku) WHERE deleted_at IS NULL;
-CREATE INDEX idx_product_product_brand        ON product_product (product_brand_id)    WHERE product_brand_id IS NOT NULL;
-CREATE INDEX idx_product_product_category     ON product_product (product_category_id) WHERE product_category_id IS NOT NULL;
-CREATE INDEX idx_product_product_created_by   ON product_product (created_by) WHERE created_by IS NOT NULL;
-CREATE INDEX idx_product_product_updated_by   ON product_product (updated_by) WHERE updated_by IS NOT NULL;
+CREATE UNIQUE INDEX uq_product_list_sku    ON product_list (sku) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_list_brand        ON product_list (product_brand_id)    WHERE product_brand_id IS NOT NULL;
+CREATE INDEX idx_product_list_category     ON product_list (product_category_id) WHERE product_category_id IS NOT NULL;
+CREATE INDEX idx_product_list_created_by   ON product_list (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX idx_product_list_updated_by   ON product_list (updated_by) WHERE updated_by IS NOT NULL;
