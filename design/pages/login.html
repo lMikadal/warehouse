@@ -22,8 +22,17 @@
   <body class="login-page">
     <header class="login-toolbar">
       <div class="login-toolbar__actions">
-        <button type="button" class="btn" id="btn-lang" data-i18n="lang.toggle">ภาษา</button>
-        <button type="button" class="btn" id="btn-theme" data-i18n="theme.toggle">สลับธีม</button>
+        <button type="button" class="login-toolbar__btn" id="btn-lang" aria-label="ภาษา">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m5 8 6 6" />
+            <path d="m4 14 6-6 2-3" />
+            <path d="M2 5h12" />
+            <path d="M7 2h1" />
+            <path d="m22 22-5-10-5 10" />
+            <path d="M14 18h6" />
+          </svg>
+        </button>
+        <button type="button" class="login-toolbar__btn" id="btn-theme" aria-label="สลับธีม"></button>
       </div>
     </header>
 
@@ -65,15 +74,23 @@
               <span data-i18n="login.username">ชื่อผู้ใช้</span>
               <span class="form-field__required" aria-hidden="true">*</span>
             </label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              autocomplete="username"
-              required
-              data-i18n-placeholder="login.username.placeholder"
-              placeholder="เช่น admin"
-            />
+            <div class="form-field__control">
+              <span class="form-field__icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="5" />
+                  <path d="M20 21a8 8 0 0 0-16 0" />
+                </svg>
+              </span>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                required
+                data-i18n-placeholder="login.username.placeholder"
+                placeholder="เช่น admin"
+              />
+            </div>
             <div class="form-field__error-slot" aria-live="polite">
               <p class="form-field__error" id="username-error" hidden role="alert"></p>
             </div>
@@ -84,21 +101,29 @@
               <span data-i18n="login.password">รหัสผ่าน</span>
               <span class="form-field__required" aria-hidden="true">*</span>
             </label>
-            <div class="password-field">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                required
-                data-i18n-placeholder="login.password.placeholder"
-                placeholder="กรอกรหัสผ่าน"
-              />
-              <button
-                type="button"
-                class="password-field__toggle"
-                aria-label="แสดงรหัสผ่าน"
-              ></button>
+            <div class="form-field__control">
+              <span class="form-field__icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <div class="password-field">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                  data-i18n-placeholder="login.password.placeholder"
+                  placeholder="กรอกรหัสผ่าน"
+                />
+                <button
+                  type="button"
+                  class="password-field__toggle"
+                  aria-label="แสดงรหัสผ่าน"
+                ></button>
+              </div>
             </div>
             <div class="form-field__error-slot" aria-live="polite">
               <p class="form-field__error" id="password-error" hidden role="alert"></p>
@@ -156,6 +181,11 @@
 
         passwordToggle.bind(form);
 
+        var SUN_ICON =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+        var MOON_ICON =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+
         function getTheme() {
           return document.documentElement.getAttribute("data-theme") || "light";
         }
@@ -163,7 +193,22 @@
         function setTheme(theme) {
           document.documentElement.setAttribute("data-theme", theme);
           localStorage.setItem(THEME_KEY, theme);
+          syncThemeIcon();
         }
+
+        function syncThemeIcon() {
+          document.getElementById("btn-theme").innerHTML =
+            getTheme() === "dark" ? SUN_ICON : MOON_ICON;
+        }
+
+        function syncToolbarLabels() {
+          document.getElementById("btn-lang").setAttribute("aria-label", i18n.t("lang.toggle"));
+          document.getElementById("btn-theme").setAttribute("aria-label", i18n.t("theme.toggle"));
+        }
+
+        syncThemeIcon();
+        syncToolbarLabels();
+        document.addEventListener("i18n:change", syncToolbarLabels);
 
         document.getElementById("btn-theme").addEventListener("click", function () {
           setTheme(getTheme() === "dark" ? "light" : "dark");

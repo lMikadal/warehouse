@@ -39,7 +39,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Demo users in seed `admin_user` with `_demo_password` (prototype only — not in SQL schema)
 - `admin` / `admin` → superadmin; `staff` / `staff` → limited staff role
 - Login: `pages/login.html` → `auth.resolveLandingPath()` (first menu path, else dashboard if permitted)
-- Login page: language + theme toolbar (same localStorage keys as shell); two-panel layout on desktop; placeholders, password eye toggle, required red `*`, under-field validation errors
+- Login page: full-bleed split on desktop (brand gradient panel + form column); mobile single card; fixed icon toolbar (lang/theme); leading field icons; placeholders, password eye toggle, required red `*`, under-field validation errors
 - Dashboard pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
 
 ## Forms (design)
