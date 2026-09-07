@@ -1,8 +1,9 @@
 -- source: v1 member_tier_items + v2 v2_member_tier_items (renamed)
---   - member_setting_relation_id: per-profile-combo override of tier defaults
+--   - member_setting_relation_id: per-profile-combo override of tier defaults (same key as discount_rule)
 --   - purchase_start/purchase_end: purchase-amount thresholds for this combo
 --   - type: product scope override (all / brand / category / exceptions)
 --   - is_promotion: whether to skip promotion stacking
+--   - pricing precedence: when this row matches, discount here overrides discount_rule catalog default
 --   - unique: (member_tier_id, member_setting_relation_id) prevents duplicate rules per tier+combo
 CREATE TABLE member_tier_relation (
     id                         BIGSERIAL                      PRIMARY KEY,              -- surrogate PK
