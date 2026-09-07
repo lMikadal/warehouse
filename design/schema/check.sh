@@ -16,7 +16,7 @@ set -euo pipefail
 SCHEMA_DIR="$(cd "$(dirname "$0")" && pwd)"
 ERRORS=0
 SHARED_ENUM_FILE="_enum_shared.sql"
-SHARED_TYPES=(entity_branch discount_unit claim_type claim_item_status)
+SHARED_TYPES=(entity_branch discount_unit claim_type claim_item_status member_user_type)
 
 err() { echo "  FAIL: $1"; ERRORS=$((ERRORS + 1)); }
 
