@@ -179,6 +179,10 @@ Every list / table component must handle the zero-rows case:
 
 ### Forms
 
+- Every text-like input has an i18n placeholder via `placeholder={t('key')}`; placeholder is a hint, not a label substitute
+- Every password field has an eye / eye-off toggle (shadcn `Input` + Lucide `Eye` / `EyeOff`)
+- Required fields: red `*` after the label; use RHF + shadcn `FormMessage` under the field for validation errors
+- On submit: empty required fields show `t('error.required')` under each field — not only a page-level alert
 - Use React Hook Form + shadcn `Form` components
 - Inline field error below the input on blur (not only on submit)
 - Disable the submit button while the mutation is in flight (prevent double-submit)
@@ -190,6 +194,9 @@ Every list / table component must handle the zero-rows case:
 |----------------|---------------------|
 | `toast.show(msg, 'success')` | `toast.success(t(key))` via Sonner |
 | `toast.show(msg, 'error')` | `toast.error(t(key))` |
+| `data-i18n-placeholder` | `placeholder={t(key)}` |
+| `.password-field` + `passwordToggle.bind` | shadcn `Input` + `Eye` / `EyeOff` toggle |
+| `.form-field__required` + `.form-field__error` | red `*` + shadcn `FormMessage` |
 | Dev Bar quick-login | Not ported — dev bar is design-only tooling |
 | `modal.open(…)` | shadcn `Dialog` |
 | `store.getAll(table)` | Server Component fetch or `useSWR` / `useQuery` call |

@@ -57,6 +57,19 @@ Prefer these make targets over raw `bun` / `bunx`.
 - Map design tokens (blue-white) into Tailwind/shadcn CSS
 - Warehouse pages from `design/`
 
+## Forms (handoff from design)
+
+When building forms from approved `design/` mockups, port these four rules (see `.cursor/rules/forms.mdc`):
+
+| Design | Frontend |
+|--------|----------|
+| `data-i18n-placeholder` | `placeholder={t(key)}` |
+| `.password-field` + eye toggle | shadcn `Input` + Lucide `Eye` / `EyeOff` |
+| `.form-field__required` (red `*`) | red `*` after `FormLabel` |
+| `.form-field__error` / `error.required` | shadcn `FormMessage` via React Hook Form |
+
+Reference mockup: `design/pages/login.html`.
+
 ## Icons
 
 - Import components (`import { Sun } from "lucide-react"`); size/stroke via props or `className`

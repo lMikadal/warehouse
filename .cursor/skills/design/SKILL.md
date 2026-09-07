@@ -431,9 +431,21 @@ toast.show(i18n.t("error.required"), "error");
 
 ### Forms
 
+- Every text-like input has an i18n placeholder (`data-i18n-placeholder` + fallback `placeholder`); placeholder is a hint, not a label substitute
+- Every `type="password"` uses `.password-field` + `passwordToggle.bind(form)` (`js/components/password-toggle.js`) with Lucide `eye` / `eye-off`
+- Required fields: red `*` in `.form-field__required` after the label; keep HTML `required`
+- On submit/save: empty required fields show `error.required` (or field-specific key) in `.form-field__error` inside `.form-field__error-slot` (fixed `min-height` — errors must not shift inputs); focus first invalid field; optional `.form-field--invalid` for red input border
 - Inline field errors on blur (not only on submit)
 - Disable submit button while processing to prevent double-submit
 - Clear field errors when the user starts typing again
+- Form-level banners are for auth/server failures — not for empty required fields
+
+### Toast
+
+- `js/components/toast.js` — `toast.show(msg, type)` where `type` is `success` | `error` | `warning` | `info`
+- Card layout: theme surface + left accent border + Lucide type icon + message + dismiss (`toast.close` i18n)
+- Fixed top-right stack; slide-in from right; auto-dismiss ~4s; close button dismisses immediately
+- Icons: `circle-check`, `circle-alert`, `triangle-alert`, `info`, `x` in `assets/icons/`
 
 ## Do not
 

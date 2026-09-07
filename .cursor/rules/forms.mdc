@@ -1,0 +1,55 @@
+---
+description: Form UX — placeholders, password visibility, required asterisk, under-field errors.
+alwaysApply: true
+---
+
+# Forms
+
+Applies to `design/` mockups and `frontend/` production UI.
+
+## Placeholders
+
+- Every text-like input (`text`, `search`, `email`, `tel`, `url`, `number`, `password`, `textarea`) must have a **placeholder**.
+- Placeholders are hints, not substitutes for visible `<label>` elements.
+- Use i18n — do not hardcode a single language:
+  - **Design:** `data-i18n-placeholder="key"` + fallback `placeholder` attribute (see `js/i18n/i18n.js`)
+  - **Frontend:** `placeholder={t('key')}` via `next-intl`
+- Do not put real or demo passwords in placeholders.
+
+## Password visibility
+
+- Every `type="password"` field must have an eye / eye-off toggle to show and hide the value.
+- **Design:** Lucide `eye` / `eye-off` in `design/assets/icons/`; wrap in `.password-field` + `passwordToggle.bind(form)` from `js/components/password-toggle.js`
+- **Frontend:** shadcn `Input` + Lucide `Eye` / `EyeOff` from `lucide-react`
+- Toggle must update `aria-label` (and `aria-pressed` in design) for accessibility.
+
+## Required fields
+
+- Required inputs show a red `*` after the label text (`aria-hidden="true"` on the asterisk).
+- Keep HTML `required` / schema validation — the asterisk is visual only.
+- Color: fixed error red (`#dc2626`), not the primary theme color.
+
+## Validation errors
+
+- On save/submit, each empty required field shows an i18n error **under that field** (e.g. `error.required`).
+- Do not use a single form-level banner as the only empty-required feedback.
+- Clear the field error when the user starts typing again.
+- Form-level errors are for non-field failures only (e.g. wrong credentials, server errors).
+- Reserve fixed space for errors (`.form-field__error-slot` with `min-height`) so showing/hiding errors does not shift inputs.
+
+## Markup pattern (design)
+
+```html
+<div class="form-field">
+  <label for="field-id">
+    <span data-i18n="form.field">Label</span>
+    <span class="form-field__required" aria-hidden="true">*</span>
+  </label>
+  <input id="field-id" required data-i18n-placeholder="form.field.placeholder" placeholder="…" />
+  <div class="form-field__error-slot" aria-live="polite">
+    <p class="form-field__error" hidden role="alert"></p>
+  </div>
+</div>
+```
+
+Password fields wrap the input in `.password-field` with a `.password-field__toggle` button.
