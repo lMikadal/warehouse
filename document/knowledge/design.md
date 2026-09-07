@@ -6,7 +6,7 @@ Customer-facing Warehouse prototype under `design/` — HTML/CSS/vanilla JS only
 
 | Piece | Approach |
 |-------|----------|
-| Markup | Static HTML (`index.html`, later `pages/*.html`) |
+| Markup | Static HTML (`index.html`, `pages/login.html`, `pages/dashboard.html`, …) |
 | Styles | `css/style.css` with CSS variables |
 | Scripts | Vanilla JS on `window` |
 | Icons | Lucide SVG in `assets/icons/<name>.svg` ([lucide.dev/icons](https://lucide.dev/icons/)) |
@@ -25,11 +25,45 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 ## Script load order (every page)
 
 1. `js/i18n/th.js` + `en.js` + `i18n.js`
-2. `js/seed/index.js`
+2. `js/seed/_admin_shared.js` + `admin_*.js` (one file per table) + `website_language.js` + `index.js`
 3. `js/store.js`
-4. `js/realtime.js`
-5. `js/components/*` (when added)
-6. Page-specific script
+4. `js/realtime.js` (dashboard pages)
+5. `js/nav.js`
+6. `js/auth.js` + `js/permissions.js`
+7. `js/components/*` (toast, modal, sidebar, layout)
+8. Page-specific script
+
+## Auth (mock)
+
+- Session key: `warehouse-design-session` (`js/auth.js`)
+- Demo users in seed `admin_user` with `_demo_password` (prototype only — not in SQL schema)
+- `admin` / `admin` → superadmin; `staff` / `staff` → limited staff role
+- Login: `pages/login.html` → `auth.resolveLandingPath()` (first menu path, else dashboard if permitted)
+- Dashboard pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
+
+## Permissions
+
+- Table `admin_permission`: code `{module}.{type}.{action}`; actions `view|create|update|delete|import|export`
+- `is_active` on each permission row — frontend hides/disables action when false even if role grants it
+- `permissions.can(code)`, `canAction(module, type, action)`, `listForPage()`, `applyActionButtons()`
+- Sidebar visibility: leaf menu requires `{parentModule}.{leafModule}.view` (+ superadmin bypass)
+- Page buttons: `data-perm-module`, `data-perm-type`, `data-perm-action`
+
+## Admin shell
+
+- `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/dashboard.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
+- `js/components/layout.js` — sidebar + header + content area
+- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC
+- Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop
+
+## Dev bar (prototype only)
+
+- `js/components/dev-bar.js` — each page declares `devBar.mount({ toasts, actions })`; list only toast types that page can emit (not a global four-type strip)
+- Never shipped to `frontend/`; see `.cursor/skills/design/SKILL.md` for API
+
+## Toast
+
+- `js/components/toast.js` — transient feedback via `toast.show(msg, type)`; container fixed **top-right** (`design/css/style.css`)
 
 ## Theme
 
@@ -96,7 +130,7 @@ All uploaded files go through [`website_file`](../../design/schema/website_file.
 | Module | Tables | Key notes |
 |--------|--------|-----------|
 | website (10) | `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang | locale registry; geo hierarchy via typed FK + sort_order (no LTREE) |
-| admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` (default `staff`); `admin_role_id` for fine-grained permissions |
+| admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_permission.is_active` toggles UI actions; `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` |
 | setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
 | product (16) | attribute+lang+relation, list+lang+code+car+supplier, item+lang+price+stock+stop_log+file+supplier+warehouse | product_list: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_list_car; gallery via product_item_file |
@@ -129,7 +163,10 @@ Checks per file:
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed: `window.SEED` (currently `{}` until `design/schema/` entities exist)
+- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `admin-shell-9`)
+- `store.init()` re-seeds from `window.SEED` when version mismatches or `admin_user` is missing (fixes stale empty localStorage from earlier prototypes)
+- Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
+- Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js`, `admin_*.js`, `website_language.js`) merged by `index.js`
 - Channel name: `warehouse-design`
 - API: `store.init|getAll|getById|create|update|delete|reset`
 
@@ -148,6 +185,5 @@ Checks per file:
 
 ## Next
 
-- Add screens under `pages/` and shared UI in `js/components/`
-- Add `design/schema/*.sql` then matching seed tables
+- Add CRUD screens under `pages/` (products, orders, …) with `data-perm-*` on actions
 - Hand off approved UI to `/frontend`; schema-ready work to `/backend`

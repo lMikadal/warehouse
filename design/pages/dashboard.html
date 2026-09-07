@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warehouse — Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script>
+      (function () {
+        var key = "warehouse-design-theme";
+        var saved = localStorage.getItem(key);
+        var theme =
+          saved === "light" || saved === "dark"
+            ? saved
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body data-perm-module="dashboard" data-perm-type="dashboard">
+    <div id="app-shell"></div>
+
+    <script src="../js/i18n/th.js"></script>
+    <script src="../js/i18n/en.js"></script>
+    <script src="../js/i18n/i18n.js"></script>
+    <script src="../js/seed/website_language.js"></script>
+    <script src="../js/seed/_admin_shared.js"></script>
+    <script src="../js/seed/admin_menu.js"></script>
+    <script src="../js/seed/admin_menu_language.js"></script>
+    <script src="../js/seed/admin_permission.js"></script>
+    <script src="../js/seed/admin_menu_permission.js"></script>
+    <script src="../js/seed/admin_role.js"></script>
+    <script src="../js/seed/admin_role_language.js"></script>
+    <script src="../js/seed/admin_role_permission.js"></script>
+    <script src="../js/seed/admin_user.js"></script>
+    <script src="../js/seed/index.js"></script>
+    <script src="../js/store.js"></script>
+    <script src="../js/realtime.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/permissions.js"></script>
+    <script src="../js/components/toast.js"></script>
+    <script src="../js/components/modal.js"></script>
+    <script src="../js/components/sidebar.js"></script>
+    <script src="../js/components/layout.js"></script>
+    <script src="../js/components/dev-bar.js"></script>
+    <script>
+      (function () {
+        store.init();
+        i18n.init();
+        if (!auth.requireAuth("login.html")) return;
+        if (!permissions.guardPage("dashboard", "dashboard", "login.html")) return;
+
+        layout.mount({
+          pageTitle: i18n.t("shell.dashboard"),
+          contentHtml:
+            '<p class="shell-welcome" data-i18n="shell.welcome">ยินดีต้อนรับ</p>' +
+            '<div class="page-actions">' +
+            '  <button type="button" class="btn" data-perm-module="dashboard" data-perm-type="dashboard" data-perm-action="view" data-i18n="action.view">ดู</button>' +
+            '  <button type="button" class="btn btn--primary" data-perm-module="dashboard" data-perm-type="dashboard" data-perm-action="create" data-i18n="action.create">สร้าง</button>' +
+            '  <button type="button" class="btn" data-perm-module="dashboard" data-perm-type="dashboard" data-perm-action="update" data-i18n="action.update">แก้ไข</button>' +
+            '  <button type="button" class="btn" data-perm-module="dashboard" data-perm-type="dashboard" data-perm-action="delete" data-i18n="action.delete">ลบ</button>' +
+            '  <button type="button" class="btn" data-perm-module="dashboard" data-perm-type="dashboard" data-perm-action="import" data-i18n="action.import">นำเข้า</button>' +
+            '  <button type="button" class="btn" data-perm-module="dashboard" data-perm-type="dashboard" data-perm-action="export" data-i18n="action.export">ส่งออก</button>' +
+            "</div>" +
+            '<div class="dashboard-grid">' +
+            '  <div class="dashboard-card"><div class="dashboard-card__label" data-i18n="dashboard.orders">ออเดอร์วันนี้</div><div class="dashboard-card__value">128</div></div>' +
+            '  <div class="dashboard-card"><div class="dashboard-card__label" data-i18n="dashboard.products">สินค้า</div><div class="dashboard-card__value">4,520</div></div>' +
+            '  <div class="dashboard-card"><div class="dashboard-card__label" data-i18n="dashboard.members">สมาชิก</div><div class="dashboard-card__value">892</div></div>' +
+            "</div>",
+        });
+        i18n.init();
+
+        devBar.mount({
+          toasts: [
+            { type: "success", label: "Success: saved", msg: "Operation completed successfully." },
+            { type: "error", label: "Error: forbidden", msgKey: "error.forbidden" },
+            { type: "warning", label: "Warning: confirm", msg: "Check this before proceeding." },
+          ],
+          actions: [
+            {
+              group: "Data",
+              items: [
+                {
+                  label: "Reset store",
+                  fn: function () { store.reset(); window.location.reload(); },
+                },
+              ],
+            },
+          ],
+        });
+      })();
+    </script>
+  </body>
+</html>

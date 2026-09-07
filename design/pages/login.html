@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warehouse — Login</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script>
+      (function () {
+        var key = "warehouse-design-theme";
+        var saved = localStorage.getItem(key);
+        var theme =
+          saved === "light" || saved === "dark"
+            ? saved
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body class="login-page">
+    <div class="login-card">
+      <h1 class="login-card__title" data-i18n="login.title">เข้าสู่ระบบ</h1>
+      <p class="login-card__desc" data-i18n="login.description">
+        ระบบจัดการคลังสินค้า Warehouse
+      </p>
+      <p class="login-card__error" id="login-error" hidden></p>
+      <form id="login-form">
+        <div class="form-field">
+          <label for="username" data-i18n="login.username">ชื่อผู้ใช้</label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            required
+          />
+        </div>
+        <div class="form-field">
+          <label for="password" data-i18n="login.password">รหัสผ่าน</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          class="btn btn--primary login-card__submit"
+          id="login-submit"
+          data-i18n="login.submit"
+        >
+          เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+
+    <script src="../js/i18n/th.js"></script>
+    <script src="../js/i18n/en.js"></script>
+    <script src="../js/i18n/i18n.js"></script>
+    <script src="../js/seed/website_language.js"></script>
+    <script src="../js/seed/_admin_shared.js"></script>
+    <script src="../js/seed/admin_menu.js"></script>
+    <script src="../js/seed/admin_menu_language.js"></script>
+    <script src="../js/seed/admin_permission.js"></script>
+    <script src="../js/seed/admin_menu_permission.js"></script>
+    <script src="../js/seed/admin_role.js"></script>
+    <script src="../js/seed/admin_role_language.js"></script>
+    <script src="../js/seed/admin_role_permission.js"></script>
+    <script src="../js/seed/admin_user.js"></script>
+    <script src="../js/seed/index.js"></script>
+    <script src="../js/store.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/permissions.js"></script>
+    <script src="../js/components/toast.js"></script>
+    <script src="../js/components/sidebar.js"></script>
+    <script src="../js/components/dev-bar.js"></script>
+    <script>
+      (function () {
+        store.init();
+        i18n.init();
+
+        var form = document.getElementById("login-form");
+        var errorEl = document.getElementById("login-error");
+        var submitBtn = document.getElementById("login-submit");
+
+        if (store.getAll("admin_user").length === 0) {
+          errorEl.textContent = i18n.t("login.error.seedMissing");
+          errorEl.hidden = false;
+        }
+
+        if (auth.redirectIfAuthed()) return;
+
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          errorEl.hidden = true;
+          submitBtn.disabled = true;
+
+          var username = form.username.value.trim();
+          var password = form.password.value;
+          var result = auth.login(username, password);
+
+          if (!result.ok) {
+            errorEl.textContent = i18n.t("login.error.invalid");
+            errorEl.hidden = false;
+            submitBtn.disabled = false;
+            return;
+          }
+
+          var landing = auth.resolveLandingPath();
+          if (!landing) {
+            auth.logout();
+            errorEl.textContent = i18n.t("login.error.noMenu");
+            errorEl.hidden = false;
+            submitBtn.disabled = false;
+            return;
+          }
+
+          window.location.replace(landing);
+        });
+
+        function finishLogin(result) {
+          if (!result.ok) return false;
+          var landing = auth.resolveLandingPath();
+          if (!landing) {
+            auth.logout();
+            errorEl.textContent = i18n.t("login.error.noMenu");
+            errorEl.hidden = false;
+            return false;
+          }
+          window.location.replace(landing);
+          return true;
+        }
+
+        // Dev bar — quick login without password for UI testing
+        var users = store.getAll("admin_user").filter(function (u) {
+          return u.deleted_at == null && u.status === "active";
+        });
+        devBar.mount({
+          toasts: [
+            { type: "error", label: "Error: invalid", msgKey: "login.error.invalid" },
+            { type: "error", label: "Error: forbidden", msgKey: "error.forbidden" },
+          ],
+          actions: users.map(function (u) {
+            return {
+              label: u.username + " (" + u.type + ")",
+              fn: function () {
+                errorEl.hidden = true;
+                finishLogin(auth.login(u.username, u._demo_password));
+              },
+            };
+          }),
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -1,6 +1,36 @@
 (function (global) {
   const STORAGE_KEY = "warehouse-design-store";
+  const VERSION_KEY = "warehouse-design-seed-version";
   let data = {};
+
+  function expectedSeedVersion() {
+    return global.SEED_VERSION || null;
+  }
+
+  function storedSeedVersion() {
+    return localStorage.getItem(VERSION_KEY);
+  }
+
+  function markSeedVersion() {
+    const version = expectedSeedVersion();
+    if (version) localStorage.setItem(VERSION_KEY, version);
+  }
+
+  function hasAdminUsers() {
+    return Array.isArray(data.admin_user) && data.admin_user.length > 0;
+  }
+
+  function needsReseed() {
+    const expected = expectedSeedVersion();
+    if (expected && storedSeedVersion() !== expected) return true;
+    return !hasAdminUsers();
+  }
+
+  function applySeed() {
+    data = cloneSeed();
+    persist();
+    markSeedVersion();
+  }
 
   function persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -13,16 +43,16 @@
   function init() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      data = cloneSeed();
-      persist();
+      applySeed();
       return;
     }
     try {
       data = JSON.parse(raw);
     } catch {
-      data = cloneSeed();
-      persist();
+      applySeed();
+      return;
     }
+    if (needsReseed()) applySeed();
   }
 
   function ensureTable(table) {
@@ -39,10 +69,20 @@
     return data[table].find((row) => row.id === id) || null;
   }
 
+  function nextId(table) {
+    ensureTable(table);
+    let max = 0;
+    data[table].forEach((row) => {
+      const id = Number(row.id);
+      if (!Number.isNaN(id) && id > max) max = id;
+    });
+    return max + 1;
+  }
+
   function create(table, row) {
     ensureTable(table);
     const next = { ...row };
-    if (next.id == null) next.id = crypto.randomUUID();
+    if (next.id == null) next.id = nextId(table);
     data[table].push(next);
     persist();
     if (global.realtime) global.realtime.broadcast("create", table);
@@ -59,6 +99,26 @@
     return data[table][idx];
   }
 
+  function updateAt(table, index, patch) {
+    ensureTable(table);
+    if (index < 0 || index >= data[table].length) return null;
+    const row = data[table][index];
+    data[table][index] = { ...row, ...patch };
+    if (row.id != null) data[table][index].id = row.id;
+    persist();
+    if (global.realtime) global.realtime.broadcast("update", table);
+    return data[table][index];
+  }
+
+  function deleteAt(table, index) {
+    ensureTable(table);
+    if (index < 0 || index >= data[table].length) return false;
+    data[table].splice(index, 1);
+    persist();
+    if (global.realtime) global.realtime.broadcast("delete", table);
+    return true;
+  }
+
   function remove(table, id) {
     ensureTable(table);
     const before = data[table].length;
@@ -71,8 +131,8 @@
 
   function reset() {
     localStorage.removeItem(STORAGE_KEY);
-    data = cloneSeed();
-    persist();
+    localStorage.removeItem(VERSION_KEY);
+    applySeed();
     if (global.realtime) global.realtime.broadcast("reset", null);
   }
 
@@ -82,7 +142,10 @@
     getById,
     create,
     update,
+    updateAt,
     delete: remove,
+    deleteAt,
+    nextId,
     reset,
   };
 })(window);

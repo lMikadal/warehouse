@@ -119,6 +119,81 @@ frontend/
 
 When unsure about patterns, peek at the sibling Warehouse `frontend/` — **do not copy whole modules wholesale**.
 
+## UX management
+
+### Notifications (toasts)
+
+Use shadcn's **Sonner** (`sonner` package, already wired by shadcn init) for all transient feedback. Do not build a custom toast system.
+
+| Trigger | Call |
+|---------|------|
+| Successful mutation | `toast.success(t('feedback.saved'))` |
+| Server / validation error | `toast.error(t('feedback.error'))` |
+| Background async (e.g. export) | `toast.promise(promise, { loading, success, error })` |
+| Non-blocking info | `toast.info(msg)` |
+| Destructive confirmation | Confirm in a `Dialog` first; toast after |
+
+Rule: every `mutation` (POST / PATCH / DELETE) result — success or error — must produce a visible toast. Silent mutations are a UX bug.
+
+### Loading states
+
+Priority order (pick the highest that fits):
+
+1. **Skeleton** — for initial data load on a list or detail page (`shadcn/skeleton`)
+2. **Disabled + spinner icon** — for submit/action buttons while a request is in flight
+3. **Overlay spinner** — only for full-page transitions that can't be avoided
+
+Never show a blank white area while data is loading.
+
+### Optimistic updates
+
+For fast-feeling mutations (rename, toggle, reorder):
+
+1. Update local state immediately
+2. Call the API in the background
+3. On error: revert state + show error toast
+
+Use React `useOptimistic` (Next.js App Router) when available; fall back to manual state toggle.
+
+### Error boundaries
+
+- Wrap each major route segment with an `error.tsx` boundary
+- Show a user-friendly error card (not a raw stack trace or JSON blob)
+- Provide a "Try again" button that calls `reset()` from the boundary
+
+Error copy lives in i18n messages, not hardcoded English:
+
+```ts
+// messages/th.json
+{ "error.generic": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" }
+// messages/en.json
+{ "error.generic": "Something went wrong. Please try again." }
+```
+
+### Empty states
+
+Every list / table component must handle the zero-rows case:
+
+- Show an icon + short label + CTA button (e.g. "No products yet — Add product")
+- Do not render a blank `<tbody>` or hidden element
+
+### Forms
+
+- Use React Hook Form + shadcn `Form` components
+- Inline field error below the input on blur (not only on submit)
+- Disable the submit button while the mutation is in flight (prevent double-submit)
+- Clear field error when the user changes the value
+
+### Handoff from design
+
+| design pattern | frontend equivalent |
+|----------------|---------------------|
+| `toast.show(msg, 'success')` | `toast.success(t(key))` via Sonner |
+| `toast.show(msg, 'error')` | `toast.error(t(key))` |
+| Dev Bar quick-login | Not ported — dev bar is design-only tooling |
+| `modal.open(…)` | shadcn `Dialog` |
+| `store.getAll(table)` | Server Component fetch or `useSWR` / `useQuery` call |
+
 ## Do not
 
 - Edit `design/` mockups unless the user asks
@@ -127,3 +202,4 @@ When unsure about patterns, peek at the sibling Warehouse `frontend/` — **do n
 - Add a second CSS framework or replace bun with npm/yarn without being asked
 - Use other icon libraries or duplicate Lucide SVGs under `frontend/`
 - Commit secrets; use `.env.local` / compose env
+- Port `design/js/components/dev-bar.js` to `frontend/` — it is prototype-only tooling

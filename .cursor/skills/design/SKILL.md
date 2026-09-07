@@ -91,6 +91,16 @@ warehouse/
 │   │   │   ├── en.js
 │   │   │   └── i18n.js
 │   │   ├── seed/
+│   │   │   ├── _admin_shared.js
+│   │   │   ├── admin_menu.js
+│   │   │   ├── admin_menu_language.js
+│   │   │   ├── admin_permission.js
+│   │   │   ├── admin_menu_permission.js
+│   │   │   ├── admin_role.js
+│   │   │   ├── admin_role_language.js
+│   │   │   ├── admin_role_permission.js
+│   │   │   ├── admin_user.js
+│   │   │   ├── website_language.js
 │   │   │   ├── product_item.js
 │   │   │   ├── product_item_language.js
 │   │   │   └── index.js
@@ -330,6 +340,101 @@ make design-serve
 | Customer approves UI | `/frontend` — implement in Next.js |
 | Schema in `design/schema/` is ready | `/backend` — migrations + API |
 
+## Dev Bar (design-only testing panel)
+
+Every `design/pages/*.html` page **must** include `dev-bar.js` and call `devBar.mount()` at the end of its init script. The bar is a fixed amber-accented strip at the bottom of the viewport — visible only in the prototype, never copied to `frontend/`.
+
+### Load order
+
+Add after the last component script (toast, modal, sidebar, layout …):
+
+```html
+<script src="../js/components/dev-bar.js"></script>
+```
+
+### API
+
+```js
+devBar.mount({
+  // required — only toast types this page can emit in real UX
+  toasts: [
+    { type: 'success', label: 'Success: saved', msg: 'Operation completed successfully.' },
+    { type: 'error', label: 'Error: forbidden', msgKey: 'error.forbidden' },
+    { type: 'warning', label: 'Warning: confirm', msg: 'Check this before proceeding.' },
+  ],
+  // optional — page-specific controls
+  actions: [
+    // flat button
+    { label: 'Reset store', fn: function () { store.reset(); location.reload(); } },
+
+    // labelled group
+    {
+      group: 'Status',
+      items: [
+        { label: 'pending',     fn: function () { /* set state */ } },
+        { label: 'in_progress', fn: function () { /* set state */ } },
+        { label: 'completed',   fn: function () { /* set state */ } },
+      ],
+    },
+  ],
+});
+```
+
+- `toasts`: array of `{ type, label?, msgKey?, msg? }` — `type` is `success` | `error` | `warning` | `info`; use `msgKey` for i18n copy when available, else `msg`
+- If `toasts` is omitted or empty, the Toast section is hidden (no default all-four strip)
+- Page `actions` appear after a separator when both sections exist. Collapse state is persisted per-browser via `localStorage`
+
+### Login page — quick login
+
+On `login.html` the dev bar's `actions` list all active `admin_user` rows as one-click login buttons (username + type label). Clicking one calls `auth.login(username, _demo_password)` then `auth.resolveLandingPath()` — no password typing needed for UI testing.
+
+### Rules
+
+- Every new page gets `devBar.mount()` with a `toasts` array listing **only** toast types that page can emit (audit mutation/error paths before adding a page)
+- Page actions must use `store.*` calls only; no real API calls
+- Never include `dev-bar.js` in `frontend/` — it is prototype tooling only
+- Use `group` + `items` when there are multiple related states to switch between (e.g. order status variants); use flat `{ label, fn }` for one-off actions
+
+## UX patterns (design)
+
+These rules apply to every page and component in `design/`.
+
+### Feedback — always show a result
+
+| Trigger | UI response |
+|---------|-------------|
+| Successful create / update / delete | `toast.show(msg, 'success')` |
+| Validation or logic error | `toast.show(msg, 'error')` or inline error under the field |
+| Destructive action (delete) | Confirm modal before executing; success toast after |
+| Network / async mock delay | Disable the submit button during the action; re-enable on finish |
+
+Never mutate data silently. Every `store.create / update / delete` call must be followed by a visible feedback signal.
+
+### Loading & empty states
+
+- Tables / lists with no rows: show an empty-state message (not a blank white area)
+- If a mock async delay is simulated, disable the triggering button and show a brief loading label
+- Skeleton placeholders are optional for design but preferred over blank flicker
+
+### Error copy (i18n keys)
+
+Error messages live in `js/i18n/th.js` + `en.js`, not hardcoded in pages. Pattern:
+
+```js
+// In i18n dictionaries:
+"error.required": "กรุณากรอกข้อมูลให้ครบถ้วน" / "Please fill in all required fields."
+"error.notFound":  "ไม่พบข้อมูล" / "Record not found."
+
+// In page script:
+toast.show(i18n.t("error.required"), "error");
+```
+
+### Forms
+
+- Inline field errors on blur (not only on submit)
+- Disable submit button while processing to prevent double-submit
+- Clear field errors when the user starts typing again
+
 ## Do not
 
 - Connect real DB or Redis
@@ -337,3 +442,4 @@ make design-serve
 - Add heavy business logic beyond demo CRUD
 - Introduce a framework or package manager under `design/`
 - Use non-Lucide icon libraries or emoji as UI icons
+- Include `dev-bar.js` in `frontend/` — it is design-only tooling

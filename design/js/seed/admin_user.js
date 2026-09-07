@@ -1,0 +1,41 @@
+(function (global) {
+  var TS = global.ADMIN_SEED_SHARED.TS;
+  global.SEED_ADMIN_USER = [
+    {
+      id: 1,
+      username: "admin",
+      email: "admin@warehouse.local",
+      password_hash: "demo",
+      _demo_password: "admin",
+      status: "active",
+      type: "superadmin",
+      admin_role_id: 1,
+      last_login_at: null,
+      failed_login_attempts: 0,
+      locked_until: null,
+      deleted_at: null,
+      created_at: TS,
+      updated_at: TS,
+      created_by: null,
+      updated_by: null,
+    },
+    {
+      id: 2,
+      username: "staff",
+      email: "staff@warehouse.local",
+      password_hash: "demo",
+      _demo_password: "staff",
+      status: "active",
+      type: "staff",
+      admin_role_id: 2,
+      last_login_at: null,
+      failed_login_attempts: 0,
+      locked_until: null,
+      deleted_at: null,
+      created_at: TS,
+      updated_at: TS,
+      created_by: 1,
+      updated_by: 1,
+    },
+  ];
+})(window);

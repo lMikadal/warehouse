@@ -13,6 +13,7 @@ CREATE TABLE admin_permission (
     action    admin_permission_action  NOT NULL,           -- CRUD-style action
     resource  VARCHAR(255)             NOT NULL,           -- API path e.g. "/api/v1/product/items"
     method    admin_permission_method  NOT NULL,           -- HTTP verb for route guard
+    is_active BOOLEAN                  NOT NULL DEFAULT TRUE, -- false = hide/disable in UI even if role grants
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMPTZ,
@@ -25,5 +26,7 @@ CREATE TABLE admin_permission (
 );
 
 CREATE INDEX idx_admin_permission_module     ON admin_permission (module);
+CREATE INDEX idx_admin_permission_active     ON admin_permission (module, type, action)
+    WHERE deleted_at IS NULL AND is_active = TRUE;
 CREATE INDEX idx_admin_permission_created_by ON admin_permission (created_by) WHERE created_by IS NOT NULL;
 CREATE INDEX idx_admin_permission_updated_by ON admin_permission (updated_by) WHERE updated_by IS NOT NULL;

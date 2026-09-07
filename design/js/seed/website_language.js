@@ -1,0 +1,26 @@
+window.SEED_WEBSITE_LANGUAGE = [
+  {
+    id: 1,
+    locale: "th",
+    name: "ไทย",
+    sort_order: 100,
+    is_default: true,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    deleted_at: null,
+    created_by: null,
+    updated_by: null,
+  },
+  {
+    id: 2,
+    locale: "en",
+    name: "English",
+    sort_order: 200,
+    is_default: false,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    deleted_at: null,
+    created_by: null,
+    updated_by: null,
+  },
+];
