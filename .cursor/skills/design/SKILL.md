@@ -14,6 +14,7 @@ Warehouse app prototype for customer demos — change data locally without a bui
 ## Scope
 
 - Work in `design/**`
+- Read [`design/design.json`](../../design/design.json) before building or restyling UI — visual tokens, breakpoints, components, UX rules
 - Read `design/schema/**` so seed/store fields match real schema
 - Do **not** touch `frontend/`, `backend/`, or call a real API
 - When behavior/knowledge changes → update `document/checklist/design/` and `document/knowledge/design.md` (see `.cursor/rules/document.mdc`)
@@ -23,7 +24,7 @@ Warehouse app prototype for customer demos — change data locally without a bui
 1. **Warehouse app** — Everything is about the Warehouse app (users, products, orders, …); do not ship a generic off-domain template
 2. **Reusable + maintainable** — Share UI in `js/components/`, name clearly, avoid duplication
 3. **Strong security** — No real passwords/secrets in seed; do not inject unsanitized user HTML; mock only — no live DB
-4. **Responsive** — mobile / tablet / computer / computer-wide (breakpoints below)
+4. **Responsive** — mobile / tablet portrait / tablet landscape / computer / computer-wide (see `design/design.json` and breakpoints below)
 5. **Theme: blue + white** — White background (light) + blue accent; tokens in `css/style.css`
 6. **Light + dark mode** — Toggleable; default from `prefers-color-scheme`; persist in `localStorage`; paired light/dark tokens
 7. **i18n: th + en** — Dictionaries in `js/i18n/`; language switcher; default `th`; do not hardcode a single language in UI
@@ -31,12 +32,15 @@ Warehouse app prototype for customer demos — change data locally without a bui
 
 ### Breakpoints (mobile-first)
 
-| Name | Width | Notes |
-|------|-------|-------|
-| mobile | &lt; 640px | base |
-| tablet | ≥ 640px | |
-| computer | ≥ 1024px | desktop |
-| computer-wide | ≥ 1440px | wide |
+Full definitions in [`design/design.json`](../../design/design.json) → `breakpoints`.
+
+| Name | Rule | Notes |
+|------|------|-------|
+| mobile | &lt; 640px | base; single column; drawer nav; large touch targets |
+| tabletPortrait | ≥ 640px and &lt; 1024px + `portrait` | wider single column; drawer nav |
+| tabletLandscape | ≥ 640px + `landscape` + short height (≤ 900px) | two columns where helpful; reduce vertical padding |
+| computer | ≥ 1024px | sticky sidebar; split auth panel; more breathing room |
+| computerWide | ≥ 1440px | content max-width ~1280–1440px centered; no edge-to-edge forms/tables |
 
 ### Theme tokens
 

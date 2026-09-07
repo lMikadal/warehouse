@@ -2,6 +2,12 @@
 
 Customer-facing Warehouse prototype under `design/` — HTML/CSS/vanilla JS only. No bundler, no real DB, no API calls.
 
+## Visual / UX guidelines
+
+**Source of truth:** [`design/design.json`](../../design/design.json) — tokens, breakpoints (incl. tablet portrait/landscape), layout patterns, components, UX rules. Reference page: `pages/login.html`.
+
+Read `design.json` before building or restyling any page. CSS tokens live in `css/style.css`; the JSON documents the intended visual language and responsive behavior for agents and handoff.
+
 ## Stack
 
 | Piece | Approach |
@@ -189,12 +195,15 @@ Checks per file:
 
 ## Breakpoints (mobile-first)
 
-| Name | Width |
-|------|-------|
+Full definitions in [`design/design.json`](../../design/design.json) → `breakpoints`.
+
+| Name | Rule |
+|------|------|
 | mobile | &lt; 640px |
-| tablet | ≥ 640px |
+| tabletPortrait | ≥ 640px and &lt; 1024px + `portrait` |
+| tabletLandscape | ≥ 640px + `landscape` + max-height 900px |
 | computer | ≥ 1024px |
-| computer-wide | ≥ 1440px |
+| computerWide | ≥ 1440px — content max-width ~1280–1440px, centered |
 
 ## Docs
 
