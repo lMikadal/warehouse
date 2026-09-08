@@ -349,7 +349,9 @@
       "structure": "modal__header (border-bottom) + modal__content (padding) + modal__footer (border-top)",
       "closeButton": "modal__close ghost icon button — x.svg Lucide icon, 2.25rem square",
       "switchInForm": "checkbox is_active renders as .crud-switch (green, role=switch, thumb) inside .form-field--switch (label left, switch right)",
-      "nameRow": "consecutive name_th + name_en fields auto-grouped in .crud-form__row (2-column grid; stacks on mobile)",
+      "nameRow": "consecutive name_th + name_en fields auto-grouped in .crud-form__row (2-column grid; stacks on mobile); optional rowWith on a field pairs it with the next field key in the same row",
+      "formFieldTypes": "searchableSelect — FK picker with search (hidden input + panel); passwordGroup — create shows password + confirm, edit shows change-password toggle first",
+      "adminUserTypeGuard": "only superadmin actor may assign userType.superadmin (form + toolbar filter via assignableAdminUserTypes)",
       "maxWidth": "36rem — CSS var --modal-max-width on .modal (generic + confirm)",
       "crudModalMaxWidth": "42rem — .crud-modal overrides --modal-max-width",
       "formSpacing": "crud-form gap 0.5rem; compact labels/inputs; CRUD modal max-width 42rem",
@@ -467,8 +469,8 @@
         "resetPageOnChange": true
       },
       "columnFilters": {
-        "flag": "columnFilters: [{ key, labelKey, optionI18nPrefix?, optionLabel?, optionValues? }] on module config",
-        "ui": "searchable dropdown per field in toolbar (after text search, before status filter); trigger label via crud.filterField",
+        "flag": "columnFilters: [{ key, labelKey, ui?, optionI18nPrefix?, optionLabel?, optionValues? }] on module config",
+        "ui": "searchable dropdown per field in toolbar (default); ui: buttonGroup — segmented buttons (All + optionValues) for enum filters",
         "options": "unique sorted values from full listRows() when optionValues omitted; All clears filter; sort by optionLabel or optionI18nPrefix when set",
         "optionValues": "optional array or function() — explicit filter choices (admin_user: roles from admin_role store; type/status from schema enums)",
         "optionI18nPrefix": "optional — t(prefix + value) for option labels (e.g. action.view)",
@@ -476,7 +478,7 @@
         "resetPageOnChange": true,
         "examples": {
           "admin_permission": "module, type, action (optionI18nPrefix)",
-          "admin_user": "admin_role_id (optionValues from admin_role store); type, status (optionValues enum arrays)",
+          "admin_user": "admin_role_id (dropdown); type, status (buttonGroup + optionValues enum arrays)",
           "geo": "province — country; district — country + province; sub_district — country + province + district (ancestor FKs denormalized in geoConfig listRows)"
         }
       },

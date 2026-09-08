@@ -121,6 +121,22 @@
       });
   }
 
+  function assignableAdminUserTypes() {
+    var types = ADMIN_USER_TYPES.slice();
+    if (!global.auth || !global.auth.isSuperAdmin(global.auth.getUser())) {
+      types = types.filter(function (t) {
+        return t !== "superadmin";
+      });
+    }
+    return types;
+  }
+
+  function adminUserTypeSelectOptions() {
+    return assignableAdminUserTypes().map(function (v) {
+      return { value: v, label: global.i18n.t("userType." + v) };
+    });
+  }
+
   var updatedAtColumn = {
     id: "updated_at",
     labelKey: "col.updatedAt",
@@ -436,12 +452,14 @@
         {
           key: "type",
           labelKey: "col.type",
+          ui: "buttonGroup",
           optionI18nPrefix: "userType.",
-          optionValues: ADMIN_USER_TYPES,
+          optionValues: assignableAdminUserTypes,
         },
         {
           key: "status",
           labelKey: "col.status",
+          ui: "buttonGroup",
           optionI18nPrefix: "userStatus.",
           optionValues: ADMIN_USER_STATUSES,
         },
@@ -505,12 +523,13 @@
       formFields: [
         { key: "username", labelKey: "col.username", type: "text", required: true },
         { key: "email", labelKey: "col.email", type: "text" },
-        { key: "password", labelKey: "col.password", type: "password" },
+        { key: "password", labelKey: "col.password", type: "passwordGroup" },
         {
           key: "admin_role_id",
           labelKey: "col.role",
-          type: "select",
+          type: "searchableSelect",
           required: true,
+          rowWith: "type",
           options: activeAdminRoleSelectOptions,
         },
         {
@@ -518,11 +537,7 @@
           labelKey: "col.type",
           type: "select",
           required: true,
-          options: function () {
-            return ADMIN_USER_TYPES.map(function (v) {
-              return { value: v, label: global.i18n.t("userType." + v) };
-            });
-          },
+          options: adminUserTypeSelectOptions,
         },
         {
           key: "status",
@@ -552,13 +567,21 @@
       },
       validate: function (values, id) {
         var fields = REGISTRY.admin_user.formFields.filter(function (f) {
-          if (f.key === "password" && id) return false;
+          if (f.type === "passwordGroup") return false;
           return f.required;
         });
         var result = requiredValidate(values, fields);
         var errors = result.errors || {};
-        if (!id && (!values.password || values.password === "")) {
-          errors.password = global.i18n.t("error.required");
+        if (!id || values._passwordChange) {
+          if (!values.password) errors.password = global.i18n.t("error.required");
+          if (!values.password_confirm) errors.password_confirm = global.i18n.t("error.required");
+          if (
+            values.password &&
+            values.password_confirm &&
+            values.password !== values.password_confirm
+          ) {
+            errors.password_confirm = global.i18n.t("error.passwordMismatch");
+          }
         }
         var users = global.store.getAll("admin_user").filter(function (u) {
           return u.deleted_at == null;
@@ -597,7 +620,7 @@
           updated_by: actorId,
         };
         if (id) {
-          if (values.password) {
+          if (values._passwordChange && values.password) {
             patch._demo_password = values.password;
             patch.password_hash = "demo";
           }

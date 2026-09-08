@@ -392,6 +392,43 @@
     return opts;
   }
 
+  function columnFilterBtnHtml(filterDef, value) {
+    var selected = state.columnFilters[filterDef.key] || "";
+    var active = selected === value;
+    return (
+      '<button type="button" class="crud-status-filter__btn' +
+      (active ? " crud-status-filter__btn--active" : "") +
+      '" data-filter-value="' +
+      escapeHtml(value) +
+      '"' +
+      (active ? ' aria-pressed="true"' : ' aria-pressed="false"') +
+      ">" +
+      escapeHtml(filterOptionLabel(filterDef, value)) +
+      "</button>"
+    );
+  }
+
+  function columnFilterButtonGroupHtml(filterDef) {
+    if (state.columnFilters[filterDef.key] === undefined) state.columnFilters[filterDef.key] = "";
+    var buttons = columnFilterBtnHtml(filterDef, "");
+    buildColumnFilterOptions(filterDef).forEach(function (val) {
+      buttons += columnFilterBtnHtml(filterDef, val);
+    });
+    return (
+      '<div class="crud-filter-btn-group" data-filter-key="' +
+      escapeHtml(filterDef.key) +
+      '">' +
+      '<span class="crud-filter-btn-group__label" data-i18n="' +
+      escapeHtml(filterDef.labelKey) +
+      '"></span>' +
+      '<div class="crud-status-filter" role="group" aria-label="' +
+      escapeHtml(t(filterDef.labelKey)) +
+      '">' +
+      buttons +
+      "</div></div>"
+    );
+  }
+
   function columnFilterOptionsHtml(filterDef) {
     var selected = state.columnFilters[filterDef.key] || "";
     var html =
@@ -413,12 +450,20 @@
     return html;
   }
 
-  function columnFiltersHtml() {
+  function columnFiltersHtml(mode) {
     if (!state.config.columnFilters || !state.config.columnFilters.length) return "";
+    var filters = state.config.columnFilters.filter(function (f) {
+      var isBtn = f.ui === "buttonGroup";
+      if (mode === "buttonGroup") return isBtn;
+      if (mode === "dropdown") return !isBtn;
+      return true;
+    });
+    if (!filters.length) return "";
     return (
       '<div class="crud-toolbar__filters">' +
-      state.config.columnFilters
+      filters
         .map(function (f) {
+          if (f.ui === "buttonGroup") return columnFilterButtonGroupHtml(f);
           if (state.columnFilters[f.key] === undefined) state.columnFilters[f.key] = "";
           return (
             '<div class="crud-filter-select" data-filter-key="' +
@@ -538,6 +583,26 @@
         closeAllColumnFilterPanels();
       });
     }
+
+    state.container.querySelectorAll(".crud-filter-btn-group").forEach(function (wrap) {
+      var key = wrap.getAttribute("data-filter-key");
+      var group = wrap.querySelector(".crud-status-filter");
+      if (!group) return;
+      group.querySelectorAll(".crud-status-filter__btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var next = btn.getAttribute("data-filter-value") || "";
+          if (next === (state.columnFilters[key] || "")) return;
+          state.columnFilters[key] = next;
+          state.page = 1;
+          group.querySelectorAll(".crud-status-filter__btn").forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle("crud-status-filter__btn--active", on);
+            b.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          renderTable();
+        });
+      });
+    });
   }
 
   function pageHeaderHtml() {
@@ -601,13 +666,22 @@
         statusFilterBtnHtml("inactive", "col.inactive") +
         "</div>"
       : "";
+    var dropdownFilters = columnFiltersHtml("dropdown");
+    var buttonGroupFilters = columnFiltersHtml("buttonGroup");
+    var filterRow =
+      buttonGroupFilters !== ""
+        ? '<div class="crud-toolbar__row crud-toolbar__row--filters">' + buttonGroupFilters + "</div>"
+        : "";
     return (
       '<div class="crud-page">' +
       pageHeaderHtml() +
       '  <div class="crud-toolbar">' +
-      '    <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
-      columnFiltersHtml() +
+      '    <div class="crud-toolbar__row">' +
+      '      <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
+      dropdownFilters +
       statusFilter +
+      "    </div>" +
+      filterRow +
       "  </div>" +
       '  <div class="crud-table-wrap">' +
       '    <div class="crud-table-wrap__body" id="crud-table-body"></div>' +
@@ -982,6 +1056,120 @@
     });
   }
 
+  function filterFormSearchSelectList(list, q) {
+    list.querySelectorAll(".form-search-select__option").forEach(function (opt) {
+      var text = (opt.textContent || "").toLowerCase();
+      opt.hidden = !!(q && text.indexOf(q) < 0);
+    });
+  }
+
+  function closeAllFormSearchSelectPanels(exceptWrap) {
+    if (!formOverlay) return;
+    formOverlay.querySelectorAll(".form-search-select").forEach(function (wrap) {
+      if (exceptWrap && wrap === exceptWrap) return;
+      var panel = wrap.querySelector(".form-search-select__panel");
+      var trigger = wrap.querySelector(".form-search-select__trigger");
+      if (panel) panel.hidden = true;
+      if (trigger) trigger.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function bindFormSearchableSelects(form) {
+    form.querySelectorAll(".form-search-select").forEach(function (wrap) {
+      var hidden = wrap.querySelector('input[type="hidden"]');
+      var trigger = wrap.querySelector(".form-search-select__trigger");
+      var panel = wrap.querySelector(".form-search-select__panel");
+      var search = wrap.querySelector(".form-search-select__search");
+      var list = wrap.querySelector(".form-search-select__list");
+      var labelEl = wrap.querySelector(".form-search-select__label");
+      if (!hidden || !trigger || !panel || !list) return;
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var willOpen = panel.hidden;
+        closeAllFormSearchSelectPanels();
+        if (willOpen) {
+          panel.hidden = false;
+          trigger.setAttribute("aria-expanded", "true");
+          if (search) {
+            search.value = "";
+            filterFormSearchSelectList(list, "");
+            search.focus();
+          }
+        }
+      });
+
+      panel.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+
+      if (search) {
+        search.addEventListener("input", function () {
+          filterFormSearchSelectList(list, search.value.trim().toLowerCase());
+        });
+      }
+
+      list.querySelectorAll(".form-search-select__option").forEach(function (opt) {
+        opt.addEventListener("click", function () {
+          var value = opt.getAttribute("data-value") || "";
+          hidden.value = value;
+          if (labelEl) labelEl.textContent = opt.textContent || "";
+          list.querySelectorAll(".form-search-select__option").forEach(function (o) {
+            o.classList.toggle("form-search-select__option--selected", o === opt);
+          });
+          closeAllFormSearchSelectPanels();
+          clearFieldError(wrap);
+        });
+      });
+    });
+
+    if (!form._formSearchSelectCloseBound) {
+      form._formSearchSelectCloseBound = true;
+      form.addEventListener("click", function () {
+        closeAllFormSearchSelectPanels();
+      });
+    }
+  }
+
+  function passwordInputHtml(name, labelKey) {
+    var ph = escapeHtml(fieldPlaceholder("input", labelKey));
+    return (
+      '<div class="form-field">' +
+      '<label for="crud-field-' +
+      escapeHtml(name) +
+      '"><span data-i18n="' +
+      escapeHtml(labelKey) +
+      '"></span></label>' +
+      '<div class="password-field">' +
+      '<input type="password" id="crud-field-' +
+      escapeHtml(name) +
+      '" name="' +
+      escapeHtml(name) +
+      '" value="" placeholder="' +
+      ph +
+      '" data-i18n-placeholder-input="' +
+      escapeHtml(labelKey) +
+      '" autocomplete="new-password" />' +
+      '<button type="button" class="password-field__toggle" aria-label=""></button>' +
+      "</div>" +
+      '<div class="form-field__error-slot" aria-live="polite"><p class="form-field__error" hidden role="alert"></p></div>' +
+      "</div>"
+    );
+  }
+
+  function bindPasswordGroup(form) {
+    var btn = form.querySelector("#crud-change-password");
+    var group = form.querySelector(".password-group");
+    if (!btn || !group) return;
+    btn.addEventListener("click", function () {
+      btn.hidden = true;
+      group.hidden = false;
+      if (global.passwordToggle) global.passwordToggle.bind(group);
+      var first = group.querySelector("input");
+      if (first) first.focus();
+    });
+  }
+
   function fieldHtml(field, values) {
     var val = values[field.key] != null ? values[field.key] : field.defaultValue != null ? field.defaultValue : "";
     var req = field.required ? '<span class="form-field__required" aria-hidden="true">*</span>' : "";
@@ -1002,6 +1190,62 @@
         " />" +
         '<span class="crud-switch__track" aria-hidden="true"><span class="crud-switch__thumb"></span></span>' +
         "</label>" +
+        "</div>"
+      );
+    }
+
+    if (field.type === "searchableSelect") {
+      var optsSource = typeof field.options === "function" ? field.options() : field.options || [];
+      var selectPh = escapeHtml(fieldPlaceholder("select", field.labelKey));
+      var selectedLabel = selectPh;
+      if (val != null && val !== "") {
+        var match = optsSource.find(function (o) {
+          return String(o.value) === String(val);
+        });
+        if (match) selectedLabel = escapeHtml(match.label);
+      }
+      var optionsHtml = optsSource
+        .map(function (opt) {
+          var sel = String(val) === String(opt.value) ? " form-search-select__option--selected" : "";
+          return (
+            '<li class="form-search-select__option' +
+            sel +
+            '" role="option" data-value="' +
+            escapeHtml(opt.value) +
+            '" tabindex="0">' +
+            escapeHtml(opt.label) +
+            "</li>"
+          );
+        })
+        .join("");
+      return (
+        '<div class="form-field form-search-select" data-field-key="' +
+        escapeHtml(field.key) +
+        '">' +
+        '<label><span data-i18n="' +
+        escapeHtml(field.labelKey) +
+        '"></span>' +
+        req +
+        "</label>" +
+        '<input type="hidden" name="' +
+        escapeHtml(field.key) +
+        '" value="' +
+        escapeHtml(val) +
+        '" />' +
+        '<div class="form-search-select__control">' +
+        '<button type="button" class="form-search-select__trigger" aria-haspopup="listbox" aria-expanded="false">' +
+        '<span class="form-search-select__label">' +
+        selectedLabel +
+        "</span>" +
+        '<img src="../assets/icons/chevron-down.svg" alt="" width="16" height="16" class="form-search-select__chevron" />' +
+        "</button>" +
+        '<div class="form-search-select__panel" hidden>' +
+        '<input type="search" class="form-search-select__search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
+        '<ul class="form-search-select__list" role="listbox">' +
+        optionsHtml +
+        "</ul>" +
+        "</div></div>" +
+        errSlot +
         "</div>"
       );
     }
@@ -1047,6 +1291,27 @@
         opts +
         "</select>" +
         errSlot +
+        "</div>"
+      );
+    }
+
+    if (field.type === "passwordGroup") {
+      if (editId) {
+        return (
+          '<div class="form-field form-field--password-group" data-password-group="edit">' +
+          '<button type="button" class="btn crud-change-password" id="crud-change-password" data-i18n="crud.changePassword"></button>' +
+          '<div class="password-group" hidden>' +
+          passwordInputHtml("password", "col.password") +
+          passwordInputHtml("password_confirm", "col.passwordConfirm") +
+          "</div>" +
+          errSlot +
+          "</div>"
+        );
+      }
+      return (
+        '<div class="password-group-wrap" data-password-group="create">' +
+        passwordInputHtml("password", "col.password") +
+        passwordInputHtml("password_confirm", "col.passwordConfirm") +
         "</div>"
       );
     }
@@ -1118,7 +1383,7 @@
     while (i < fields.length) {
       var f = fields[i];
       var next = fields[i + 1];
-      if (f.key === "name_th" && next && next.key === "name_en") {
+      if (next && (f.rowWith === next.key || (f.key === "name_th" && next.key === "name_en"))) {
         html.push(
           '<div class="crud-form__row">' +
             fieldHtml(f, values) +
@@ -1151,6 +1416,8 @@
     var form = formOverlay.querySelector("#crud-form");
     form.innerHTML = renderFormFields(state.config.formFields, values);
     if (global.i18n) global.i18n.init();
+    bindFormSearchableSelects(form);
+    bindPasswordGroup(form);
     if (global.passwordToggle) global.passwordToggle.bind(form);
     form.querySelectorAll("input, select").forEach(function (el) {
       el.addEventListener("input", function () {
@@ -1192,6 +1459,16 @@
     var form = formOverlay.querySelector("#crud-form");
     var values = {};
     state.config.formFields.forEach(function (field) {
+      if (field.type === "passwordGroup") {
+        var pwdEl = form.querySelector('[name="password"]');
+        var confirmEl = form.querySelector('[name="password_confirm"]');
+        values.password = pwdEl ? pwdEl.value.trim() : "";
+        values.password_confirm = confirmEl ? confirmEl.value.trim() : "";
+        var editWrap = form.querySelector('[data-password-group="edit"]');
+        var group = form.querySelector(".password-group");
+        values._passwordChange = !editWrap || !group || !group.hidden;
+        return;
+      }
       var el = form.querySelector('[name="' + field.key + '"]');
       if (!el) return;
       if (field.type === "checkbox") values[field.key] = el.checked;
