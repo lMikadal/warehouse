@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "admin-shell-11";
+  global.SEED_VERSION = "tree-path-nid-1";
 
   var tables = {};
 

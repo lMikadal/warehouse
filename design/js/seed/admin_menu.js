@@ -18,7 +18,8 @@
   }
 
   /**
-   * Menu tree: id, parent_id, module, path, icon, sort_order, tree_path, flags, labels {th,en}
+   * Menu tree: id, parent_id, module, path, icon, sort_order, flags, labels {th,en}
+   * tree_path derived via assignTreePaths — n{id} segments (e.g. n2.n6.n7)
    */
   var MENU_DEFS = [
     {
@@ -26,7 +27,6 @@
       module: "admin",
       icon: "shield-user",
       sort_order: 100,
-      tree_path: "admin",
       is_superadmin_only: true,
       labels: { th: "ผู้ดูแลระบบสูงสุด", en: "Super Admin" },
     },
@@ -36,7 +36,6 @@
       module: "admin_menu",
       path: "pages/admin-menu.html",
       sort_order: 100,
-      tree_path: "admin.admin_menu",
       is_superadmin_only: true,
       labels: { th: "เมนู", en: "Menu" },
     },
@@ -46,7 +45,6 @@
       module: "admin_permission",
       path: "pages/admin-permission.html",
       sort_order: 200,
-      tree_path: "admin.admin_permission",
       is_superadmin_only: true,
       labels: { th: "สิทธิ์การใช้งาน", en: "Permission" },
     },
@@ -56,7 +54,6 @@
       module: "admin_language",
       path: "pages/admin-language.html",
       sort_order: 300,
-      tree_path: "admin.admin_language",
       is_superadmin_only: true,
       labels: { th: "ภาษา", en: "Language" },
     },
@@ -65,7 +62,6 @@
       parent_id: 2,
       module: "admin",
       sort_order: 400,
-      tree_path: "admin.address",
       is_superadmin_only: true,
       labels: { th: "ที่อยู่", en: "Address" },
     },
@@ -75,7 +71,6 @@
       module: "website_country",
       path: "pages/website-country.html",
       sort_order: 100,
-      tree_path: "admin.address.website_country",
       is_superadmin_only: true,
       labels: { th: "ประเทศ", en: "Country" },
     },
@@ -85,7 +80,6 @@
       module: "website_province",
       path: "pages/website-province.html",
       sort_order: 200,
-      tree_path: "admin.address.website_province",
       is_superadmin_only: true,
       labels: { th: "จังหวัด", en: "Province" },
     },
@@ -95,7 +89,6 @@
       module: "website_district",
       path: "pages/website-district.html",
       sort_order: 300,
-      tree_path: "admin.address.website_district",
       is_superadmin_only: true,
       labels: { th: "เขต / อำเภอ", en: "District" },
     },
@@ -105,7 +98,6 @@
       module: "website_sub_district",
       path: "pages/website-sub-district.html",
       sort_order: 400,
-      tree_path: "admin.address.website_sub_district",
       is_superadmin_only: true,
       labels: { th: "แขวง / ตำบล", en: "Sub District" },
     },
@@ -114,7 +106,6 @@
       module: "admin",
       icon: "user-round",
       sort_order: 200,
-      tree_path: "user",
       labels: { th: "ผู้ดูแลระบบ", en: "Admin" },
     },
     {
@@ -123,7 +114,6 @@
       module: "admin_user",
       path: "#",
       sort_order: 100,
-      tree_path: "user.admin_user",
       labels: { th: "รายชื่อ", en: "List" },
     },
     {
@@ -132,7 +122,6 @@
       module: "admin_role",
       path: "#",
       sort_order: 200,
-      tree_path: "user.admin_role",
       labels: { th: "บทบาท", en: "Role" },
     },
     {
@@ -140,7 +129,6 @@
       module: "setting",
       icon: "settings",
       sort_order: 300,
-      tree_path: "setting",
       labels: { th: "ตั้งค่า", en: "Setting" },
     },
     {
@@ -149,7 +137,6 @@
       module: "setting_bank",
       path: "#",
       sort_order: 100,
-      tree_path: "setting.setting_bank",
       labels: { th: "ธนาคาร", en: "Bank" },
     },
     {
@@ -158,7 +145,6 @@
       module: "setting_vat",
       path: "#",
       sort_order: 200,
-      tree_path: "setting.setting_vat",
       labels: { th: "VAT", en: "VAT" },
     },
     {
@@ -167,7 +153,6 @@
       module: "setting_payment_method",
       path: "#",
       sort_order: 300,
-      tree_path: "setting.setting_payment_method",
       labels: { th: "ช่องทางชำระ", en: "Payment" },
     },
     {
@@ -176,7 +161,6 @@
       module: "setting_sale_channel",
       path: "#",
       sort_order: 400,
-      tree_path: "setting.setting_sale_channel",
       labels: { th: "ช่องทางขาย", en: "Sale Channel" },
     },
     {
@@ -185,7 +169,6 @@
       module: "setting_code",
       path: "#",
       sort_order: 500,
-      tree_path: "setting.setting_code",
       labels: { th: "รหัส", en: "Code" },
     },
     {
@@ -194,7 +177,6 @@
       module: "setting_claim_reason",
       path: "#",
       sort_order: 600,
-      tree_path: "setting.setting_claim_reason",
       labels: { th: "เหตุผลเคลม", en: "Claim Reason" },
     },
     {
@@ -203,7 +185,6 @@
       module: "setting_prefix",
       path: "#",
       sort_order: 700,
-      tree_path: "setting.setting_prefix",
       labels: { th: "คำนำหน้า", en: "Prefix" },
     },
     {
@@ -212,7 +193,6 @@
       path: "#",
       icon: "contact",
       sort_order: 400,
-      tree_path: "supplier",
       labels: { th: "คู่ค้า", en: "Supplier" },
     },
     {
@@ -220,7 +200,6 @@
       module: "location",
       icon: "map-pin",
       sort_order: 500,
-      tree_path: "location",
       labels: { th: "สถานที่", en: "Location" },
     },
     {
@@ -229,7 +208,6 @@
       module: "location_location",
       path: "#",
       sort_order: 100,
-      tree_path: "location.location_location",
       labels: { th: "รายการ", en: "List" },
     },
     {
@@ -237,7 +215,6 @@
       module: "warehouse",
       icon: "warehouse",
       sort_order: 600,
-      tree_path: "warehouse",
       labels: { th: "คลังสินค้า", en: "Warehouse" },
     },
     {
@@ -246,7 +223,6 @@
       module: "warehouse_list",
       path: "#",
       sort_order: 100,
-      tree_path: "warehouse.warehouse_list",
       labels: { th: "รายการ", en: "List" },
     },
     {
@@ -255,7 +231,6 @@
       module: "warehouse_list",
       path: null,
       sort_order: 200,
-      tree_path: "warehouse.warehouse_management",
       is_dialog: true,
       labels: { th: "การจัดการ", en: "Management" },
     },
@@ -264,7 +239,6 @@
       module: "product",
       icon: "box",
       sort_order: 700,
-      tree_path: "product",
       labels: { th: "สินค้า", en: "Product" },
     },
     {
@@ -273,7 +247,6 @@
       module: "product_list",
       path: "#",
       sort_order: 100,
-      tree_path: "product.product_list",
       labels: { th: "รายการ", en: "List" },
     },
     {
@@ -282,7 +255,6 @@
       module: "product_category",
       path: "#",
       sort_order: 200,
-      tree_path: "product.product_category",
       labels: { th: "หมวดหมู่", en: "Category" },
     },
     {
@@ -291,7 +263,6 @@
       module: "product_brand",
       path: "#",
       sort_order: 300,
-      tree_path: "product.product_brand",
       labels: { th: "แบรนด์", en: "Brand" },
     },
     {
@@ -300,7 +271,6 @@
       module: "product_car",
       path: "#",
       sort_order: 400,
-      tree_path: "product.product_car",
       labels: { th: "หมวดหมู่รถยนต์", en: "Car Category" },
     },
     {
@@ -308,7 +278,6 @@
       module: "member",
       icon: "users",
       sort_order: 750,
-      tree_path: "member",
       labels: { th: "สมาชิก", en: "Members" },
     },
     {
@@ -316,7 +285,6 @@
       parent_id: 33,
       module: "member_setting",
       sort_order: 100,
-      tree_path: "member.member_setting",
       labels: { th: "ตั้งค่า", en: "Settings" },
     },
     {
@@ -325,7 +293,6 @@
       module: "member_setting_credit",
       path: "#",
       sort_order: 100,
-      tree_path: "member.member_setting.member_setting_credit",
       labels: { th: "รูปแบบชำระ", en: "Credit" },
     },
     {
@@ -334,7 +301,6 @@
       module: "member_setting_group",
       path: "#",
       sort_order: 200,
-      tree_path: "member.member_setting.member_setting_group",
       labels: { th: "ประเภท", en: "Group" },
     },
     {
@@ -343,7 +309,6 @@
       module: "member_setting_business",
       path: "#",
       sort_order: 300,
-      tree_path: "member.member_setting.member_setting_business",
       labels: { th: "กลุ่มธุรกิจ", en: "Business" },
     },
     {
@@ -352,7 +317,6 @@
       module: "member_tier",
       path: "#",
       sort_order: 200,
-      tree_path: "member.member_tier",
       labels: { th: "ระดับ", en: "Tier" },
     },
     {
@@ -361,7 +325,6 @@
       module: "member_user",
       path: "#",
       sort_order: 300,
-      tree_path: "member.member_user",
       labels: { th: "รายชื่อ", en: "List" },
     },
     {
@@ -369,7 +332,6 @@
       module: "order",
       icon: "coins",
       sort_order: 800,
-      tree_path: "sales",
       labels: { th: "ฝ่ายขาย", en: "Sales" },
     },
     {
@@ -378,7 +340,6 @@
       module: "order_ticket",
       path: "#",
       sort_order: 100,
-      tree_path: "sales.order_ticket",
       labels: { th: "คำร้อง", en: "Ticket" },
     },
     {
@@ -387,7 +348,6 @@
       module: "order_store",
       path: "#",
       sort_order: 200,
-      tree_path: "sales.order_store",
       labels: { th: "งานขาย (หน้าร้าน)", en: "Store Sales" },
     },
     {
@@ -396,7 +356,6 @@
       module: "order_order",
       path: "#",
       sort_order: 300,
-      tree_path: "sales.order_order",
       labels: { th: "ใบจัดสินค้า", en: "Picking Slip" },
     },
     {
@@ -405,7 +364,6 @@
       module: "order_store_claim",
       path: "#",
       sort_order: 400,
-      tree_path: "sales.order_store_claim",
       labels: { th: "ทำรายการเคลม / คืน", en: "Process Claim / Return" },
     },
     {
@@ -414,7 +372,6 @@
       module: "order_store_claim_list",
       path: "#",
       sort_order: 500,
-      tree_path: "sales.order_store_claim_list",
       labels: { th: "รายการเคลม / คืน", en: "Claim / Return List" },
     },
     {
@@ -422,7 +379,6 @@
       module: "order",
       icon: "shopping-bag",
       sort_order: 900,
-      tree_path: "order",
       labels: { th: "ออเดอร์", en: "Order" },
     },
     {
@@ -431,7 +387,6 @@
       module: "order_purchase",
       path: "#",
       sort_order: 100,
-      tree_path: "order.order_purchase",
       labels: { th: "คำสั่งซื้อ", en: "Purchase" },
     },
     {
@@ -440,7 +395,6 @@
       module: "order_compare",
       path: "#",
       sort_order: 200,
-      tree_path: "order.order_compare",
       labels: { th: "เทียบราคา", en: "Compare" },
     },
     {
@@ -449,7 +403,6 @@
       module: "order_receive",
       path: "#",
       sort_order: 300,
-      tree_path: "order.order_receive",
       labels: { th: "รับเข้า", en: "Receive" },
     },
     {
@@ -458,7 +411,6 @@
       module: "order_claim",
       path: "#",
       sort_order: 400,
-      tree_path: "order.order_claim",
       labels: { th: "เคลม / คืน", en: "Claim" },
     },
     {
@@ -467,13 +419,13 @@
       module: "order_sales_claim",
       path: "#",
       sort_order: 500,
-      tree_path: "order.order_sales_claim",
       labels: { th: "เคลม (ฝ่ายขาย)", en: "Sales Claim" },
     },
   ];
 
-  global.ADMIN_MENU_DEFS = MENU_DEFS;
-  global.SEED_ADMIN_MENU = MENU_DEFS.map(function (d) {
+  var withPaths = shared.assignTreePaths(MENU_DEFS);
+  global.ADMIN_MENU_DEFS = withPaths;
+  global.SEED_ADMIN_MENU = withPaths.map(function (d) {
     return menuRow({
       id: d.id,
       parent_id: d.parent_id || null,

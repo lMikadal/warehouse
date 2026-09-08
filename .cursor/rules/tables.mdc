@@ -26,14 +26,13 @@ Apply **after** filters, **before** pagination.
 
 | Table kind | Sort |
 |------------|------|
-| Self-FK **tree** (`tree_path` present — see design skill) | `tree_path` ASC → `sort_order` ASC → `created_at` ASC |
+| Self-FK **tree** (`tree_path` present — see design skill) | Group by `parent_id`; sort siblings `sort_order ASC → id ASC` **within each parent**; DFS pre-order (root `parent_id NULL` first). `tree_path` is for queries/indent only — not display order |
 | Flat list with `sort_order` | `sort_order` ASC → `created_at` ASC |
 | Neither | `created_at` ASC → `id` ASC (tiebreaker) |
 
-- Do **not** sort tree rows by `sort_order` alone — that breaks hierarchy
 - Geo `website_*` chain tables are flat lists (`sort_order` + `created_at`; typed parent FK, no `tree_path`)
 - Optional custom `listCompare(a, b)` on a module config only for exceptional screens — avoid unless necessary
 
 **Design:** sorting is centralized in `crud-list.js` (`sortRows`); remove per-page `.sort()` from `listRows` unless using `listCompare`.
 
-**Backend:** mirror the same `ORDER BY` in list queries (tree tables use `tree_path`, not `sort_order` alone).
+**Backend:** tree list endpoints must return rows in the same hierarchical order (recursive CTE or app-level flatten per parent group). Do not rely on `ORDER BY tree_path` alone — sibling order follows `sort_order` under each `parent_id`, not lexicographic path labels.

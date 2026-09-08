@@ -182,7 +182,7 @@ Every list / table component must handle the zero-rows case:
 Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 
 - Paginate every data table (default page size 20); prev/next + page indicator; reset page on filter change
-- Sort lists: tree `tree_path` → `sort_order` → `created_at`; flat `sort_order` → `created_at`; else `created_at` → `id`
+- Sort lists: tree → sibling `sort_order` → `id` per `parent_id`, DFS pre-order; flat `sort_order` → `created_at`; else `created_at` → `id`
 - Match design `crud-list.js` pager UX and i18n keys on handoff
 
 ### Forms

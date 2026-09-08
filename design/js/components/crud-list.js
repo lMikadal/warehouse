@@ -24,20 +24,51 @@
     });
   }
 
+  function compareTreeSibling(a, b) {
+    var so = (a.sort_order || 0) - (b.sort_order || 0);
+    if (so !== 0) return so;
+    return (a.id || 0) - (b.id || 0);
+  }
+
+  function flattenTreeRows(rows) {
+    var byParent = {};
+    rows.forEach(function (r) {
+      var key = r.parent_id == null ? "root" : String(r.parent_id);
+      if (!byParent[key]) byParent[key] = [];
+      byParent[key].push(r);
+    });
+    Object.keys(byParent).forEach(function (key) {
+      byParent[key].sort(compareTreeSibling);
+    });
+    var out = [];
+    var seen = {};
+    function walk(parentKey) {
+      (byParent[parentKey] || []).forEach(function (r) {
+        out.push(r);
+        seen[r.id] = true;
+        walk(String(r.id));
+      });
+    }
+    walk("root");
+    // ponytail: orphans when parent missing from filtered set — append at end
+    rows
+      .filter(function (r) {
+        return !seen[r.id];
+      })
+      .sort(compareTreeSibling)
+      .forEach(function (r) {
+        out.push(r);
+      });
+    return out;
+  }
+
   function sortRows(rows) {
     if (state.config && state.config.listCompare) {
       return rows.slice().sort(state.config.listCompare);
     }
     var copy = rows.slice();
     if (hasTreePath(copy)) {
-      copy.sort(function (a, b) {
-        var tp = String(a.tree_path || "").localeCompare(String(b.tree_path || ""));
-        if (tp !== 0) return tp;
-        var so = (a.sort_order || 0) - (b.sort_order || 0);
-        if (so !== 0) return so;
-        return compareCreatedAt(a, b);
-      });
-      return copy;
+      return flattenTreeRows(copy);
     }
     if (hasSortOrder(copy)) {
       copy.sort(function (a, b) {

@@ -115,7 +115,7 @@ See `design/design.json` → `layout.adminShell.typography`.
 Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js). Rules: [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc).
 
 - **Pagination:** every module table paginates (default 20 rows); prev/next + range + page indicator; page resets on search
-- **Sort** (after filter, before slice): tree tables → `tree_path` → `sort_order` → `created_at`; flat with `sort_order` → `created_at`; else `created_at` → `id`
+- **Sort** (after filter, before slice): tree tables → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat with `sort_order` → `created_at`; else `created_at` → `id`
 - Do not `.sort()` inside `module-registry.js` `listRows` — use optional `listCompare` only for exceptions
 
 ## Dev bar (prototype only)
@@ -155,6 +155,7 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - `*_language` audit: `created_at`, `updated_at` only (soft-delete / attribution on parent)
 - PK: `id BIGSERIAL`
 - **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`
+- **`tree_path` labels:** `n{id}` per segment from root to row (e.g. `n2.n6.n7`) — structural only; sibling display order uses `sort_order`. Seeds derive paths via `ADMIN_SEED_SHARED.assignTreePaths()` in [`design/js/seed/_admin_shared.js`](../../design/js/seed/_admin_shared.js)
 - **Geo chain** (`website_*`): `website_country` → `website_province` → `website_district` → `website_sub_district`; typed parent FK + `sort_order` only (not tree tables)
 - **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`website_language`, `website_country`, `setting_bank`, `setting_claim_reason`, …)
 - Money: `NUMERIC(15,4)` · Rate/percent: `NUMERIC(5,2)` · Quantities: `NUMERIC(15,4)` or `INTEGER`

@@ -418,7 +418,7 @@
         "resetPageOnSearch": true
       },
       "sort": {
-        "tree": "tree_path ASC → sort_order ASC → created_at ASC",
+        "tree": "group by parent_id; sibling sort_order ASC → id ASC; DFS pre-order (tree_path for indent/query only)",
         "flatWithSortOrder": "sort_order ASC → created_at ASC",
         "fallback": "created_at ASC → id ASC",
         "centralizedIn": "crud-list.js sortRows()"

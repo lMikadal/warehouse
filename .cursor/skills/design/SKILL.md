@@ -266,6 +266,8 @@ Avoid verb-base terminal states (`cancel`, `reject`) and inconsistent synonyms (
 | `tree_path` | `LTREE NOT NULL` | Materialized path for ancestor/descendant queries |
 | `sort_order` | `INTEGER NOT NULL` | Sibling order under the same parent |
 
+**`tree_path` label convention (seeds + backend):** dot-joined `n{id}` segments from root to self — e.g. id 7 with chain 2→6→7 → `n2.n6.n7`. Do not use module names in paths. Design seeds: `ADMIN_SEED_SHARED.assignTreePaths(defs)` in [`design/js/seed/_admin_shared.js`](../../design/js/seed/_admin_shared.js).
+
 Examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`.
 
 **Typed geo chain** (`website_*`) — one table per level, **typed parent FK** + `sort_order` only (flat lists; no `tree_path`):
@@ -425,8 +427,8 @@ Never mutate data silently. Every `store.create / update / delete` call must be 
 Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 
 - Every data table paginates (default page size 20) — shared pager in `js/components/crud-list.js`
-- Default sort after filter: tree `tree_path` → `sort_order` → `created_at`; flat `sort_order` → `created_at`; else `created_at` → `id`
-- Do not sort tree tables by `sort_order` alone
+- Default sort after filter: tree → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat `sort_order` → `created_at`; else `created_at` → `id`
+- Do not flat-sort tree tables globally by `sort_order` or `tree_path`
 
 ### Error copy (i18n keys)
 
