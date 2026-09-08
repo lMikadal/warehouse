@@ -1,7 +1,79 @@
 (function (global) {
   var formOverlay = null;
   var confirmOverlay = null;
-  var state = { config: null, permModule: null, permType: null, container: null, query: "" };
+  var state = { config: null, permModule: null, permType: null, container: null, query: "", page: 1, pageSize: 20 };
+
+  var DEFAULT_PAGE_SIZE = 20;
+
+  function compareCreatedAt(a, b) {
+    var ca = a.created_at || "";
+    var cb = b.created_at || "";
+    if (ca !== cb) return ca < cb ? -1 : 1;
+    return (a.id || 0) - (b.id || 0);
+  }
+
+  function hasTreePath(rows) {
+    return rows.some(function (r) {
+      return r.tree_path != null && r.tree_path !== "";
+    });
+  }
+
+  function hasSortOrder(rows) {
+    return rows.some(function (r) {
+      return r.sort_order != null;
+    });
+  }
+
+  function sortRows(rows) {
+    if (state.config && state.config.listCompare) {
+      return rows.slice().sort(state.config.listCompare);
+    }
+    var copy = rows.slice();
+    if (hasTreePath(copy)) {
+      copy.sort(function (a, b) {
+        var tp = String(a.tree_path || "").localeCompare(String(b.tree_path || ""));
+        if (tp !== 0) return tp;
+        var so = (a.sort_order || 0) - (b.sort_order || 0);
+        if (so !== 0) return so;
+        return compareCreatedAt(a, b);
+      });
+      return copy;
+    }
+    if (hasSortOrder(copy)) {
+      copy.sort(function (a, b) {
+        var so = (a.sort_order || 0) - (b.sort_order || 0);
+        if (so !== 0) return so;
+        return compareCreatedAt(a, b);
+      });
+      return copy;
+    }
+    copy.sort(compareCreatedAt);
+    return copy;
+  }
+
+  function paginateRows(rows) {
+    var pageSize = state.pageSize;
+    var total = rows.length;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize) || 1);
+    if (state.page > totalPages) state.page = totalPages;
+    if (state.page < 1) state.page = 1;
+    var start = (state.page - 1) * pageSize;
+    return {
+      rows: rows.slice(start, start + pageSize),
+      total: total,
+      totalPages: totalPages,
+      from: total === 0 ? 0 : start + 1,
+      to: Math.min(start + pageSize, total),
+    };
+  }
+
+  function formatMsg(key, vars) {
+    var msg = t(key);
+    if (!vars) return msg;
+    return Object.keys(vars).reduce(function (s, k) {
+      return s.replace(new RegExp("\\{" + k + "\\}", "g"), String(vars[k]));
+    }, msg);
+  }
 
   function t(key) {
     return global.i18n ? global.i18n.t(key) : key;
@@ -37,21 +109,74 @@
         : "") +
       "  </div>" +
       '  <div class="crud-table-wrap" id="crud-table-wrap"></div>' +
+      '  <nav class="crud-pagination" id="crud-pagination" aria-label="Pagination"></nav>' +
       "</div>"
     );
+  }
+
+  function renderPagination(meta) {
+    var pager = state.container.querySelector("#crud-pagination");
+    if (!pager) return;
+
+    if (meta.total === 0) {
+      pager.innerHTML = "";
+      pager.hidden = true;
+      return;
+    }
+
+    pager.hidden = false;
+    var prevDisabled = state.page <= 1;
+    var nextDisabled = state.page >= meta.totalPages;
+
+    pager.innerHTML =
+      '<div class="crud-pagination__inner">' +
+      '  <button type="button" class="btn crud-pagination__btn" id="crud-page-prev"' +
+      (prevDisabled ? " disabled" : "") +
+      ' data-i18n="crud.prev">Previous</button>' +
+      '  <span class="crud-pagination__info">' +
+      escapeHtml(formatMsg("crud.showing", { from: meta.from, to: meta.to, total: meta.total })) +
+      ' · <span class="crud-pagination__page">' +
+      escapeHtml(formatMsg("crud.pageOf", { page: state.page, total: meta.totalPages })) +
+      "</span></span>" +
+      '  <button type="button" class="btn crud-pagination__btn" id="crud-page-next"' +
+      (nextDisabled ? " disabled" : "") +
+      ' data-i18n="crud.next">Next</button>' +
+      "</div>";
+
+    if (global.i18n) global.i18n.init();
+
+    var prevBtn = pager.querySelector("#crud-page-prev");
+    var nextBtn = pager.querySelector("#crud-page-next");
+    if (prevBtn && !prevDisabled) {
+      prevBtn.addEventListener("click", function () {
+        state.page -= 1;
+        renderTable();
+      });
+    }
+    if (nextBtn && !nextDisabled) {
+      nextBtn.addEventListener("click", function () {
+        state.page += 1;
+        renderTable();
+      });
+    }
   }
 
   function renderTable() {
     var wrap = state.container.querySelector("#crud-table-wrap");
     if (!wrap || !state.config) return;
 
-    var rows = state.config.listRows().filter(function (row) {
+    var filtered = state.config.listRows().filter(function (row) {
       if (!state.query) return true;
       return state.config.searchFilter(row, state.query.toLowerCase());
     });
 
-    if (rows.length === 0) {
+    var sorted = sortRows(filtered);
+    var meta = paginateRows(sorted);
+    var rows = meta.rows;
+
+    if (filtered.length === 0) {
       wrap.innerHTML = '<p class="crud-empty" data-i18n="crud.empty"></p>';
+      renderPagination({ total: 0, totalPages: 1, from: 0, to: 0 });
       if (global.i18n) global.i18n.init();
       return;
     }
@@ -70,7 +195,12 @@
         var cells = state.config.columns
           .map(function (col) {
             var val = col.render ? col.render(row) : escapeHtml(row[col.id] != null ? row[col.id] : "");
-            return "<td>" + val + "</td>";
+            var metaIds = { path: true, module: true, sort_order: true };
+            var tdClass =
+              col.cellClass ||
+              (metaIds[col.id] ? "data-table__cell--meta" : "");
+            var clsAttr = tdClass ? ' class="' + escapeHtml(tdClass) + '"' : "";
+            return "<td" + clsAttr + ">" + val + "</td>";
           })
           .join("");
 
@@ -124,6 +254,7 @@
     });
 
     if (state.config.afterRender) state.config.afterRender(wrap);
+    renderPagination(meta);
   }
 
   function ensureFormModal() {
@@ -401,6 +532,7 @@
     if (search) {
       search.addEventListener("input", function () {
         state.query = search.value;
+        state.page = 1;
         renderTable();
       });
     }
@@ -418,6 +550,8 @@
     state.permModule = permModule;
     state.permType = permType;
     state.query = "";
+    state.page = 1;
+    state.pageSize = config.pageSize || DEFAULT_PAGE_SIZE;
     container.innerHTML = shellHtml();
     if (global.i18n) global.i18n.init();
     if (global.permissions) global.permissions.applyActionButtons(container);

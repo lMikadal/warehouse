@@ -98,9 +98,6 @@
           .filter(function (m) {
             return m.deleted_at == null;
           })
-          .sort(function (a, b) {
-            return String(a.tree_path).localeCompare(String(b.tree_path)) || a.sort_order - b.sort_order;
-          })
           .map(function (m) {
             return Object.assign({}, m, {
               _id: m.id,
@@ -190,9 +187,6 @@
           .filter(function (p) {
             return p.deleted_at == null;
           })
-          .sort(function (a, b) {
-            return a.code.localeCompare(b.code);
-          })
           .map(function (p) {
             return Object.assign({}, p, { _id: p.id });
           });
@@ -238,9 +232,6 @@
           .getAll("website_language")
           .filter(function (r) {
             return r.deleted_at == null;
-          })
-          .sort(function (a, b) {
-            return a.sort_order - b.sort_order;
           })
           .map(function (r) {
             return Object.assign({}, r, { _id: r.id });
@@ -321,9 +312,6 @@
           .getAll(key)
           .filter(function (r) {
             return r.deleted_at == null;
-          })
-          .sort(function (a, b) {
-            return a.sort_order - b.sort_order || a.id - b.id;
           })
           .map(function (r) {
             var row = Object.assign({}, r, {

@@ -177,6 +177,14 @@ Every list / table component must handle the zero-rows case:
 - Show an icon + short label + CTA button (e.g. "No products yet — Add product")
 - Do not render a blank `<tbody>` or hidden element
 
+### Tables
+
+Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
+
+- Paginate every data table (default page size 20); prev/next + page indicator; reset page on filter change
+- Sort lists: tree `tree_path` → `sort_order` → `created_at`; flat `sort_order` → `created_at`; else `created_at` → `id`
+- Match design `crud-list.js` pager UX and i18n keys on handoff
+
 ### Forms
 
 - Every text-like input has an i18n placeholder via `placeholder={t('key')}`; placeholder is a hint, not a label substitute

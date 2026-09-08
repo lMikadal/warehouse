@@ -420,6 +420,14 @@ Never mutate data silently. Every `store.create / update / delete` call must be 
 - If a mock async delay is simulated, disable the triggering button and show a brief loading label
 - Skeleton placeholders are optional for design but preferred over blank flicker
 
+### Tables
+
+Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
+
+- Every data table paginates (default page size 20) — shared pager in `js/components/crud-list.js`
+- Default sort after filter: tree `tree_path` → `sort_order` → `created_at`; flat `sort_order` → `created_at`; else `created_at` → `id`
+- Do not sort tree tables by `sort_order` alone
+
 ### Error copy (i18n keys)
 
 Error messages live in `js/i18n/th.js` + `en.js`, not hardcoded in pages. Pattern:

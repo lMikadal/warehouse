@@ -46,7 +46,14 @@
       "muted": "--color-muted",
       "spacing": "--spacing",
       "radius": "--radius",
-      "fontSans": "--font-sans"
+      "fontSans": "--font-sans",
+      "textXs": "--text-xs",
+      "textSm": "--text-sm",
+      "textBase": "--text-base",
+      "textMd": "--text-md",
+      "textLg": "--text-lg",
+      "textXl": "--text-xl",
+      "text2xl": "--text-2xl"
     },
     "atmosphere": {
       "pageWash": "radial-gradient(ellipse 80% 55% at 15% -5%, rgb(37 99 235 / 0.1), transparent 55%) over background",
@@ -188,10 +195,36 @@
     },
     "adminShell": {
       "reference": "pages/admin-menu.html",
+      "stitchReference": "reference/stitch-admin-shell/README.md",
       "sidebarWidth": "16.25rem",
+      "pageWash": "dual radial blue gradient on .admin-layout (Stitch-modern atmosphere)",
+      "sidebar": {
+        "surface": "translucent panel + right shadow + blur(12px); flush-left full-height",
+        "brand": "Lucide warehouse icon in primary-tint square + app.name; hairline divider below",
+        "search": "inset muted field; min-height 2.75rem; radius 0.75rem; strong focus ring",
+        "activeNav": "primary tint + inset ring + semibold; icon well highlight",
+        "subNav": "2px primary-tint left rail; chevron 0.2s",
+        "chevron": "Lucide chevron-down; rotate 180deg when group open",
+        "footer": "sticky viewport bottom — user + logout; nav scrolls above when menu overflows"
+      },
+      "header": {
+        "surface": "translucent panel + blur(12px) + bottom shadow — matches sidebar surface",
+        "breadcrumb": "plain text trail — muted parent links + bold current h1; > separators",
+        "actions": "ghost icon buttons — bell (red badge dot), language, theme (sun/moon)"
+      },
+      "typography": {
+        "tokens": "css/style.css — --text-xs through --text-2xl",
+        "sidebarBrand": "text-xl bold; icon in primary-tint rounded square",
+        "sidebarNav": "text-sm rows min-height 2.75rem; sub-items text-sm with left rail",
+        "breadcrumbParent": "text-sm muted gray; link hover primary",
+        "breadcrumbCurrent": "text-sm semibold foreground; text-base at computer",
+        "tableHeader": "text-xs semibold",
+        "tableBody": "text-base",
+        "tableMeta": "text-sm (path, module, sort_order columns)"
+      },
       "mobile": {
         "sidebar": "fixed drawer; translateX(-100%); opens with backdrop",
-        "menuButton": "visible in header"
+        "menuButton": "admin-header__icon-btn in header"
       },
       "computer": {
         "sidebar": "sticky; always visible",
@@ -228,8 +261,9 @@
     "iconToolbarButton": {
       "size": "2.5rem",
       "borderRadius": "0.75rem",
-      "style": "glass — semi-transparent background + backdrop-filter blur(8px)",
-      "hover": "border-color primary; solid background"
+      "style": "glass — semi-transparent background + backdrop-filter blur(8px); login toolbar only",
+      "hover": "border-color primary; solid background",
+      "sharedClass": ".login-toolbar__btn — login page; admin header uses .btn.btn--icon (matches CRUD table)"
     },
     "card": {
       "maxWidth": "26rem",
@@ -309,7 +343,8 @@
       "component": "js/components/sidebar.js",
       "width": "16.25rem",
       "mobile": "drawer with backdrop",
-      "desktop": "sticky visible"
+      "desktop": "sticky visible",
+      "activeStyle": "soft primary tint — rgb(37 99 235 / 0.1) light, rgb(59 130 246 / 0.15) dark"
     },
     "devBar": {
       "component": "js/components/dev-bar.js",
@@ -375,7 +410,19 @@
     "crudList": {
       "mobile": "stacked toolbar; table horizontal scroll",
       "computer": "toolbar row; table in bordered card",
-      "computerWide": "content max-width 1440px centered"
+      "computerWide": "content max-width 1440px centered",
+      "pagination": {
+        "defaultPageSize": 20,
+        "component": "js/components/crud-list.js",
+        "controls": "prev / next + showing range + page indicator",
+        "resetPageOnSearch": true
+      },
+      "sort": {
+        "tree": "tree_path ASC → sort_order ASC → created_at ASC",
+        "flatWithSortOrder": "sort_order ASC → created_at ASC",
+        "fallback": "created_at ASC → id ASC",
+        "centralizedIn": "crud-list.js sortRows()"
+      }
     },
     "wideDesktopContainment": {
       "when": "computerWide breakpoint",

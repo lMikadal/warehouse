@@ -1,0 +1,39 @@
+---
+description: Data tables — required pagination and default list sort order (tree, sort_order, created_at).
+alwaysApply: true
+---
+
+# Tables
+
+Applies to `design/` mockups, `frontend/` production UI, and `backend/` list APIs.
+
+## Pagination (required)
+
+- Every data table / list view must paginate — do not render unbounded full-table rows
+- Default page size: **20** (override via config when a screen needs a different size)
+- Controls: previous / next + current page indicator; reset to page 1 when search or filters change
+- Pager chrome uses i18n (th/en) — not hardcoded copy
+
+**Design:** [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js) — shared pager for module CRUD pages.
+
+**Frontend:** paginate list/table components (e.g. server `page`/`limit` or client slice with the same UX).
+
+**Backend:** list endpoints accept `page` + `limit` (or equivalent) and return total count for the pager.
+
+## Default sort order
+
+Apply **after** filters, **before** pagination.
+
+| Table kind | Sort |
+|------------|------|
+| Self-FK **tree** (`tree_path` present — see design skill) | `tree_path` ASC → `sort_order` ASC → `created_at` ASC |
+| Flat list with `sort_order` | `sort_order` ASC → `created_at` ASC |
+| Neither | `created_at` ASC → `id` ASC (tiebreaker) |
+
+- Do **not** sort tree rows by `sort_order` alone — that breaks hierarchy
+- Geo `website_*` chain tables are flat lists (`sort_order` + `created_at`; typed parent FK, no `tree_path`)
+- Optional custom `listCompare(a, b)` on a module config only for exceptional screens — avoid unless necessary
+
+**Design:** sorting is centralized in `crud-list.js` (`sortRows`); remove per-page `.sort()` from `listRows` unless using `listCompare`.
+
+**Backend:** mirror the same `ORDER BY` in list queries (tree tables use `tree_path`, not `sort_order` alone).

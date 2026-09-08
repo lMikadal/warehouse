@@ -79,10 +79,44 @@ Reference implementation: `pages/login.html`.
 
 ## Admin shell
 
+Stitch-modern flush-left shell — visual target documented in [`design/reference/stitch-admin-shell/README.md`](../../design/reference/stitch-admin-shell/README.md).
+
 - `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/admin-menu.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
-- `js/components/layout.js` — sidebar + header + content area
-- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC
-- Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop
+- `js/components/layout.js` — sidebar + header + content area; flat header (bell + lang + theme); user + logout in sidebar footer
+- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring
+- Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop; sidebar username hidden on mobile (&lt; 640px)
+
+### Shell surfaces
+
+| Part | Treatment |
+|------|-----------|
+| Sidebar | Full viewport height; brand + search fixed; **nav scrolls**; footer pinned to bottom (user + logout) |
+| Header | Same translucent panel as sidebar; plain breadcrumb; ghost bell + lang + theme icons |
+| Page | Dual radial blue wash on `.admin-layout` |
+
+## Typography (admin shell)
+
+CSS tokens in [`design/css/style.css`](../../design/css/style.css): `--text-xs` (0.75rem) through `--text-2xl` (1.25rem). Admin hierarchy:
+
+| Area | Token | Notes |
+|------|-------|-------|
+| Breadcrumb ancestors | `--text-sm` | muted gray; link hover primary |
+| Breadcrumb current (`h1`) | `--text-sm` / `--text-base` desktop | bold foreground |
+| Sidebar brand | `--text-xl` bold | icon in primary-tint rounded square |
+| Sidebar nav | `--text-sm` | min-height 2.75rem; sub-items with primary left rail |
+| Table headers | `--text-xs` semibold | |
+| Table body | `--text-base` | |
+| Table meta columns | `--text-sm` | path, module, sort_order via `.data-table__cell--meta` |
+
+See `design/design.json` → `layout.adminShell.typography`.
+
+## CRUD list tables
+
+Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js). Rules: [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc).
+
+- **Pagination:** every module table paginates (default 20 rows); prev/next + range + page indicator; page resets on search
+- **Sort** (after filter, before slice): tree tables → `tree_path` → `sort_order` → `created_at`; flat with `sort_order` → `created_at`; else `created_at` → `id`
+- Do not `.sort()` inside `module-registry.js` `listRows` — use optional `listCompare` only for exceptions
 
 ## Dev bar (prototype only)
 

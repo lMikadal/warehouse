@@ -170,7 +170,9 @@
             '<span class="sidebar-nav__label">' +
             escapeHtml(node.label) +
             "</span>" +
-            '<span class="sidebar-nav__chevron" aria-hidden="true"></span>' +
+            '<span class="sidebar-nav__chevron" aria-hidden="true">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>' +
+            "</span>" +
             "</button>" +
             '<ul class="sidebar-nav__sub">' +
             renderNav(node.children, depth + 1) +
@@ -269,10 +271,102 @@
     return firstNavigablePath(filterMenuTree(buildMenuTree()));
   }
 
+  function findMenuByCurrentPath() {
+    var current = normalizePath(window.location.pathname);
+    if (!current) return null;
+    return (
+      global.store.getAll("admin_menu").find(function (m) {
+        if (m.deleted_at != null || !m.is_active || !m.path || m.path === "#" || m.is_dialog) {
+          return false;
+        }
+        var target = normalizePath(m.path);
+        return target && (current.endsWith(target) || current === target);
+      }) || null
+    );
+  }
+
+  function isNavigablePath(path) {
+    return path && path !== "#";
+  }
+
+  function getBreadcrumb() {
+    var menu = findMenuByCurrentPath();
+    if (!menu) return [];
+    var chain = [];
+    var node = menu;
+    while (node) {
+      chain.push({
+        id: node.id,
+        label: menuLabel(node.id),
+        path: node.path,
+      });
+      node = node.parent_id ? global.store.getById("admin_menu", node.parent_id) : null;
+    }
+    chain.reverse();
+    return chain.map(function (item, i) {
+      return Object.assign({}, item, { isCurrent: i === chain.length - 1 });
+    });
+  }
+
+  var BREADCRUMB_SEP =
+    '<span class="admin-header__breadcrumb-sep" aria-hidden="true">&gt;</span>';
+
+  function renderBreadcrumb(container, fallbackTitle) {
+    if (!container) return;
+    var items = getBreadcrumb();
+    if (items.length === 0) {
+      if (fallbackTitle) {
+        container.hidden = false;
+        if (global.i18n) {
+          container.setAttribute("aria-label", global.i18n.t("nav.breadcrumb"));
+        }
+        container.innerHTML =
+          '<ol class="admin-header__breadcrumb-list">' +
+          '<li class="admin-header__breadcrumb-item">' +
+          '<h1 class="admin-header__breadcrumb-current" aria-current="page">' +
+          escapeHtml(fallbackTitle) +
+          "</h1></li></ol>";
+      } else {
+        container.innerHTML = "";
+        container.hidden = true;
+      }
+      return;
+    }
+    container.hidden = false;
+    if (global.i18n) {
+      container.setAttribute("aria-label", global.i18n.t("nav.breadcrumb"));
+    }
+    var html = '<ol class="admin-header__breadcrumb-list">';
+    items.forEach(function (item, index) {
+      html += '<li class="admin-header__breadcrumb-item">';
+      if (index > 0) html += BREADCRUMB_SEP;
+      if (item.isCurrent) {
+        html +=
+          '<h1 class="admin-header__breadcrumb-current" aria-current="page">' +
+          escapeHtml(item.label) +
+          "</h1>";
+      } else if (isNavigablePath(item.path)) {
+        html +=
+          '<a class="admin-header__breadcrumb-link" href="' +
+          escapeAttr(resolvePath(item.path)) +
+          '">' +
+          escapeHtml(item.label) +
+          "</a>";
+      } else {
+        html += '<span class="admin-header__breadcrumb-text">' + escapeHtml(item.label) + "</span>";
+      }
+      html += "</li>";
+    });
+    html += "</ol>";
+    container.innerHTML = html;
+  }
+
   global.sidebar = {
     buildMenuTree: buildMenuTree,
     filterMenuTree: filterMenuTree,
     render: render,
+    renderBreadcrumb: renderBreadcrumb,
+    getBreadcrumb: getBreadcrumb,
     getFirstPath: getFirstPath,
   };
 })(window);
