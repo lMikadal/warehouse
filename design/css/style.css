@@ -1763,6 +1763,48 @@ body.sidebar-open .admin-sidebar-backdrop {
   letter-spacing: 0.01em;
 }
 
+.data-table__sort-col {
+  padding: 0;
+}
+
+.data-table__sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.data-table__sort-btn:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.data-table__sort-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.data-table__sort-icon {
+  flex-shrink: 0;
+  opacity: 0.45;
+}
+
+.data-table__sort-btn[aria-sort="ascending"] .data-table__sort-icon,
+.data-table__sort-btn[aria-sort="descending"] .data-table__sort-icon {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
 .data-table__cell--meta {
   font-size: var(--text-sm);
   opacity: 0.85;
@@ -1816,6 +1858,15 @@ body.sidebar-open .admin-sidebar-backdrop {
 
 .data-table__drag-handle:hover {
   opacity: 0.75;
+}
+
+.data-table__drag-handle--disabled {
+  cursor: not-allowed;
+  opacity: 0.15;
+}
+
+.data-table__drag-handle--disabled:hover {
+  opacity: 0.15;
 }
 
 tr[draggable] {

@@ -36,3 +36,14 @@ Apply **after** filters, **before** pagination.
 **Design:** sorting is centralized in `crud-list.js` (`sortRows`); remove per-page `.sort()` from `listRows` unless using `listCompare`.
 
 **Backend:** tree list endpoints must return rows in the same hierarchical order (recursive CTE or app-level flatten per parent group). Do not rely on `ORDER BY tree_path` alone — sibling order follows `sort_order` under each `parent_id`, not lexicographic path labels.
+
+## Column header sort
+
+Applies to `design/` mockups and `frontend/` production UI (when list tables ship).
+
+- Every **data column** header is clickable and cycles **none → asc → desc → none** (third click clears)
+- Default sort order (section above) applies only when **no** header sort is active
+- **While a header sort is active, drag-and-drop reorder is disabled** — `sort_order` must only be rewritten from the default/`sort_order` view; keep the grip column visible but inert
+- Not sortable: grip/drag column, actions column
+- Reset to page 1 when sort changes (same as search/filter)
+- Design: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js) — sort icons from Lucide (`arrow-up-down`, `arrow-up`, `arrow-down`)

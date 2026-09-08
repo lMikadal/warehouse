@@ -20,6 +20,7 @@ Login page, admin shell, sidebar from `admin_menu` seed, RBAC via `permissions.c
 - [x] Login `admin`/`admin` → full sidebar; `staff`/`staff` → subset, no superadmin group
 - [x] Login `admin`/`admin` → lands on Menu list; all 7 Super Admin submenu pages navigate and CRUD (where allowed)
 - [x] Permission page read-only with `is_active` toggle; Menu page edit-only (no create)
+- [x] Column header sort on all 7 Super Admin list pages; drag-and-drop disabled while header sort is active
 - [x] `make design-schema-check` passes
 
 ## Demo accounts

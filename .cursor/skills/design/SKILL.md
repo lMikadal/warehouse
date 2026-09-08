@@ -429,6 +429,7 @@ Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 
 - Every data table paginates (default page size **10**; options **10 / 25 / 50 / 100**; design persists choice in `sessionStorage`) — shared pager in `js/components/crud-list.js`
 - Default sort after filter: tree → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat `sort_order` → `created_at`; else `created_at` → `id`
+- Column header sort: click data columns to cycle none → asc → desc → none; while active, disable drag-and-drop reorder (see `tables.mdc`)
 - Do not flat-sort tree tables globally by `sort_order` or `tree_path`
 
 ### Error copy (i18n keys)

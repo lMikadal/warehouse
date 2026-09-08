@@ -1,7 +1,19 @@
 (function (global) {
   var formOverlay = null;
   var confirmOverlay = null;
-  var state = { config: null, permModule: null, permType: null, container: null, query: "", statusFilter: "", columnFilters: {}, page: 1, pageSize: 10 };
+  var state = {
+    config: null,
+    permModule: null,
+    permType: null,
+    container: null,
+    query: "",
+    statusFilter: "",
+    columnFilters: {},
+    page: 1,
+    pageSize: 10,
+    sortKey: null,
+    sortDir: null,
+  };
 
   var PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
   var DEFAULT_PAGE_SIZE = 10;
@@ -162,6 +174,103 @@
     }
     copy.sort(compareCreatedAt);
     return copy;
+  }
+
+  function compareColumnValues(a, b, colId) {
+    var va = a[colId];
+    var vb = b[colId];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === "boolean" || typeof vb === "boolean") {
+      return (va ? 1 : 0) - (vb ? 1 : 0);
+    }
+    if (typeof va === "number" && typeof vb === "number") {
+      return va - vb;
+    }
+    if (typeof va === "string" && typeof vb === "string") {
+      if (/^\d{4}-\d{2}-\d{2}/.test(va) && /^\d{4}-\d{2}-\d{2}/.test(vb)) {
+        if (va !== vb) return va < vb ? -1 : 1;
+        return 0;
+      }
+      return va.localeCompare(vb, undefined, { sensitivity: "base" });
+    }
+    return String(va).localeCompare(String(vb));
+  }
+
+  function applyHeaderSort(rows) {
+    if (!state.sortKey || !state.sortDir) return rows;
+    var dir = state.sortDir === "desc" ? -1 : 1;
+    var key = state.sortKey;
+    return rows.slice().sort(function (a, b) {
+      var cmp = compareColumnValues(a, b, key);
+      if (cmp !== 0) return cmp * dir;
+      return compareCreatedAt(a, b);
+    });
+  }
+
+  function sortIconName(colId) {
+    if (state.sortKey !== colId) return "arrow-up-down";
+    return state.sortDir === "desc" ? "arrow-down" : "arrow-up";
+  }
+
+  function sortAriaSort(colId) {
+    if (state.sortKey !== colId) return "none";
+    return state.sortDir === "desc" ? "descending" : "ascending";
+  }
+
+  function sortAriaLabel(col) {
+    var field = t(col.labelKey);
+    if (state.sortKey !== col.id) {
+      return formatMsg("crud.sortNone", { field: field });
+    }
+    if (state.sortDir === "desc") {
+      return formatMsg("crud.sortDesc", { field: field });
+    }
+    return formatMsg("crud.sortAsc", { field: field });
+  }
+
+  function columnHeaderHtml(col) {
+    var icon = sortIconName(col.id);
+    return (
+      '<th class="data-table__sort-col">' +
+      '<button type="button" class="data-table__sort-btn" data-sort-key="' +
+      escapeHtml(col.id) +
+      '" aria-sort="' +
+      sortAriaSort(col.id) +
+      '" aria-label="' +
+      escapeHtml(sortAriaLabel(col)) +
+      '">' +
+      '<span data-i18n="' +
+      escapeHtml(col.labelKey) +
+      '"></span>' +
+      '<img src="../assets/icons/' +
+      icon +
+      '.svg" alt="" width="14" height="14" class="data-table__sort-icon" aria-hidden="true" />' +
+      "</button></th>"
+    );
+  }
+
+  function cycleHeaderSort(colId) {
+    if (state.sortKey !== colId) {
+      state.sortKey = colId;
+      state.sortDir = "asc";
+    } else if (state.sortDir === "asc") {
+      state.sortDir = "desc";
+    } else {
+      state.sortKey = null;
+      state.sortDir = null;
+    }
+    state.page = 1;
+    renderTable();
+  }
+
+  function bindSortHeaders(wrap) {
+    wrap.querySelectorAll(".data-table__sort-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        cycleHeaderSort(btn.getAttribute("data-sort-key"));
+      });
+    });
   }
 
   function paginateRows(rows) {
@@ -688,26 +797,23 @@
       return state.config.searchFilter(row, state.query.toLowerCase());
     });
 
-    var sorted = sortRows(filtered);
+    var sorted = applyHeaderSort(sortRows(filtered));
     var meta = paginateRows(sorted);
     var rows = meta.rows;
 
-    var isSortable = !!state.config.sortable && !state.config.readOnly && can("update");
-    var handleTh = isSortable
+    var canDnd = !!state.config.sortable && !state.config.readOnly && can("update");
+    var dndEnabled = canDnd && !state.sortKey;
+    var handleTh = canDnd
       ? '<th class="data-table__drag-col" aria-hidden="true"></th>'
       : "";
-    var head = handleTh + state.config.columns
-      .map(function (col) {
-        return '<th data-i18n="' + escapeHtml(col.labelKey) + '"></th>';
-      })
-      .join("");
+    var head = handleTh + state.config.columns.map(columnHeaderHtml).join("");
     if (!state.config.readOnly && (can("update") || can("delete"))) {
       head += '<th class="data-table__actions-col" data-i18n="crud.actions"></th>';
     }
 
     if (filtered.length === 0) {
       var colSpan = state.config.columns.length;
-      if (isSortable) colSpan++;
+      if (canDnd) colSpan++;
       if (!state.config.readOnly && (can("update") || can("delete"))) colSpan++;
       wrap.innerHTML =
         '<table class="data-table"><thead><tr>' +
@@ -717,13 +823,16 @@
         '" data-i18n="crud.empty"></td></tr></tbody></table>';
       renderPagination({ total: 0, totalPages: 1, from: 0, to: 0 });
       if (global.i18n) global.i18n.init();
+      bindSortHeaders(wrap);
       return;
     }
 
     var body = rows
       .map(function (row, i) {
-        var handleTd = isSortable
-          ? '<td class="data-table__drag-handle" aria-hidden="true">' +
+        var handleTd = canDnd
+          ? '<td class="data-table__drag-handle' +
+            (dndEnabled ? "" : " data-table__drag-handle--disabled") +
+            '" aria-hidden="true">' +
             '<img src="../assets/icons/grip-vertical.svg" alt="" width="16" height="16" />' +
             "</td>"
           : "";
@@ -769,7 +878,7 @@
         }
         return (
           '<tr' +
-          (isSortable ? ' draggable="true" data-drag-idx="' + i + '"' : "") +
+          (dndEnabled ? ' draggable="true" data-drag-idx="' + i + '"' : "") +
           ">" +
           cells +
           "</tr>"
@@ -794,7 +903,8 @@
       });
     });
 
-    if (isSortable) bindDrag(wrap, rows, sorted);
+    if (dndEnabled) bindDrag(wrap, rows, sorted);
+    bindSortHeaders(wrap);
     if (state.config.statusSwitch) bindStatusSwitches(wrap);
     if (state.config.afterRender) state.config.afterRender(wrap);
     renderPagination(meta);
@@ -1185,6 +1295,8 @@
     state.statusFilter = "";
     state.columnFilters = {};
     state.page = 1;
+    state.sortKey = null;
+    state.sortDir = null;
     state.pageSize = config.pageSize || readStoredPageSize();
     container.innerHTML = shellHtml();
     if (global.i18n) global.i18n.init();
