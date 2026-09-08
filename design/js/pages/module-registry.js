@@ -80,6 +80,8 @@
       permType: "admin_menu",
       storeTable: "admin_menu",
       pageTitleKey: "page.adminMenu",
+      pageDescriptionKey: "page.adminMenu.desc",
+      canExport: false,
       canCreate: false,
       canDelete: false,
       sortable: true,
@@ -164,6 +166,8 @@
       permModule: "admin",
       permType: "admin_permission",
       pageTitleKey: "page.adminPermission",
+      pageDescriptionKey: "page.adminPermission.desc",
+      canExport: false,
       readOnly: true,
       canCreate: false,
       canEdit: false,
@@ -203,6 +207,7 @@
       permType: "admin_language",
       storeTable: "website_language",
       pageTitleKey: "page.adminLanguage",
+      pageDescriptionKey: "page.adminLanguage.desc",
       sortable: true,
       columns: [
         { id: "locale", labelKey: "col.locale" },
@@ -282,6 +287,7 @@
       storeTable: key,
       sortParentKey: parentKey || undefined,
       pageTitleKey: opts.pageTitleKey,
+      pageDescriptionKey: opts.pageDescriptionKey,
       sortable: true,
       statusFilter: true,
       statusSwitch: true,
@@ -378,6 +384,7 @@
 
   REGISTRY.website_country = geoConfig("website_country", {
     pageTitleKey: "page.websiteCountry",
+    pageDescriptionKey: "page.websiteCountry.desc",
     parentFk: null,
     parentCol: null,
     formFields: [
@@ -393,6 +400,7 @@
 
   REGISTRY.website_province = geoConfig("website_province", {
     pageTitleKey: "page.websiteProvince",
+    pageDescriptionKey: "page.websiteProvince.desc",
     parentFk: "website_country_id",
     parentCol: {
       id: "_parentLabel",
@@ -431,6 +439,7 @@
 
   REGISTRY.website_district = geoConfig("website_district", {
     pageTitleKey: "page.websiteDistrict",
+    pageDescriptionKey: "page.websiteDistrict.desc",
     parentFk: "website_province_id",
     parentCol: {
       id: "_parentLabel",
@@ -469,6 +478,7 @@
 
   REGISTRY.website_sub_district = geoConfig("website_sub_district", {
     pageTitleKey: "page.websiteSubDistrict",
+    pageDescriptionKey: "page.websiteSubDistrict.desc",
     parentFk: "website_district_id",
     parentCol: {
       id: "_parentLabel",

@@ -234,8 +234,50 @@
     return true;
   }
 
+  function pageHeaderHtml() {
+    var cfg = state.config;
+    var showCreate = cfg.canCreate !== false && !cfg.readOnly && can("create");
+    var showExport = cfg.canExport !== false && !cfg.readOnly;
+    var desc = cfg.pageDescriptionKey
+      ? '<p class="crud-page-header__desc" data-i18n="' + escapeHtml(cfg.pageDescriptionKey) + '"></p>'
+      : "";
+    var actions = "";
+    if (showCreate || showExport) {
+      actions = '<div class="crud-page-header__actions">';
+      if (showExport) {
+        actions +=
+          '<button type="button" class="btn crud-page-header__export" id="crud-page-export">' +
+          '<img src="../assets/icons/download.svg" alt="" width="16" height="16" />' +
+          '<span data-i18n="crud.export"></span>' +
+          "</button>";
+      }
+      if (showCreate) {
+        actions +=
+          '<button type="button" class="btn btn--primary crud-page-header__create" id="crud-page-create" data-perm-module="' +
+          escapeHtml(state.permModule) +
+          '" data-perm-type="' +
+          escapeHtml(state.permType) +
+          '" data-perm-action="create">' +
+          '<img src="../assets/icons/plus.svg" alt="" width="16" height="16" />' +
+          '<span data-i18n="crud.create"></span>' +
+          "</button>";
+      }
+      actions += "</div>";
+    }
+    return (
+      '<div class="crud-page-header">' +
+      '<div class="crud-page-header__text">' +
+      '<h1 class="crud-page-header__title" data-i18n="' +
+      escapeHtml(cfg.pageTitleKey) +
+      '"></h1>' +
+      desc +
+      "</div>" +
+      actions +
+      "</div>"
+    );
+  }
+
   function shellHtml() {
-    var showCreate = state.config.canCreate !== false && !state.config.readOnly && can("create");
     var statusFilter = state.config.statusFilter
       ? '<div class="crud-status-filter" id="crud-status-filter" role="group" aria-label="' +
         escapeHtml(t("crud.statusFilter")) +
@@ -247,19 +289,10 @@
       : "";
     return (
       '<div class="crud-page">' +
+      pageHeaderHtml() +
       '  <div class="crud-toolbar">' +
       '    <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
       statusFilter +
-      (showCreate
-        ? '    <button type="button" class="btn btn--primary crud-toolbar__create" id="crud-create" data-perm-module="' +
-          escapeHtml(state.permModule) +
-          '" data-perm-type="' +
-          escapeHtml(state.permType) +
-          '" data-perm-action="create">' +
-          '      <img src="../assets/icons/plus.svg" alt="" width="16" height="16" />' +
-          '      <span data-i18n="crud.create"></span>' +
-          "    </button>"
-        : "") +
       "  </div>" +
       '  <div class="crud-table-wrap">' +
       '    <div class="crud-table-wrap__body" id="crud-table-body"></div>' +
@@ -921,10 +954,16 @@
         });
       });
     }
-    var createBtn = state.container.querySelector("#crud-create");
+    var createBtn = state.container.querySelector("#crud-page-create");
     if (createBtn) {
       createBtn.addEventListener("click", function () {
         openForm(null);
+      });
+    }
+    var exportBtn = state.container.querySelector("#crud-page-export");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function () {
+        global.toast.show(t("crud.exportComingSoon"), "info");
       });
     }
   }

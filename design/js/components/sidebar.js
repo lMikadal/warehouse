@@ -323,9 +323,9 @@
         container.innerHTML =
           '<ol class="admin-header__breadcrumb-list">' +
           '<li class="admin-header__breadcrumb-item">' +
-          '<h1 class="admin-header__breadcrumb-current" aria-current="page">' +
+          '<span class="admin-header__breadcrumb-current" aria-current="page">' +
           escapeHtml(fallbackTitle) +
-          "</h1></li></ol>";
+          "</span></li></ol>";
       } else {
         container.innerHTML = "";
         container.hidden = true;
@@ -342,9 +342,9 @@
       if (index > 0) html += BREADCRUMB_SEP;
       if (item.isCurrent) {
         html +=
-          '<h1 class="admin-header__breadcrumb-current" aria-current="page">' +
+          '<span class="admin-header__breadcrumb-current" aria-current="page">' +
           escapeHtml(item.label) +
-          "</h1>";
+          "</span>";
       } else if (isNavigablePath(item.path)) {
         html +=
           '<a class="admin-header__breadcrumb-link" href="' +

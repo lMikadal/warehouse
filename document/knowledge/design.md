@@ -115,6 +115,7 @@ See `design/design.json` → `layout.adminShell.typography`.
 
 Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js). Rules: [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc).
 
+- **Page header:** `.crud-page-header` above filter toolbar — `<h1>` title + optional `pageDescriptionKey` description (left); Export + Create buttons (right); toolbar keeps search + status filter only; breadcrumb leaf uses `<span>` (page `<h1>` lives in content)
 - **Pagination:** every module table paginates (default **10** rows; options **10 / 25 / 50 / 100**; choice persisted in `sessionStorage`); bar sits **outside** the table card; page pills + prev/next; page resets on search, filter, or page-size change
 - **Status filter:** modules with `is_active` set `statusFilter: true` — toolbar segmented buttons **All / Active / Inactive**; filters before sort/pagination
 - **Status switch:** modules with `statusSwitch: true` — status column uses inline toggle switch; updates `is_active` in store on change (requires update permission)

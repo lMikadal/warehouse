@@ -424,6 +424,11 @@
       "mobile": "stacked toolbar; table horizontal scroll",
       "computer": "toolbar row; table in bordered card",
       "computerWide": "content max-width 1440px centered",
+      "pageHeader": {
+        "structure": "crud-page-header above crud-toolbar — title + pageDescriptionKey desc (left), Export + Create actions (right)",
+        "export": "canExport !== false && !readOnly; click shows crud.exportComingSoon toast",
+        "create": "moved from toolbar to page header; same permission gates as before"
+      },
       "pagination": {
         "defaultPageSize": 10,
         "pageSizeOptions": [10, 25, 50, 100],
