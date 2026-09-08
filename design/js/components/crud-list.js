@@ -1414,7 +1414,16 @@
     var title = editId ? t("crud.edit") : t("crud.create");
     formOverlay.querySelector("#crud-form-title").textContent = title;
     var form = formOverlay.querySelector("#crud-form");
+    var modal = formOverlay.querySelector(".crud-modal");
     form.innerHTML = renderFormFields(state.config.formFields, values);
+    if (state.config.permissionMatrix && global.rolePermissionMatrix) {
+      form.insertAdjacentHTML("beforeend", global.rolePermissionMatrix.render(editId));
+      if (modal) modal.classList.add("crud-modal--wide");
+      var matrixRoot = form.querySelector("[data-role-perm-matrix]");
+      global.rolePermissionMatrix.bind(matrixRoot, editId);
+    } else if (modal) {
+      modal.classList.remove("crud-modal--wide");
+    }
     if (global.i18n) global.i18n.init();
     bindFormSearchableSelects(form);
     bindPasswordGroup(form);
@@ -1432,6 +1441,8 @@
     if (!formOverlay) return;
     formOverlay.hidden = true;
     document.body.classList.remove("modal-open");
+    var modal = formOverlay.querySelector(".crud-modal");
+    if (modal) modal.classList.remove("crud-modal--wide");
     editId = null;
   }
 
@@ -1475,6 +1486,10 @@
       else if (field.type === "number") values[field.key] = el.value === "" ? null : Number(el.value);
       else values[field.key] = el.value.trim();
     });
+    if (state.config.permissionMatrix && global.rolePermissionMatrix) {
+      var matrixRoot = form.querySelector("[data-role-perm-matrix]");
+      values._permissionIds = global.rolePermissionMatrix.readSelected(matrixRoot);
+    }
     return values;
   }
 

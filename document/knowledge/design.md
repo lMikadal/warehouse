@@ -54,9 +54,9 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
   - `pages/admin-language.html` — `website_language` CRUD
   - `pages/website-country.html` … `pages/website-sub-district.html` — geo hierarchy CRUD with `*_language` rows
   - `pages/admin-user.html` — `admin_user` CRUD (role/type/status filters; password toggle on form)
-  - `pages/admin-role.html` — `admin_role` + `admin_role_language` CRUD
+  - `pages/admin-role.html` — `admin_role` + `admin_role_language` CRUD; create/edit modal includes menu-grouped permission matrix (`js/components/role-permission-matrix.js`)
 - List + modal create/edit on the same page (no separate form HTML); delete uses confirm modal + toast
-- **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`); modal widths via `--modal-max-width` — **36rem** base (generic + confirm), **42rem** CRUD form (`.crud-modal`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
+- **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`); modal widths via `--modal-max-width` — **36rem** base (generic + confirm), **42rem** CRUD form (`.crud-modal`), **56rem** role permission matrix (`.crud-modal--wide`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
 - Module pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
 
 ## Forms (design)
@@ -77,7 +77,8 @@ Reference implementation: `pages/login.html`.
 - Table `admin_permission`: code `{module}.{type}.{action}`; actions `view|create|update|delete|import|export`
 - `is_active` on each permission row — frontend hides/disables action when false even if role grants it
 - `permissions.can(code)`, `canAction(module, type, action)`, `listForPage()`, `applyActionButtons()`
-- Sidebar visibility: leaf menu requires `{parentModule}.{leafModule}.view` (+ superadmin bypass)
+- Sidebar visibility: leaf menu requires intersection of role grants with `admin_menu_permission` for that menu (+ superadmin bypass); junction links all six actions per navigable leaf menu in seed
+- **Role permission matrix** (`admin_role` form): groups leaf menus by root sidebar section (38 menus / 10 groups); columns = `view|create|update|delete|import|export`; source rows from `admin_menu_permission`; save replaces `admin_role_permission` for the role; **super admin role id=1** locked read-only (all checked, disabled); other roles editable; **auto-view** — checking create/update/delete/import/export auto-checks view and blocks unchecking view while any sibling action remains checked; import/export assignable in matrix even when `admin_permission.is_active` is false (runtime UI still respects `is_active`)
 - Page buttons: `data-perm-module`, `data-perm-type`, `data-perm-action`
 
 ## Admin shell

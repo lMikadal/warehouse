@@ -1,9 +1,11 @@
 (function (global) {
   var codeToId = global.ADMIN_PERM_CODE_TO_ID;
+  var ACTIONS = global.ADMIN_SEED_SHARED.ACTIONS;
   var rows = [];
 
   global.ADMIN_MENU_DEFS.forEach(function (d) {
     if (!d.path || d.is_dialog) return;
+    if (/dashboard\.html/i.test(d.path)) return;
     var parent = global.ADMIN_MENU_DEFS.find(function (p) {
       return p.id === d.parent_id;
     });
@@ -19,14 +21,16 @@
     var permType = d.module;
     if (d.id === 22) permType = "supplier_user";
 
-    var viewCode = permModule + "." + permType + ".view";
-    var permId = codeToId[viewCode];
-    if (permId) {
-      rows.push({
-        admin_menu_id: d.id,
-        admin_permission_id: permId,
-      });
-    }
+    ACTIONS.forEach(function (action) {
+      var code = permModule + "." + permType + "." + action;
+      var permId = codeToId[code];
+      if (permId) {
+        rows.push({
+          admin_menu_id: d.id,
+          admin_permission_id: permId,
+        });
+      }
+    });
   });
 
   global.SEED_ADMIN_MENU_PERMISSION = rows;

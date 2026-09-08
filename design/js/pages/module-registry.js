@@ -365,6 +365,7 @@
       pageDescriptionKey: "page.adminRole.desc",
       statusFilter: true,
       statusSwitch: true,
+      permissionMatrix: true,
       columns: [
         { id: "name", labelKey: "col.name" },
         {
@@ -428,6 +429,9 @@
         }
         upsertLang("admin_role_language", "admin_role_id", rowId, "th", values.name_th);
         upsertLang("admin_role_language", "admin_role_id", rowId, "en", values.name_en);
+        if (global.rolePermissionMatrix) {
+          global.rolePermissionMatrix.syncRolePermissions(rowId, values._permissionIds || []);
+        }
       },
       remove: function (id) {
         global.store.update("admin_role", id, { deleted_at: now(), updated_at: now() });

@@ -489,6 +489,14 @@
         "exclusive": "statusSwitchExclusive: true clears same field on other rows when toggled ON (admin_language default)",
         "requiresUpdatePermission": true
       },
+      "permissionMatrix": {
+        "flag": "permissionMatrix: true on module config (admin_role)",
+        "component": "js/components/role-permission-matrix.js",
+        "ui": "appended to CRUD form modal; wide modal via crud-modal--wide (56rem); menu groups from admin_menu tree; checkboxes per action from admin_menu_permission",
+        "save": "values._permissionIds synced to admin_role_permission on save; super admin role id=1 locked read-only",
+        "autoView": "checking create/update/delete/import/export auto-checks view; cannot uncheck view while any sibling action is checked (editable roles only)",
+        "importExport": "assignable in matrix regardless of admin_permission.is_active; runtime still gated by is_active"
+      },
       "updatedAtColumn": {
         "labelKey": "col.updatedAt",
         "helper": "module-registry.js updatedAtColumn + i18n.formatDateTime",

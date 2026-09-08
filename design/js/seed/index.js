@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "admin-users-1";
+  global.SEED_VERSION = "admin-role-perms-1";
 
   var tables = {};
 
