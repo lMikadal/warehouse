@@ -42,15 +42,18 @@
     }
   }
 
-  function statusSwitchHtml(row) {
+  function statusSwitchHtml(row, field, labelKey) {
+    field = field || "is_active";
+    labelKey = labelKey || "col.status";
+    var label = global.i18n ? global.i18n.t(labelKey) : labelKey;
     return (
       '<label class="crud-switch">' +
       '<input type="checkbox" class="crud-status-switch" role="switch" data-id="' +
       escapeHtml(row._id) +
       '"' +
-      (row.is_active ? " checked" : "") +
+      (row[field] ? " checked" : "") +
       ' aria-label="' +
-      escapeHtml(global.i18n ? global.i18n.t("col.status") : "Status") +
+      escapeHtml(label) +
       '" />' +
       '<span class="crud-switch__track" aria-hidden="true"><span class="crud-switch__thumb"></span></span>' +
       "</label>"
@@ -224,6 +227,9 @@
       pageTitleKey: "page.adminLanguage",
       pageDescriptionKey: "page.adminLanguage.desc",
       sortable: true,
+      statusSwitch: true,
+      statusSwitchField: "is_default",
+      statusSwitchExclusive: true,
       columns: [
         { id: "locale", labelKey: "col.locale" },
         { id: "name", labelKey: "col.name" },
@@ -231,9 +237,7 @@
           id: "is_default",
           labelKey: "col.default",
           render: function (row) {
-            return row.is_default
-              ? '<span class="crud-badge crud-badge--active" data-i18n="col.yes"></span>'
-              : '<span class="crud-badge crud-badge--inactive" data-i18n="col.no"></span>';
+            return statusSwitchHtml(row, "is_default", "col.default");
           },
         },
         updatedAtColumn,

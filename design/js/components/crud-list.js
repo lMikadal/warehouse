@@ -1112,9 +1112,17 @@
       if (!canUpdate) input.disabled = true;
       input.addEventListener("change", function () {
         var id = Number(input.getAttribute("data-id"));
+        var ts = new Date().toISOString();
+        if (state.config.statusSwitchExclusive && input.checked) {
+          global.store.getAll(table).forEach(function (r) {
+            if (r.id !== id && r[field]) {
+              global.store.update(table, r.id, { [field]: false, updated_at: ts });
+            }
+          });
+        }
         global.store.update(table, id, {
           [field]: input.checked,
-          updated_at: new Date().toISOString(),
+          updated_at: ts,
         });
         global.toast.show(t("crud.statusChanged"), "success");
         renderTable();

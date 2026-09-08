@@ -480,8 +480,9 @@
       },
       "statusSwitch": {
         "flag": "statusSwitch: true on module config",
-        "ui": "toggle switch in status column; inline store update on change",
-        "field": "statusSwitchField defaults to is_active",
+        "ui": "toggle switch in status/default column; inline store update on change",
+        "field": "statusSwitchField defaults to is_active; admin_language uses is_default",
+        "exclusive": "statusSwitchExclusive: true clears same field on other rows when toggled ON (admin_language default)",
         "requiresUpdatePermission": true
       },
       "updatedAtColumn": {
