@@ -6,8 +6,6 @@
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
   var MOON_ICON =
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
-  var BELL_ICON =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>';
   var LANG_ICON =
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>';
   var LOGOUT_ICON =
@@ -45,12 +43,10 @@
     var langBtn = document.getElementById("btn-lang");
     var themeBtn = document.getElementById("btn-theme");
     var logoutBtn = document.getElementById("btn-logout");
-    var notifyBtn = document.getElementById("btn-notifications");
     if (menuBtn) menuBtn.setAttribute("aria-label", global.i18n.t("nav.openMenu"));
     if (langBtn) langBtn.setAttribute("aria-label", global.i18n.t("lang.toggle"));
     if (themeBtn) themeBtn.setAttribute("aria-label", global.i18n.t("theme.toggle"));
     if (logoutBtn) logoutBtn.setAttribute("aria-label", global.i18n.t("nav.logout"));
-    if (notifyBtn) notifyBtn.setAttribute("aria-label", global.i18n.t("nav.notifications"));
   }
 
   function userInitial(username) {
@@ -104,7 +100,7 @@
       "</span>" +
       "      </div>" +
       '      <div class="admin-sidebar__footer-actions">' +
-      '        <button type="button" class="admin-sidebar__icon-btn" id="btn-logout" aria-label="Log out">' +
+      '        <button type="button" class="admin-sidebar__icon-btn admin-sidebar__icon-btn--logout" id="btn-logout" aria-label="Log out">' +
       LOGOUT_ICON +
       "        </button>" +
       "      </div>" +
@@ -120,9 +116,6 @@
       '        <nav class="admin-header__breadcrumb" id="admin-breadcrumb" aria-label="Breadcrumb" hidden></nav>' +
       "      </div>" +
       '      <div class="admin-header__actions">' +
-      '        <button type="button" class="admin-header__icon-btn admin-header__icon-btn--badge" id="btn-notifications" aria-label="Notifications">' +
-      BELL_ICON +
-      "        </button>" +
       '        <button type="button" class="admin-header__icon-btn" id="btn-lang" aria-label="Language">' +
       LANG_ICON +
       "        </button>" +
@@ -156,11 +149,6 @@
     syncChromeLabels();
 
     document.getElementById("btn-theme").addEventListener("click", toggleTheme);
-    document.getElementById("btn-notifications").addEventListener("click", function () {
-      if (global.toast && global.i18n) {
-        global.toast.show(global.i18n.t("nav.noNotifications"), "info");
-      }
-    });
     document.getElementById("btn-lang").addEventListener("click", function () {
       global.i18n.setLocale(global.i18n.getLocale() === "th" ? "en" : "th");
       refreshNav();

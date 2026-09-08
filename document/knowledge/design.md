@@ -83,7 +83,7 @@ Reference implementation: `pages/login.html`.
 Stitch-modern flush-left shell — visual target documented in [`design/reference/stitch-admin-shell/README.md`](../../design/reference/stitch-admin-shell/README.md).
 
 - `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/admin-menu.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
-- `js/components/layout.js` — sidebar + header + content area; flat header (bell + lang + theme); user + logout in sidebar footer
+- `js/components/layout.js` — sidebar + header + content area; flat header (lang + theme); user + red logout icon in sidebar footer
 - `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring
 - Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop; sidebar username hidden on mobile (&lt; 640px)
 
@@ -92,7 +92,7 @@ Stitch-modern flush-left shell — visual target documented in [`design/referenc
 | Part | Treatment |
 |------|-----------|
 | Sidebar | Full viewport height; brand + search fixed; **nav scrolls**; footer pinned to bottom (user + logout) |
-| Header | Same translucent panel as sidebar; plain breadcrumb; ghost bell + lang + theme icons |
+| Header | Same translucent panel as sidebar; plain breadcrumb; ghost lang + theme icons (no notifications) |
 | Page | Dual radial blue wash on `.admin-layout` |
 
 ## Typography (admin shell)

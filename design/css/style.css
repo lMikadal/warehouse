@@ -1155,6 +1155,19 @@ body.sidebar-open .admin-sidebar-backdrop {
   background: rgb(248 250 252 / 0.08);
 }
 
+.admin-sidebar__icon-btn--logout {
+  color: #dc2626;
+  opacity: 1;
+}
+
+.admin-sidebar__icon-btn--logout:hover {
+  background: rgb(220 38 38 / 0.08);
+}
+
+[data-theme="dark"] .admin-sidebar__icon-btn--logout:hover {
+  background: rgb(248 113 113 / 0.12);
+}
+
 .admin-content {
   flex: 1;
   padding: 1rem;

@@ -210,7 +210,8 @@
       "header": {
         "surface": "translucent panel + blur(12px) + bottom shadow — matches sidebar surface",
         "breadcrumb": "plain text trail — muted parent links + bold current h1; > separators",
-        "actions": "ghost icon buttons — bell (red badge dot), language, theme (sun/moon)"
+        "actions": "ghost icon buttons — language, theme (sun/moon); notifications hidden in prototype",
+        "sidebarLogout": "admin-sidebar__icon-btn--logout — red (#dc2626) log-out icon in sidebar footer"
       },
       "typography": {
         "tokens": "css/style.css — --text-xs through --text-2xl",
