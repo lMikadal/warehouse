@@ -115,8 +115,9 @@ See `design/design.json` → `layout.adminShell.typography`.
 
 Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js). Rules: [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc).
 
-- **Page header:** `.crud-page-header` above filter toolbar — `<h1>` title + optional `pageDescriptionKey` description (left); Export + Create buttons (right); toolbar keeps search + status filter only; breadcrumb leaf uses `<span>` (page `<h1>` lives in content)
+- **Page header:** `.crud-page-header` above filter toolbar — `<h1>` title + optional `pageDescriptionKey` description (left); Export + Create buttons (right); toolbar keeps search + column filters + status filter; breadcrumb leaf uses `<span>` (page `<h1>` lives in content)
 - **Pagination:** every module table paginates (default **10** rows; options **10 / 25 / 50 / 100**; choice persisted in `sessionStorage`); bar sits **outside** the table card; page pills + prev/next; page resets on search, filter, or page-size change
+- **Column filters:** optional `columnFilters: [{ key, labelKey, optionI18nPrefix? }]` — searchable dropdown per field in toolbar (after text search, before status filter); options from unique sorted `listRows()` values; trigger label `{field}: {value}` via `crud.filterField`; optional `optionI18nPrefix` for i18n option labels (e.g. `action.view`); **admin_permission** uses module / type / action
 - **Status filter:** modules with `is_active` set `statusFilter: true` — toolbar segmented buttons **All / Active / Inactive**; filters before sort/pagination
 - **Status switch:** modules with `statusSwitch: true` — status column uses inline toggle switch; updates `is_active` in store on change (requires update permission)
 - **Drag sort:** modules with `sort_order` use `sortable: true` + HTML5 native drag — grip-vertical handle column; no `sort_order` field in table or form; drop reassigns `sort_order` in store immediately; tree tables restrict drag to same `parent_id`; geo tables restrict to same parent FK

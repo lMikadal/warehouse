@@ -1,7 +1,7 @@
 (function (global) {
   var formOverlay = null;
   var confirmOverlay = null;
-  var state = { config: null, permModule: null, permType: null, container: null, query: "", statusFilter: "", page: 1, pageSize: 10 };
+  var state = { config: null, permModule: null, permType: null, container: null, query: "", statusFilter: "", columnFilters: {}, page: 1, pageSize: 10 };
 
   var PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
   var DEFAULT_PAGE_SIZE = 10;
@@ -234,6 +234,186 @@
     return true;
   }
 
+  function filterOptionLabel(filterDef, value) {
+    if (!value) return t("crud.filterAll");
+    if (filterDef.optionI18nPrefix) {
+      var i18nKey = filterDef.optionI18nPrefix + value;
+      var translated = t(i18nKey);
+      if (translated !== i18nKey) return translated;
+    }
+    return value;
+  }
+
+  function filterTriggerLabel(filterDef) {
+    return formatMsg("crud.filterField", {
+      field: t(filterDef.labelKey),
+      value: filterOptionLabel(filterDef, state.columnFilters[filterDef.key] || ""),
+    });
+  }
+
+  function buildColumnFilterOptions(filterDef) {
+    var seen = {};
+    var opts = [];
+    state.config.listRows().forEach(function (row) {
+      var v = row[filterDef.key];
+      if (v == null || v === "" || seen[v]) return;
+      seen[v] = true;
+      opts.push(String(v));
+    });
+    opts.sort(function (a, b) {
+      return a.localeCompare(b);
+    });
+    return opts;
+  }
+
+  function columnFilterOptionsHtml(filterDef) {
+    var selected = state.columnFilters[filterDef.key] || "";
+    var html =
+      '<li class="crud-filter-select__option' +
+      (selected === "" ? " crud-filter-select__option--selected" : "") +
+      '" role="option" data-value="" tabindex="0">' +
+      escapeHtml(filterOptionLabel(filterDef, "")) +
+      "</li>";
+    buildColumnFilterOptions(filterDef).forEach(function (val) {
+      html +=
+        '<li class="crud-filter-select__option' +
+        (selected === val ? " crud-filter-select__option--selected" : "") +
+        '" role="option" data-value="' +
+        escapeHtml(val) +
+        '" tabindex="0">' +
+        escapeHtml(filterOptionLabel(filterDef, val)) +
+        "</li>";
+    });
+    return html;
+  }
+
+  function columnFiltersHtml() {
+    if (!state.config.columnFilters || !state.config.columnFilters.length) return "";
+    return (
+      '<div class="crud-toolbar__filters">' +
+      state.config.columnFilters
+        .map(function (f) {
+          if (state.columnFilters[f.key] === undefined) state.columnFilters[f.key] = "";
+          return (
+            '<div class="crud-filter-select" data-filter-key="' +
+            escapeHtml(f.key) +
+            '">' +
+            '<button type="button" class="crud-filter-select__trigger" aria-haspopup="listbox" aria-expanded="false">' +
+            '<span class="crud-filter-select__label">' +
+            escapeHtml(filterTriggerLabel(f)) +
+            "</span>" +
+            '<img src="../assets/icons/chevron-down.svg" alt="" width="16" height="16" class="crud-filter-select__chevron" />' +
+            "</button>" +
+            '<div class="crud-filter-select__panel" hidden>' +
+            '<input type="search" class="crud-filter-select__search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
+            '<ul class="crud-filter-select__list" role="listbox">' +
+            columnFilterOptionsHtml(f) +
+            "</ul>" +
+            "</div>" +
+            "</div>"
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  function matchesColumnFilters(row) {
+    if (!state.config.columnFilters) return true;
+    return state.config.columnFilters.every(function (f) {
+      var v = state.columnFilters[f.key];
+      return !v || String(row[f.key]) === v;
+    });
+  }
+
+  function closeAllColumnFilterPanels(exceptWrap) {
+    if (!state.container) return;
+    state.container.querySelectorAll(".crud-filter-select").forEach(function (wrap) {
+      if (exceptWrap && wrap === exceptWrap) return;
+      var panel = wrap.querySelector(".crud-filter-select__panel");
+      var trigger = wrap.querySelector(".crud-filter-select__trigger");
+      if (panel) panel.hidden = true;
+      if (trigger) trigger.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function filterColumnFilterList(list, q) {
+    list.querySelectorAll(".crud-filter-select__option").forEach(function (opt) {
+      var text = (opt.textContent || "").toLowerCase();
+      opt.hidden = !!(q && text.indexOf(q) < 0);
+    });
+  }
+
+  function bindColumnFilters() {
+    if (!state.config.columnFilters) return;
+    state.container.querySelectorAll(".crud-filter-select").forEach(function (wrap) {
+      var key = wrap.getAttribute("data-filter-key");
+      var filterDef = state.config.columnFilters.filter(function (f) {
+        return f.key === key;
+      })[0];
+      if (!filterDef) return;
+
+      var trigger = wrap.querySelector(".crud-filter-select__trigger");
+      var panel = wrap.querySelector(".crud-filter-select__panel");
+      var search = wrap.querySelector(".crud-filter-select__search");
+      var list = wrap.querySelector(".crud-filter-select__list");
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var willOpen = panel.hidden;
+        closeAllColumnFilterPanels();
+        if (willOpen) {
+          panel.hidden = false;
+          trigger.setAttribute("aria-expanded", "true");
+          if (search) {
+            search.value = "";
+            filterColumnFilterList(list, "");
+            search.focus();
+          }
+        }
+      });
+
+      panel.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+
+      if (search) {
+        search.addEventListener("input", function () {
+          filterColumnFilterList(list, search.value.trim().toLowerCase());
+        });
+      }
+
+      list.querySelectorAll(".crud-filter-select__option").forEach(function (opt) {
+        opt.addEventListener("click", function () {
+          state.columnFilters[key] = opt.getAttribute("data-value") || "";
+          state.page = 1;
+          closeAllColumnFilterPanels();
+          state.container.querySelectorAll(".crud-filter-select").forEach(function (w) {
+            var k = w.getAttribute("data-filter-key");
+            var fd = state.config.columnFilters.filter(function (f) {
+              return f.key === k;
+            })[0];
+            if (!fd) return;
+            var lbl = w.querySelector(".crud-filter-select__label");
+            if (lbl) lbl.textContent = filterTriggerLabel(fd);
+            var sel = state.columnFilters[k] || "";
+            w.querySelectorAll(".crud-filter-select__option").forEach(function (o) {
+              o.classList.toggle("crud-filter-select__option--selected", (o.getAttribute("data-value") || "") === sel);
+            });
+          });
+          renderTable();
+        });
+      });
+    });
+
+    if (!state.container._columnFilterCloseBound) {
+      state.container._columnFilterCloseBound = true;
+      state.container.addEventListener("click", function () {
+        closeAllColumnFilterPanels();
+      });
+    }
+  }
+
   function pageHeaderHtml() {
     var cfg = state.config;
     var showCreate = cfg.canCreate !== false && !cfg.readOnly && can("create");
@@ -292,6 +472,7 @@
       pageHeaderHtml() +
       '  <div class="crud-toolbar">' +
       '    <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
+      columnFiltersHtml() +
       statusFilter +
       "  </div>" +
       '  <div class="crud-table-wrap">' +
@@ -489,6 +670,7 @@
     if (!wrap || !state.config) return;
 
     var filtered = state.config.listRows().filter(function (row) {
+      if (!matchesColumnFilters(row)) return false;
       if (!matchesStatusFilter(row)) return false;
       if (!state.query) return true;
       return state.config.searchFilter(row, state.query.toLowerCase());
@@ -975,12 +1157,14 @@
     state.permType = permType;
     state.query = "";
     state.statusFilter = "";
+    state.columnFilters = {};
     state.page = 1;
     state.pageSize = config.pageSize || readStoredPageSize();
     container.innerHTML = shellHtml();
     if (global.i18n) global.i18n.init();
     if (global.permissions) global.permissions.applyActionButtons(container);
     bindToolbar();
+    bindColumnFilters();
     renderTable();
   }
 

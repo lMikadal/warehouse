@@ -460,6 +460,14 @@
         "field": "statusFilterField defaults to is_active",
         "resetPageOnChange": true
       },
+      "columnFilters": {
+        "flag": "columnFilters: [{ key, labelKey, optionI18nPrefix? }] on module config",
+        "ui": "searchable dropdown per field in toolbar (after text search, before status filter); trigger label via crud.filterField",
+        "options": "unique sorted values from full listRows(); All clears filter",
+        "optionI18nPrefix": "optional — t(prefix + value) for option labels (e.g. action.view)",
+        "resetPageOnChange": true,
+        "example": "admin_permission — module, type, action"
+      },
       "statusSwitch": {
         "flag": "statusSwitch: true on module config",
         "ui": "toggle switch in status column; inline store update on change",

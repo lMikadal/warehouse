@@ -174,6 +174,11 @@
       canDelete: false,
       statusFilter: true,
       statusSwitch: true,
+      columnFilters: [
+        { key: "module", labelKey: "col.module" },
+        { key: "type", labelKey: "col.type" },
+        { key: "action", labelKey: "col.action", optionI18nPrefix: "action." },
+      ],
       columns: [
         { id: "code", labelKey: "col.code" },
         { id: "module", labelKey: "col.module" },

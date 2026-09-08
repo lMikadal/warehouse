@@ -61,6 +61,7 @@ window.I18N_EN = {
   "crud.totalCount": "of {total} total",
   "crud.statusFilter": "Filter by status",
   "crud.filterAll": "All",
+  "crud.filterField": "{field}: {value}",
   "crud.dragSiblingOnly": "Can only reorder within the same group",
   "crud.pageOf": "Page {page} / {total}",
   "crud.showing": "Showing {from}–{to} of {total}",
