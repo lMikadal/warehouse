@@ -107,7 +107,7 @@ CSS tokens in [`design/css/style.css`](../../design/css/style.css): `--text-xs` 
 | Sidebar nav | `--text-sm` | min-height 2.75rem; sub-items with primary left rail |
 | Table headers | `--text-xs` semibold | |
 | Table body | `--text-base` | |
-| Table meta columns | `--text-sm` | path, module, sort_order via `.data-table__cell--meta` |
+| Table meta columns | `--text-sm` | path, module, sort_order via `.data-table__cell--meta`; `updated_at` via `.data-table__cell--datetime` (nowrap) |
 
 See `design/design.json` → `layout.adminShell.typography`.
 
@@ -124,6 +124,7 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - **Drag sort:** modules with `sort_order` use `sortable: true` + HTML5 native drag — grip-vertical handle column; no `sort_order` field in table or form; drop reassigns `sort_order` in store immediately; tree tables restrict drag to same `parent_id`; geo tables restrict to same parent FK
 - **Sort** (after filter, before slice): tree tables → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat with `sort_order` → `created_at`; else `created_at` → `id`
 - **Empty state:** when filter/search yields no rows, table `<thead>` still renders column headers; empty message spans all columns in one `<tbody>` row (`.crud-empty`)
+- **Last updated column:** read-only `updated_at` on admin menu, admin language, and all four geo tables — shared `updatedAtColumn` in `module-registry.js`; placed after status/default, before actions; formatted via `i18n.formatDateTime` per [`.cursor/rules/dates.mdc`](../../.cursor/rules/dates.mdc) (`09 ก.ย. 2569 12.30` / `09 Sep 2026 12.30`); not sortable
 
 ## Dev bar (prototype only)
 

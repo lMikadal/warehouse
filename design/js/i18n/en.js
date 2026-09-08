@@ -91,6 +91,7 @@ window.I18N_EN = {
   "col.province": "Province",
   "col.district": "District",
   "col.postcode": "Postcode",
+  "col.updatedAt": "Last updated",
   "action.view": "View",
   "action.create": "Create",
   "action.update": "Update",

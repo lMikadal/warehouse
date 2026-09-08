@@ -1,0 +1,38 @@
+---
+description: Date and datetime display format for design mockups and frontend UI.
+alwaysApply: true
+---
+
+# Dates (display)
+
+Applies to `design/` mockups and `frontend/` production UI. **Storage and APIs stay ISO / DB timestamps** — this rule is display-only.
+
+## Format
+
+Do **not** use raw `toLocaleString`, `toLocaleDateString`, or ad-hoc formatting in column renderers or components. Use the shared helpers below.
+
+| Locale | Datetime example | Pattern |
+|--------|------------------|---------|
+| `th` | `09 ก.ย. 2569 12.30` | `DD` + Thai short month + Buddhist year + `HH.MM` |
+| `en` | `09 Sep 2026 12.30` | `DD` + English short month + Gregorian year + `HH.MM` |
+
+- **Date-only** (no time): same date part, omit ` HH.MM` — e.g. `09 ก.ย. 2569` / `09 Sep 2026`
+- **Empty / invalid**: `—`
+- **Timezone**: browser local (`Date` getters)
+- **Time separator**: dot (`12.30`), not colon
+- **Day / hour / minute**: zero-padded 2 digits
+- **Thai year**: Gregorian + 543
+
+## Helpers
+
+| Area | Helper |
+|------|--------|
+| **Design** | `i18n.formatDateTime(iso)` / `i18n.formatDate(iso)` in [`design/js/i18n/i18n.js`](../../design/js/i18n/i18n.js) |
+| **Frontend** | `formatDateTime(iso, locale)` / `formatDate(iso, locale)` in [`frontend/lib/format-datetime.ts`](../../frontend/lib/format-datetime.ts) — pass `useLocale()` from next-intl |
+
+Locale switch in design re-renders via `i18n:change`; no extra wiring per column.
+
+## Out of scope
+
+- Backend API response formatting
+- Form `<input type="date">` value attributes (stay `YYYY-MM-DD`)

@@ -62,6 +62,7 @@ Full definitions in [`design/design.json`](../../design/design.json) → `breakp
 - UI chrome (labels, buttons, nav) lives in dictionaries — not in SQL
 - Stored multilingual content uses `*_language` tables (see Schema naming); pick rows by current locale
 - Load i18n before page scripts
+- **Date/datetime display** → [`.cursor/rules/dates.mdc`](../../.cursor/rules/dates.mdc); use `i18n.formatDateTime(iso)` / `i18n.formatDate(iso)` — do not use raw `toLocaleString`
 
 ### Icons (design)
 

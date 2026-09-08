@@ -27,6 +27,33 @@
     return format(templateKey, { label: t(labelKey) });
   }
 
+  var TH_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  var EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function pad2(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function formatDateParts(d, loc, withTime) {
+    if (!d || isNaN(d.getTime())) return "—";
+    var day = pad2(d.getDate());
+    var month = loc === "th" ? TH_MONTHS[d.getMonth()] : EN_MONTHS[d.getMonth()];
+    var year = loc === "th" ? d.getFullYear() + 543 : d.getFullYear();
+    var out = day + " " + month + " " + year;
+    if (!withTime) return out;
+    return out + " " + pad2(d.getHours()) + "." + pad2(d.getMinutes());
+  }
+
+  function formatDateTime(iso) {
+    if (!iso) return "—";
+    return formatDateParts(new Date(iso), locale, true);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "—";
+    return formatDateParts(new Date(iso), locale, false);
+  }
+
   function applyDom(notifyChange) {
     document.documentElement.lang = locale;
     document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -69,5 +96,15 @@
     applyDom(false);
   }
 
-  global.i18n = { init, t, format, fieldPlaceholder, setLocale, getLocale };
+  global.i18n = { init, t, format, fieldPlaceholder, setLocale, getLocale, formatDateTime, formatDate };
+
+  // ponytail: self-check — throws if date format drifts
+  (function selfCheckDateFormat() {
+    var d = new Date(2026, 8, 9, 12, 30);
+    var th = formatDateParts(d, "th", true);
+    var en = formatDateParts(d, "en", true);
+    if (th !== "09 ก.ย. 2569 12.30" || en !== "09 Sep 2026 12.30") {
+      throw new Error("i18n date format self-check failed: th=" + th + " en=" + en);
+    }
+  })();
 })(window);

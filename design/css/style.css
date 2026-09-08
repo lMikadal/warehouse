@@ -1768,6 +1768,10 @@ body.sidebar-open .admin-sidebar-backdrop {
   opacity: 0.85;
 }
 
+.data-table__cell--datetime {
+  white-space: nowrap;
+}
+
 [data-theme="dark"] .data-table th {
   background: rgb(59 130 246 / 0.08);
 }

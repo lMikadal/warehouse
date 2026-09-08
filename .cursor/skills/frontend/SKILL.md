@@ -72,7 +72,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 | CSS | Tailwind CSS v4 |
 | Components | shadcn/ui → `components/ui/` |
 | Icons | lucide-react ([Lucide](https://lucide.dev/icons/)) |
-| Utils | `clsx` + `tailwind-merge` → `lib/utils.ts` (`cn`) |
+| Utils | `clsx` + `tailwind-merge` → `lib/utils.ts` (`cn`); date display → `lib/format-datetime.ts` (see [`.cursor/rules/dates.mdc`](../../.cursor/rules/dates.mdc)) |
 | Theme | `next-themes` + shadcn dark mode |
 | i18n | `next-intl` (`th`, `en`) |
 
@@ -96,7 +96,8 @@ frontend/
 ├── components/
 │   └── ui/           # shadcn only
 ├── lib/
-│   └── utils.ts
+│   ├── utils.ts
+│   └── format-datetime.ts
 └── package.json
 ```
 

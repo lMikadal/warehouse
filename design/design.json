@@ -483,6 +483,14 @@
         "ui": "toggle switch in status column; inline store update on change",
         "field": "statusSwitchField defaults to is_active",
         "requiresUpdatePermission": true
+      },
+      "updatedAtColumn": {
+        "labelKey": "col.updatedAt",
+        "helper": "module-registry.js updatedAtColumn + i18n.formatDateTime",
+        "placement": "after status/default column, before actions",
+        "modules": ["admin_menu", "admin_language", "website_country", "website_province", "website_district", "website_sub_district"],
+        "cellClass": "data-table__cell--meta data-table__cell--datetime",
+        "format": "i18n.formatDateTime — th: DD MMM. BBBB HH.MM (e.g. 09 ก.ย. 2569 12.30); en: DD Mon YYYY HH.MM (e.g. 09 Sep 2026 12.30); see .cursor/rules/dates.mdc; read-only; no sort"
       }
     },
     "wideDesktopContainment": {

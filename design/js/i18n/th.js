@@ -91,6 +91,7 @@ window.I18N_TH = {
   "col.province": "จังหวัด",
   "col.district": "เขต / อำเภอ",
   "col.postcode": "รหัสไปรษณีย์",
+  "col.updatedAt": "อัปเดตล่าสุด",
   "action.view": "ดู",
   "action.create": "สร้าง",
   "action.update": "แก้ไข",

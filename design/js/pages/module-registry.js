@@ -74,6 +74,15 @@
     return { ok: Object.keys(errors).length === 0, errors: errors };
   }
 
+  var updatedAtColumn = {
+    id: "updated_at",
+    labelKey: "col.updatedAt",
+    cellClass: "data-table__cell--meta data-table__cell--datetime",
+    render: function (row) {
+      return escapeHtml(global.i18n.formatDateTime(row.updated_at));
+    },
+  };
+
   var REGISTRY = {
     admin_menu: {
       permModule: "admin",
@@ -106,6 +115,7 @@
             return statusSwitchHtml(row);
           },
         },
+        updatedAtColumn,
       ],
       listRows: function () {
         return global.store
@@ -226,6 +236,7 @@
               : '<span class="crud-badge crud-badge--inactive" data-i18n="col.no"></span>';
           },
         },
+        updatedAtColumn,
       ],
       listRows: function () {
         return global.store
@@ -325,6 +336,7 @@
               return statusSwitchHtml(row);
             },
           },
+          updatedAtColumn,
         ])
         .concat(opts.extraColumns || [])
         .filter(Boolean),
