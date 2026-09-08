@@ -90,7 +90,7 @@
       '        <span class="admin-sidebar__search-icon">' +
       SEARCH_ICON +
       "</span>" +
-      '        <input type="search" class="admin-sidebar__search-input" id="sidebar-search" data-i18n-placeholder="nav.search" placeholder="ค้นหาเมนู" />' +
+      '        <input type="search" class="admin-sidebar__search-input" id="sidebar-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
       "      </label>" +
       "    </div>" +
       '    <nav class="admin-sidebar__nav" id="sidebar-nav" aria-label="Main"></nav>' +

@@ -180,7 +180,14 @@
     };
   }
 
+  function fieldPlaceholder(kind, labelKey) {
+    return global.i18n && global.i18n.fieldPlaceholder
+      ? global.i18n.fieldPlaceholder(kind, labelKey)
+      : labelKey;
+  }
+
   function formatMsg(key, vars) {
+    if (global.i18n && global.i18n.format) return global.i18n.format(key, vars);
     var msg = t(key);
     if (!vars) return msg;
     return Object.keys(vars).reduce(function (s, k) {
@@ -241,7 +248,7 @@
     return (
       '<div class="crud-page">' +
       '  <div class="crud-toolbar">' +
-      '    <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="crud.search" placeholder="ค้นหา" />' +
+      '    <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
       statusFilter +
       (showCreate
         ? '    <button type="button" class="btn btn--primary crud-toolbar__create" id="crud-create" data-perm-module="' +
@@ -395,7 +402,7 @@
       }
     });
 
-    if (changed) global.toast.show(t("crud.saved"), "success");
+    if (changed) global.toast.show(t("crud.reordered"), "success");
     renderTable();
   }
 
@@ -650,7 +657,15 @@
     }
 
     if (field.type === "select") {
-      var opts = (field.options || [])
+      var selectPh = escapeHtml(fieldPlaceholder("select", field.labelKey));
+      var emptySelected = val == null || val === "" ? " selected" : "";
+      var placeholderOpt =
+        '<option value="" disabled' +
+        emptySelected +
+        ">" +
+        selectPh +
+        "</option>";
+      var opts = placeholderOpt + (field.options || [])
         .map(function (opt) {
           var selected = String(val) === String(opt.value) ? " selected" : "";
           return (
@@ -686,8 +701,7 @@
     }
 
     var inputType = field.type === "number" ? "number" : "text";
-    var ph = field.placeholderKey ? ' data-i18n-placeholder="' + escapeHtml(field.placeholderKey) + '"' : "";
-    var phAttr = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : "";
+    var phText = escapeHtml(fieldPlaceholder("input", field.labelKey));
     return (
       '<div class="form-field">' +
       '<label for="crud-field-' +
@@ -705,9 +719,11 @@
       escapeHtml(field.key) +
       '" value="' +
       escapeHtml(val) +
+      '" placeholder="' +
+      phText +
+      '" data-i18n-placeholder-input="' +
+      escapeHtml(field.labelKey) +
       '"' +
-      ph +
-      phAttr +
       (field.required ? " required" : "") +
       " />" +
       errSlot +
@@ -824,7 +840,7 @@
     saveBtn.disabled = true;
     try {
       state.config.save(values, editId);
-      global.toast.show(t("crud.saved"), "success");
+      global.toast.show(t(editId ? "crud.updated" : "crud.created"), "success");
       closeForm();
       renderTable();
     } catch (err) {
@@ -873,7 +889,7 @@
           [field]: input.checked,
           updated_at: new Date().toISOString(),
         });
-        global.toast.show(t("crud.saved"), "success");
+        global.toast.show(t("crud.statusChanged"), "success");
         renderTable();
       });
     });

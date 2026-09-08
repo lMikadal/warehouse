@@ -112,7 +112,7 @@
       "  </header>" +
       '  <div class="db-browser__body">' +
       '    <aside class="db-browser__sidebar">' +
-      '      <input type="search" class="db-browser__search" id="db-search" placeholder="ค้นหาตาราง…" />' +
+      '      <input type="search" class="db-browser__search" id="db-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
       '      <div class="db-table-list" id="db-table-list"></div>' +
       "    </aside>" +
       '    <main class="db-browser__main" id="db-main">' +

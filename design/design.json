@@ -317,7 +317,14 @@
       },
       "placeholder": {
         "required": true,
-        "i18n": "data-i18n-placeholder + fallback placeholder attribute",
+        "pattern": {
+          "input": "form.placeholder.input — กรุณากรอก{label} / Please enter {label}",
+          "select": "form.placeholder.select — disabled first option กรุณาเลือก{label} / Please select {label}",
+          "search": "search.placeholder — ค้นหา / Search (type=search only; not the input template)",
+          "labelSource": "translated label from labelKey via i18n.t()"
+        },
+        "designMarkup": "data-i18n-placeholder-input / data-i18n-placeholder-select + fallback; JS: i18n.fieldPlaceholder(kind, labelKey)",
+        "legacy": "data-i18n-placeholder explicit key still supported",
         "noRealPasswords": true
       }
     },
@@ -360,7 +367,7 @@
   },
   "ux": {
     "feedback": {
-      "createUpdateDelete": "toast.show(msg, 'success')",
+      "createUpdateDelete": "action-specific success toasts: crud.created | crud.updated | crud.reordered | crud.statusChanged | crud.deleted",
       "validationError": "inline under field or toast.error",
       "destructiveAction": "confirm modal then success toast",
       "asyncAction": "disable submit button during processing",
@@ -391,7 +398,7 @@
       "persistKey": "warehouse-design-locale",
       "uiChrome": "js/i18n dictionaries",
       "storedContent": "*_language table rows filtered by locale",
-      "markup": "data-i18n, data-i18n-placeholder"
+      "markup": "data-i18n, data-i18n-placeholder-input, data-i18n-placeholder-select"
     },
     "icons": {
       "source": "Lucide only — https://lucide.dev/icons/",

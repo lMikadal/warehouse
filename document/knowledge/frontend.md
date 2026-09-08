@@ -63,7 +63,8 @@ When building forms from approved `design/` mockups, port these four rules (see 
 
 | Design | Frontend |
 |--------|----------|
-| `data-i18n-placeholder` | `placeholder={t(key)}` |
+| `data-i18n-placeholder-input` / `-select` | `t('form.placeholder.input\|select', { label: t(labelKey) })` |
+| `data-i18n-placeholder="search.placeholder"` | `t('search.placeholder')` — search inputs only |
 | `.password-field` + eye toggle | shadcn `Input` + Lucide `Eye` / `EyeOff` |
 | `.form-field__required` (red `*`) | red `*` after `FormLabel` |
 | `.form-field__error` / `error.required` | shadcn `FormMessage` via React Hook Form |

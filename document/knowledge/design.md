@@ -63,7 +63,7 @@ Standing rules — see `.cursor/rules/forms.mdc`:
 
 | Rule | Design implementation |
 |------|----------------------|
-| Placeholder on every input | `data-i18n-placeholder` + fallback `placeholder` |
+| Placeholder on every input/select | Pattern: input `กรุณากรอก{label}`, select `กรุณาเลือก{label}`; **`type="search"`** → plain `search.placeholder` (`ค้นหา` / `Search`); keys via `data-i18n-placeholder-input` / `-select` or `i18n.fieldPlaceholder()` in CRUD |
 | Password visibility | `.password-field` + `passwordToggle.bind(form)` (`js/components/password-toggle.js`); Lucide `eye` / `eye-off` |
 | Required mark | `.form-field__required` (red `*`) after label |
 | Under-field errors | `.form-field__error` inside `.form-field__error-slot` (fixed height); `error.required` on empty submit; clear on input |
@@ -132,6 +132,7 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - `js/components/toast.js` — `toast.show(msg, type)`; types `success` | `error` | `warning` | `info`
 - Card-style toast: theme surface, colored left accent, Lucide type icon, message, dismiss button (`toast.close` i18n)
 - Container fixed **top-right**; slide-in from right; auto-dismiss ~4s; manual close clears immediately
+- **CRUD success toasts** (via `crud-list.js`): `crud.created` (add), `crud.updated` (edit), `crud.reordered` (drag sort), `crud.statusChanged` (inline switch), `crud.deleted` (delete); warning `crud.dragSiblingOnly` for invalid drag scope
 - Test via dev bar toast buttons on pages that declare `devBar.mount({ toasts: [...] })`
 
 ## Theme

@@ -10,11 +10,26 @@ Applies to `design/` mockups and `frontend/` production UI.
 ## Placeholders
 
 - Every text-like input (`text`, `search`, `email`, `tel`, `url`, `number`, `password`, `textarea`) must have a **placeholder**.
+- Every form `<select>` must show a disabled first option as the placeholder hint (except controls that always have a value selected, e.g. pagination page-size).
 - Placeholders are hints, not substitutes for visible `<label>` elements.
-- Use i18n — do not hardcode a single language:
-  - **Design:** `data-i18n-placeholder="key"` + fallback `placeholder` attribute (see `js/i18n/i18n.js`)
-  - **Frontend:** `placeholder={t('key')}` via `next-intl`
+- Use i18n — do not hardcode a single language.
 - Do not put real or demo passwords in placeholders.
+
+### Placeholder pattern
+
+Derive copy from the field's **translated label** (`{label}`):
+
+| Control | th | en |
+|---------|----|----|
+| input / text-like | กรุณากรอก{label} | Please enter {label} |
+| select | กรุณาเลือก{label} | Please select {label} |
+| **search** (`type="search"`) | **ค้นหา** | **Search** |
+
+Template keys: `form.placeholder.input`, `form.placeholder.select` (with `{label}` param). Search uses **`search.placeholder`** only — not the input template.
+
+- **Design:** form fields → `data-i18n-placeholder-input="labelKey"` or `data-i18n-placeholder-select="labelKey"`; **search inputs** → `data-i18n-placeholder="search.placeholder"` + fallback `placeholder="ค้นหา"`; or derive form fields in JS via `i18n.fieldPlaceholder(kind, labelKey)` (see `js/i18n/i18n.js`, `crud-list.js` `fieldHtml`)
+- **Frontend:** `placeholder={t('form.placeholder.input', { label: t(labelKey) })}` via next-intl; select → disabled `<SelectItem value="">` or equivalent with `t('form.placeholder.select', { label: t(labelKey) })`
+- Legacy explicit keys (`data-i18n-placeholder="key"`) are allowed but prefer the pattern above.
 
 ## Password visibility
 
@@ -45,7 +60,7 @@ Applies to `design/` mockups and `frontend/` production UI.
     <span data-i18n="form.field">Label</span>
     <span class="form-field__required" aria-hidden="true">*</span>
   </label>
-  <input id="field-id" required data-i18n-placeholder="form.field.placeholder" placeholder="…" />
+  <input id="field-id" required data-i18n-placeholder-input="form.field" placeholder="กรุณากรอก…" />
   <div class="form-field__error-slot" aria-live="polite">
     <p class="form-field__error" hidden role="alert"></p>
   </div>

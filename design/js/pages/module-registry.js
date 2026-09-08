@@ -127,9 +127,9 @@
         );
       },
       formFields: [
-        { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
-        { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
-        { key: "path", labelKey: "col.path", type: "text", placeholderKey: "col.path.placeholder" },
+        { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+        { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+        { key: "path", labelKey: "col.path", type: "text" },
         { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
       ],
       getFormValues: function (id) {
@@ -231,8 +231,8 @@
         return row.locale.toLowerCase().indexOf(q) >= 0 || row.name.toLowerCase().indexOf(q) >= 0;
       },
       formFields: [
-        { key: "locale", labelKey: "col.locale", type: "text", required: true, placeholderKey: "col.locale.placeholder" },
-        { key: "name", labelKey: "col.name", type: "text", required: true, placeholderKey: "col.name.placeholder" },
+        { key: "locale", labelKey: "col.locale", type: "text", required: true },
+        { key: "name", labelKey: "col.name", type: "text", required: true },
         { key: "is_default", labelKey: "col.default", type: "checkbox", defaultValue: false },
       ],
       getFormValues: function (id) {
@@ -381,9 +381,9 @@
     parentFk: null,
     parentCol: null,
     formFields: [
-      { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
-      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
-      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
+      { key: "sku", labelKey: "col.sku", type: "text" },
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
     parentOptions: function () {
@@ -422,9 +422,9 @@
         required: true,
         options: [],
       },
-      { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
-      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
-      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
+      { key: "sku", labelKey: "col.sku", type: "text" },
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
   });
@@ -460,9 +460,9 @@
         required: true,
         options: [],
       },
-      { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
-      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
-      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
+      { key: "sku", labelKey: "col.sku", type: "text" },
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
   });
@@ -511,10 +511,10 @@
         required: true,
         options: [],
       },
-      { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
-      { key: "postcode", labelKey: "col.postcode", type: "text", placeholderKey: "col.postcode.placeholder" },
-      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
-      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
+      { key: "sku", labelKey: "col.sku", type: "text" },
+      { key: "postcode", labelKey: "col.postcode", type: "text" },
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
   });

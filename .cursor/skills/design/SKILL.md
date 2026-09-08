@@ -445,7 +445,9 @@ toast.show(i18n.t("error.required"), "error");
 
 ### Forms
 
-- Every text-like input has an i18n placeholder (`data-i18n-placeholder` + fallback `placeholder`); placeholder is a hint, not a label substitute
+- Every text-like input and form `<select>` use the placeholder pattern: input → `form.placeholder.input` (`กรุณากรอก{label}` / `Please enter {label}`); select → disabled first option with `form.placeholder.select` (`กรุณาเลือก{label}` / `Please select {label}`); `{label}` = `t(labelKey)`
+- **`type="search"`** → plain `search.placeholder` (`ค้นหา` / `Search`) via `data-i18n-placeholder="search.placeholder"` — not the input template
+- Placeholder is a hint, not a label substitute
 - Every `type="password"` uses `.password-field` + `passwordToggle.bind(form)` (`js/components/password-toggle.js`) with Lucide `eye` / `eye-off`
 - Required fields: red `*` in `.form-field__required` after the label; keep HTML `required`
 - On submit/save: empty required fields show `error.required` (or field-specific key) in `.form-field__error` inside `.form-field__error-slot` (fixed `min-height` — errors must not shift inputs); focus first invalid field; optional `.form-field--invalid` for red input border

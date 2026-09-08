@@ -34,6 +34,9 @@
     <script src="../js/seed/admin_user.js"></script>
     <script src="../js/seed/index.js"></script>
     <script src="../js/store.js"></script>
+    <script src="../js/i18n/th.js"></script>
+    <script src="../js/i18n/en.js"></script>
+    <script src="../js/i18n/i18n.js"></script>
     <script src="../js/components/toast.js"></script>
     <script src="../js/schema-tables.js"></script>
     <script src="../js/db-viewer.js"></script>
@@ -42,6 +45,7 @@
       (function () {
         store.init();
         dbViewer.mount(document.getElementById("db-root"));
+        if (window.i18n) i18n.init();
 
         devBar.mount({
           toasts: [

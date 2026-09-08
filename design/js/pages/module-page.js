@@ -25,9 +25,13 @@
 
     global.devBar.mount({
       toasts: [
-        { type: "success", label: "Success: saved", msgKey: "crud.saved" },
+        { type: "success", label: "Created", msgKey: "crud.created" },
+        { type: "success", label: "Updated", msgKey: "crud.updated" },
+        { type: "success", label: "Reordered", msgKey: "crud.reordered" },
+        { type: "success", label: "Status changed", msgKey: "crud.statusChanged" },
+        { type: "success", label: "Deleted", msgKey: "crud.deleted" },
         { type: "error", label: "Error: forbidden", msgKey: "error.forbidden" },
-        { type: "warning", label: "Warning: confirm", msg: "Check this before proceeding." },
+        { type: "warning", label: "Warning: drag scope", msgKey: "crud.dragSiblingOnly" },
       ],
       actions: [
         {

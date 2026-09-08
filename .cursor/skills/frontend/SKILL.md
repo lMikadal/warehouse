@@ -187,7 +187,7 @@ Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 
 ### Forms
 
-- Every text-like input has an i18n placeholder via `placeholder={t('key')}`; placeholder is a hint, not a label substitute
+- Every text-like input and form `<select>` use the placeholder pattern via `t('form.placeholder.input\|select', { label: t(labelKey) })`; **`type="search"`** uses `t('search.placeholder')` only (`ค้นหา` / `Search`)
 - Every password field has an eye / eye-off toggle (shadcn `Input` + Lucide `Eye` / `EyeOff`)
 - Required fields: red `*` after the label; use RHF + shadcn `FormMessage` under the field for validation errors
 - On submit: empty required fields show `t('error.required')` under each field — not only a page-level alert
@@ -202,7 +202,8 @@ Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 |----------------|---------------------|
 | `toast.show(msg, 'success')` | `toast.success(t(key))` via Sonner |
 | `toast.show(msg, 'error')` | `toast.error(t(key))` |
-| `data-i18n-placeholder` | `placeholder={t(key)}` |
+| `data-i18n-placeholder-input` / `-select` | `t('form.placeholder.input\|select', { label: t(labelKey) })` |
+| `data-i18n-placeholder="search.placeholder"` | `t('search.placeholder')` — search inputs only |
 | `.password-field` + `passwordToggle.bind` | shadcn `Input` + `Eye` / `EyeOff` toggle |
 | `.form-field__required` + `.form-field__error` | red `*` + shadcn `FormMessage` |
 | Dev Bar quick-login | Not ported — dev bar is design-only tooling |
