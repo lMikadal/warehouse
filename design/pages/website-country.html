@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warehouse — Country</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script>
+      (function () {
+        var key = "warehouse-design-theme";
+        var saved = localStorage.getItem(key);
+        var theme =
+          saved === "light" || saved === "dark"
+            ? saved
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body data-module="website_country" data-perm-module="admin" data-perm-type="website_country">
+    <div id="app-shell"></div>
+
+    <script src="../js/i18n/th.js"></script>
+    <script src="../js/i18n/en.js"></script>
+    <script src="../js/i18n/i18n.js"></script>
+    <script src="../js/seed/website_language.js"></script>
+    <script src="../js/seed/website_country.js"></script>
+    <script src="../js/seed/website_country_language.js"></script>
+    <script src="../js/seed/website_province.js"></script>
+    <script src="../js/seed/website_province_language.js"></script>
+    <script src="../js/seed/website_district.js"></script>
+    <script src="../js/seed/website_district_language.js"></script>
+    <script src="../js/seed/website_sub_district.js"></script>
+    <script src="../js/seed/website_sub_district_language.js"></script>
+    <script src="../js/seed/_admin_shared.js"></script>
+    <script src="../js/seed/admin_menu.js"></script>
+    <script src="../js/seed/admin_menu_language.js"></script>
+    <script src="../js/seed/admin_permission.js"></script>
+    <script src="../js/seed/admin_menu_permission.js"></script>
+    <script src="../js/seed/admin_role.js"></script>
+    <script src="../js/seed/admin_role_language.js"></script>
+    <script src="../js/seed/admin_role_permission.js"></script>
+    <script src="../js/seed/admin_user.js"></script>
+    <script src="../js/seed/index.js"></script>
+    <script src="../js/store.js"></script>
+    <script src="../js/realtime.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/permissions.js"></script>
+    <script src="../js/components/toast.js"></script>
+    <script src="../js/components/modal.js"></script>
+    <script src="../js/components/sidebar.js"></script>
+    <script src="../js/components/layout.js"></script>
+    <script src="../js/components/crud-list.js"></script>
+    <script src="../js/pages/module-registry.js"></script>
+    <script src="../js/pages/module-page.js"></script>
+    <script src="../js/components/dev-bar.js"></script>
+    <script>modulePage.boot();</script>
+  </body>
+</html>

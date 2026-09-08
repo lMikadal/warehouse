@@ -71,13 +71,9 @@
   }
 
   function resolveLandingPath() {
-    var first = global.sidebar && global.sidebar.getFirstPath();
-    if (first) return global.nav ? global.nav.resolve(first) : first;
-    if (global.permissions && global.permissions.canAction("dashboard", "dashboard", "view")) {
-      var dash = "pages/dashboard.html";
-      return global.nav ? global.nav.resolve(dash) : dash;
-    }
-    return null;
+    var raw = global.sidebar && global.sidebar.getFirstPath();
+    if (!raw) return null;
+    return global.nav ? global.nav.resolve(raw) : raw;
   }
 
   function redirectIfAuthed(fallbackPath) {

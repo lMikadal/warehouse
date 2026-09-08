@@ -1,12 +1,27 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "admin-shell-9";
+  global.SEED_VERSION = "admin-shell-11";
 
   var tables = {};
 
   if (global.SEED_WEBSITE_LANGUAGE) {
     tables.website_language = global.SEED_WEBSITE_LANGUAGE;
   }
+
+  var geoTables = [
+    "website_country",
+    "website_country_language",
+    "website_province",
+    "website_province_language",
+    "website_district",
+    "website_district_language",
+    "website_sub_district",
+    "website_sub_district_language",
+  ];
+  geoTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
 
   var adminTables = [
     "admin_menu",

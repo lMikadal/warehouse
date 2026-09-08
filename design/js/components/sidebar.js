@@ -111,11 +111,26 @@
     return current.endsWith(target) || current === target;
   }
 
-  function firstPath(nodes) {
+  function isNavigableLeaf(node, parentMod) {
+    if (!node.path || node.path === "#" || node.is_dialog) return false;
+    if (/dashboard\.html/i.test(node.path)) return false;
+    var storeNode = global.store.getById("admin_menu", node.id);
+    if (!storeNode) return false;
+    var pMod = parentMod || (storeNode.parent_id ? parentModuleFor(storeNode) : storeNode.module);
+    return global.permissions && global.permissions.can(permissionCode(storeNode, pMod));
+  }
+
+  /** DFS in sidebar order — first leaf with real path + view permission. Returns raw menu path. */
+  function firstNavigablePath(nodes, parentMod) {
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
-      if (n.path && n.path !== "#" && !n.is_dialog) return n.path;
-      var child = firstPath(n.children || []);
+      var storeNode = global.store.getById("admin_menu", n.id);
+      var pMod =
+        parentMod ||
+        (storeNode && storeNode.parent_id ? parentModuleFor(storeNode) : storeNode ? storeNode.module : n.module);
+      if (isNavigableLeaf(n, pMod)) return n.path;
+      var childMod = storeNode ? storeNode.module : n.module;
+      var child = firstNavigablePath(n.children || [], childMod);
       if (child) return child;
     }
     return null;
@@ -251,8 +266,7 @@
   }
 
   function getFirstPath() {
-    var raw = firstPath(filterMenuTree(buildMenuTree()));
-    return raw ? resolvePath(raw) : null;
+    return firstNavigablePath(filterMenuTree(buildMenuTree()));
   }
 
   global.sidebar = {

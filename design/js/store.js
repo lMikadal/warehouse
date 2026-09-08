@@ -20,9 +20,16 @@
     return Array.isArray(data.admin_user) && data.admin_user.length > 0;
   }
 
+  function hasLegacyDashboardMenu() {
+    return (data.admin_menu || []).some(function (m) {
+      return m.path && /dashboard\.html/i.test(m.path);
+    });
+  }
+
   function needsReseed() {
     const expected = expectedSeedVersion();
     if (expected && storedSeedVersion() !== expected) return true;
+    if (hasLegacyDashboardMenu()) return true;
     return !hasAdminUsers();
   }
 

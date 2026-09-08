@@ -187,7 +187,7 @@
       }
     },
     "adminShell": {
-      "reference": "pages/dashboard.html",
+      "reference": "pages/admin-menu.html",
       "sidebarWidth": "16.25rem",
       "mobile": {
         "sidebar": "fixed drawer; translateX(-100%); opens with backdrop",
@@ -372,9 +372,10 @@
       "centered": true,
       "elevatedShadow": true
     },
-    "dashboardGrid": {
-      "mobile": "1 column",
-      "computer": "3 columns"
+    "crudList": {
+      "mobile": "stacked toolbar; table horizontal scroll",
+      "computer": "toolbar row; table in bordered card",
+      "computerWide": "content max-width 1440px centered"
     },
     "wideDesktopContainment": {
       "when": "computerWide breakpoint",

@@ -7,7 +7,6 @@
 
   /** Leaf pages needing permission sets: { permModule, type, resource } */
   var PERM_PAGES = [
-    { permModule: "dashboard", type: "dashboard", resource: "/api/v1/dashboard" },
     { permModule: "admin", type: "admin_menu", resource: "/api/v1/admin/menus" },
     { permModule: "admin", type: "admin_permission", resource: "/api/v1/admin/permissions" },
     { permModule: "admin", type: "admin_language", resource: "/api/v1/website/languages" },

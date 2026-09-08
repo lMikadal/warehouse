@@ -9,7 +9,7 @@
     return "th";
   }
 
-  function applyDom() {
+  function applyDom(notifyChange) {
     document.documentElement.lang = locale;
     document.querySelectorAll("[data-i18n]").forEach((el) => {
       const key = el.getAttribute("data-i18n");
@@ -19,7 +19,9 @@
       const key = el.getAttribute("data-i18n-placeholder");
       if (key) el.setAttribute("placeholder", t(key));
     });
-    document.dispatchEvent(new CustomEvent("i18n:change", { detail: { locale } }));
+    if (notifyChange) {
+      document.dispatchEvent(new CustomEvent("i18n:change", { detail: { locale } }));
+    }
   }
 
   function t(key) {
@@ -31,7 +33,7 @@
     if (next !== "th" && next !== "en") return;
     locale = next;
     localStorage.setItem(LOCALE_KEY, locale);
-    applyDom();
+    applyDom(true);
   }
 
   function getLocale() {
@@ -40,7 +42,7 @@
 
   function init() {
     locale = resolveLocale();
-    applyDom();
+    applyDom(false);
   }
 
   global.i18n = { init, t, setLocale, getLocale };

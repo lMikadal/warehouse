@@ -1,7 +1,6 @@
 (function (global) {
   var TS = global.ADMIN_SEED_SHARED.TS;
   var staffAllowedCodes = [
-    "dashboard.dashboard.view",
     "product.product_list.view",
     "product.product_list.create",
     "product.product_list.update",

@@ -12,7 +12,7 @@ Read `design.json` before building or restyling any page. CSS tokens live in `cs
 
 | Piece | Approach |
 |-------|----------|
-| Markup | Static HTML (`index.html`, `pages/login.html`, `pages/dashboard.html`, …) |
+| Markup | Static HTML (`index.html`, `pages/login.html`, `pages/admin-*.html`, `pages/website-*.html`, …) |
 | Styles | `css/style.css` with CSS variables |
 | Scripts | Vanilla JS on `window` |
 | Icons | Lucide SVG in `assets/icons/<name>.svg` ([lucide.dev/icons](https://lucide.dev/icons/)) |
@@ -33,7 +33,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 1. `js/i18n/th.js` + `en.js` + `i18n.js`
 2. `js/seed/_admin_shared.js` + `admin_*.js` (one file per table) + `website_language.js` + `index.js`
 3. `js/store.js`
-4. `js/realtime.js` (dashboard pages)
+4. `js/realtime.js` (authenticated module pages)
 5. `js/nav.js`
 6. `js/auth.js` + `js/permissions.js`
 7. `js/components/*` (toast, modal, sidebar, layout)
@@ -44,9 +44,17 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Session key: `warehouse-design-session` (`js/auth.js`)
 - Demo users in seed `admin_user` with `_demo_password` (prototype only — not in SQL schema)
 - `admin` / `admin` → superadmin; `staff` / `staff` → limited staff role
-- Login: `pages/login.html` → `auth.resolveLandingPath()` (first menu path, else dashboard if permitted)
+- Login: `pages/login.html` → `auth.resolveLandingPath()` → `sidebar.getFirstPath()` (first **navigable** permitted sidebar leaf: real `path`, not `#` or dialog) → `nav.resolve()` once
+- Menus with `path: "#"` may appear in the sidebar when permitted but cannot be login landing targets until wired to a real HTML page
+- If login still redirects to removed pages (e.g. `dashboard.html`): hard refresh (Ctrl+Shift+R) to bypass cached JS, or use dev-bar **Reset store** / bump `SEED_VERSION` so `store.init()` re-seeds
 - Login page: full-bleed split on desktop (brand gradient panel + form column); mobile single card; fixed icon toolbar (lang/theme); leading field icons; placeholders, password eye toggle, required red `*`, under-field validation errors
-- Dashboard pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
+- **Super Admin CRUD pages** (7 thin HTML wrappers + shared `js/components/crud-list.js` + `js/pages/module-registry.js`):
+  - `pages/admin-menu.html` — menu tree (edit only)
+  - `pages/admin-permission.html` — permission list (read-only; toggle `is_active`)
+  - `pages/admin-language.html` — `website_language` CRUD
+  - `pages/website-country.html` … `pages/website-sub-district.html` — geo hierarchy CRUD with `*_language` rows
+- List + modal create/edit on the same page (no separate form HTML); delete uses confirm modal + toast
+- Module pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
 
 ## Forms (design)
 
@@ -71,7 +79,7 @@ Reference implementation: `pages/login.html`.
 
 ## Admin shell
 
-- `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/dashboard.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
+- `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/admin-menu.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
 - `js/components/layout.js` — sidebar + header + content area
 - `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC
 - Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop
@@ -186,8 +194,8 @@ Checks per file:
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `admin-shell-9`)
-- `store.init()` re-seeds from `window.SEED` when version mismatches or `admin_user` is missing (fixes stale empty localStorage from earlier prototypes)
+- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `admin-shell-11`)
+- `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, or legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`)
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
 - Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js`, `admin_*.js`, `website_language.js`) merged by `index.js`
 - Channel name: `warehouse-design`
