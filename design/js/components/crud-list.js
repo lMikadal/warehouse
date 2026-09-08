@@ -1,7 +1,7 @@
 (function (global) {
   var formOverlay = null;
   var confirmOverlay = null;
-  var state = { config: null, permModule: null, permType: null, container: null, query: "", page: 1, pageSize: 10 };
+  var state = { config: null, permModule: null, permType: null, container: null, query: "", statusFilter: "", page: 1, pageSize: 10 };
 
   var PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
   var DEFAULT_PAGE_SIZE = 10;
@@ -204,12 +204,45 @@
     return global.permissions.canAction(state.permModule, state.permType, action);
   }
 
+  function statusFilterBtnHtml(value, i18nKey) {
+    var active = state.statusFilter === value;
+    return (
+      '<button type="button" class="crud-status-filter__btn' +
+      (active ? " crud-status-filter__btn--active" : "") +
+      '" data-status="' +
+      escapeHtml(value) +
+      '"' +
+      (active ? ' aria-pressed="true"' : ' aria-pressed="false"') +
+      '><span data-i18n="' +
+      escapeHtml(i18nKey) +
+      '"></span></button>'
+    );
+  }
+
+  function matchesStatusFilter(row) {
+    if (!state.config.statusFilter || !state.statusFilter) return true;
+    var field = state.config.statusFilterField || "is_active";
+    if (state.statusFilter === "active") return !!row[field];
+    if (state.statusFilter === "inactive") return !row[field];
+    return true;
+  }
+
   function shellHtml() {
     var showCreate = state.config.canCreate !== false && !state.config.readOnly && can("create");
+    var statusFilter = state.config.statusFilter
+      ? '<div class="crud-status-filter" id="crud-status-filter" role="group" aria-label="' +
+        escapeHtml(t("crud.statusFilter")) +
+        '">' +
+        statusFilterBtnHtml("", "crud.filterAll") +
+        statusFilterBtnHtml("active", "col.active") +
+        statusFilterBtnHtml("inactive", "col.inactive") +
+        "</div>"
+      : "";
     return (
       '<div class="crud-page">' +
       '  <div class="crud-toolbar">' +
       '    <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="crud.search" placeholder="ค้นหา" />' +
+      statusFilter +
       (showCreate
         ? '    <button type="button" class="btn btn--primary crud-toolbar__create" id="crud-create" data-perm-module="' +
           escapeHtml(state.permModule) +
@@ -349,6 +382,7 @@
 
     // Reassign sort_order * 10 for rows in scope, commit changed ones
     var idx = 0;
+    var changed = false;
     reordered.forEach(function (row) {
       var inScope = parentKey ? row[parentKey] === scopeId : true;
       if (!inScope) return;
@@ -357,9 +391,11 @@
       if (row.sort_order !== newOrder) {
         var patch = { sort_order: newOrder, updated_at: new Date().toISOString() };
         global.store.update(state.config.storeTable || state.permType, row._id || row.id, patch);
+        changed = true;
       }
     });
 
+    if (changed) global.toast.show(t("crud.saved"), "success");
     renderTable();
   }
 
@@ -413,6 +449,7 @@
     if (!wrap || !state.config) return;
 
     var filtered = state.config.listRows().filter(function (row) {
+      if (!matchesStatusFilter(row)) return false;
       if (!state.query) return true;
       return state.config.searchFilter(row, state.query.toLowerCase());
     });
@@ -516,6 +553,7 @@
     });
 
     if (isSortable) bindDrag(wrap, rows, sorted);
+    if (state.config.statusSwitch) bindStatusSwitches(wrap);
     if (state.config.afterRender) state.config.afterRender(wrap);
     renderPagination(meta);
   }
@@ -790,6 +828,24 @@
     deleteId = null;
   }
 
+  function bindStatusSwitches(wrap) {
+    var table = state.config.storeTable || state.permType;
+    var field = state.config.statusSwitchField || "is_active";
+    var canUpdate = can("update");
+    wrap.querySelectorAll(".crud-status-switch").forEach(function (input) {
+      if (!canUpdate) input.disabled = true;
+      input.addEventListener("change", function () {
+        var id = Number(input.getAttribute("data-id"));
+        global.store.update(table, id, {
+          [field]: input.checked,
+          updated_at: new Date().toISOString(),
+        });
+        global.toast.show(t("crud.saved"), "success");
+        renderTable();
+      });
+    });
+  }
+
   function bindToolbar() {
     var search = state.container.querySelector("#crud-search");
     if (search) {
@@ -797,6 +853,23 @@
         state.query = search.value;
         state.page = 1;
         renderTable();
+      });
+    }
+    var statusGroup = state.container.querySelector("#crud-status-filter");
+    if (statusGroup) {
+      statusGroup.querySelectorAll(".crud-status-filter__btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var next = btn.getAttribute("data-status") || "";
+          if (next === state.statusFilter) return;
+          state.statusFilter = next;
+          state.page = 1;
+          statusGroup.querySelectorAll(".crud-status-filter__btn").forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle("crud-status-filter__btn--active", on);
+            b.setAttribute("aria-pressed", on ? "true" : "false");
+          });
+          renderTable();
+        });
       });
     }
     var createBtn = state.container.querySelector("#crud-create");
@@ -813,6 +886,7 @@
     state.permModule = permModule;
     state.permType = permType;
     state.query = "";
+    state.statusFilter = "";
     state.page = 1;
     state.pageSize = config.pageSize || readStoredPageSize();
     container.innerHTML = shellHtml();

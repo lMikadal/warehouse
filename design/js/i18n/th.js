@@ -48,6 +48,8 @@ window.I18N_TH = {
   "crud.showItemsPrefix": "แสดง",
   "crud.showItemsSuffix": "รายการ",
   "crud.totalCount": "จากทั้งหมด {total}",
+  "crud.statusFilter": "กรองสถานะ",
+  "crud.filterAll": "ทั้งหมด",
   "crud.dragSiblingOnly": "ย้ายได้เฉพาะภายในกลุ่มเดียวกัน",
   "crud.pageOf": "หน้า {page} / {total}",
   "crud.showing": "แสดง {from}–{to} จาก {total}",

@@ -48,6 +48,8 @@ window.I18N_EN = {
   "crud.showItemsPrefix": "Show",
   "crud.showItemsSuffix": "items",
   "crud.totalCount": "of {total} total",
+  "crud.statusFilter": "Filter by status",
+  "crud.filterAll": "All",
   "crud.dragSiblingOnly": "Can only reorder within the same group",
   "crud.pageOf": "Page {page} / {total}",
   "crud.showing": "Showing {from}–{to} of {total}",

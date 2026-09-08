@@ -434,6 +434,18 @@
         "treeConstraint": "drag within same parent_id only; cross-parent drop shows warning toast",
         "geoConstraint": "drag within same parent FK group only (sortParentKey on config)",
         "sortOrderField": "hidden from columns and form; managed by drag only"
+      },
+      "statusFilter": {
+        "flag": "statusFilter: true on module config (tables with is_active)",
+        "ui": "segmented group buttons in toolbar: All / Active / Inactive",
+        "field": "statusFilterField defaults to is_active",
+        "resetPageOnChange": true
+      },
+      "statusSwitch": {
+        "flag": "statusSwitch: true on module config",
+        "ui": "toggle switch in status column; inline store update on change",
+        "field": "statusSwitchField defaults to is_active",
+        "requiresUpdatePermission": true
       }
     },
     "wideDesktopContainment": {

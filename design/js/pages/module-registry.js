@@ -42,11 +42,21 @@
     }
   }
 
-  function activeBool(val) {
-    return val
-      ? '<span class="crud-badge crud-badge--active" data-i18n="col.active"></span>'
-      : '<span class="crud-badge crud-badge--inactive" data-i18n="col.inactive"></span>';
+  function statusSwitchHtml(row) {
+    return (
+      '<label class="crud-switch">' +
+      '<input type="checkbox" class="crud-status-switch" role="switch" data-id="' +
+      escapeHtml(row._id) +
+      '"' +
+      (row.is_active ? " checked" : "") +
+      ' aria-label="' +
+      escapeHtml(global.i18n ? global.i18n.t("col.status") : "Status") +
+      '" />' +
+      '<span class="crud-switch__track" aria-hidden="true"><span class="crud-switch__thumb"></span></span>' +
+      "</label>"
+    );
   }
+
 
   function treeDepth(treePath) {
     if (!treePath) return 0;
@@ -73,6 +83,8 @@
       canCreate: false,
       canDelete: false,
       sortable: true,
+      statusFilter: true,
+      statusSwitch: true,
       columns: [
         {
           id: "label",
@@ -89,7 +101,7 @@
           id: "is_active",
           labelKey: "col.status",
           render: function (row) {
-            return activeBool(row.is_active);
+            return statusSwitchHtml(row);
           },
         },
       ],
@@ -156,6 +168,8 @@
       canCreate: false,
       canEdit: false,
       canDelete: false,
+      statusFilter: true,
+      statusSwitch: true,
       columns: [
         { id: "code", labelKey: "col.code" },
         { id: "module", labelKey: "col.module" },
@@ -165,19 +179,7 @@
           id: "is_active",
           labelKey: "col.status",
           render: function (row) {
-            return (
-              '<label class="crud-toggle">' +
-              '<input type="checkbox" class="crud-perm-toggle" data-id="' +
-              row._id +
-              '"' +
-              (row.is_active ? " checked" : "") +
-              (global.permissions.canAction("admin", "admin_permission", "update") ? "" : " disabled") +
-              " />" +
-              (row.is_active
-                ? '<span class="crud-badge crud-badge--active" data-i18n="col.active"></span>'
-                : '<span class="crud-badge crud-badge--inactive" data-i18n="col.inactive"></span>') +
-              "</label>"
-            );
+            return statusSwitchHtml(row);
           },
         },
       ],
@@ -193,19 +195,6 @@
       },
       searchFilter: function (row, q) {
         return row.code.toLowerCase().indexOf(q) >= 0 || row.module.toLowerCase().indexOf(q) >= 0;
-      },
-      afterRender: function (wrap) {
-        wrap.querySelectorAll(".crud-perm-toggle").forEach(function (input) {
-          input.addEventListener("change", function () {
-            var id = Number(input.getAttribute("data-id"));
-            global.store.update("admin_permission", id, {
-              is_active: input.checked,
-              updated_at: now(),
-            });
-            global.toast.show(global.i18n.t("crud.saved"), "success");
-            global.crudList.refresh();
-          });
-        });
       },
     },
 
@@ -294,6 +283,8 @@
       sortParentKey: parentKey || undefined,
       pageTitleKey: opts.pageTitleKey,
       sortable: true,
+      statusFilter: true,
+      statusSwitch: true,
       columns: [opts.parentCol]
         .concat([
           { id: "sku", labelKey: "col.sku" },
@@ -302,7 +293,7 @@
             id: "is_active",
             labelKey: "col.status",
             render: function (row) {
-              return activeBool(row.is_active);
+              return statusSwitchHtml(row);
             },
           },
         ])
