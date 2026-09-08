@@ -8,12 +8,16 @@
     overlay.className = "modal-overlay";
     overlay.hidden = true;
     overlay.innerHTML =
-      '<div class="modal" role="dialog" aria-modal="true">' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">' +
       '  <div class="modal__header">' +
-      '    <h2 class="modal__title" data-i18n="modal.title">กำลังพัฒนา</h2>' +
-      '    <button type="button" class="modal__close btn" aria-label="Close">&times;</button>' +
+      '    <h2 class="modal__title" id="modal-title" data-i18n="modal.title">กำลังพัฒนา</h2>' +
+      '    <button type="button" class="modal__close" aria-label="Close">' +
+      '      <img src="../assets/icons/x.svg" alt="" width="18" height="18" />' +
+      "    </button>" +
       "  </div>" +
-      '  <p class="modal__body" data-i18n="modal.body">ฟีเจอร์นี้อยู่ระหว่างพัฒนา</p>' +
+      '  <div class="modal__content">' +
+      '    <p class="modal__body" data-i18n="modal.body">ฟีเจอร์นี้อยู่ระหว่างพัฒนา</p>' +
+      "  </div>" +
       '  <div class="modal__footer">' +
       '    <button type="button" class="btn btn--primary modal__ok" data-i18n="modal.ok">ตกลง</button>' +
       "  </div>" +

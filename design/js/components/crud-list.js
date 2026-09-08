@@ -458,13 +458,6 @@
     var meta = paginateRows(sorted);
     var rows = meta.rows;
 
-    if (filtered.length === 0) {
-      wrap.innerHTML = '<p class="crud-empty" data-i18n="crud.empty"></p>';
-      renderPagination({ total: 0, totalPages: 1, from: 0, to: 0 });
-      if (global.i18n) global.i18n.init();
-      return;
-    }
-
     var isSortable = !!state.config.sortable && !state.config.readOnly && can("update");
     var handleTh = isSortable
       ? '<th class="data-table__drag-col" aria-hidden="true"></th>'
@@ -476,6 +469,21 @@
       .join("");
     if (!state.config.readOnly && (can("update") || can("delete"))) {
       head += '<th class="data-table__actions-col" data-i18n="crud.actions"></th>';
+    }
+
+    if (filtered.length === 0) {
+      var colSpan = state.config.columns.length;
+      if (isSortable) colSpan++;
+      if (!state.config.readOnly && (can("update") || can("delete"))) colSpan++;
+      wrap.innerHTML =
+        '<table class="data-table"><thead><tr>' +
+        head +
+        '</tr></thead><tbody><tr><td class="crud-empty" colspan="' +
+        colSpan +
+        '" data-i18n="crud.empty"></td></tr></tbody></table>';
+      renderPagination({ total: 0, totalPages: 1, from: 0, to: 0 });
+      if (global.i18n) global.i18n.init();
+      return;
     }
 
     var body = rows
@@ -564,12 +572,16 @@
     formOverlay.className = "modal-overlay";
     formOverlay.hidden = true;
     formOverlay.innerHTML =
-      '<div class="modal crud-modal" role="dialog" aria-modal="true">' +
+      '<div class="modal crud-modal" role="dialog" aria-modal="true" aria-labelledby="crud-form-title">' +
       '  <div class="modal__header">' +
       '    <h2 class="modal__title" id="crud-form-title"></h2>' +
-      '    <button type="button" class="modal__close btn" id="crud-form-close" aria-label="Close">&times;</button>' +
+      '    <button type="button" class="modal__close" id="crud-form-close" aria-label="Close">' +
+      '      <img src="../assets/icons/x.svg" alt="" width="18" height="18" />' +
+      "    </button>" +
       "  </div>" +
-      '  <form id="crud-form" class="crud-form" novalidate></form>' +
+      '  <div class="modal__content">' +
+      '    <form id="crud-form" class="crud-form" novalidate></form>' +
+      "  </div>" +
       '  <div class="modal__footer">' +
       '    <button type="button" class="btn" id="crud-form-cancel" data-i18n="crud.cancel"></button>' +
       '    <button type="submit" form="crud-form" class="btn btn--primary" id="crud-form-save" data-i18n="crud.save"></button>' +
@@ -590,12 +602,16 @@
     confirmOverlay.className = "modal-overlay";
     confirmOverlay.hidden = true;
     confirmOverlay.innerHTML =
-      '<div class="modal" role="dialog" aria-modal="true">' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="crud-confirm-title">' +
       '  <div class="modal__header">' +
-      '    <h2 class="modal__title" data-i18n="crud.delete"></h2>' +
-      '    <button type="button" class="modal__close btn" id="crud-confirm-close" aria-label="Close">&times;</button>' +
+      '    <h2 class="modal__title" id="crud-confirm-title" data-i18n="crud.delete"></h2>' +
+      '    <button type="button" class="modal__close" id="crud-confirm-close" aria-label="Close">' +
+      '      <img src="../assets/icons/x.svg" alt="" width="18" height="18" />' +
+      "    </button>" +
       "  </div>" +
-      '  <p class="modal__body" data-i18n="crud.confirmDelete"></p>' +
+      '  <div class="modal__content">' +
+      '    <p class="modal__body" data-i18n="crud.confirmDelete"></p>' +
+      "  </div>" +
       '  <div class="modal__footer">' +
       '    <button type="button" class="btn" id="crud-confirm-cancel" data-i18n="crud.cancel"></button>' +
       '    <button type="button" class="btn btn--primary" id="crud-confirm-ok" data-i18n="crud.delete"></button>' +
@@ -616,22 +632,19 @@
       '<div class="form-field__error-slot" aria-live="polite"><p class="form-field__error" hidden role="alert"></p></div>';
 
     if (field.type === "checkbox") {
+      var id = "crud-field-" + escapeHtml(field.key);
       return (
-        '<div class="form-field">' +
-        '<label class="form-field__checkbox">' +
-        '<input type="checkbox" name="' +
-        escapeHtml(field.key) +
-        '" id="crud-field-' +
-        escapeHtml(field.key) +
-        '"' +
-        (val ? " checked" : "") +
-        " /> " +
-        '<span data-i18n="' +
-        escapeHtml(field.labelKey) +
-        '"></span>' +
+        '<div class="form-field form-field--switch">' +
+        '<label for="' + id + '">' +
+        '<span data-i18n="' + escapeHtml(field.labelKey) + '"></span>' +
         req +
         "</label>" +
-        errSlot +
+        '<label class="crud-switch" aria-label="">' +
+        '<input type="checkbox" role="switch" name="' + escapeHtml(field.key) + '" id="' + id + '"' +
+        (val ? " checked" : "") +
+        " />" +
+        '<span class="crud-switch__track" aria-hidden="true"><span class="crud-switch__thumb"></span></span>' +
+        "</label>" +
         "</div>"
       );
     }
@@ -702,6 +715,28 @@
     );
   }
 
+  function renderFormFields(fields, values) {
+    var html = [];
+    var i = 0;
+    while (i < fields.length) {
+      var f = fields[i];
+      var next = fields[i + 1];
+      if (f.key === "name_th" && next && next.key === "name_en") {
+        html.push(
+          '<div class="crud-form__row">' +
+            fieldHtml(f, values) +
+            fieldHtml(next, values) +
+            "</div>"
+        );
+        i += 2;
+      } else {
+        html.push(fieldHtml(f, values));
+        i += 1;
+      }
+    }
+    return html.join("");
+  }
+
   var editId = null;
 
   function openForm(id) {
@@ -717,9 +752,7 @@
     var title = editId ? t("crud.edit") : t("crud.create");
     formOverlay.querySelector("#crud-form-title").textContent = title;
     var form = formOverlay.querySelector("#crud-form");
-    form.innerHTML = state.config.formFields.map(function (f) {
-      return fieldHtml(f, values);
-    }).join("");
+    form.innerHTML = renderFormFields(state.config.formFields, values);
     if (global.i18n) global.i18n.init();
     form.querySelectorAll("input, select").forEach(function (el) {
       el.addEventListener("input", function () {

@@ -335,8 +335,14 @@
     },
     "modal": {
       "component": "js/components/modal.js",
-      "overlay": "semi-transparent backdrop",
-      "structure": "header + body + footer",
+      "crudModal": "js/components/crud-list.js ensureFormModal / ensureConfirmModal",
+      "overlay": "backdrop-filter blur(4px) + rgb(15 23 42 / 0.45); animated modal-fade-in",
+      "panel": "border-radius 0.75rem, box-shadow elevated, border var(--color-muted), animated modal-scale-in",
+      "structure": "modal__header (border-bottom) + modal__content (padding) + modal__footer (border-top)",
+      "closeButton": "modal__close ghost icon button — x.svg Lucide icon, 2.25rem square",
+      "switchInForm": "checkbox is_active renders as .crud-switch (green, role=switch, thumb) inside .form-field--switch (label left, switch right)",
+      "nameRow": "consecutive name_th + name_en fields auto-grouped in .crud-form__row (2-column grid; stacks on mobile)",
+      "formSpacing": "crud-form gap 0.5rem; compact labels/inputs; modal max-width 32rem",
       "destructiveActions": "confirm before delete"
     },
     "sidebar": {
@@ -370,7 +376,7 @@
       "formLevelBannerFor": ["wrong credentials", "server errors", "seed missing"]
     },
     "emptyAndLoading": {
-      "emptyLists": "show empty-state message — never blank white area",
+      "emptyLists": "show empty-state message inside table tbody (headers remain visible) — never blank white area",
       "loading": "disable trigger button + brief loading label",
       "skeleton": "optional but preferred over blank flicker"
     },

@@ -54,6 +54,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
   - `pages/admin-language.html` — `website_language` CRUD
   - `pages/website-country.html` … `pages/website-sub-district.html` — geo hierarchy CRUD with `*_language` rows
 - List + modal create/edit on the same page (no separate form HTML); delete uses confirm modal + toast
+- **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`, modal `max-width: 32rem`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
 - Module pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
 
 ## Forms (design)
@@ -119,7 +120,7 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - **Status switch:** modules with `statusSwitch: true` — status column uses inline toggle switch; updates `is_active` in store on change (requires update permission)
 - **Drag sort:** modules with `sort_order` use `sortable: true` + HTML5 native drag — grip-vertical handle column; no `sort_order` field in table or form; drop reassigns `sort_order` in store immediately; tree tables restrict drag to same `parent_id`; geo tables restrict to same parent FK
 - **Sort** (after filter, before slice): tree tables → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat with `sort_order` → `created_at`; else `created_at` → `id`
-- Do not `.sort()` inside `module-registry.js` `listRows` — use optional `listCompare` only for exceptions
+- **Empty state:** when filter/search yields no rows, table `<thead>` still renders column headers; empty message spans all columns in one `<tbody>` row (`.crud-empty`)
 
 ## Dev bar (prototype only)
 
