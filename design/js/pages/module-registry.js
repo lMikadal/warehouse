@@ -68,9 +68,11 @@
     admin_menu: {
       permModule: "admin",
       permType: "admin_menu",
+      storeTable: "admin_menu",
       pageTitleKey: "page.adminMenu",
       canCreate: false,
       canDelete: false,
+      sortable: true,
       columns: [
         {
           id: "label",
@@ -83,7 +85,6 @@
         },
         { id: "module", labelKey: "col.module" },
         { id: "path", labelKey: "col.path" },
-        { id: "sort_order", labelKey: "col.sortOrder" },
         {
           id: "is_active",
           labelKey: "col.status",
@@ -117,7 +118,6 @@
         { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
         { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
         { key: "path", labelKey: "col.path", type: "text", placeholderKey: "col.path.placeholder" },
-        { key: "sort_order", labelKey: "col.sortOrder", type: "number", required: true, defaultValue: 100 },
         { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
       ],
       getFormValues: function (id) {
@@ -126,7 +126,6 @@
           name_th: langName("admin_menu_language", "admin_menu_id", id, "th"),
           name_en: langName("admin_menu_language", "admin_menu_id", id, "en"),
           path: m && m.path ? m.path : "",
-          sort_order: m ? m.sort_order : 100,
           is_active: m ? m.is_active : true,
         };
       },
@@ -134,9 +133,10 @@
         return requiredValidate(values, REGISTRY.admin_menu.formFields);
       },
       save: function (values, id) {
+        var m = global.store.getById("admin_menu", id);
         global.store.update("admin_menu", id, {
           path: values.path || null,
-          sort_order: Number(values.sort_order),
+          sort_order: m ? m.sort_order : 100,
           is_active: !!values.is_active,
           updated_at: now(),
         });
@@ -212,11 +212,12 @@
     admin_language: {
       permModule: "admin",
       permType: "admin_language",
+      storeTable: "website_language",
       pageTitleKey: "page.adminLanguage",
+      sortable: true,
       columns: [
         { id: "locale", labelKey: "col.locale" },
         { id: "name", labelKey: "col.name" },
-        { id: "sort_order", labelKey: "col.sortOrder" },
         {
           id: "is_default",
           labelKey: "col.default",
@@ -243,16 +244,14 @@
       formFields: [
         { key: "locale", labelKey: "col.locale", type: "text", required: true, placeholderKey: "col.locale.placeholder" },
         { key: "name", labelKey: "col.name", type: "text", required: true, placeholderKey: "col.name.placeholder" },
-        { key: "sort_order", labelKey: "col.sortOrder", type: "number", required: true, defaultValue: 100 },
         { key: "is_default", labelKey: "col.default", type: "checkbox", defaultValue: false },
       ],
       getFormValues: function (id) {
-        if (!id) return { sort_order: 100, is_default: false };
+        if (!id) return { is_default: false };
         var r = global.store.getById("website_language", id);
         return {
           locale: r.locale,
           name: r.name,
-          sort_order: r.sort_order,
           is_default: r.is_default,
         };
       },
@@ -267,10 +266,11 @@
             }
           });
         }
+        var existing = id ? global.store.getById("website_language", id) : null;
         var patch = {
           locale: values.locale,
           name: values.name,
-          sort_order: Number(values.sort_order),
+          sort_order: existing ? existing.sort_order : (global.store.getAll("website_language").length + 1) * 10,
           is_default: !!values.is_default,
           updated_at: now(),
         };
@@ -290,12 +290,14 @@
     return {
       permModule: "admin",
       permType: key,
+      storeTable: key,
+      sortParentKey: parentKey || undefined,
       pageTitleKey: opts.pageTitleKey,
+      sortable: true,
       columns: [opts.parentCol]
         .concat([
           { id: "sku", labelKey: "col.sku" },
           { id: "name", labelKey: "col.name" },
-          { id: "sort_order", labelKey: "col.sortOrder" },
           {
             id: "is_active",
             labelKey: "col.status",
@@ -336,7 +338,7 @@
       formFields: opts.formFields,
       getFormValues: function (id) {
         if (!id) {
-          var defaults = { sort_order: 0, is_active: true, name_th: "", name_en: "", sku: "" };
+          var defaults = { is_active: true, name_th: "", name_en: "", sku: "" };
           if (parentKey) defaults[parentKey] = opts.parentOptions()[0] ? opts.parentOptions()[0].value : "";
           if (opts.extraDefaults) Object.assign(defaults, opts.extraDefaults());
           return defaults;
@@ -346,7 +348,6 @@
           sku: r.sku || "",
           name_th: langName(langTable, key + "_id", id, "th"),
           name_en: langName(langTable, key + "_id", id, "en"),
-          sort_order: r.sort_order,
           is_active: r.is_active,
         };
         if (parentKey) vals[parentKey] = r[parentKey];
@@ -357,9 +358,10 @@
         return requiredValidate(values, opts.formFields);
       },
       save: function (values, id) {
+        var existing = id ? global.store.getById(key, id) : null;
         var base = {
           sku: values.sku || null,
-          sort_order: Number(values.sort_order),
+          sort_order: existing ? existing.sort_order : (global.store.getAll(key).filter(function(r){return r.deleted_at==null;}).length + 1) * 10,
           is_active: !!values.is_active,
           updated_at: now(),
         };
@@ -391,7 +393,6 @@
       { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
       { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
       { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
-      { key: "sort_order", labelKey: "col.sortOrder", type: "number", required: true, defaultValue: 0 },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
     parentOptions: function () {
@@ -433,7 +434,6 @@
       { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
       { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
       { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
-      { key: "sort_order", labelKey: "col.sortOrder", type: "number", required: true, defaultValue: 0 },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
   });
@@ -472,7 +472,6 @@
       { key: "sku", labelKey: "col.sku", type: "text", placeholderKey: "col.sku.placeholder" },
       { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
       { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
-      { key: "sort_order", labelKey: "col.sortOrder", type: "number", required: true, defaultValue: 0 },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
   });
@@ -525,7 +524,6 @@
       { key: "postcode", labelKey: "col.postcode", type: "text", placeholderKey: "col.postcode.placeholder" },
       { key: "name_th", labelKey: "col.nameTh", type: "text", required: true, placeholderKey: "col.nameTh.placeholder" },
       { key: "name_en", labelKey: "col.nameEn", type: "text", required: true, placeholderKey: "col.nameEn.placeholder" },
-      { key: "sort_order", labelKey: "col.sortOrder", type: "number", required: true, defaultValue: 0 },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
   });

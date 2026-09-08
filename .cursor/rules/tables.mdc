@@ -10,8 +10,8 @@ Applies to `design/` mockups, `frontend/` production UI, and `backend/` list API
 ## Pagination (required)
 
 - Every data table / list view must paginate — do not render unbounded full-table rows
-- Default page size: **20** (override via config when a screen needs a different size)
-- Controls: previous / next + current page indicator; reset to page 1 when search or filters change
+- Default page size: **10** (user-selectable **10 / 25 / 50 / 100**; persisted in design mockups via `sessionStorage` key `warehouse-design-page-size`)
+- Controls: rows-per-page select + previous / next (icon) + showing range + page indicator; reset to page 1 when search, filters, or page size change
 - Pager chrome uses i18n (th/en) — not hardcoded copy
 
 **Design:** [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js) — shared pager for module CRUD pages.

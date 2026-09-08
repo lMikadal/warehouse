@@ -114,7 +114,8 @@ See `design/design.json` → `layout.adminShell.typography`.
 
 Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js). Rules: [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc).
 
-- **Pagination:** every module table paginates (default 20 rows); prev/next + range + page indicator; page resets on search
+- **Pagination:** every module table paginates (default **10** rows; options **10 / 25 / 50 / 100**; choice persisted in `sessionStorage`); footer bar **แสดง [limit] รายการ** left, page number pills + chevron nav right; page resets on search or page-size change
+- **Drag sort:** modules with `sort_order` use `sortable: true` + HTML5 native drag — grip-vertical handle column; no `sort_order` field in table or form; drop reassigns `sort_order` in store immediately; tree tables restrict drag to same `parent_id`; geo tables restrict to same parent FK
 - **Sort** (after filter, before slice): tree tables → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat with `sort_order` → `created_at`; else `created_at` → `id`
 - Do not `.sort()` inside `module-registry.js` `listRows` — use optional `listCompare` only for exceptions
 

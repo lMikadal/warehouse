@@ -412,16 +412,28 @@
       "computer": "toolbar row; table in bordered card",
       "computerWide": "content max-width 1440px centered",
       "pagination": {
-        "defaultPageSize": 20,
+        "defaultPageSize": 10,
+        "pageSizeOptions": [10, 25, 50, 100],
+        "persistKey": "warehouse-design-page-size",
         "component": "js/components/crud-list.js",
-        "controls": "prev / next + showing range + page indicator",
-        "resetPageOnSearch": true
+        "controls": "show [limit] items + chevron prev/next + page number pills (max 5 visible)",
+        "resetPageOnSearch": true,
+        "resetPageOnPageSizeChange": true
       },
       "sort": {
         "tree": "group by parent_id; sibling sort_order ASC → id ASC; DFS pre-order (tree_path for indent/query only)",
         "flatWithSortOrder": "sort_order ASC → created_at ASC",
         "fallback": "created_at ASC → id ASC",
         "centralizedIn": "crud-list.js sortRows()"
+      },
+      "dragSort": {
+        "flag": "sortable: true on module config",
+        "mechanism": "HTML5 native draggable — no external library",
+        "handle": "grip-vertical icon column (first col); draggable on tr",
+        "onDrop": "reassign sort_order = (index+1)*10 for rows in same scope; batch store.update()",
+        "treeConstraint": "drag within same parent_id only; cross-parent drop shows warning toast",
+        "geoConstraint": "drag within same parent FK group only (sortParentKey on config)",
+        "sortOrderField": "hidden from columns and form; managed by drag only"
       }
     },
     "wideDesktopContainment": {

@@ -145,9 +145,6 @@
 
     bar.appendChild(inner);
     document.body.appendChild(bar);
-
-    // Add bottom padding so page content isn't hidden under bar
-    document.body.style.paddingBottom = "2.5rem";
   }
 
   global.devBar = { mount: mount };

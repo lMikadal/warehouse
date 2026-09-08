@@ -426,7 +426,7 @@ Never mutate data silently. Every `store.create / update / delete` call must be 
 
 Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 
-- Every data table paginates (default page size 20) — shared pager in `js/components/crud-list.js`
+- Every data table paginates (default page size **10**; options **10 / 25 / 50 / 100**; design persists choice in `sessionStorage`) — shared pager in `js/components/crud-list.js`
 - Default sort after filter: tree → group by `parent_id`, sibling `sort_order` → `id`, DFS pre-order; flat `sort_order` → `created_at`; else `created_at` → `id`
 - Do not flat-sort tree tables globally by `sort_order` or `tree_path`
 

@@ -1341,10 +1341,14 @@ body.sidebar-open .admin-sidebar-backdrop {
 }
 
 .crud-table-wrap {
-  overflow-x: auto;
+  overflow: hidden;
   border: 1px solid var(--color-muted);
   border-radius: 0.75rem;
   background: var(--color-background);
+}
+
+.crud-table-wrap__body {
+  overflow-x: auto;
 }
 
 .crud-empty {
@@ -1356,33 +1360,156 @@ body.sidebar-open .admin-sidebar-backdrop {
 }
 
 .crud-pagination {
-  margin-top: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  background: rgb(15 23 42 / 0.03);
+  border-top: 1px solid var(--color-muted);
 }
 
-.crud-pagination__inner {
+[data-theme="dark"] .crud-pagination {
+  background: rgb(248 250 252 / 0.04);
+}
+
+.crud-pagination__bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.75rem 1rem;
 }
 
-.crud-pagination__info {
-  flex: 1;
+.crud-pagination__size {
+  display: inline-flex;
+  align-items: center;
   min-width: 0;
-  text-align: center;
+}
+
+.crud-pagination__size-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-foreground);
-  opacity: 0.75;
-}
-
-.crud-pagination__page {
+  opacity: 0.85;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.crud-pagination__btn:disabled {
-  opacity: 0.45;
+.crud-pagination__select {
+  width: 4rem;
+  height: 2rem;
+  padding: 0 1.5rem 0 0.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.375rem;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("../assets/icons/chevron-down.svg");
+  background-repeat: no-repeat;
+  background-position: right 0.375rem center;
+  background-size: 0.875rem;
+  text-align: center;
+}
+
+.crud-pagination__select:hover {
+  border-color: var(--color-primary);
+}
+
+.crud-pagination__select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.crud-pagination__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.crud-pagination__pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.crud-pagination__nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-foreground);
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.crud-pagination__nav-btn:hover:not(:disabled) {
+  opacity: 1;
+  background: rgb(15 23 42 / 0.05);
+}
+
+[data-theme="dark"] .crud-pagination__nav-btn:hover:not(:disabled) {
+  background: rgb(248 250 252 / 0.07);
+}
+
+.crud-pagination__nav-btn:disabled {
+  opacity: 0.28;
   cursor: not-allowed;
+}
+
+.crud-pagination__page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.375rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  opacity: 0.72;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.crud-pagination__page-btn:hover:not(.crud-pagination__page-btn--active) {
+  opacity: 1;
+  background: rgb(15 23 42 / 0.05);
+}
+
+[data-theme="dark"] .crud-pagination__page-btn:hover:not(.crud-pagination__page-btn--active) {
+  background: rgb(248 250 252 / 0.07);
+}
+
+.crud-pagination__page-btn--active {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  opacity: 1;
+  cursor: default;
+}
+
+@media (max-width: 639px) {
+  .crud-pagination__bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .crud-pagination__nav {
+    justify-content: center;
+  }
 }
 
 .data-table {
@@ -1434,6 +1561,40 @@ body.sidebar-open .admin-sidebar-backdrop {
 
 .data-table__indent {
   display: inline-block;
+}
+
+/* Drag-and-drop sorting */
+.data-table__drag-col {
+  width: 2rem;
+  padding-right: 0;
+}
+
+.data-table__drag-handle {
+  width: 2rem;
+  padding-right: 0;
+  cursor: grab;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+
+.data-table__drag-handle:hover {
+  opacity: 0.75;
+}
+
+tr[draggable] {
+  user-select: none;
+}
+
+tr[draggable].is-dragging {
+  opacity: 0.4;
+}
+
+tr[draggable].is-drag-over td {
+  background: rgb(37 99 235 / 0.06);
+}
+
+[data-theme="dark"] tr[draggable].is-drag-over td {
+  background: rgb(59 130 246 / 0.1);
 }
 
 .crud-badge {
