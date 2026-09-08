@@ -39,6 +39,8 @@ window.I18N_EN = {
   "crud.create": "Add",
   "crud.export": "Export",
   "crud.exportComingSoon": "Export is coming soon",
+  "crud.import": "Import",
+  "crud.importComingSoon": "Import is coming soon",
   "crud.edit": "Edit",
   "crud.delete": "Delete",
   "crud.save": "Save",

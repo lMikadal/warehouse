@@ -39,6 +39,8 @@ window.I18N_TH = {
   "crud.create": "เพิ่ม",
   "crud.export": "ส่งออกข้อมูล",
   "crud.exportComingSoon": "ฟีเจอร์ส่งออกอยู่ระหว่างพัฒนา",
+  "crud.import": "นำเข้าข้อมูล",
+  "crud.importComingSoon": "ฟีเจอร์นำเข้าอยู่ระหว่างพัฒนา",
   "crud.edit": "แก้ไข",
   "crud.delete": "ลบ",
   "crud.save": "บันทึก",

@@ -31,7 +31,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 ## Script load order (every page)
 
 1. `js/i18n/th.js` + `en.js` + `i18n.js`
-2. `js/seed/_admin_shared.js` + `admin_*.js` (one file per table) + `website_language.js` + `index.js`
+2. `js/seed/website_language.js` → **`js/seed/_admin_shared.js`** (must load before any seed file that calls `ADMIN_SEED_SHARED`) → `website_*` geo seeds → `admin_*.js` → `index.js`
 3. `js/store.js`
 4. `js/realtime.js` (authenticated module pages)
 5. `js/nav.js`
@@ -54,7 +54,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
   - `pages/admin-language.html` — `website_language` CRUD
   - `pages/website-country.html` … `pages/website-sub-district.html` — geo hierarchy CRUD with `*_language` rows
 - List + modal create/edit on the same page (no separate form HTML); delete uses confirm modal + toast
-- **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`, modal `max-width: 32rem`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
+- **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`); modal widths via `--modal-max-width` — **36rem** base (generic + confirm), **42rem** CRUD form (`.crud-modal`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
 - Module pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
 
 ## Forms (design)
@@ -115,9 +115,10 @@ See `design/design.json` → `layout.adminShell.typography`.
 
 Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js). Rules: [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc).
 
-- **Page header:** `.crud-page-header` above filter toolbar — `<h1>` title + optional `pageDescriptionKey` description (left); Export + Create buttons (right); toolbar keeps search + column filters + status filter; breadcrumb leaf uses `<span>` (page `<h1>` lives in content)
+- **Page header:** `.crud-page-header` above filter toolbar — `<h1>` title + optional `pageDescriptionKey` description (left); Export + Import (geo only, `canImport: true`) + Create buttons (right); Create `+` icon white on primary; toolbar keeps search + column filters + status filter; breadcrumb leaf uses `<span>` (page `<h1>` lives in content)
+- **Table actions:** delete button trash icon uses error red (`#dc2626`) on all CRUD list pages
 - **Pagination:** every module table paginates (default **10** rows; options **10 / 25 / 50 / 100**; choice persisted in `sessionStorage`); bar sits **outside** the table card; page pills + prev/next; page resets on search, filter, or page-size change
-- **Column filters:** optional `columnFilters: [{ key, labelKey, optionI18nPrefix? }]` — searchable dropdown per field in toolbar (after text search, before status filter); options from unique sorted `listRows()` values; trigger label `{field}: {value}` via `crud.filterField`; optional `optionI18nPrefix` for i18n option labels (e.g. `action.view`); **admin_permission** uses module / type / action
+- **Column filters:** optional `columnFilters: [{ key, labelKey, optionI18nPrefix?, optionLabel? }]` — searchable dropdown per field in toolbar (after text search, before status filter); options from unique sorted `listRows()` values; trigger label `{field}: {value}` via `crud.filterField`; `optionI18nPrefix` for enum labels (e.g. `action.view`); `optionLabel(value)` for FK display names; **admin_permission** — module / type / action; **geo** — province (country), district (country + province), sub-district (country + province + district; ancestor FKs denormalized in `geoConfig` `listRows`)
 - **Status filter:** modules with `is_active` set `statusFilter: true` — toolbar segmented buttons **All / Active / Inactive**; filters before sort/pagination
 - **Status switch:** modules with `statusSwitch: true` — status column uses inline toggle switch; updates `is_active` in store on change (requires update permission)
 - **Drag sort:** modules with `sort_order` use `sortable: true` + HTML5 native drag — grip-vertical handle column; no `sort_order` field in table or form; drop reassigns `sort_order` in store immediately; tree tables restrict drag to same `parent_id`; geo tables restrict to same parent FK
@@ -236,10 +237,12 @@ Checks per file:
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `admin-shell-11`)
-- `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, or legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`)
+- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `geo-mock-1`)
+- `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `website_country` is empty in the store
+- **`pages/db.html`** must load the same geo seed scripts as module pages (`website_country.js` … `website_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
-- Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js`, `admin_*.js`, `website_language.js`) merged by `index.js`
+- Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js` first, then `website_*` + `admin_*.js`, `website_language.js`) merged by `index.js`
+- **Geo demo seed** (`website_country` → `website_sub_district`): 2 countries (TH, SG), 13 provinces, 15 districts, 30 sub-districts — each level has th/en `*_language` rows; Chiang Rai province is inactive for status-filter testing
 - Channel name: `warehouse-design`
 - API: `store.init|getAll|getById|create|update|delete|reset`
 

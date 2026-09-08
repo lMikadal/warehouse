@@ -350,7 +350,9 @@
       "closeButton": "modal__close ghost icon button — x.svg Lucide icon, 2.25rem square",
       "switchInForm": "checkbox is_active renders as .crud-switch (green, role=switch, thumb) inside .form-field--switch (label left, switch right)",
       "nameRow": "consecutive name_th + name_en fields auto-grouped in .crud-form__row (2-column grid; stacks on mobile)",
-      "formSpacing": "crud-form gap 0.5rem; compact labels/inputs; modal max-width 32rem",
+      "maxWidth": "36rem — CSS var --modal-max-width on .modal (generic + confirm)",
+      "crudModalMaxWidth": "42rem — .crud-modal overrides --modal-max-width",
+      "formSpacing": "crud-form gap 0.5rem; compact labels/inputs; CRUD modal max-width 42rem",
       "destructiveActions": "confirm before delete"
     },
     "sidebar": {
@@ -426,9 +428,13 @@
       "computer": "toolbar row; table in bordered card",
       "computerWide": "content max-width 1440px centered",
       "pageHeader": {
-        "structure": "crud-page-header above crud-toolbar — title + pageDescriptionKey desc (left), Export + Create actions (right)",
+        "structure": "crud-page-header above crud-toolbar — title + pageDescriptionKey desc (left), Export + Import + Create actions (right)",
         "export": "canExport !== false && !readOnly; click shows crud.exportComingSoon toast",
-        "create": "moved from toolbar to page header; same permission gates as before"
+        "import": "canImport === true && !readOnly (geo modules); click shows crud.importComingSoon toast",
+        "create": "moved from toolbar to page header; plus icon white on primary; same permission gates as before"
+      },
+      "tableActions": {
+        "deleteIcon": "crud-delete trash icon tinted error red (#dc2626) on all CRUD list pages"
       },
       "pagination": {
         "defaultPageSize": 10,
@@ -461,12 +467,16 @@
         "resetPageOnChange": true
       },
       "columnFilters": {
-        "flag": "columnFilters: [{ key, labelKey, optionI18nPrefix? }] on module config",
+        "flag": "columnFilters: [{ key, labelKey, optionI18nPrefix?, optionLabel? }] on module config",
         "ui": "searchable dropdown per field in toolbar (after text search, before status filter); trigger label via crud.filterField",
-        "options": "unique sorted values from full listRows(); All clears filter",
+        "options": "unique sorted values from full listRows(); All clears filter; sort by optionLabel when callback set",
         "optionI18nPrefix": "optional — t(prefix + value) for option labels (e.g. action.view)",
+        "optionLabel": "optional function(value) for FK / custom display labels (geo parent filters use langName)",
         "resetPageOnChange": true,
-        "example": "admin_permission — module, type, action"
+        "examples": {
+          "admin_permission": "module, type, action (optionI18nPrefix)",
+          "geo": "province — country; district — country + province; sub_district — country + province + district (ancestor FKs denormalized in geoConfig listRows)"
+        }
       },
       "statusSwitch": {
         "flag": "statusSwitch: true on module config",

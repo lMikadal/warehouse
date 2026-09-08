@@ -236,6 +236,7 @@
 
   function filterOptionLabel(filterDef, value) {
     if (!value) return t("crud.filterAll");
+    if (filterDef.optionLabel) return filterDef.optionLabel(value);
     if (filterDef.optionI18nPrefix) {
       var i18nKey = filterDef.optionI18nPrefix + value;
       var translated = t(i18nKey);
@@ -261,6 +262,9 @@
       opts.push(String(v));
     });
     opts.sort(function (a, b) {
+      if (filterDef.optionLabel) {
+        return filterDef.optionLabel(a).localeCompare(filterDef.optionLabel(b));
+      }
       return a.localeCompare(b);
     });
     return opts;
@@ -418,17 +422,25 @@
     var cfg = state.config;
     var showCreate = cfg.canCreate !== false && !cfg.readOnly && can("create");
     var showExport = cfg.canExport !== false && !cfg.readOnly;
+    var showImport = cfg.canImport === true && !cfg.readOnly;
     var desc = cfg.pageDescriptionKey
       ? '<p class="crud-page-header__desc" data-i18n="' + escapeHtml(cfg.pageDescriptionKey) + '"></p>'
       : "";
     var actions = "";
-    if (showCreate || showExport) {
+    if (showCreate || showExport || showImport) {
       actions = '<div class="crud-page-header__actions">';
       if (showExport) {
         actions +=
           '<button type="button" class="btn crud-page-header__export" id="crud-page-export">' +
           '<img src="../assets/icons/download.svg" alt="" width="16" height="16" />' +
           '<span data-i18n="crud.export"></span>' +
+          "</button>";
+      }
+      if (showImport) {
+        actions +=
+          '<button type="button" class="btn crud-page-header__import" id="crud-page-import">' +
+          '<img src="../assets/icons/upload.svg" alt="" width="16" height="16" />' +
+          '<span data-i18n="crud.import"></span>' +
           "</button>";
       }
       if (showCreate) {
@@ -1146,6 +1158,12 @@
     if (exportBtn) {
       exportBtn.addEventListener("click", function () {
         global.toast.show(t("crud.exportComingSoon"), "info");
+      });
+    }
+    var importBtn = state.container.querySelector("#crud-page-import");
+    if (importBtn) {
+      importBtn.addEventListener("click", function () {
+        global.toast.show(t("crud.importComingSoon"), "info");
       });
     }
   }

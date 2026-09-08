@@ -26,11 +26,20 @@
     });
   }
 
+  function hasMissingGeoSeed() {
+    var seed = global.SEED && global.SEED.website_country;
+    if (!Array.isArray(seed) || seed.length === 0) return false;
+    var stored = data.website_country;
+    return !Array.isArray(stored) || stored.length === 0;
+  }
+
   function needsReseed() {
     const expected = expectedSeedVersion();
     if (expected && storedSeedVersion() !== expected) return true;
     if (hasLegacyDashboardMenu()) return true;
-    return !hasAdminUsers();
+    if (!hasAdminUsers()) return true;
+    if (hasMissingGeoSeed()) return true;
+    return false;
   }
 
   function applySeed() {

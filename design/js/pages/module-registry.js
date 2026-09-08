@@ -286,6 +286,22 @@
   function geoConfig(key, opts) {
     var langTable = key + "_language";
     var parentKey = opts.parentFk;
+
+    function enrichGeoFilterFields(row, r) {
+      if (key === "website_district" && r.website_province_id) {
+        var prov = global.store.getById("website_province", r.website_province_id);
+        if (prov) row.website_country_id = prov.website_country_id;
+      }
+      if (key === "website_sub_district" && r.website_district_id) {
+        var dist = global.store.getById("website_district", r.website_district_id);
+        if (dist) {
+          row.website_province_id = dist.website_province_id;
+          var prov2 = global.store.getById("website_province", dist.website_province_id);
+          if (prov2) row.website_country_id = prov2.website_country_id;
+        }
+      }
+    }
+
     return {
       permModule: "admin",
       permType: key,
@@ -293,9 +309,11 @@
       sortParentKey: parentKey || undefined,
       pageTitleKey: opts.pageTitleKey,
       pageDescriptionKey: opts.pageDescriptionKey,
+      canImport: true,
       sortable: true,
       statusFilter: true,
       statusSwitch: true,
+      columnFilters: opts.columnFilters,
       columns: [opts.parentCol]
         .concat([
           { id: "sku", labelKey: "col.sku" },
@@ -326,6 +344,7 @@
             if (parentKey && r[parentKey]) {
               row._parentLabel = opts.parentLabel(r[parentKey]);
             }
+            enrichGeoFilterFields(row, r);
             if (opts.extraRow) opts.extraRow(row, r);
             return row;
           });
@@ -407,6 +426,15 @@
     pageTitleKey: "page.websiteProvince",
     pageDescriptionKey: "page.websiteProvince.desc",
     parentFk: "website_country_id",
+    columnFilters: [
+      {
+        key: "website_country_id",
+        labelKey: "col.country",
+        optionLabel: function (id) {
+          return langName("website_country_language", "website_country_id", Number(id));
+        },
+      },
+    ],
     parentCol: {
       id: "_parentLabel",
       labelKey: "col.country",
@@ -446,6 +474,22 @@
     pageTitleKey: "page.websiteDistrict",
     pageDescriptionKey: "page.websiteDistrict.desc",
     parentFk: "website_province_id",
+    columnFilters: [
+      {
+        key: "website_country_id",
+        labelKey: "col.country",
+        optionLabel: function (id) {
+          return langName("website_country_language", "website_country_id", Number(id));
+        },
+      },
+      {
+        key: "website_province_id",
+        labelKey: "col.province",
+        optionLabel: function (id) {
+          return langName("website_province_language", "website_province_id", Number(id));
+        },
+      },
+    ],
     parentCol: {
       id: "_parentLabel",
       labelKey: "col.province",
@@ -485,6 +529,29 @@
     pageTitleKey: "page.websiteSubDistrict",
     pageDescriptionKey: "page.websiteSubDistrict.desc",
     parentFk: "website_district_id",
+    columnFilters: [
+      {
+        key: "website_country_id",
+        labelKey: "col.country",
+        optionLabel: function (id) {
+          return langName("website_country_language", "website_country_id", Number(id));
+        },
+      },
+      {
+        key: "website_province_id",
+        labelKey: "col.province",
+        optionLabel: function (id) {
+          return langName("website_province_language", "website_province_id", Number(id));
+        },
+      },
+      {
+        key: "website_district_id",
+        labelKey: "col.district",
+        optionLabel: function (id) {
+          return langName("website_district_language", "website_district_id", Number(id));
+        },
+      },
+    ],
     parentCol: {
       id: "_parentLabel",
       labelKey: "col.district",
