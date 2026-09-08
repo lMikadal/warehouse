@@ -47,6 +47,7 @@ window.I18N_TH = {
   "crud.rowsPerPage": "จำนวนต่อหน้า",
   "crud.showItemsPrefix": "แสดง",
   "crud.showItemsSuffix": "รายการ",
+  "crud.totalCount": "จากทั้งหมด {total}",
   "crud.dragSiblingOnly": "ย้ายได้เฉพาะภายในกลุ่มเดียวกัน",
   "crud.pageOf": "หน้า {page} / {total}",
   "crud.showing": "แสดง {from}–{to} จาก {total}",

@@ -38,35 +38,49 @@
     }).join("");
   }
 
-  function pageWindow(current, total, maxVisible) {
-    var max = maxVisible || 5;
-    if (total <= max) {
+  // Returns array of page numbers and "..." strings for the ellipsis pagination
+  function buildPageItems(current, total) {
+    if (total <= 7) {
       var all = [];
       for (var i = 1; i <= total; i++) all.push(i);
       return all;
     }
-    var half = Math.floor(max / 2);
-    var start = Math.max(1, current - half);
-    var end = Math.min(total, start + max - 1);
-    start = Math.max(1, end - max + 1);
-    var pages = [];
-    for (var p = start; p <= end; p++) pages.push(p);
-    return pages;
+    var items = [1];
+    var windowStart = Math.max(2, current - 1);
+    var windowEnd = Math.min(total - 1, current + 1);
+    // If near the start, show more from start
+    if (current <= 4) {
+      windowStart = 2;
+      windowEnd = Math.min(5, total - 1);
+    }
+    // If near the end, show more from end
+    if (current >= total - 3) {
+      windowStart = Math.max(2, total - 4);
+      windowEnd = total - 1;
+    }
+    if (windowStart > 2) items.push("...");
+    for (var p = windowStart; p <= windowEnd; p++) items.push(p);
+    if (windowEnd < total - 1) items.push("...");
+    items.push(total);
+    return items;
   }
 
   function pageNumbersHtml(totalPages) {
-    return pageWindow(state.page, totalPages, 5)
-      .map(function (n) {
-        var active = n === state.page;
+    return buildPageItems(state.page, totalPages)
+      .map(function (item) {
+        if (item === "...") {
+          return '<span class="crud-pagination__ellipsis" aria-hidden="true">&hellip;</span>';
+        }
+        var active = item === state.page;
         return (
           '<button type="button" class="crud-pagination__page-btn' +
           (active ? " crud-pagination__page-btn--active" : "") +
           '" data-page="' +
-          n +
+          item +
           '"' +
           (active ? ' aria-current="page"' : "") +
           ">" +
-          n +
+          item +
           "</button>"
         );
       })
@@ -209,8 +223,8 @@
       "  </div>" +
       '  <div class="crud-table-wrap">' +
       '    <div class="crud-table-wrap__body" id="crud-table-body"></div>' +
-      '    <nav class="crud-pagination" id="crud-pagination" aria-label="Pagination"></nav>' +
       "  </div>" +
+      '  <nav class="crud-pagination" id="crud-pagination" aria-label="Pagination"></nav>' +
       "</div>"
     );
   }
@@ -233,37 +247,37 @@
 
     pager.innerHTML =
       '<div class="crud-pagination__bar">' +
+      // Left: limit select only
       '  <div class="crud-pagination__size">' +
-      '    <label class="crud-pagination__size-label" for="crud-page-size">' +
-      '      <span data-i18n="crud.showItemsPrefix">Show</span>' +
-      '      <select class="crud-pagination__select" id="crud-page-size" aria-label="' +
+      '    <select class="crud-pagination__select" id="crud-page-size" aria-label="' +
       escapeHtml(t("crud.rowsPerPage")) +
       '">' +
       pageSizeOptionsHtml() +
-      "      </select>" +
-      '      <span data-i18n="crud.showItemsSuffix">items</span>' +
-      "    </label>" +
+      "    </select>" +
+      '    <span class="crud-pagination__total">' +
+      escapeHtml(formatMsg("crud.totalCount", { total: meta.total })) +
+      "</span>" +
       "  </div>" +
-      '  <div class="crud-pagination__nav">' +
-      '    <button type="button" class="crud-pagination__nav-btn" id="crud-page-prev"' +
-      (prevDisabled ? " disabled" : "") +
-      ' aria-label="' +
-      prevLabel +
-      '">' +
-      '      <img src="../assets/icons/chevron-left.svg" alt="" width="18" height="18" />' +
-      "    </button>" +
-      '    <div class="crud-pagination__pages" role="group" aria-label="' +
+      // Center: page numbers with ellipsis
+      '  <div class="crud-pagination__pages" role="group" aria-label="' +
       escapeHtml(formatMsg("crud.pageOf", { page: state.page, total: meta.totalPages })) +
       '">' +
       pageNumbersHtml(meta.totalPages) +
-      "    </div>" +
-      '    <button type="button" class="crud-pagination__nav-btn" id="crud-page-next"' +
+      "  </div>" +
+      // Right: Previous / Next text buttons
+      '  <div class="crud-pagination__nav">' +
+      '    <button type="button" class="crud-pagination__nav-btn crud-pagination__nav-btn--text" id="crud-page-prev"' +
+      (prevDisabled ? " disabled" : "") +
+      '><img src="../assets/icons/chevron-left.svg" alt="" width="16" height="16" />' +
+      '<span data-i18n="crud.prev">' +
+      prevLabel +
+      "</span></button>" +
+      '    <button type="button" class="crud-pagination__nav-btn crud-pagination__nav-btn--text" id="crud-page-next"' +
       (nextDisabled ? " disabled" : "") +
-      ' aria-label="' +
+      '><span data-i18n="crud.next">' +
       nextLabel +
-      '">' +
-      '      <img src="../assets/icons/chevron-right.svg" alt="" width="18" height="18" />' +
-      "    </button>" +
+      "</span>" +
+      '<img src="../assets/icons/chevron-right.svg" alt="" width="16" height="16" /></button>' +
       "  </div>" +
       "</div>";
 
