@@ -362,17 +362,30 @@
   }
 
   function buildColumnFilterOptions(filterDef) {
-    var seen = {};
     var opts = [];
-    state.config.listRows().forEach(function (row) {
-      var v = row[filterDef.key];
-      if (v == null || v === "" || seen[v]) return;
-      seen[v] = true;
-      opts.push(String(v));
-    });
+    var seen = {};
+    var source =
+      typeof filterDef.optionValues === "function" ? filterDef.optionValues() : filterDef.optionValues;
+    if (Array.isArray(source)) {
+      source.forEach(function (v) {
+        if (v == null || v === "" || seen[v]) return;
+        seen[v] = true;
+        opts.push(String(v));
+      });
+    } else {
+      state.config.listRows().forEach(function (row) {
+        var v = row[filterDef.key];
+        if (v == null || v === "" || seen[v]) return;
+        seen[v] = true;
+        opts.push(String(v));
+      });
+    }
     opts.sort(function (a, b) {
       if (filterDef.optionLabel) {
         return filterDef.optionLabel(a).localeCompare(filterDef.optionLabel(b));
+      }
+      if (filterDef.optionI18nPrefix) {
+        return t(filterDef.optionI18nPrefix + a).localeCompare(t(filterDef.optionI18nPrefix + b));
       }
       return a.localeCompare(b);
     });
@@ -1002,7 +1015,8 @@
         ">" +
         selectPh +
         "</option>";
-      var opts = placeholderOpt + (field.options || [])
+      var optsSource = typeof field.options === "function" ? field.options() : field.options || [];
+      var opts = placeholderOpt + optsSource
         .map(function (opt) {
           var selected = String(val) === String(opt.value) ? " selected" : "";
           return (
@@ -1032,6 +1046,36 @@
         '">' +
         opts +
         "</select>" +
+        errSlot +
+        "</div>"
+      );
+    }
+
+    if (field.type === "password") {
+      var pwdPh = escapeHtml(fieldPlaceholder("input", field.labelKey));
+      return (
+        '<div class="form-field">' +
+        '<label for="crud-field-' +
+        escapeHtml(field.key) +
+        '"><span data-i18n="' +
+        escapeHtml(field.labelKey) +
+        '"></span>' +
+        req +
+        "</label>" +
+        '<div class="password-field">' +
+        '<input type="password" id="crud-field-' +
+        escapeHtml(field.key) +
+        '" name="' +
+        escapeHtml(field.key) +
+        '" value="" placeholder="' +
+        pwdPh +
+        '" data-i18n-placeholder-input="' +
+        escapeHtml(field.labelKey) +
+        '" autocomplete="new-password"' +
+        (field.required ? " required" : "") +
+        " />" +
+        '<button type="button" class="password-field__toggle" aria-label=""></button>' +
+        "</div>" +
         errSlot +
         "</div>"
       );
@@ -1096,7 +1140,7 @@
     if (!state.config.formFields) return;
     if (state.config.parentOptions) {
       state.config.formFields.forEach(function (f) {
-        if (f.type === "select") f.options = state.config.parentOptions();
+        if (f.type === "select" && !f.options) f.options = state.config.parentOptions();
       });
     }
     ensureFormModal();
@@ -1107,6 +1151,7 @@
     var form = formOverlay.querySelector("#crud-form");
     form.innerHTML = renderFormFields(state.config.formFields, values);
     if (global.i18n) global.i18n.init();
+    if (global.passwordToggle) global.passwordToggle.bind(form);
     form.querySelectorAll("input, select").forEach(function (el) {
       el.addEventListener("input", function () {
         clearFieldError(el.closest(".form-field"));

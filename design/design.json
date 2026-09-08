@@ -467,14 +467,16 @@
         "resetPageOnChange": true
       },
       "columnFilters": {
-        "flag": "columnFilters: [{ key, labelKey, optionI18nPrefix?, optionLabel? }] on module config",
+        "flag": "columnFilters: [{ key, labelKey, optionI18nPrefix?, optionLabel?, optionValues? }] on module config",
         "ui": "searchable dropdown per field in toolbar (after text search, before status filter); trigger label via crud.filterField",
-        "options": "unique sorted values from full listRows(); All clears filter; sort by optionLabel when callback set",
+        "options": "unique sorted values from full listRows() when optionValues omitted; All clears filter; sort by optionLabel or optionI18nPrefix when set",
+        "optionValues": "optional array or function() — explicit filter choices (admin_user: roles from admin_role store; type/status from schema enums)",
         "optionI18nPrefix": "optional — t(prefix + value) for option labels (e.g. action.view)",
         "optionLabel": "optional function(value) for FK / custom display labels (geo parent filters use langName)",
         "resetPageOnChange": true,
         "examples": {
           "admin_permission": "module, type, action (optionI18nPrefix)",
+          "admin_user": "admin_role_id (optionValues from admin_role store); type, status (optionValues enum arrays)",
           "geo": "province — country; district — country + province; sub_district — country + province + district (ancestor FKs denormalized in geoConfig listRows)"
         }
       },

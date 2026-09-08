@@ -45,14 +45,16 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Demo users in seed `admin_user` with `_demo_password` (prototype only — not in SQL schema)
 - `admin` / `admin` → superadmin; `staff` / `staff` → limited staff role
 - Login: `pages/login.html` → `auth.resolveLandingPath()` → `sidebar.getFirstPath()` (first **navigable** permitted sidebar leaf: real `path`, not `#` or dialog) → `nav.resolve()` once
-- Menus with `path: "#"` may appear in the sidebar when permitted but cannot be login landing targets until wired to a real HTML page
+- Menus with `path: "#"` may appear in the sidebar when permitted but cannot be login landing targets until wired to a real HTML page (admin user/role pages are wired)
 - If login still redirects to removed pages (e.g. `dashboard.html`): hard refresh (Ctrl+Shift+R) to bypass cached JS, or use dev-bar **Reset store** / bump `SEED_VERSION` so `store.init()` re-seeds
 - Login page: full-bleed split on desktop (brand gradient panel + form column); mobile single card; fixed icon toolbar (lang/theme); leading field icons; placeholders, password eye toggle, required red `*`, under-field validation errors
-- **Super Admin CRUD pages** (7 thin HTML wrappers + shared `js/components/crud-list.js` + `js/pages/module-registry.js`):
+- **Super Admin CRUD pages** (9 thin HTML wrappers + shared `js/components/crud-list.js` + `js/pages/module-registry.js`):
   - `pages/admin-menu.html` — menu tree (edit only)
   - `pages/admin-permission.html` — permission list (read-only; toggle `is_active`)
   - `pages/admin-language.html` — `website_language` CRUD
   - `pages/website-country.html` … `pages/website-sub-district.html` — geo hierarchy CRUD with `*_language` rows
+  - `pages/admin-user.html` — `admin_user` CRUD (role/type/status filters; password toggle on form)
+  - `pages/admin-role.html` — `admin_role` + `admin_role_language` CRUD
 - List + modal create/edit on the same page (no separate form HTML); delete uses confirm modal + toast
 - **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`); modal widths via `--modal-max-width` — **36rem** base (generic + confirm), **42rem** CRUD form (`.crud-modal`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
 - Module pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`

@@ -61,6 +61,17 @@
   }
 
 
+  function userStatusBadgeHtml(status) {
+    var label = global.i18n.t("userStatus." + status);
+    return (
+      '<span class="crud-badge crud-badge--' +
+      escapeHtml(status) +
+      '">' +
+      escapeHtml(label) +
+      "</span>"
+    );
+  }
+
   function treeDepth(treePath) {
     if (!treePath) return 0;
     return String(treePath).split(".").length - 1;
@@ -75,6 +86,39 @@
       if (v == null || v === "") errors[f.key] = global.i18n.t("error.required");
     });
     return { ok: Object.keys(errors).length === 0, errors: errors };
+  }
+
+  var ADMIN_USER_TYPES = ["superadmin", "owner", "manager", "staff"];
+  var ADMIN_USER_STATUSES = ["active", "inactive", "suspended", "locked"];
+
+  function activeAdminRoleSelectOptions() {
+    return global.store
+      .getAll("admin_role")
+      .filter(function (r) {
+        return r.deleted_at == null && r.is_active;
+      })
+      .map(function (r) {
+        return {
+          value: r.id,
+          label: langName("admin_role_language", "admin_role_id", r.id),
+        };
+      });
+  }
+
+  function adminRoleFilterValues() {
+    return global.store
+      .getAll("admin_role")
+      .filter(function (r) {
+        return r.deleted_at == null;
+      })
+      .sort(function (a, b) {
+        return langName("admin_role_language", "admin_role_id", a.id).localeCompare(
+          langName("admin_role_language", "admin_role_id", b.id)
+        );
+      })
+      .map(function (r) {
+        return r.id;
+      });
   }
 
   var updatedAtColumn = {
@@ -294,6 +338,290 @@
       },
       remove: function (id) {
         global.store.update("website_language", id, { deleted_at: now(), updated_at: now() });
+      },
+    },
+
+    admin_role: {
+      permModule: "admin",
+      permType: "admin_role",
+      storeTable: "admin_role",
+      pageTitleKey: "page.adminRole",
+      pageDescriptionKey: "page.adminRole.desc",
+      statusFilter: true,
+      statusSwitch: true,
+      columns: [
+        { id: "name", labelKey: "col.name" },
+        {
+          id: "is_active",
+          labelKey: "col.status",
+          render: function (row) {
+            return statusSwitchHtml(row);
+          },
+        },
+        updatedAtColumn,
+      ],
+      listRows: function () {
+        return global.store
+          .getAll("admin_role")
+          .filter(function (r) {
+            return r.deleted_at == null;
+          })
+          .map(function (r) {
+            return Object.assign({}, r, {
+              _id: r.id,
+              name: langName("admin_role_language", "admin_role_id", r.id),
+            });
+          });
+      },
+      searchFilter: function (row, q) {
+        return String(row.name).toLowerCase().indexOf(q) >= 0;
+      },
+      formFields: [
+        { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+        { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+        { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+      ],
+      getFormValues: function (id) {
+        if (!id) return { is_active: true, name_th: "", name_en: "" };
+        return {
+          name_th: langName("admin_role_language", "admin_role_id", id, "th"),
+          name_en: langName("admin_role_language", "admin_role_id", id, "en"),
+          is_active: global.store.getById("admin_role", id).is_active,
+        };
+      },
+      validate: function (values) {
+        return requiredValidate(values, REGISTRY.admin_role.formFields);
+      },
+      save: function (values, id) {
+        var existing = id ? global.store.getById("admin_role", id) : null;
+        var actor = global.auth && global.auth.getUser ? global.auth.getUser() : null;
+        var actorId = actor ? actor.id : 1;
+        var base = {
+          is_active: !!values.is_active,
+          updated_at: now(),
+          updated_by: actorId,
+        };
+        var rowId = id;
+        if (id) global.store.update("admin_role", id, base);
+        else {
+          var created = global.store.create(
+            "admin_role",
+            Object.assign(base, { created_at: now(), deleted_at: null, created_by: actorId })
+          );
+          rowId = created.id;
+        }
+        upsertLang("admin_role_language", "admin_role_id", rowId, "th", values.name_th);
+        upsertLang("admin_role_language", "admin_role_id", rowId, "en", values.name_en);
+      },
+      remove: function (id) {
+        global.store.update("admin_role", id, { deleted_at: now(), updated_at: now() });
+      },
+    },
+
+    admin_user: {
+      permModule: "admin",
+      permType: "admin_user",
+      storeTable: "admin_user",
+      pageTitleKey: "page.adminUser",
+      pageDescriptionKey: "page.adminUser.desc",
+      columnFilters: [
+        {
+          key: "admin_role_id",
+          labelKey: "col.role",
+          optionLabel: function (id) {
+            return langName("admin_role_language", "admin_role_id", Number(id));
+          },
+          optionValues: adminRoleFilterValues,
+        },
+        {
+          key: "type",
+          labelKey: "col.type",
+          optionI18nPrefix: "userType.",
+          optionValues: ADMIN_USER_TYPES,
+        },
+        {
+          key: "status",
+          labelKey: "col.status",
+          optionI18nPrefix: "userStatus.",
+          optionValues: ADMIN_USER_STATUSES,
+        },
+      ],
+      columns: [
+        { id: "username", labelKey: "col.username" },
+        { id: "email", labelKey: "col.email" },
+        {
+          id: "_roleLabel",
+          labelKey: "col.role",
+          render: function (row) {
+            return escapeHtml(row._roleLabel || "—");
+          },
+        },
+        {
+          id: "type",
+          labelKey: "col.type",
+          render: function (row) {
+            return escapeHtml(global.i18n.t("userType." + row.type));
+          },
+        },
+        {
+          id: "status",
+          labelKey: "col.status",
+          render: function (row) {
+            return userStatusBadgeHtml(row.status);
+          },
+        },
+        {
+          id: "last_login_at",
+          labelKey: "col.lastLogin",
+          cellClass: "data-table__cell--meta data-table__cell--datetime",
+          render: function (row) {
+            return escapeHtml(row.last_login_at ? global.i18n.formatDateTime(row.last_login_at) : "—");
+          },
+        },
+        updatedAtColumn,
+      ],
+      listRows: function () {
+        return global.store
+          .getAll("admin_user")
+          .filter(function (r) {
+            return r.deleted_at == null;
+          })
+          .map(function (r) {
+            return Object.assign({}, r, {
+              _id: r.id,
+              _roleLabel: r.admin_role_id
+                ? langName("admin_role_language", "admin_role_id", r.admin_role_id)
+                : "—",
+            });
+          });
+      },
+      searchFilter: function (row, q) {
+        return (
+          String(row.username).toLowerCase().indexOf(q) >= 0 ||
+          String(row.email || "").toLowerCase().indexOf(q) >= 0 ||
+          String(row._roleLabel).toLowerCase().indexOf(q) >= 0
+        );
+      },
+      formFields: [
+        { key: "username", labelKey: "col.username", type: "text", required: true },
+        { key: "email", labelKey: "col.email", type: "text" },
+        { key: "password", labelKey: "col.password", type: "password" },
+        {
+          key: "admin_role_id",
+          labelKey: "col.role",
+          type: "select",
+          required: true,
+          options: activeAdminRoleSelectOptions,
+        },
+        {
+          key: "type",
+          labelKey: "col.type",
+          type: "select",
+          required: true,
+          options: function () {
+            return ADMIN_USER_TYPES.map(function (v) {
+              return { value: v, label: global.i18n.t("userType." + v) };
+            });
+          },
+        },
+        {
+          key: "status",
+          labelKey: "col.status",
+          type: "select",
+          required: true,
+          options: function () {
+            return ADMIN_USER_STATUSES.map(function (v) {
+              return { value: v, label: global.i18n.t("userStatus." + v) };
+            });
+          },
+        },
+      ],
+      getFormValues: function (id) {
+        if (!id) {
+          return { username: "", email: "", password: "", admin_role_id: "", type: "staff", status: "active" };
+        }
+        var r = global.store.getById("admin_user", id);
+        return {
+          username: r.username,
+          email: r.email || "",
+          password: "",
+          admin_role_id: r.admin_role_id || "",
+          type: r.type,
+          status: r.status,
+        };
+      },
+      validate: function (values, id) {
+        var fields = REGISTRY.admin_user.formFields.filter(function (f) {
+          if (f.key === "password" && id) return false;
+          return f.required;
+        });
+        var result = requiredValidate(values, fields);
+        var errors = result.errors || {};
+        if (!id && (!values.password || values.password === "")) {
+          errors.password = global.i18n.t("error.required");
+        }
+        var users = global.store.getAll("admin_user").filter(function (u) {
+          return u.deleted_at == null;
+        });
+        if (
+          users.some(function (u) {
+            return u.id !== id && String(u.username).toLowerCase() === String(values.username).toLowerCase();
+          })
+        ) {
+          errors.username = global.i18n.t("error.usernameTaken");
+        }
+        if (
+          values.email &&
+          users.some(function (u) {
+            return (
+              u.id !== id &&
+              u.email &&
+              String(u.email).toLowerCase() === String(values.email).toLowerCase()
+            );
+          })
+        ) {
+          errors.email = global.i18n.t("error.emailTaken");
+        }
+        return { ok: Object.keys(errors).length === 0, errors: errors };
+      },
+      save: function (values, id) {
+        var actor = global.auth && global.auth.getUser ? global.auth.getUser() : null;
+        var actorId = actor ? actor.id : 1;
+        var patch = {
+          username: values.username,
+          email: values.email || null,
+          status: values.status,
+          type: values.type,
+          admin_role_id: values.admin_role_id ? Number(values.admin_role_id) : null,
+          updated_at: now(),
+          updated_by: actorId,
+        };
+        if (id) {
+          if (values.password) {
+            patch._demo_password = values.password;
+            patch.password_hash = "demo";
+          }
+          global.store.update("admin_user", id, patch);
+        } else {
+          Object.assign(patch, {
+            password_hash: "demo",
+            _demo_password: values.password,
+            failed_login_attempts: 0,
+            locked_until: null,
+            last_login_at: null,
+            created_at: now(),
+            deleted_at: null,
+            created_by: actorId,
+          });
+          global.store.create("admin_user", patch);
+        }
+      },
+      remove: function (id) {
+        var actor = global.auth && global.auth.getUser ? global.auth.getUser() : null;
+        if (actor && actor.id === id) {
+          throw new Error(global.i18n.t("error.cannotDeleteSelf"));
+        }
+        global.store.update("admin_user", id, { deleted_at: now(), updated_at: now() });
       },
     },
   };

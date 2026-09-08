@@ -1903,8 +1903,30 @@ tr[draggable].is-drag-over td {
   color: rgb(100 116 139);
 }
 
+.crud-badge--suspended {
+  background: rgb(245 158 11 / 0.15);
+  color: rgb(180 83 9);
+}
+
+.crud-badge--locked {
+  background: rgb(239 68 68 / 0.15);
+  color: rgb(185 28 28);
+}
+
 [data-theme="dark"] .crud-badge--active {
   color: rgb(74 222 128);
+}
+
+[data-theme="dark"] .crud-badge--inactive {
+  color: rgb(148 163 184);
+}
+
+[data-theme="dark"] .crud-badge--suspended {
+  color: rgb(251 191 36);
+}
+
+[data-theme="dark"] .crud-badge--locked {
+  color: rgb(248 113 113);
 }
 
 .crud-toggle {
