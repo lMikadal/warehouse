@@ -36,13 +36,13 @@
     }
   }
 
-  function pageSizeOptionsHtml() {
+  function pageSizeOptionsHtml(pageSize) {
     return PAGE_SIZE_OPTIONS.map(function (n) {
       return (
         '<option value="' +
         n +
         '"' +
-        (n === state.pageSize ? " selected" : "") +
+        (n === pageSize ? " selected" : "") +
         ">" +
         n +
         "</option>"
@@ -77,13 +77,13 @@
     return items;
   }
 
-  function pageNumbersHtml(totalPages) {
-    return buildPageItems(state.page, totalPages)
+  function pageNumbersHtml(page, totalPages) {
+    return buildPageItems(page, totalPages)
       .map(function (item) {
         if (item === "...") {
           return '<span class="crud-pagination__ellipsis" aria-hidden="true">&hellip;</span>';
         }
-        var active = item === state.page;
+        var active = item === page;
         return (
           '<button type="button" class="crud-pagination__page-btn' +
           (active ? " crud-pagination__page-btn--active" : "") +
@@ -709,9 +709,7 @@
     );
   }
 
-  function renderPagination(meta) {
-    if (state.config && state.config.showPagination === false) return;
-    var pager = state.container.querySelector("#crud-pagination");
+  function renderPaginationBar(pager, ctx, meta, onChange) {
     if (!pager) return;
 
     if (meta.total === 0) {
@@ -721,31 +719,30 @@
     }
 
     pager.hidden = false;
-    var prevDisabled = state.page <= 1;
-    var nextDisabled = state.page >= meta.totalPages;
+    var page = ctx.page;
+    var pageSize = ctx.pageSize;
+    var prevDisabled = page <= 1;
+    var nextDisabled = page >= meta.totalPages;
     var prevLabel = escapeHtml(t("crud.prev"));
     var nextLabel = escapeHtml(t("crud.next"));
 
     pager.innerHTML =
       '<div class="crud-pagination__bar">' +
-      // Left: limit select only
       '  <div class="crud-pagination__size">' +
       '    <select class="crud-pagination__select" id="crud-page-size" aria-label="' +
       escapeHtml(t("crud.rowsPerPage")) +
       '">' +
-      pageSizeOptionsHtml() +
+      pageSizeOptionsHtml(pageSize) +
       "    </select>" +
       '    <span class="crud-pagination__total">' +
       escapeHtml(formatMsg("crud.totalCount", { total: meta.total })) +
       "</span>" +
       "  </div>" +
-      // Center: page numbers with ellipsis
       '  <div class="crud-pagination__pages" role="group" aria-label="' +
-      escapeHtml(formatMsg("crud.pageOf", { page: state.page, total: meta.totalPages })) +
+      escapeHtml(formatMsg("crud.pageOf", { page: page, total: meta.totalPages })) +
       '">' +
-      pageNumbersHtml(meta.totalPages) +
+      pageNumbersHtml(page, meta.totalPages) +
       "  </div>" +
-      // Right: Previous / Next text buttons
       '  <div class="crud-pagination__nav">' +
       '    <button type="button" class="crud-pagination__nav-btn crud-pagination__nav-btn--text" id="crud-page-prev"' +
       (prevDisabled ? " disabled" : "") +
@@ -769,10 +766,8 @@
       sizeSelect.addEventListener("change", function () {
         var next = parseInt(sizeSelect.value, 10);
         if (PAGE_SIZE_OPTIONS.indexOf(next) < 0) return;
-        state.pageSize = next;
         storePageSize(next);
-        state.page = 1;
-        renderTable();
+        onChange({ pageSize: next, page: 1 });
       });
     }
 
@@ -780,24 +775,32 @@
     var nextBtn = pager.querySelector("#crud-page-next");
     if (prevBtn && !prevDisabled) {
       prevBtn.addEventListener("click", function () {
-        state.page -= 1;
-        renderTable();
+        onChange({ page: page - 1 });
       });
     }
     if (nextBtn && !nextDisabled) {
       nextBtn.addEventListener("click", function () {
-        state.page += 1;
-        renderTable();
+        onChange({ page: page + 1 });
       });
     }
 
     pager.querySelectorAll(".crud-pagination__page-btn:not(.crud-pagination__page-btn--active)").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var p = parseInt(btn.getAttribute("data-page"), 10);
-        if (!p || p === state.page) return;
-        state.page = p;
-        renderTable();
+        if (!p || p === page) return;
+        onChange({ page: p });
       });
+    });
+  }
+
+  function renderPagination(meta) {
+    if (state.config && state.config.showPagination === false) return;
+    var pager = state.container.querySelector("#crud-pagination");
+    if (!pager) return;
+    renderPaginationBar(pager, { page: state.page, pageSize: state.pageSize }, meta, function (patch) {
+      if (patch.pageSize != null) state.pageSize = patch.pageSize;
+      if (patch.page != null) state.page = patch.page;
+      renderTable();
     });
   }
 
@@ -1684,5 +1687,11 @@
     renderTable();
   }
 
-  global.crudList = { mount: mount, refresh: refresh, renderTable: renderTable };
+  global.crudList = {
+    mount: mount,
+    refresh: refresh,
+    renderTable: renderTable,
+    readStoredPageSize: readStoredPageSize,
+    renderPaginationBar: renderPaginationBar,
+  };
 })(window);

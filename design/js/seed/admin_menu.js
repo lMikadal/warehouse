@@ -221,7 +221,7 @@
       id: 26,
       parent_id: 25,
       module: "warehouse_list",
-      path: "#",
+      path: "pages/warehouse-list.html",
       sort_order: 100,
       labels: { th: "รายการ", en: "List" },
     },

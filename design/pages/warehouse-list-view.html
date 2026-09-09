@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Warehouse — Prefixes</title>
+    <title>Warehouse — Management</title>
     <link rel="stylesheet" href="../css/style.css" />
     <script>
       (function () {
@@ -19,7 +19,7 @@
       })();
     </script>
   </head>
-  <body data-module="setting_prefix" data-perm-module="setting" data-perm-type="setting_prefix">
+  <body data-perm-module="warehouse" data-perm-type="warehouse_list">
     <div id="app-shell"></div>
 
     <script src="../js/i18n/th.js"></script>
@@ -76,10 +76,9 @@
     <script src="../js/components/modal.js"></script>
     <script src="../js/components/sidebar.js"></script>
     <script src="../js/components/layout.js"></script>
-    <script src="../js/components/crud-list.js"></script>
-    <script src="../js/pages/module-registry.js"></script>
-    <script src="../js/pages/module-page.js"></script>
+    <script src="../js/warehouse-lib.js"></script>
+    <script src="../js/pages/warehouse-list-view.js"></script>
     <script src="../js/components/dev-bar.js"></script>
-    <script>modulePage.boot();</script>
+    <script>warehouseListViewPage.boot();</script>
   </body>
 </html>

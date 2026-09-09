@@ -436,6 +436,7 @@
         "create": "moved from toolbar to page header; plus icon white on primary; same permission gates as before"
       },
       "tableActions": {
+        "addIcon": "crud-add plus icon tinted green (#16a34a) on add/create row actions",
         "deleteIcon": "crud-delete trash icon tinted error red (#dc2626) on all CRUD list pages"
       },
       "pagination": {

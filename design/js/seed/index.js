@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "location-crud-1";
+  global.SEED_VERSION = "warehouse-list-1";
 
   var tables = {};
 
@@ -70,6 +70,18 @@
 
   var locationTables = ["location_location", "location_location_language"];
   locationTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
+  var warehouseTables = [
+    "warehouse_list",
+    "warehouse_list_language",
+    "warehouse_condition",
+    "product_item_warehouse",
+    "product_item_stock",
+  ];
+  warehouseTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
   });

@@ -20,6 +20,19 @@ All UI icons come from [Lucide](https://lucide.dev/icons/). Do not use emoji as 
 - Do not add one-off `filter` rules per button — extend the shared `.btn` icon rules instead.
 - **Frontend:** Lucide React + `className="text-current"` (or inherit color from the button).
 
+## Table action icon colors (design)
+
+Row action buttons use `btn btn--icon` plus semantic tint classes on the **button** (filter applies to `<img>` inside):
+
+| Action | Class | Icon | Target color |
+|--------|-------|------|--------------|
+| Add / create row | `crud-add` | `plus.svg` | green `#16a34a` |
+| Delete | `crud-delete` | `trash-2.svg` | red `#dc2626` |
+
+- View, edit, move, and other neutral actions stay default `.btn--icon` (no tint class).
+- Dark theme: `.crud-add` and `.crud-delete` are excluded from the generic white invert on `.btn img` (see `style.css`).
+- Every list/table add/delete action in `design/` must use these classes — no per-page filter hacks.
+
 ## Frontend (`frontend/`)
 
 - Use `lucide-react` components only (`import { Sun } from "lucide-react"`)

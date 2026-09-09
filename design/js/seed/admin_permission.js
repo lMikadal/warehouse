@@ -70,7 +70,12 @@
       resource: "/api/v1/location/locations",
       actions: ["view", "create", "update", "delete"],
     },
-    { permModule: "warehouse", type: "warehouse_list", resource: "/api/v1/warehouse/lists" },
+    {
+      permModule: "warehouse",
+      type: "warehouse_list",
+      resource: "/api/v1/warehouse/lists",
+      actions: ["view", "create", "update", "delete"],
+    },
     { permModule: "product", type: "product_list", resource: "/api/v1/product/lists" },
     { permModule: "product", type: "product_category", resource: "/api/v1/product/categories" },
     { permModule: "product", type: "product_brand", resource: "/api/v1/product/brands" },
