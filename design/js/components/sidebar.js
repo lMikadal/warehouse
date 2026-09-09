@@ -111,6 +111,13 @@
     return current.endsWith(target) || current === target;
   }
 
+  function hasActiveDescendant(node) {
+    if (!node.children || !node.children.length) return false;
+    return node.children.some(function (c) {
+      return (c.path && isActive(c.path)) || hasActiveDescendant(c);
+    });
+  }
+
   function isNavigableLeaf(node, parentMod) {
     if (!node.path || node.path === "#" || node.is_dialog) return false;
     if (/dashboard\.html/i.test(node.path)) return false;
@@ -148,16 +155,13 @@
     );
   }
 
-  function renderNav(nodes, depth) {
+  function renderNav(nodes, depth, expandAll) {
     depth = depth || 0;
     return nodes
       .map(function (node) {
         var hasChildren = node.children && node.children.length > 0;
         var active = node.path ? isActive(node.path) : false;
-        var childActive = hasChildren && node.children.some(function (c) {
-          return (c.path && isActive(c.path)) || (c.children && c.children.length);
-        });
-        var open = active || childActive;
+        var open = expandAll ? hasChildren : active || hasActiveDescendant(node);
         if (hasChildren) {
           return (
             '<li class="sidebar-nav__item sidebar-nav__item--group' +
@@ -175,7 +179,7 @@
             "</span>" +
             "</button>" +
             '<ul class="sidebar-nav__sub">' +
-            renderNav(node.children, depth + 1) +
+            renderNav(node.children, depth + 1, expandAll) +
             "</ul></li>"
           );
         }
@@ -221,10 +225,11 @@
     if (q) {
       tree = filterByQuery(tree, q);
     }
+    var expandAll = !!q;
     var html =
       tree.length === 0
         ? '<p class="sidebar-nav__empty" data-i18n="nav.noMenu">ไม่มีเมนู</p>'
-        : '<ul class="sidebar-nav">' + renderNav(tree) + "</ul>";
+        : '<ul class="sidebar-nav">' + renderNav(tree, 0, expandAll) + "</ul>";
     container.innerHTML = html;
     bindGroupToggles(container);
     bindDialogLinks(container);

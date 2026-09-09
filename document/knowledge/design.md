@@ -90,7 +90,7 @@ Stitch-modern flush-left shell — visual target documented in [`design/referenc
 
 - `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/admin-menu.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
 - `js/components/layout.js` — sidebar + header + content area; flat header (lang + theme); user + red logout icon in sidebar footer
-- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring
+- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring; groups auto-expand only along the active page’s ancestor chain (not merely because a child has nested submenus); sidebar search expands all groups in the filtered tree so nested hits stay visible
 - Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop; sidebar username hidden on mobile (&lt; 640px)
 
 ### Shell surfaces
