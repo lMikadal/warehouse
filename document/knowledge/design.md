@@ -217,6 +217,11 @@ All uploaded files go through [`website_file`](../../design/schema/website_file.
 | setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
 | product (16) | attribute+lang+relation, list+lang+code+car+supplier, item+lang+price+stock+stop_log+file+supplier+warehouse | product_list: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_list_car; gallery via product_item_file |
+
+### Product UI (design)
+
+- **Attributes** (category / brand / car): custom split-pane in [`product-attribute.js`](../../design/js/pages/product-attribute.js) — tree nav + inline form; not `module-registry`. Categories link brands via `product_attribute_relation`. Car hierarchy uses `type_car` (brand → model → engine). Tree drag grip: **category** supports cross-parent reparent + sibling reorder (`parent_id`, `sort_order`, `tree_path`); drop on another root row or its empty sub-list adopts as child (`resolveCategoryDropTarget`); blocks root-with-children under another root — `productAttr.dragHasChildren`; **brand** sibling-only (`crud.dragSiblingOnly`); **car** sibling-only within same `type_car` + `parent_id` (`canReorderCarSiblings` — no cross-brand/model/engine reparent via drag). `is_stopped` column remains on schema/seed; not exposed on car attribute forms in design mockup.
+- **Product list / items**: schema + menu stub only (`product_list` path `#`); list + variant CRUD pages not built yet.
 | member (15) | setting+lang+relation, tier+lang+item+item_attribute, member+setting+owner+address+file+discount+history+lang | setting M2M replaces v2 self-FK; name/tel/email back on member row |
 | supplier (4) | user, information, contact, bank | v2 had only supplier — information/contact/bank gaps restored; type information/tax_invoice/delivery |
 | warehouse (3) | list+lang+condition | barcode/qrcode/rfid/capacity restored; occupancy from product_item_stock via product_item_warehouse.bin_id; condition: amount + amount_active (inactive/empty derived) |

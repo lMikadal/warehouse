@@ -33,20 +33,6 @@
         { type: "error", label: "Error: forbidden", msgKey: "error.forbidden" },
         { type: "warning", label: "Warning: drag scope", msgKey: "crud.dragSiblingOnly" },
       ],
-      actions: [
-        {
-          group: "Data",
-          items: [
-            {
-              label: "Reset store",
-              fn: function () {
-                global.store.reset();
-                window.location.reload();
-              },
-            },
-          ],
-        },
-      ],
     });
 
     function rerender() {

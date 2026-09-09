@@ -63,6 +63,7 @@
     <script src="../js/seed/warehouse_condition.js"></script>
     <script src="../js/seed/product_item_warehouse.js"></script>
     <script src="../js/seed/product_item_stock.js"></script>
+    <script src="../js/seed/product_attribute.js"></script>
     <script src="../js/seed/index.js"></script>
     <script src="../js/store.js"></script>
     <script src="../js/i18n/th.js"></script>
@@ -82,12 +83,6 @@
           toasts: [
             { type: "success", label: "Success: saved", msg: "Operation completed successfully." },
             { type: "error", label: "Error: failed", msg: "Something went wrong. Please try again." },
-          ],
-          actions: [
-            {
-              label: "Reset store",
-              fn: function () { store.reset(); window.location.reload(); },
-            },
           ],
         });
       })();

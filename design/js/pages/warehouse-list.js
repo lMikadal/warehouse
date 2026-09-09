@@ -722,20 +722,6 @@
         { type: "success", label: "Updated", msgKey: "crud.updated" },
         { type: "success", label: "Deleted", msgKey: "crud.deleted" },
       ],
-      actions: [
-        {
-          group: "Data",
-          items: [
-            {
-              label: "Reset store",
-              fn: function () {
-                global.store.reset();
-                window.location.reload();
-              },
-            },
-          ],
-        },
-      ],
     });
 
     document.addEventListener("store:change", render);

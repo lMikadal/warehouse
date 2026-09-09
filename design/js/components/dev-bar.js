@@ -143,6 +143,18 @@
       });
     }
 
+    // — Global: reset local store seed (all pages with store.js) —
+    if (opts.reset !== false && global.store && typeof global.store.reset === "function") {
+      if (toasts.length || actions.length) inner.appendChild(makeSep());
+      inner.appendChild(makeLabel("Data"));
+      inner.appendChild(
+        makeBtn("Reset data", "devbar-btn--warning", function () {
+          global.store.reset();
+          window.location.reload();
+        })
+      );
+    }
+
     bar.appendChild(inner);
     document.body.appendChild(bar);
   }
