@@ -64,7 +64,12 @@
       resource: "/api/v1/supplier/users",
       actions: ["view", "create", "update", "delete"],
     },
-    { permModule: "location", type: "location_location", resource: "/api/v1/location/locations" },
+    {
+      permModule: "location",
+      type: "location_location",
+      resource: "/api/v1/location/locations",
+      actions: ["view", "create", "update", "delete"],
+    },
     { permModule: "warehouse", type: "warehouse_list", resource: "/api/v1/warehouse/lists" },
     { permModule: "product", type: "product_list", resource: "/api/v1/product/lists" },
     { permModule: "product", type: "product_category", resource: "/api/v1/product/categories" },

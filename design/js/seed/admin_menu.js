@@ -206,7 +206,7 @@
       id: 24,
       parent_id: 23,
       module: "location_location",
-      path: "#",
+      path: "pages/location-location.html",
       sort_order: 100,
       labels: { th: "รายการ", en: "List" },
     },

@@ -1040,6 +1040,19 @@
     ],
   });
 
+  REGISTRY.location_location = Object.assign(
+    settingLangConfig("location_location", {
+      pageTitleKey: "page.locationLocation",
+      pageDescriptionKey: "page.locationLocation.desc",
+      formFields: [
+        { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+        { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+        { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+      ],
+    }),
+    { permModule: "location" }
+  );
+
   REGISTRY.setting_vat = {
     permModule: "setting",
     permType: "setting_vat",

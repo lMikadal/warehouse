@@ -90,7 +90,7 @@ Stitch-modern flush-left shell — visual target documented in [`design/referenc
 
 - `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/admin-menu.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
 - `js/components/layout.js` — sidebar + header + content area; flat header (lang + theme); user + red logout icon in sidebar footer
-- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring; groups auto-expand only along the active page’s ancestor chain (not merely because a child has nested submenus); sidebar search expands all groups in the filtered tree so nested hits stay visible
+- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; **location module (map-pin, id 23):** after CMS children, inject active `location_location` rows as virtual sidebar links (`pages/location-location-view.html?id=`) — not stored in `admin_menu`; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring; groups auto-expand only along the active page’s ancestor chain (not merely because a child has nested submenus); sidebar search expands all groups in the filtered tree so nested hits stay visible
 - Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop; sidebar username hidden on mobile (&lt; 640px)
 
 ### Shell surfaces
@@ -246,7 +246,7 @@ Checks per file:
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `supplier-crud-1`)
+- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `location-crud-1`)
 - `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `website_country` is empty in the store
 - **`pages/db.html`** must load the same geo seed scripts as module pages (`website_country.js` … `website_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
@@ -254,6 +254,7 @@ Checks per file:
 - **Geo demo seed** (`website_country` → `website_sub_district`): 2 countries (TH, SG), 13 provinces, 15 districts, 30 sub-districts — each level has th/en `*_language` rows; Chiang Rai province is inactive for status-filter testing
 - Channel name: `warehouse-design`
 - API: `store.init|getAll|getById|create|update|delete|reset`
+- **Same-tab sidebar refresh:** after every `store` mutation, `store:change` CustomEvent fires on `document` (in addition to `BroadcastChannel`) so the sidebar re-renders in the active tab without reload
 
 ## Breakpoints (mobile-first)
 
@@ -270,6 +271,13 @@ Full definitions in [`design/design.json`](../../design/design.json) → `breakp
 ## Docs
 
 - Phase checklists: `document/checklist/design/`
+
+## Location UI (design)
+
+- **List:** [`pages/location-location.html`](../../design/pages/location-location.html) — `module-registry` entry `location_location` via `settingLangConfig` (table + create/edit dialog on same page)
+- **Detail stub:** [`pages/location-location-view.html`](../../design/pages/location-location-view.html?id=`) — coming soon placeholder; breadcrumb **สถานที่ > {name}**
+- Seed: `location_location` (3 rows: 2 active, 1 inactive) + `location_location_language`
+- Menu id 24 path → `pages/location-location.html`; sidebar injects active location names under **รายการ** (aligned with frontend V1 `AdminSidebar` map-pin injection)
 
 ## Supplier UI (design)
 

@@ -7,6 +7,53 @@
     return row ? row.name : "";
   }
 
+  function locationDisplayName(locId, locale) {
+    var loc = locale || (global.i18n && global.i18n.getLocale()) || "th";
+    var row = global.store.getAll("location_location_language").find(function (r) {
+      return r.location_location_id === locId && r.locale === loc;
+    });
+    if (row && row.name) return row.name;
+    var alt = loc === "th" ? "en" : "th";
+    var fallback = global.store.getAll("location_location_language").find(function (r) {
+      return r.location_location_id === locId && r.locale === alt;
+    });
+    return fallback ? fallback.name : String(locId);
+  }
+
+  function locationSidebarItems() {
+    return global.store
+      .getAll("location_location")
+      .filter(function (r) {
+        return r.deleted_at == null && r.is_active;
+      })
+      .sort(function (a, b) {
+        return a.sort_order - b.sort_order || a.id - b.id;
+      })
+      .map(function (r) {
+        return {
+          id: "loc:" + r.id,
+          module: "location",
+          path: "pages/location-location-view.html?id=" + r.id,
+          icon: null,
+          parent_id: 23,
+          is_superadmin_only: false,
+          is_dialog: false,
+          label: locationDisplayName(r.id),
+          children: [],
+        };
+      });
+  }
+
+  function injectLocationSidebarNodes(nodes) {
+    return nodes.map(function (node) {
+      var children = injectLocationSidebarNodes(node.children || []);
+      if (node.icon === "map-pin" || node.id === 23) {
+        children = children.concat(locationSidebarItems());
+      }
+      return Object.assign({}, node, { children: children });
+    });
+  }
+
   function buildMenuTree() {
     var menus = global.store
       .getAll("admin_menu")
@@ -113,10 +160,27 @@
     return current.endsWith(target) || current === target;
   }
 
+  function parseLocationViewIdFromHref(path) {
+    if (!path || path.indexOf("location-location-view.html") < 0) return null;
+    var m = String(path).match(/[?&]id=(\d+)/);
+    return m ? m[1] : null;
+  }
+
+  function currentLocationViewId() {
+    if (!/location-location-view\.html/i.test(window.location.pathname)) return null;
+    var m = window.location.search.match(/[?&]id=(\d+)/);
+    return m ? m[1] : null;
+  }
+
   function isActive(path) {
     var current = normalizePath(window.location.pathname);
     var target = normalizePath(path);
     if (!target) return false;
+
+    var curLocId = currentLocationViewId();
+    var tarLocId = parseLocationViewIdFromHref(path);
+    if (curLocId && tarLocId) return curLocId === tarLocId;
+
     if (pathMatches(current, target)) return true;
     var listPath = listPathFromFormPath(current);
     return listPath ? pathMatches(listPath, target) : false;
@@ -231,7 +295,7 @@
   }
 
   function render(container, query) {
-    var tree = filterMenuTree(buildMenuTree());
+    var tree = injectLocationSidebarNodes(filterMenuTree(buildMenuTree()));
     var q = (query || "").trim().toLowerCase();
     if (q) {
       tree = filterByQuery(tree, q);
@@ -306,6 +370,19 @@
   }
 
   function getBreadcrumb() {
+    var locId = currentLocationViewId();
+    if (locId) {
+      return [
+        { id: 23, label: menuLabel(23), path: null, isCurrent: false },
+        {
+          id: "loc:" + locId,
+          label: locationDisplayName(Number(locId)),
+          path: "pages/location-location-view.html?id=" + locId,
+          isCurrent: true,
+        },
+      ];
+    }
+
     var menu = findMenuByCurrentPath();
     if (!menu) return [];
     var chain = [];

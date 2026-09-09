@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Warehouse — Language</title>
+    <title>Warehouse — Location</title>
     <link rel="stylesheet" href="../css/style.css" />
     <script>
       (function () {
@@ -19,7 +19,7 @@
       })();
     </script>
   </head>
-  <body data-module="admin_language" data-perm-module="admin" data-perm-type="admin_language">
+  <body>
     <div id="app-shell"></div>
 
     <script src="../js/i18n/th.js"></script>
@@ -71,10 +71,43 @@
     <script src="../js/components/modal.js"></script>
     <script src="../js/components/sidebar.js"></script>
     <script src="../js/components/layout.js"></script>
-    <script src="../js/components/crud-list.js"></script>
-    <script src="../js/pages/module-registry.js"></script>
-    <script src="../js/pages/module-page.js"></script>
     <script src="../js/components/dev-bar.js"></script>
-    <script>modulePage.boot();</script>
+    <script>
+      (function () {
+        store.init();
+        i18n.init();
+        if (!auth.requireAuth("login.html")) return;
+        if (!permissions.guardPage("location", "location_location", "login.html")) return;
+
+        var m = window.location.search.match(/[?&]id=(\d+)/);
+        var locId = m ? Number(m[1]) : null;
+        var loc = store.getById("location_location", locId);
+        if (!loc || loc.deleted_at != null) {
+          toast.show(i18n.t("error.notFound"), "error");
+          window.location.replace(nav.resolve("pages/location-location.html"));
+          return;
+        }
+
+        layout.mount({
+          pageTitle: i18n.t("page.locationLocationView"),
+          contentHtml:
+            '<div class="crud-page-header">' +
+            '<div class="crud-page-header__text">' +
+            "<h1>" +
+            i18n.t("page.locationLocationView") +
+            "</h1>" +
+            "</div></div>" +
+            '<p class="text-muted" data-i18n="page.comingSoon">' +
+            i18n.t("page.comingSoon") +
+            "</p>",
+        });
+
+        devBar.mount({
+          toasts: [
+            { type: "error", label: "Error: not found", msgKey: "error.notFound" },
+          ],
+        });
+      })();
+    </script>
   </body>
 </html>

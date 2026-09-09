@@ -52,6 +52,13 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
+  function notifyChange(type, table) {
+    if (global.realtime) global.realtime.broadcast(type, table);
+    document.dispatchEvent(
+      new CustomEvent("store:change", { detail: { type: type, table: table } })
+    );
+  }
+
   function cloneSeed() {
     return JSON.parse(JSON.stringify(global.SEED || {}));
   }
@@ -101,7 +108,7 @@
     if (next.id == null) next.id = nextId(table);
     data[table].push(next);
     persist();
-    if (global.realtime) global.realtime.broadcast("create", table);
+    notifyChange("create", table);
     return next;
   }
 
@@ -111,7 +118,7 @@
     if (idx < 0) return null;
     data[table][idx] = { ...data[table][idx], ...patch, id };
     persist();
-    if (global.realtime) global.realtime.broadcast("update", table);
+    notifyChange("update", table);
     return data[table][idx];
   }
 
@@ -122,7 +129,7 @@
     data[table][index] = { ...row, ...patch };
     if (row.id != null) data[table][index].id = row.id;
     persist();
-    if (global.realtime) global.realtime.broadcast("update", table);
+    notifyChange("update", table);
     return data[table][index];
   }
 
@@ -131,7 +138,7 @@
     if (index < 0 || index >= data[table].length) return false;
     data[table].splice(index, 1);
     persist();
-    if (global.realtime) global.realtime.broadcast("delete", table);
+    notifyChange("delete", table);
     return true;
   }
 
@@ -141,7 +148,7 @@
     data[table] = data[table].filter((row) => row.id !== id);
     if (data[table].length === before) return false;
     persist();
-    if (global.realtime) global.realtime.broadcast("delete", table);
+    notifyChange("delete", table);
     return true;
   }
 
@@ -149,7 +156,7 @@
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(VERSION_KEY);
     applySeed();
-    if (global.realtime) global.realtime.broadcast("reset", null);
+    notifyChange("reset", null);
   }
 
   global.store = {

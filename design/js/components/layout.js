@@ -174,6 +174,9 @@
         refreshNav();
       });
     }
+    document.addEventListener("store:change", function () {
+      refreshNav();
+    });
 
     if (global.i18n) global.i18n.init();
     if (global.permissions) global.permissions.applyActionButtons(shell);
