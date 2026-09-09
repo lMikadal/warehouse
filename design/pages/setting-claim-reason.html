@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Warehouse — DB Browser</title>
+    <title>Warehouse — Claim reasons</title>
     <link rel="stylesheet" href="../css/style.css" />
     <script>
       (function () {
@@ -19,9 +19,12 @@
       })();
     </script>
   </head>
-  <body class="db-browser-page">
-    <div id="db-root"></div>
+  <body data-module="setting_claim_reason" data-perm-module="setting" data-perm-type="setting_claim_reason">
+    <div id="app-shell"></div>
 
+    <script src="../js/i18n/th.js"></script>
+    <script src="../js/i18n/en.js"></script>
+    <script src="../js/i18n/i18n.js"></script>
     <script src="../js/seed/website_language.js"></script>
     <script src="../js/seed/_admin_shared.js"></script>
     <script src="../js/seed/website_country.js"></script>
@@ -54,32 +57,18 @@
     <script src="../js/seed/setting_prefix_language.js"></script>
     <script src="../js/seed/index.js"></script>
     <script src="../js/store.js"></script>
-    <script src="../js/i18n/th.js"></script>
-    <script src="../js/i18n/en.js"></script>
-    <script src="../js/i18n/i18n.js"></script>
+    <script src="../js/realtime.js"></script>
+    <script src="../js/nav.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/permissions.js"></script>
     <script src="../js/components/toast.js"></script>
-    <script src="../js/schema-tables.js"></script>
-    <script src="../js/db-viewer.js"></script>
+    <script src="../js/components/modal.js"></script>
+    <script src="../js/components/sidebar.js"></script>
+    <script src="../js/components/layout.js"></script>
+    <script src="../js/components/crud-list.js"></script>
+    <script src="../js/pages/module-registry.js"></script>
+    <script src="../js/pages/module-page.js"></script>
     <script src="../js/components/dev-bar.js"></script>
-    <script>
-      (function () {
-        store.init();
-        dbViewer.mount(document.getElementById("db-root"));
-        if (window.i18n) i18n.init();
-
-        devBar.mount({
-          toasts: [
-            { type: "success", label: "Success: saved", msg: "Operation completed successfully." },
-            { type: "error", label: "Error: failed", msg: "Something went wrong. Please try again." },
-          ],
-          actions: [
-            {
-              label: "Reset store",
-              fn: function () { store.reset(); window.location.reload(); },
-            },
-          ],
-        });
-      })();
-    </script>
+    <script>modulePage.boot();</script>
   </body>
 </html>

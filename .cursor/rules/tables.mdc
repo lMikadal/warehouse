@@ -37,6 +37,17 @@ Apply **after** filters, **before** pagination.
 
 **Backend:** tree list endpoints must return rows in the same hierarchical order (recursive CTE or app-level flatten per parent group). Do not rely on `ORDER BY tree_path` alone — sibling order follows `sort_order` under each `parent_id`, not lexicographic path labels.
 
+## Drag-and-drop row reorder
+
+Applies to **every list page / every table** in `design/`, `frontend/`, and reorder APIs in `backend/`.
+
+- Enable drag-and-drop reorder **only** when the list’s base table has a `sort_order` column (flat list) or is a self-FK tree that uses `sort_order` for sibling order under each `parent_id`
+- **No `sort_order` column:** no grip column, no drag-and-drop, do not write `sort_order` on reorder — use a normal table; default sort is `created_at → id` (see table above)
+- **Design:** [`module-registry.js`](../../design/js/pages/module-registry.js) — set `sortable: true` only when `design/schema/<table>.sql` includes `sort_order`; otherwise `sortable: false` (example: `setting_vat`)
+- **Frontend:** same rule when implementing list reorder UI
+- **Backend:** no reorder endpoint that patches `sort_order` on tables that lack the column
+- Column header sort (below) remains available on all data tables regardless of DnD
+
 ## Column header sort
 
 Applies to `design/` mockups and `frontend/` production UI (when list tables ship).

@@ -16,13 +16,48 @@
     { permModule: "admin", type: "website_sub_district", resource: "/api/v1/website/sub-districts" },
     { permModule: "admin", type: "admin_user", resource: "/api/v1/admin/users" },
     { permModule: "admin", type: "admin_role", resource: "/api/v1/admin/roles" },
-    { permModule: "setting", type: "setting_bank", resource: "/api/v1/setting/banks" },
-    { permModule: "setting", type: "setting_vat", resource: "/api/v1/setting/vat" },
-    { permModule: "setting", type: "setting_payment_method", resource: "/api/v1/setting/payment-methods" },
-    { permModule: "setting", type: "setting_sale_channel", resource: "/api/v1/setting/sale-channels" },
-    { permModule: "setting", type: "setting_code", resource: "/api/v1/setting/codes" },
-    { permModule: "setting", type: "setting_claim_reason", resource: "/api/v1/setting/claim-reasons" },
-    { permModule: "setting", type: "setting_prefix", resource: "/api/v1/setting/prefixes" },
+    {
+      permModule: "setting",
+      type: "setting_bank",
+      resource: "/api/v1/setting/banks",
+      actions: ["view", "create", "update", "delete"],
+    },
+    {
+      permModule: "setting",
+      type: "setting_vat",
+      resource: "/api/v1/setting/vat",
+      actions: ["view", "update"],
+    },
+    {
+      permModule: "setting",
+      type: "setting_payment_method",
+      resource: "/api/v1/setting/payment-methods",
+      actions: ["view", "create", "update", "delete"],
+    },
+    {
+      permModule: "setting",
+      type: "setting_sale_channel",
+      resource: "/api/v1/setting/sale-channels",
+      actions: ["view", "create", "update", "delete"],
+    },
+    {
+      permModule: "setting",
+      type: "setting_code",
+      resource: "/api/v1/setting/codes",
+      actions: ["view", "create", "update", "delete"],
+    },
+    {
+      permModule: "setting",
+      type: "setting_claim_reason",
+      resource: "/api/v1/setting/claim-reasons",
+      actions: ["view", "create", "update", "delete"],
+    },
+    {
+      permModule: "setting",
+      type: "setting_prefix",
+      resource: "/api/v1/setting/prefixes",
+      actions: ["view", "create", "update", "delete"],
+    },
     { permModule: "supplier", type: "supplier_user", resource: "/api/v1/supplier/users" },
     { permModule: "location", type: "location_location", resource: "/api/v1/location/locations" },
     { permModule: "warehouse", type: "warehouse_list", resource: "/api/v1/warehouse/lists" },
@@ -52,7 +87,7 @@
   var nextPermId = 1;
 
   PERM_PAGES.forEach(function (page) {
-    ACTIONS.forEach(function (action) {
+    (page.actions || ACTIONS).forEach(function (action) {
       var code = page.permModule + "." + page.type + "." + action;
       var row = {
         id: nextPermId,

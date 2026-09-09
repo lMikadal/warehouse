@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "admin-role-perms-1";
+  global.SEED_VERSION = "setting-code-seed-1";
 
   var tables = {};
 
@@ -34,6 +34,25 @@
     "admin_user",
   ];
   adminTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
+  var settingTables = [
+    "setting_bank",
+    "setting_bank_language",
+    "setting_vat",
+    "setting_payment_method",
+    "setting_payment_method_language",
+    "setting_sale_channel",
+    "setting_sale_channel_language",
+    "setting_code",
+    "setting_claim_reason",
+    "setting_claim_reason_language",
+    "setting_prefix",
+    "setting_prefix_language",
+  ];
+  settingTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
   });

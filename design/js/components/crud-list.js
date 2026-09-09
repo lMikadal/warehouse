@@ -274,6 +274,15 @@
   }
 
   function paginateRows(rows) {
+    if (state.config && state.config.showPagination === false) {
+      return {
+        rows: rows,
+        total: rows.length,
+        totalPages: 1,
+        from: rows.length === 0 ? 0 : 1,
+        to: rows.length,
+      };
+    }
     var pageSize = state.pageSize;
     var total = rows.length;
     var totalPages = Math.max(1, Math.ceil(total / pageSize) || 1);
@@ -657,6 +666,8 @@
   }
 
   function shellHtml() {
+    var showSearch = state.config.showSearch !== false;
+    var showPagination = state.config.showPagination !== false;
     var statusFilter = state.config.statusFilter
       ? '<div class="crud-status-filter" id="crud-status-filter" role="group" aria-label="' +
         escapeHtml(t("crud.statusFilter")) +
@@ -666,32 +677,40 @@
         statusFilterBtnHtml("inactive", "col.inactive") +
         "</div>"
       : "";
+    var searchInput = showSearch
+      ? '<input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />'
+      : "";
     var dropdownFilters = columnFiltersHtml("dropdown");
     var buttonGroupFilters = columnFiltersHtml("buttonGroup");
     var filterRow =
       buttonGroupFilters !== ""
         ? '<div class="crud-toolbar__row crud-toolbar__row--filters">' + buttonGroupFilters + "</div>"
         : "";
+    var toolbarRow1 = searchInput || dropdownFilters || statusFilter;
+    var toolbarHtml =
+      toolbarRow1 || filterRow
+        ? '  <div class="crud-toolbar">' +
+          (toolbarRow1 ? '    <div class="crud-toolbar__row">' + searchInput + dropdownFilters + statusFilter + "    </div>" : "") +
+          filterRow +
+          "  </div>"
+        : "";
+    var paginationHtml = showPagination
+      ? '  <nav class="crud-pagination" id="crud-pagination" aria-label="Pagination"></nav>'
+      : "";
     return (
       '<div class="crud-page">' +
       pageHeaderHtml() +
-      '  <div class="crud-toolbar">' +
-      '    <div class="crud-toolbar__row">' +
-      '      <input type="search" class="crud-toolbar__search" id="crud-search" data-i18n-placeholder="search.placeholder" placeholder="ค้นหา" />' +
-      dropdownFilters +
-      statusFilter +
-      "    </div>" +
-      filterRow +
-      "  </div>" +
+      toolbarHtml +
       '  <div class="crud-table-wrap">' +
       '    <div class="crud-table-wrap__body" id="crud-table-body"></div>' +
       "  </div>" +
-      '  <nav class="crud-pagination" id="crud-pagination" aria-label="Pagination"></nav>' +
+      paginationHtml +
       "</div>"
     );
   }
 
   function renderPagination(meta) {
+    if (state.config && state.config.showPagination === false) return;
     var pager = state.container.querySelector("#crud-pagination");
     if (!pager) return;
 
@@ -1553,14 +1572,19 @@
 
   function bindStatusSwitches(wrap) {
     var table = state.config.storeTable || state.permType;
-    var field = state.config.statusSwitchField || "is_active";
+    var defaultField = state.config.statusSwitchField || "is_active";
     var canUpdate = can("update");
     wrap.querySelectorAll(".crud-status-switch").forEach(function (input) {
       if (!canUpdate) input.disabled = true;
       input.addEventListener("change", function () {
+        var field = input.getAttribute("data-switch-field") || defaultField;
         var id = Number(input.getAttribute("data-id"));
         var ts = new Date().toISOString();
-        if (state.config.statusSwitchExclusive && input.checked) {
+        if (
+          state.config.statusSwitchExclusive &&
+          input.checked &&
+          field === defaultField
+        ) {
           global.store.getAll(table).forEach(function (r) {
             if (r.id !== id && r[field]) {
               global.store.update(table, r.id, { [field]: false, updated_at: ts });

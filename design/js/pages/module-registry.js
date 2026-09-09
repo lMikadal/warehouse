@@ -50,6 +50,8 @@
       '<label class="crud-switch">' +
       '<input type="checkbox" class="crud-status-switch" role="switch" data-id="' +
       escapeHtml(row._id) +
+      '" data-switch-field="' +
+      escapeHtml(field) +
       '"' +
       (row[field] ? " checked" : "") +
       ' aria-label="' +
@@ -894,6 +896,548 @@
       { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
+  });
+
+  function yesNoCell(val) {
+    return escapeHtml(global.i18n.t(val ? "col.yes" : "col.no"));
+  }
+
+  function settingLangConfig(key, opts) {
+    var langTable = key + "_language";
+    var fk = key + "_id";
+
+    return {
+      permModule: "setting",
+      permType: key,
+      storeTable: key,
+      pageTitleKey: opts.pageTitleKey,
+      pageDescriptionKey: opts.pageDescriptionKey,
+      canExport: false,
+      canImport: false,
+      sortable: opts.sortable !== false,
+      statusFilter: opts.statusFilter !== false,
+      statusSwitch: opts.statusSwitch !== false,
+      statusSwitchField: opts.statusSwitchField,
+      statusSwitchExclusive: opts.statusSwitchExclusive,
+      columnFilters: opts.columnFilters,
+      columns:
+        opts.columns ||
+        []
+          .concat(opts.leadColumns || [])
+          .concat([{ id: "name", labelKey: "col.name" }])
+          .concat(opts.midColumns || [])
+          .concat([
+            {
+              id: "is_active",
+              labelKey: "col.status",
+              render: function (row) {
+                return statusSwitchHtml(row);
+              },
+            },
+            updatedAtColumn,
+          ]),
+      listRows: function () {
+        return global.store
+          .getAll(key)
+          .filter(function (r) {
+            return r.deleted_at == null;
+          })
+          .map(function (r) {
+            var row = Object.assign({}, r, {
+              _id: r.id,
+              name: langName(langTable, fk, r.id),
+            });
+            if (opts.extraRow) opts.extraRow(row, r);
+            return row;
+          });
+      },
+      searchFilter: function (row, q) {
+        var base =
+          String(row.name).toLowerCase().indexOf(q) >= 0 ||
+          (row.code && String(row.code).toLowerCase().indexOf(q) >= 0);
+        return opts.extraSearch ? base || opts.extraSearch(row, q) : base;
+      },
+      formFields: opts.formFields,
+      getFormValues: function (id) {
+        if (!id) {
+          var defaults = { is_active: true, name_th: "", name_en: "" };
+          if (opts.extraDefaults) Object.assign(defaults, opts.extraDefaults());
+          return defaults;
+        }
+        var r = global.store.getById(key, id);
+        var vals = {
+          name_th: langName(langTable, fk, id, "th"),
+          name_en: langName(langTable, fk, id, "en"),
+          is_active: r.is_active,
+        };
+        if (opts.extraGet) opts.extraGet(vals, r);
+        return vals;
+      },
+      validate: function (values, id) {
+        var result = requiredValidate(values, opts.formFields);
+        if (opts.extraValidate) {
+          var extra = opts.extraValidate(values, id);
+          if (!extra.ok) {
+            return {
+              ok: false,
+              errors: Object.assign({}, result.errors, extra.errors),
+            };
+          }
+        }
+        return result;
+      },
+      save: function (values, id) {
+        if (values.is_default) {
+          global.store.getAll(key).forEach(function (r, idx) {
+            if (r.is_default && r.id !== id) {
+              global.store.updateAt(key, idx, { is_default: false, updated_at: now() });
+            }
+          });
+        }
+        var existing = id ? global.store.getById(key, id) : null;
+        var base = {
+          sort_order: existing
+            ? existing.sort_order
+            : (global.store.getAll(key).filter(function (r) {
+                return r.deleted_at == null;
+              }).length +
+                1) *
+              10,
+          is_active: values.is_active !== undefined ? !!values.is_active : existing ? existing.is_active : true,
+          updated_at: now(),
+        };
+        if (opts.extraSave) opts.extraSave(base, values, existing);
+        var rowId = id;
+        if (id) global.store.update(key, id, base);
+        else {
+          var created = global.store.create(
+            key,
+            Object.assign(base, {
+              created_at: now(),
+              deleted_at: null,
+              created_by: 1,
+              updated_by: 1,
+            })
+          );
+          rowId = created.id;
+        }
+        upsertLang(langTable, fk, rowId, "th", values.name_th);
+        upsertLang(langTable, fk, rowId, "en", values.name_en);
+      },
+      remove: function (id) {
+        global.store.update(key, id, { deleted_at: now(), updated_at: now() });
+      },
+    };
+  }
+
+  REGISTRY.setting_bank = settingLangConfig("setting_bank", {
+    pageTitleKey: "page.settingBank",
+    pageDescriptionKey: "page.settingBank.desc",
+    formFields: [
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+      { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+    ],
+  });
+
+  REGISTRY.setting_vat = {
+    permModule: "setting",
+    permType: "setting_vat",
+    storeTable: "setting_vat",
+    pageTitleKey: "page.settingVat",
+    pageDescriptionKey: "page.settingVat.desc",
+    canCreate: false,
+    canDelete: false,
+    canExport: false,
+    canImport: false,
+    sortable: false,
+    showSearch: false,
+    showPagination: false,
+    columns: [
+      {
+        id: "vat_type",
+        labelKey: "col.vatType",
+        render: function (row) {
+          return escapeHtml(global.i18n.t("vatType." + row.vat_type));
+        },
+      },
+      { id: "rate", labelKey: "col.rate" },
+      updatedAtColumn,
+    ],
+    listRows: function () {
+      return global.store
+        .getAll("setting_vat")
+        .filter(function (r) {
+          return r.deleted_at == null;
+        })
+        .map(function (r) {
+          return Object.assign({}, r, { _id: r.id, rate: String(r.rate) });
+        });
+    },
+    searchFilter: function (row, q) {
+      return (
+        String(row.rate).toLowerCase().indexOf(q) >= 0 ||
+        global.i18n.t("vatType." + row.vat_type).toLowerCase().indexOf(q) >= 0
+      );
+    },
+    formFields: [
+      {
+        key: "vat_type",
+        labelKey: "col.vatType",
+        type: "select",
+        required: true,
+        options: function () {
+          return ["exclude", "include"].map(function (v) {
+            return { value: v, label: global.i18n.t("vatType." + v) };
+          });
+        },
+      },
+      { key: "rate", labelKey: "col.rate", type: "number", required: true },
+    ],
+    getFormValues: function (id) {
+      if (!id) return { vat_type: "exclude", rate: "7" };
+      var r = global.store.getById("setting_vat", id);
+      return { vat_type: r.vat_type, rate: String(r.rate) };
+    },
+    validate: function (values) {
+      return requiredValidate(values, REGISTRY.setting_vat.formFields);
+    },
+    save: function (values, id) {
+      if (!id) throw new Error(global.i18n.t("error.forbidden"));
+      global.store.update("setting_vat", id, {
+        vat_type: values.vat_type,
+        rate: Number(values.rate),
+        updated_at: now(),
+      });
+    },
+    remove: function () {
+      throw new Error(global.i18n.t("error.forbidden"));
+    },
+  };
+
+  REGISTRY.setting_payment_method = settingLangConfig("setting_payment_method", {
+    pageTitleKey: "page.settingPaymentMethod",
+    pageDescriptionKey: "page.settingPaymentMethod.desc",
+    midColumns: [
+      {
+        id: "is_sale",
+        labelKey: "col.sale",
+        render: function (row) {
+          return statusSwitchHtml(row, "is_sale", "col.sale");
+        },
+      },
+      {
+        id: "is_purchase",
+        labelKey: "col.purchase",
+        render: function (row) {
+          return statusSwitchHtml(row, "is_purchase", "col.purchase");
+        },
+      },
+    ],
+    columnFilters: [
+      {
+        key: "is_sale",
+        labelKey: "col.sale",
+        ui: "buttonGroup",
+        optionValues: [true, false],
+        optionLabel: function (val) {
+          return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
+        },
+      },
+      {
+        key: "is_purchase",
+        labelKey: "col.purchase",
+        ui: "buttonGroup",
+        optionValues: [true, false],
+        optionLabel: function (val) {
+          return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
+        },
+      },
+    ],
+    formFields: [
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+      { key: "is_sale", labelKey: "col.sale", type: "checkbox", defaultValue: true },
+      { key: "is_purchase", labelKey: "col.purchase", type: "checkbox", defaultValue: false },
+      { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+    ],
+    extraDefaults: function () {
+      return { is_sale: true, is_purchase: false };
+    },
+    extraGet: function (vals, r) {
+      vals.is_sale = r.is_sale;
+      vals.is_purchase = r.is_purchase;
+    },
+    extraSave: function (base, values) {
+      base.is_sale = !!values.is_sale;
+      base.is_purchase = !!values.is_purchase;
+    },
+  });
+
+  REGISTRY.setting_sale_channel = settingLangConfig("setting_sale_channel", {
+    pageTitleKey: "page.settingSaleChannel",
+    pageDescriptionKey: "page.settingSaleChannel.desc",
+    statusSwitchField: "is_default",
+    statusSwitchExclusive: true,
+    columns: [
+      { id: "name", labelKey: "col.name" },
+      {
+        id: "is_default",
+        labelKey: "col.default",
+        render: function (row) {
+          return statusSwitchHtml(row, "is_default", "col.default");
+        },
+      },
+      {
+        id: "is_active",
+        labelKey: "col.status",
+        render: function (row) {
+          return statusSwitchHtml(row);
+        },
+      },
+      updatedAtColumn,
+    ],
+    statusSwitch: true,
+    formFields: [
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+      { key: "is_default", labelKey: "col.default", type: "checkbox", defaultValue: false },
+      { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+    ],
+    extraDefaults: function () {
+      return { is_default: false };
+    },
+    extraGet: function (vals, r) {
+      vals.is_default = r.is_default;
+    },
+    extraSave: function (base, values) {
+      base.is_default = !!values.is_default;
+    },
+  });
+
+  REGISTRY.setting_code = {
+    permModule: "setting",
+    permType: "setting_code",
+    storeTable: "setting_code",
+    pageTitleKey: "page.settingCode",
+    pageDescriptionKey: "page.settingCode.desc",
+    canExport: false,
+    canImport: false,
+    sortable: true,
+    statusFilter: true,
+    statusSwitch: true,
+    columns: [
+      { id: "code", labelKey: "col.settingCode" },
+      { id: "value", labelKey: "col.value" },
+      {
+        id: "is_active",
+        labelKey: "col.status",
+        render: function (row) {
+          return statusSwitchHtml(row);
+        },
+      },
+      updatedAtColumn,
+    ],
+    listRows: function () {
+      return global.store
+        .getAll("setting_code")
+        .filter(function (r) {
+          return r.deleted_at == null;
+        })
+        .map(function (r) {
+          return Object.assign({}, r, { _id: r.id });
+        });
+    },
+    searchFilter: function (row, q) {
+      return (
+        String(row.code).toLowerCase().indexOf(q) >= 0 ||
+        String(row.value).toLowerCase().indexOf(q) >= 0
+      );
+    },
+    formFields: [
+      { key: "code", labelKey: "col.settingCode", type: "text", required: true },
+      { key: "value", labelKey: "col.value", type: "text", required: true },
+      { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+    ],
+    getFormValues: function (id) {
+      if (!id) return { code: "", value: "", is_active: true };
+      var r = global.store.getById("setting_code", id);
+      return { code: r.code, value: r.value, is_active: r.is_active };
+    },
+    validate: function (values, id) {
+      var result = requiredValidate(values, REGISTRY.setting_code.formFields);
+      var errors = result.errors || {};
+      var rows = global.store.getAll("setting_code").filter(function (r) {
+        return r.deleted_at == null;
+      });
+      if (
+        rows.some(function (r) {
+          return r.id !== id && String(r.code).toLowerCase() === String(values.code).toLowerCase();
+        })
+      ) {
+        errors.code = global.i18n.t("error.codeTaken");
+      }
+      return { ok: Object.keys(errors).length === 0, errors: errors };
+    },
+    save: function (values, id) {
+      var existing = id ? global.store.getById("setting_code", id) : null;
+      var patch = {
+        code: values.code,
+        value: values.value,
+        sort_order: existing
+          ? existing.sort_order
+          : (global.store.getAll("setting_code").filter(function (r) {
+              return r.deleted_at == null;
+            }).length +
+              1) *
+            10,
+        is_active: !!values.is_active,
+        updated_at: now(),
+      };
+      if (id) global.store.update("setting_code", id, patch);
+      else
+        global.store.create(
+          "setting_code",
+          Object.assign(patch, { created_at: now(), deleted_at: null, created_by: 1, updated_by: 1 })
+        );
+    },
+    remove: function (id) {
+      global.store.update("setting_code", id, { deleted_at: now(), updated_at: now() });
+    },
+  };
+
+  REGISTRY.setting_claim_reason = settingLangConfig("setting_claim_reason", {
+    pageTitleKey: "page.settingClaimReason",
+    pageDescriptionKey: "page.settingClaimReason.desc",
+    midColumns: [
+      {
+        id: "is_claim",
+        labelKey: "col.claim",
+        render: function (row) {
+          return statusSwitchHtml(row, "is_claim", "col.claim");
+        },
+      },
+      {
+        id: "is_return",
+        labelKey: "col.return",
+        render: function (row) {
+          return statusSwitchHtml(row, "is_return", "col.return");
+        },
+      },
+    ],
+    columnFilters: [
+      {
+        key: "is_claim",
+        labelKey: "col.claim",
+        optionValues: [true, false],
+        optionLabel: function (val) {
+          return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
+        },
+      },
+      {
+        key: "is_return",
+        labelKey: "col.return",
+        optionValues: [true, false],
+        optionLabel: function (val) {
+          return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
+        },
+      },
+    ],
+    formFields: [
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+      { key: "is_claim", labelKey: "col.claim", type: "checkbox", defaultValue: false },
+      { key: "is_return", labelKey: "col.return", type: "checkbox", defaultValue: false },
+      { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+    ],
+    extraDefaults: function () {
+      return { is_claim: false, is_return: false };
+    },
+    extraGet: function (vals, r) {
+      vals.is_claim = r.is_claim;
+      vals.is_return = r.is_return;
+    },
+    extraSave: function (base, values) {
+      base.is_claim = !!values.is_claim;
+      base.is_return = !!values.is_return;
+    },
+    extraValidate: function (values) {
+      if (!values.is_claim && !values.is_return) {
+        return { ok: false, errors: { is_claim: global.i18n.t("error.claimReasonType") } };
+      }
+      return { ok: true, errors: {} };
+    },
+  });
+
+  REGISTRY.setting_prefix = settingLangConfig("setting_prefix", {
+    pageTitleKey: "page.settingPrefix",
+    pageDescriptionKey: "page.settingPrefix.desc",
+    leadColumns: [
+      {
+        id: "type",
+        labelKey: "col.type",
+        render: function (row) {
+          return escapeHtml(global.i18n.t("prefixType." + row.type));
+        },
+      },
+      { id: "code", labelKey: "col.settingCode" },
+    ],
+    columnFilters: [
+      {
+        key: "type",
+        labelKey: "col.type",
+        optionI18nPrefix: "prefixType.",
+        optionValues: ["person", "company"],
+      },
+    ],
+    formFields: [
+      {
+        key: "type",
+        labelKey: "col.type",
+        type: "select",
+        required: true,
+        options: function () {
+          return ["person", "company"].map(function (v) {
+            return { value: v, label: global.i18n.t("prefixType." + v) };
+          });
+        },
+      },
+      { key: "code", labelKey: "col.settingCode", type: "text", required: true },
+      { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+      { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+      { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+    ],
+    extraDefaults: function () {
+      return { type: "person", code: "" };
+    },
+    extraGet: function (vals, r) {
+      vals.type = r.type;
+      vals.code = r.code;
+    },
+    extraSave: function (base, values) {
+      base.type = values.type;
+      base.code = values.code;
+    },
+    extraValidate: function (values, id) {
+      var errors = {};
+      var rows = global.store.getAll("setting_prefix").filter(function (r) {
+        return r.deleted_at == null;
+      });
+      if (
+        rows.some(function (r) {
+          return r.id !== id && String(r.code).toLowerCase() === String(values.code).toLowerCase();
+        })
+      ) {
+        errors.code = global.i18n.t("error.codeTaken");
+      }
+      return { ok: Object.keys(errors).length === 0, errors: errors };
+    },
+    extraSearch: function (row, q) {
+      return (
+        String(row.code).toLowerCase().indexOf(q) >= 0 ||
+        global.i18n.t("prefixType." + row.type).toLowerCase().indexOf(q) >= 0
+      );
+    },
   });
 
   REGISTRY.website_sub_district = geoConfig("website_sub_district", {

@@ -184,6 +184,7 @@ Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 
 - Paginate every data table (default page size **10**; options **10 / 25 / 50 / 100**; rows-per-page select + icon prev/next + range + page indicator); reset page on filter or page-size change
 - Sort lists: tree → sibling `sort_order` → `id` per `parent_id`, DFS pre-order; flat `sort_order` → `created_at`; else `created_at` → `id`
+- **Drag-and-drop reorder:** ship only when the API table has `sort_order`; tables without it stay normal lists (no grip column) — see [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc)
 - Match design `crud-list.js` pager UX and i18n keys on handoff
 
 ### Forms
