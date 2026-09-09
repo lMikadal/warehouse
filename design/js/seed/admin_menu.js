@@ -229,7 +229,7 @@
       id: 27,
       parent_id: 25,
       module: "warehouse_list",
-      path: null,
+      path: "pages/warehouse-list-view.html",
       sort_order: 200,
       is_dialog: true,
       labels: { th: "การจัดการ", en: "Management" },

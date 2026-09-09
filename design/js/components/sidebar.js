@@ -7,6 +7,12 @@
     return row ? row.name : "";
   }
 
+  var warehousePickerOverlay = null;
+
+  function t(key) {
+    return global.i18n ? global.i18n.t(key) : key;
+  }
+
   function locationDisplayName(locId, locale) {
     var loc = locale || (global.i18n && global.i18n.getLocale()) || "th";
     var row = global.store.getAll("location_location_language").find(function (r) {
@@ -18,6 +24,41 @@
       return r.location_location_id === locId && r.locale === alt;
     });
     return fallback ? fallback.name : String(locId);
+  }
+
+  function warehouseDisplayName(whId, locale) {
+    var loc = locale || (global.i18n && global.i18n.getLocale()) || "th";
+    var row = global.store.getAll("warehouse_list_language").find(function (r) {
+      return r.warehouse_list_id === whId && r.locale === loc;
+    });
+    if (row && row.name) return row.name;
+    var alt = loc === "th" ? "en" : "th";
+    var fallback = global.store.getAll("warehouse_list_language").find(function (r) {
+      return r.warehouse_list_id === whId && r.locale === alt;
+    });
+    return fallback ? fallback.name : String(whId);
+  }
+
+  function currentWarehouseViewId() {
+    if (!/warehouse-list-view\.html/i.test(window.location.pathname)) return null;
+    var m = window.location.search.match(/[?&]id=(\d+)/);
+    return m ? m[1] : null;
+  }
+
+  function warehouseOptions() {
+    return global.store
+      .getAll("warehouse_list")
+      .filter(function (r) {
+        return r.deleted_at == null && r.type === "warehouse";
+      })
+      .sort(function (a, b) {
+        return a.sort_order - b.sort_order || a.id - b.id;
+      })
+      .map(function (r) {
+        var name = warehouseDisplayName(r.id);
+        var label = name ? name + " (" + r.sku + ")" : r.sku;
+        return { value: String(r.id), label: label };
+      });
   }
 
   function locationSidebarItems() {
@@ -338,10 +379,188 @@
     });
   }
 
+  function filterFormSearchSelectList(list, q) {
+    list.querySelectorAll(".form-search-select__option").forEach(function (opt) {
+      var text = (opt.textContent || "").toLowerCase();
+      opt.hidden = !!(q && text.indexOf(q) < 0);
+    });
+  }
+
+  function closeFormSearchSelectPanels(exceptWrap) {
+    if (!warehousePickerOverlay) return;
+    warehousePickerOverlay.querySelectorAll(".form-search-select").forEach(function (wrap) {
+      if (exceptWrap && wrap === exceptWrap) return;
+      var panel = wrap.querySelector(".form-search-select__panel");
+      var trigger = wrap.querySelector(".form-search-select__trigger");
+      if (panel) panel.hidden = true;
+      if (trigger) trigger.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function bindFormSearchableSelects(form) {
+    form.querySelectorAll(".form-search-select").forEach(function (wrap) {
+      var hidden = wrap.querySelector('input[type="hidden"]');
+      var trigger = wrap.querySelector(".form-search-select__trigger");
+      var panel = wrap.querySelector(".form-search-select__panel");
+      var search = wrap.querySelector(".form-search-select__search");
+      var list = wrap.querySelector(".form-search-select__list");
+      var labelEl = wrap.querySelector(".form-search-select__label");
+      if (!hidden || !trigger || !panel || !list) return;
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var willOpen = panel.hidden;
+        closeFormSearchSelectPanels();
+        if (willOpen) {
+          panel.hidden = false;
+          trigger.setAttribute("aria-expanded", "true");
+          if (search) {
+            search.value = "";
+            filterFormSearchSelectList(list, "");
+            search.focus();
+          }
+        }
+      });
+
+      panel.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+
+      if (search) {
+        search.addEventListener("input", function () {
+          filterFormSearchSelectList(list, search.value.trim().toLowerCase());
+        });
+      }
+
+      list.querySelectorAll(".form-search-select__option").forEach(function (opt) {
+        opt.addEventListener("click", function () {
+          var value = opt.getAttribute("data-value") || "";
+          hidden.value = value;
+          if (labelEl) labelEl.textContent = opt.textContent || "";
+          list.querySelectorAll(".form-search-select__option").forEach(function (o) {
+            o.classList.toggle("form-search-select__option--selected", o === opt);
+          });
+          closeFormSearchSelectPanels();
+        });
+      });
+    });
+
+    if (!form._formSearchSelectCloseBound) {
+      form._formSearchSelectCloseBound = true;
+      form.addEventListener("click", function () {
+        closeFormSearchSelectPanels();
+      });
+    }
+  }
+
+  function warehousePickerFieldHtml(options, selectedId) {
+    var selectPh =
+      global.i18n && global.i18n.fieldPlaceholder
+        ? escapeHtml(global.i18n.fieldPlaceholder("select", "warehouse.selectWarehouse"))
+        : escapeHtml(t("warehouse.selectWarehouse"));
+    var selectedLabel = selectPh;
+    if (selectedId) {
+      var match = options.find(function (o) {
+        return o.value === String(selectedId);
+      });
+      if (match) selectedLabel = escapeHtml(match.label);
+    }
+    var optionsHtml = options
+      .map(function (opt) {
+        var sel = String(selectedId) === String(opt.value) ? " form-search-select__option--selected" : "";
+        return (
+          '<li class="form-search-select__option' +
+          sel +
+          '" role="option" data-value="' +
+          escapeAttr(opt.value) +
+          '" tabindex="0">' +
+          escapeHtml(opt.label) +
+          "</li>"
+        );
+      })
+      .join("");
+    return (
+      '<div class="form-field form-search-select">' +
+      '<label><span data-i18n="warehouse.selectWarehouse"></span></label>' +
+      '<input type="hidden" name="warehouse_id" value="' +
+      escapeAttr(selectedId != null ? selectedId : "") +
+      '" />' +
+      '<div class="form-search-select__control">' +
+      '<button type="button" class="form-search-select__trigger" aria-haspopup="listbox" aria-expanded="false">' +
+      '<span class="form-search-select__label">' +
+      selectedLabel +
+      "</span>" +
+      '<img src="../assets/icons/chevron-down.svg" alt="" width="16" height="16" class="form-search-select__chevron" />' +
+      "</button>" +
+      '<div class="form-search-select__panel" hidden>' +
+      '<input type="search" class="form-search-select__search" data-i18n-placeholder="search.placeholder" placeholder="' +
+      escapeHtml(t("search.placeholder")) +
+      '" />' +
+      '<ul class="form-search-select__list" role="listbox">' +
+      optionsHtml +
+      "</ul></div></div></div>"
+    );
+  }
+
+  function closeWarehousePickerDialog() {
+    if (!warehousePickerOverlay) return;
+    warehousePickerOverlay.hidden = true;
+    document.body.classList.remove("modal-open");
+  }
+
+  function openWarehousePickerDialog() {
+    if (global.permissions && !global.permissions.can("warehouse.warehouse_list.view")) return;
+    if (!warehousePickerOverlay) {
+      warehousePickerOverlay = document.createElement("div");
+      warehousePickerOverlay.className = "modal-overlay";
+      warehousePickerOverlay.hidden = true;
+      warehousePickerOverlay.innerHTML =
+        '<div class="modal crud-modal wh-picker-modal" role="dialog" aria-modal="true" aria-labelledby="wh-picker-title">' +
+        '<div class="modal__header">' +
+        '<h2 class="modal__title" id="wh-picker-title" data-i18n="warehouse.managementDialogTitle"></h2>' +
+        '<button type="button" class="modal__close" id="wh-picker-close" aria-label="Close">' +
+        '<img src="../assets/icons/x.svg" alt="" width="18" height="18" /></button></div>' +
+        '<form id="wh-picker-form" class="crud-form modal__content" novalidate></form>' +
+        '<div class="modal__footer">' +
+        '<button type="button" class="btn" id="wh-picker-cancel" data-i18n="crud.cancel"></button>' +
+        '<button type="submit" form="wh-picker-form" class="btn btn--primary" id="wh-picker-save" data-i18n="crud.save"></button>' +
+        "</div></div>";
+      document.body.appendChild(warehousePickerOverlay);
+      warehousePickerOverlay.querySelector("#wh-picker-close").addEventListener("click", closeWarehousePickerDialog);
+      warehousePickerOverlay.querySelector("#wh-picker-cancel").addEventListener("click", closeWarehousePickerDialog);
+      warehousePickerOverlay.addEventListener("click", function (e) {
+        if (e.target === warehousePickerOverlay) closeWarehousePickerDialog();
+      });
+      warehousePickerOverlay.querySelector("#wh-picker-form").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var fd = new FormData(e.target);
+        var id = String(fd.get("warehouse_id") || "").trim();
+        if (!id) {
+          if (global.toast) global.toast.show(t("warehouse.selectWarehouseRequired"), "error");
+          return;
+        }
+        closeWarehousePickerDialog();
+        window.location.href = global.nav.resolve("pages/warehouse-list-view.html?id=" + id);
+      });
+    }
+
+    var options = warehouseOptions();
+    var preselect = currentWarehouseViewId();
+    warehousePickerOverlay.querySelector("#wh-picker-form").innerHTML = warehousePickerFieldHtml(options, preselect);
+    bindFormSearchableSelects(warehousePickerOverlay.querySelector("#wh-picker-form"));
+    if (global.i18n) global.i18n.init();
+    warehousePickerOverlay.hidden = false;
+    document.body.classList.add("modal-open");
+  }
+
   function bindDialogLinks(container) {
     container.querySelectorAll("[data-dialog='true']").forEach(function (link) {
       link.addEventListener("click", function (e) {
         e.preventDefault();
+        if (link.getAttribute("data-menu-id") === "27") {
+          openWarehousePickerDialog();
+          return;
+        }
         if (global.modal) global.modal.open("modal.title", "modal.body");
       });
     });
@@ -378,6 +597,20 @@
           id: "loc:" + locId,
           label: locationDisplayName(Number(locId)),
           path: "pages/location-location-view.html?id=" + locId,
+          isCurrent: true,
+        },
+      ];
+    }
+
+    var whId = currentWarehouseViewId();
+    if (whId) {
+      return [
+        { id: 25, label: menuLabel(25), path: null, isCurrent: false },
+        { id: 27, label: menuLabel(27), path: null, isCurrent: false },
+        {
+          id: "wh:" + whId,
+          label: warehouseDisplayName(Number(whId)),
+          path: "pages/warehouse-list-view.html?id=" + whId,
           isCurrent: true,
         },
       ];
