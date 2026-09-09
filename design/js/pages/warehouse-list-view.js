@@ -597,6 +597,21 @@
     );
   }
 
+  function switchFieldHtml(checked) {
+    return (
+      '<div class="form-field form-field--switch">' +
+      '<label for="wh-view-f-is_active">' +
+      wh.escapeHtml(t("col.active")) +
+      "</label>" +
+      '<label class="crud-switch">' +
+      '<input type="checkbox" role="switch" name="is_active" id="wh-view-f-is_active"' +
+      (checked !== false ? " checked" : "") +
+      " />" +
+      '<span class="crud-switch__track" aria-hidden="true"><span class="crud-switch__thumb"></span></span>' +
+      "</label></div>"
+    );
+  }
+
   function openNodeForm(id, parentId, childType, allowedTypes) {
     ensureFormModal();
     var row = id ? wh.getNode(id) : null;
@@ -618,11 +633,7 @@
       nameRowHtml(id ? wh.langName(id, "th") : "", id ? wh.langName(id, "en") : "") +
       fieldHtml("sku", "col.sku", "text", row ? row.sku : "", true) +
       fieldHtml("capacity", "warehouse.capacity", "number", row ? row.capacity : 0, false) +
-      '<label class="form-checkbox"><input type="checkbox" name="is_active"' +
-      (row ? (row.is_active ? " checked" : "") : " checked") +
-      " /> " +
-      wh.escapeHtml(t("col.active")) +
-      "</label>";
+      switchFieldHtml(row ? row.is_active : true);
     if (global.i18n) global.i18n.init();
     formOverlay.hidden = false;
     document.body.classList.add("modal-open");
@@ -654,6 +665,7 @@
   function openDeleteConfirm(id) {
     ensureConfirmModal();
     pendingDeleteId = id;
+    if (global.i18n) global.i18n.init();
     confirmOverlay.hidden = false;
     document.body.classList.add("modal-open");
   }
