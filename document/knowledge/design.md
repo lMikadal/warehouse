@@ -246,7 +246,7 @@ Checks per file:
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `geo-mock-1`)
+- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `supplier-crud-1`)
 - `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `website_country` is empty in the store
 - **`pages/db.html`** must load the same geo seed scripts as module pages (`website_country.js` … `website_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
@@ -270,6 +270,13 @@ Full definitions in [`design/design.json`](../../design/design.json) → `breakp
 ## Docs
 
 - Phase checklists: `document/checklist/design/`
+
+## Supplier UI (design)
+
+- **List:** [`pages/supplier-user.html`](../../design/pages/supplier-user.html) — `module-registry` entry `supplier_user`; Add/Edit navigate to form via `formHref` (no list modal)
+- **Form:** [`pages/supplier-user-form.html`](../../design/pages/supplier-user-form.html) — tabs General (3× `supplier_information`), Contacts, Financial (`supplier_contact`, `supplier_bank`, credit on `supplier_user`)
+- Seed: `supplier_user`, `supplier_information`, `supplier_contact`, `supplier_bank` (4 demo suppliers)
+- Menu id 22 path → `pages/supplier-user.html`
 
 ## Next
 

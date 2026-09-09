@@ -1440,6 +1440,163 @@
     },
   });
 
+  function supplierInformation(supplierUserId, type) {
+    return global.store.getAll("supplier_information").find(function (r) {
+      return r.supplier_user_id === supplierUserId && r.type === type;
+    });
+  }
+
+  function prefixLabel(prefixId) {
+    if (!prefixId) return "";
+    return langName("setting_prefix_language", "setting_prefix_id", prefixId);
+  }
+
+  function formatCreditTerm(days) {
+    if (days != null && days > 0) {
+      return global.i18n.format("supplier.creditDays", { days: days });
+    }
+    return global.i18n.t("supplier.creditNone");
+  }
+
+  function deleteSupplierChildren(supplierUserId) {
+    var ts = now();
+    global.store.getAll("supplier_contact").forEach(function (r, idx) {
+      if (r.supplier_user_id === supplierUserId && r.deleted_at == null) {
+        global.store.updateAt("supplier_contact", idx, { deleted_at: ts, updated_at: ts });
+      }
+    });
+    global.store.getAll("supplier_bank").forEach(function (r, idx) {
+      if (r.supplier_user_id === supplierUserId && r.deleted_at == null) {
+        global.store.updateAt("supplier_bank", idx, { deleted_at: ts, updated_at: ts });
+      }
+    });
+    global.store
+      .getAll("supplier_information")
+      .filter(function (r) {
+        return r.supplier_user_id === supplierUserId;
+      })
+      .slice()
+      .reverse()
+      .forEach(function (r) {
+        global.store.delete("supplier_information", r.id);
+      });
+  }
+
+  REGISTRY.supplier_user = {
+    permModule: "supplier",
+    permType: "supplier_user",
+    storeTable: "supplier_user",
+    pageTitleKey: "page.supplierUser",
+    pageDescriptionKey: "page.supplierUser.desc",
+    canExport: false,
+    canImport: false,
+    sortable: false,
+    statusFilter: true,
+    statusSwitch: true,
+    formHref: function (id) {
+      return id ? "supplier-user-form.html?id=" + id : "supplier-user-form.html";
+    },
+    columns: [
+      {
+        id: "sku",
+        labelKey: "col.sku",
+        render: function (row) {
+          return (
+            '<div class="data-table__stack">' +
+            '<div class="data-table__stack-primary">' +
+            escapeHtml(row.sku) +
+            "</div>" +
+            '<div class="data-table__stack-secondary">' +
+            escapeHtml(global.i18n.t("col.taxNumber")) +
+            ": " +
+            escapeHtml(row._taxNumber || "—") +
+            "</div></div>"
+          );
+        },
+      },
+      {
+        id: "company",
+        labelKey: "col.company",
+        render: function (row) {
+          return (
+            '<div class="data-table__stack">' +
+            '<div class="data-table__stack-primary">' +
+            escapeHtml(row._companyName || "—") +
+            "</div>" +
+            '<div class="data-table__stack-secondary">' +
+            escapeHtml(row._companyAddress || "—") +
+            "</div></div>"
+          );
+        },
+      },
+      {
+        id: "contact",
+        labelKey: "col.contact",
+        render: function (row) {
+          return (
+            '<div class="data-table__stack">' +
+            '<div class="data-table__stack-primary">' +
+            escapeHtml(row._contactTel || "—") +
+            "</div>" +
+            '<div class="data-table__stack-secondary">' +
+            escapeHtml(row._contactEmail || "—") +
+            "</div></div>"
+          );
+        },
+      },
+      {
+        id: "credit_term",
+        labelKey: "col.credit",
+        cellClass: "data-table__cell--meta",
+        render: function (row) {
+          return escapeHtml(formatCreditTerm(row.credit_term));
+        },
+      },
+      {
+        id: "is_active",
+        labelKey: "col.status",
+        render: function (row) {
+          return statusSwitchHtml(row);
+        },
+      },
+      updatedAtColumn,
+    ],
+    listRows: function () {
+      return global.store
+        .getAll("supplier_user")
+        .filter(function (r) {
+          return r.deleted_at == null;
+        })
+        .map(function (r) {
+          var contact = supplierInformation(r.id, "contact");
+          var prefix = contact && contact.setting_prefix_id ? prefixLabel(contact.setting_prefix_id) : "";
+          var companyName = contact && contact.name ? (prefix ? prefix + " " + contact.name : contact.name) : "";
+          return Object.assign({}, r, {
+            _id: r.id,
+            _taxNumber: contact && contact.tax_number ? contact.tax_number : "",
+            _companyName: companyName,
+            _companyAddress: contact && contact.address ? contact.address : "",
+            _contactTel: contact && contact.tel ? contact.tel : "",
+            _contactEmail: contact && contact.email ? contact.email : "",
+          });
+        });
+    },
+    searchFilter: function (row, q) {
+      return (
+        String(row.sku).toLowerCase().indexOf(q) >= 0 ||
+        String(row._taxNumber).toLowerCase().indexOf(q) >= 0 ||
+        String(row._companyName).toLowerCase().indexOf(q) >= 0 ||
+        String(row._companyAddress).toLowerCase().indexOf(q) >= 0 ||
+        String(row._contactTel).toLowerCase().indexOf(q) >= 0 ||
+        String(row._contactEmail).toLowerCase().indexOf(q) >= 0
+      );
+    },
+    remove: function (id) {
+      global.store.update("supplier_user", id, { deleted_at: now(), updated_at: now() });
+      deleteSupplierChildren(id);
+    },
+  };
+
   REGISTRY.website_sub_district = geoConfig("website_sub_district", {
     pageTitleKey: "page.websiteSubDistrict",
     pageDescriptionKey: "page.websiteSubDistrict.desc",

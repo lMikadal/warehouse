@@ -58,7 +58,12 @@
       resource: "/api/v1/setting/prefixes",
       actions: ["view", "create", "update", "delete"],
     },
-    { permModule: "supplier", type: "supplier_user", resource: "/api/v1/supplier/users" },
+    {
+      permModule: "supplier",
+      type: "supplier_user",
+      resource: "/api/v1/supplier/users",
+      actions: ["view", "create", "update", "delete"],
+    },
     { permModule: "location", type: "location_location", resource: "/api/v1/location/locations" },
     { permModule: "warehouse", type: "warehouse_list", resource: "/api/v1/warehouse/lists" },
     { permModule: "product", type: "product_list", resource: "/api/v1/product/lists" },

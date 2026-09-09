@@ -190,7 +190,7 @@
     {
       id: 22,
       module: "supplier",
-      path: "#",
+      path: "pages/supplier-user.html",
       icon: "contact",
       sort_order: 400,
       labels: { th: "คู่ค้า", en: "Supplier" },

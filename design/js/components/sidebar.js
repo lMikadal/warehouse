@@ -104,11 +104,22 @@
     }
   }
 
+  function listPathFromFormPath(pathname) {
+    if (!/-form\.html$/i.test(pathname)) return null;
+    return pathname.replace(/-form\.html$/i, ".html");
+  }
+
+  function pathMatches(current, target) {
+    return current.endsWith(target) || current === target;
+  }
+
   function isActive(path) {
     var current = normalizePath(window.location.pathname);
     var target = normalizePath(path);
     if (!target) return false;
-    return current.endsWith(target) || current === target;
+    if (pathMatches(current, target)) return true;
+    var listPath = listPathFromFormPath(current);
+    return listPath ? pathMatches(listPath, target) : false;
   }
 
   function hasActiveDescendant(node) {

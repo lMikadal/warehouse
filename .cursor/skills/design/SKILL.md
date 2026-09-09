@@ -69,6 +69,7 @@ Full definitions in [`design/design.json`](../../design/design.json) → `breakp
 - Source: [Lucide icons](https://lucide.dev/icons/) only
 - Path: `design/assets/icons/<lucide-name>.svg` (kebab-case, e.g. `sun.svg`, `languages.svg`)
 - Use `<img src="assets/icons/….svg">` for simple assets; inline the same SVG markup when color must follow theme (`currentColor` + CSS)
+- Icons inside `.btn` must match button text color — global rules in `css/style.css` (`.btn img`, `.btn--primary img`); see `.cursor/rules/icons.mdc`
 - Keep Lucide stroke defaults; theme via CSS so light/dark stays readable
 - No npm icon packages, icon font CDNs, or emoji for chrome/actions
 
@@ -452,6 +453,7 @@ toast.show(i18n.t("error.required"), "error");
 - **`type="search"`** → plain `search.placeholder` (`ค้นหา` / `Search`) via `data-i18n-placeholder="search.placeholder"` — not the input template
 - Placeholder is a hint, not a label substitute
 - Every `type="password"` uses `.password-field` + `passwordToggle.bind(form)` (`js/components/password-toggle.js`) with Lucide `eye` / `eye-off`
+- Every `type="tel"` uses `inputmode="tel"` + `telInput.bind(formRoot)` (`js/components/tel-input.js`) — digits and `-` only
 - Required fields: red `*` in `.form-field__required` after the label; keep HTML `required`
 - On submit/save: empty required fields show `error.required` (or field-specific key) in `.form-field__error` inside `.form-field__error-slot` (fixed `min-height` — errors must not shift inputs); focus first invalid field; optional `.form-field--invalid` for red input border
 - Inline field errors on blur (not only on submit)

@@ -31,6 +31,13 @@ Template keys: `form.placeholder.input`, `form.placeholder.select` (with `{label
 - **Frontend:** `placeholder={t('form.placeholder.input', { label: t(labelKey) })}` via next-intl; select → disabled `<SelectItem value="">` or equivalent with `t('form.placeholder.select', { label: t(labelKey) })`
 - Legacy explicit keys (`data-i18n-placeholder="key"`) are allowed but prefer the pattern above.
 
+## Phone (`type="tel"`)
+
+- Allowed characters: digits `0-9` and hyphen `-` only (e.g. `02-1234567`, `081-2345678`).
+- Attributes: `type="tel"`, `inputmode="tel"`, `autocomplete="tel"`.
+- **Design:** filter on input/paste via `telInput.bind(formRoot)` from `js/components/tel-input.js` after every render that rebuilds the DOM.
+- **Frontend:** same convention — strip non-digit/non-hyphen on change/paste in the shared `Input` (when implementing frontend forms).
+
 ## Password visibility
 
 - Every `type="password"` field must have an eye / eye-off toggle to show and hide the value.
@@ -51,6 +58,15 @@ Template keys: `form.placeholder.input`, `form.placeholder.select` (with `{label
 - Clear the field error when the user starts typing again.
 - Form-level errors are for non-field failures only (e.g. wrong credentials, server errors).
 - Reserve fixed space for errors (`.form-field__error-slot` with `min-height`) so showing/hiding errors does not shift inputs.
+
+## Form leave button (create vs edit)
+
+- **Create** (no record id): label `crud.back` — th: ย้อนกลับ, en: Back
+- **Edit** (has record id): label `crud.cancel` — th: ยกเลิก, en: Cancel
+- Applies to: full-page form toolbar and CRUD form modal primary dismiss/leave control
+- Does NOT apply to: nested sub-modals (contact/bank) or confirm/delete dialogs — those stay `crud.cancel`
+- **Design:** set `data-i18n` dynamically from `editId` / `isEdit` at render time
+- **Frontend:** same rule when implementing production forms
 
 ## Markup pattern (design)
 

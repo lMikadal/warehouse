@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "setting-code-seed-1";
+  global.SEED_VERSION = "supplier-crud-1";
 
   var tables = {};
 
@@ -53,6 +53,17 @@
     "setting_prefix_language",
   ];
   settingTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
+  var supplierTables = [
+    "supplier_user",
+    "supplier_information",
+    "supplier_contact",
+    "supplier_bank",
+  ];
+  supplierTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
   });

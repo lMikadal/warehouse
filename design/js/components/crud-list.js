@@ -1000,7 +1000,12 @@
 
     wrap.querySelectorAll(".crud-edit").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        openForm(Number(btn.getAttribute("data-id")));
+        var rowId = Number(btn.getAttribute("data-id"));
+        if (state.config.formHref) {
+          window.location.href = state.config.formHref(rowId);
+          return;
+        }
+        openForm(rowId);
       });
     });
     wrap.querySelectorAll(".crud-delete").forEach(function (btn) {
@@ -1429,6 +1434,10 @@
     }
     ensureFormModal();
     editId = id || null;
+    var cancelBtn = formOverlay.querySelector("#crud-form-cancel");
+    if (cancelBtn) {
+      cancelBtn.setAttribute("data-i18n", editId ? "crud.cancel" : "crud.back");
+    }
     var values = state.config.getFormValues(editId);
     var title = editId ? t("crud.edit") : t("crud.create");
     formOverlay.querySelector("#crud-form-title").textContent = title;
@@ -1630,6 +1639,10 @@
     var createBtn = state.container.querySelector("#crud-page-create");
     if (createBtn) {
       createBtn.addEventListener("click", function () {
+        if (state.config.formHref) {
+          window.location.href = state.config.formHref(null);
+          return;
+        }
         openForm(null);
       });
     }

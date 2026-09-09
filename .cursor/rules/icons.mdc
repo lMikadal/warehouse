@@ -13,6 +13,13 @@ All UI icons come from [Lucide](https://lucide.dev/icons/). Do not use emoji as 
 - Keep Lucide stroke defaults; color via CSS
 - Prefer inline SVG with `currentColor` when the icon must follow theme/text color; use `<img src="assets/icons/….svg">` when a fixed asset is enough
 
+## Icons inside buttons
+
+- Icons in `.btn` must match the button text `color` (light/dark, primary/default).
+- **Design:** `<img src="assets/icons/….svg">` inside `.btn` is allowed — icon color is handled by global CSS in `design/css/style.css` (`.btn img`, `.btn--primary img`, dark-theme default btn). Do not hardcode colors in SVG files.
+- Do not add one-off `filter` rules per button — extend the shared `.btn` icon rules instead.
+- **Frontend:** Lucide React + `className="text-current"` (or inherit color from the button).
+
 ## Frontend (`frontend/`)
 
 - Use `lucide-react` components only (`import { Sun } from "lucide-react"`)
