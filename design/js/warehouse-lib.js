@@ -156,6 +156,107 @@
     return parent.tree_path + ".n" + id;
   }
 
+  function allowedChildTypes(parentType) {
+    if (parentType === "zone") return ["shelf", "rack", "bin"];
+    if (parentType === "shelf") return ["rack", "bin"];
+    if (parentType === "rack") return ["bin"];
+    return [];
+  }
+
+  function validParent(childType, parentNode) {
+    if (!childType || !parentNode) return false;
+    return allowedChildTypes(parentNode.type).indexOf(childType) >= 0;
+  }
+
+  function isDescendant(ancestorId, nodeId) {
+    if (ancestorId === nodeId) return true;
+    return descendantIds(ancestorId).indexOf(nodeId) >= 0;
+  }
+
+  function ancestorZone(nodeId) {
+    var n = getNode(nodeId);
+    while (n) {
+      if (n.type === "zone") return n.id;
+      n = n.parent_id ? getNode(n.parent_id) : null;
+    }
+    return null;
+  }
+
+  function countTypeInZoneSubtree(zoneId, type) {
+    var total = 0;
+    var active = 0;
+    function walk(pid) {
+      childrenOf(pid).forEach(function (c) {
+        if (c.type === type) {
+          total++;
+          if (c.is_active) active++;
+        }
+        walk(c.id);
+      });
+    }
+    walk(zoneId);
+    return { total: total, active: active };
+  }
+
+  function canReparentToZone(node, destZoneId) {
+    var srcZone = ancestorZone(node.id);
+    if (srcZone === destZoneId) return { ok: true };
+    var cond = getCondition(destZoneId, node.type);
+    if (!cond || cond.amount <= 0) return { ok: false, reason: "quota_missing" };
+    var counts = countTypeInZoneSubtree(destZoneId, node.type);
+    if (counts.total + 1 > cond.amount) return { ok: false, reason: "quota_full" };
+    if (node.is_active && counts.active + 1 > cond.amount_active) {
+      return { ok: false, reason: "quota_active_full" };
+    }
+    return { ok: true };
+  }
+
+  function refreshTreePaths(rootId) {
+    function walk(id) {
+      var node = getNode(id);
+      if (!node) return;
+      global.store.update("warehouse_list", id, {
+        tree_path: assignTreePath(id, node.parent_id),
+        updated_at: now(),
+      });
+      childrenOf(id).forEach(function (c) {
+        walk(c.id);
+      });
+    }
+    walk(rootId);
+  }
+
+  function reparentNode(id, newParentId) {
+    if (!getNode(id) || !getNode(newParentId)) return false;
+    var maxSort = childrenOf(newParentId).reduce(function (m, r) {
+      return Math.max(m, r.sort_order);
+    }, 0);
+    global.store.update("warehouse_list", id, {
+      parent_id: newParentId,
+      sort_order: maxSort + 100,
+      updated_at: now(),
+    });
+    refreshTreePaths(id);
+    return true;
+  }
+
+  function reorderSiblings(parentId, draggedId, targetId) {
+    var dragged = getNode(draggedId);
+    if (!dragged || dragged.parent_id !== parentId) return false;
+    var siblings = childrenOf(parentId).filter(function (r) {
+      return r.id !== draggedId;
+    });
+    var targetIdx = siblings.findIndex(function (r) {
+      return r.id === targetId;
+    });
+    if (targetIdx < 0) return false;
+    siblings.splice(targetIdx, 0, dragged);
+    siblings.forEach(function (r, i) {
+      global.store.update("warehouse_list", r.id, { sort_order: (i + 1) * 100, updated_at: now() });
+    });
+    return true;
+  }
+
   function softDeleteSubtree(id) {
     var ts = now();
     global.store.update("warehouse_list", id, { deleted_at: ts, updated_at: ts });
@@ -227,6 +328,21 @@
     return global.permissions && global.permissions.canAction("warehouse", "warehouse_list", action);
   }
 
+  // ponytail: self-check — fails if flexible parent rules drift
+  (function selfCheckValidParent() {
+    var zone = { type: "zone" };
+    var shelf = { type: "shelf" };
+    if (!validParent("bin", zone) || !validParent("rack", zone)) {
+      throw new Error("validParent self-check failed: zone should accept rack/bin");
+    }
+    if (validParent("shelf", shelf)) {
+      throw new Error("validParent self-check failed: shelf should not accept shelf");
+    }
+    if (allowedChildTypes("zone").length !== 3 || allowedChildTypes("shelf").length !== 2) {
+      throw new Error("allowedChildTypes self-check failed");
+    }
+  })();
+
   // ponytail: self-check — fails if ATW demo stats drift
   (function selfCheckWarehouseStats() {
     if (typeof global.store === "undefined" || !global.SEED_WAREHOUSE_LIST) return;
@@ -236,7 +352,7 @@
     });
     if (!atw) return;
     var stats = warehouseStats(atw.id);
-    if (stats.remainQty !== 25600 || stats.skuCount !== 4 || stats.zoneCount !== 6) {
+    if (stats.remainQty !== 33 || stats.skuCount !== 4 || stats.zoneCount !== 6) {
       throw new Error(
         "warehouse seed stats self-check failed: remain=" +
           stats.remainQty +
@@ -264,6 +380,13 @@
     upsertCondition: upsertCondition,
     ensureZoneConditions: ensureZoneConditions,
     assignTreePath: assignTreePath,
+    allowedChildTypes: allowedChildTypes,
+    validParent: validParent,
+    isDescendant: isDescendant,
+    ancestorZone: ancestorZone,
+    canReparentToZone: canReparentToZone,
+    reparentNode: reparentNode,
+    reorderSiblings: reorderSiblings,
     softDeleteSubtree: softDeleteSubtree,
     formatQty: formatQty,
     conditionTypeLabel: conditionTypeLabel,

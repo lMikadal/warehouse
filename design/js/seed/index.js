@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "warehouse-list-2";
+  global.SEED_VERSION = "warehouse-list-6";
 
   var tables = {};
 

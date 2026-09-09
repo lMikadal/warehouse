@@ -1,7 +1,8 @@
 -- source: v1 warehouse_warehouses + v2 v2_warehouse_warehouses (UUID→BIGSERIAL)
 --   - tree: parent_id + tree_path + sort_order (LTREE + direct parent for drag-reorder)
 --   - restored: barcode, qrcode, rfid (v2 dropped — needed for scan-in/scan-out)
---   - restored: capacity (v2 dropped); occupancy derived via product_item_warehouse.bin_id + product_item_stock — not stored
+--   - restored: capacity (v2 dropped); occupancy not stored — zone/shelf/rack: count direct child slots;
+--     bin: SUM(remain_quantity) via product_item_warehouse.bin_id + product_item_stock
 --   - restored: warehouse_condition (separate table; child-type quotas; inactive/empty derived at query time)
 --   - removed:  shelf_maximum / rack_maximum / box_maximum columns (v2's premature optimization)
 --   - spelling fixed: 'shelfs' → 'shelf' in enum
@@ -18,7 +19,7 @@ CREATE TABLE warehouse_list (
     parent_id       BIGINT            REFERENCES warehouse_list(id) ON DELETE RESTRICT, -- parent node in hierarchy
     tree_path       LTREE             NOT NULL,                 -- LTREE path for subtree queries
     sort_order      INTEGER           NOT NULL DEFAULT 0,       -- sibling display order
-    capacity        INTEGER           NOT NULL DEFAULT 0,       -- max storage units
+    capacity        INTEGER           NOT NULL DEFAULT 0,       -- zone/shelf/rack: max direct child slots; bin: max stock units
     is_active       BOOLEAN           NOT NULL DEFAULT TRUE,    -- whether location is usable
     deleted_at      TIMESTAMPTZ,
     created_at      TIMESTAMPTZ       NOT NULL DEFAULT CURRENT_TIMESTAMP,
