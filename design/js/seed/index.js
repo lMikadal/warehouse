@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "member-business-relations-1";
+  global.SEED_VERSION = "member-tier-1";
 
   var tables = {};
 
@@ -67,6 +67,18 @@
     "member_setting_relation",
   ];
   memberSettingTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
+  var memberTierTables = [
+    "member_tier",
+    "member_tier_language",
+    "member_tier_attribute",
+    "member_tier_relation",
+    "member_tier_relation_attribute",
+  ];
+  memberTierTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
   });

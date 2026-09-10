@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Warehouse — Management</title>
+    <title>Warehouse — Member tier</title>
     <link rel="stylesheet" href="../css/style.css" />
     <script>
       (function () {
@@ -19,7 +19,7 @@
       })();
     </script>
   </head>
-  <body data-perm-module="warehouse" data-perm-type="warehouse_list">
+  <body data-perm-module="member" data-perm-type="member_tier">
     <div id="app-shell"></div>
 
     <script src="../js/i18n/th.js"></script>
@@ -89,9 +89,11 @@
     <script src="../js/components/modal.js"></script>
     <script src="../js/components/sidebar.js"></script>
     <script src="../js/components/layout.js"></script>
-    <script src="../js/warehouse-lib.js"></script>
-    <script src="../js/pages/warehouse-list-view.js"></script>
+    <script src="../js/components/crud-list.js"></script>
+    <script src="../js/components/chip-multi-select.js"></script>
+    <script src="../js/member-setting-lib.js"></script>
+    <script src="../js/pages/member-tier.js"></script>
     <script src="../js/components/dev-bar.js"></script>
-    <script>warehouseListViewPage.boot();</script>
+    <script>memberTierPage.boot();</script>
   </body>
 </html>

@@ -32,5 +32,9 @@ CRUD mockup pages for sidebar **สมาชิก → ตั้งค่า** �
 ## Out of scope
 
 - Dedicated `member_setting_relation` menu
-- Member tier (`member_tier`) and member list (`member_user`) pages
+- Member list (`member_user`) page
 - Real API / backend integration
+
+## Related
+
+- Member tier page — see [`phase-design-member-tier.md`](phase-design-member-tier.md)

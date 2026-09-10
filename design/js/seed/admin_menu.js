@@ -315,7 +315,7 @@
       id: 35,
       parent_id: 33,
       module: "member_tier",
-      path: "#",
+      path: "pages/member-tier.html",
       sort_order: 200,
       labels: { th: "ระดับ", en: "Tier" },
     },
