@@ -1847,6 +1847,28 @@ body.sidebar-open .admin-sidebar-backdrop {
   color: var(--color-primary);
 }
 
+.data-table th.data-table__col-numeric,
+.data-table td.data-table__col-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-table__sort-col.data-table__col-numeric .data-table__sort-btn {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.data-table th.data-table__col-center,
+.data-table td.data-table__col-center {
+  text-align: center;
+}
+
+.data-table__sort-col.data-table__col-center .data-table__sort-btn {
+  justify-content: center;
+  text-align: center;
+}
+
 .data-table__cell--meta {
   font-size: var(--text-sm);
   opacity: 0.85;
@@ -1874,9 +1896,21 @@ body.sidebar-open .admin-sidebar-backdrop {
   text-align: center;
 }
 
-.data-table__actions {
-  display: flex;
+.data-table td.data-table__actions-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.data-table td.data-table__actions {
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.data-table td .data-table__actions {
+  display: inline-flex;
   justify-content: center;
+  align-items: center;
   gap: 0.375rem;
 }
 
@@ -4134,4 +4168,173 @@ body.modal-open {
   min-height: 2rem;
   min-width: 2rem;
   padding: 0.25rem;
+}
+
+/* Product list page */
+.product-list__toolbar-row {
+  display: grid;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .product-list__toolbar-row {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.crud-toolbar__select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.product-list__table {
+  min-width: 1200px;
+}
+
+.product-list__col-product {
+  min-width: 16rem;
+}
+
+.product-list__col-pack {
+  white-space: nowrap;
+}
+
+.product-list__table th.data-table__actions-col.product-list__col-actions {
+  width: 8.5rem;
+}
+
+.product-list__col-category {
+  max-width: 10rem;
+}
+
+.product-list__col-brand {
+  max-width: 10rem;
+}
+
+.product-list__col-wh {
+  text-align: center;
+  min-width: 8rem;
+}
+
+.product-list__col-status {
+  text-align: center;
+  width: 6.5rem;
+}
+
+.product-list__status-switch {
+  display: inline-flex;
+  margin: 0 auto;
+}
+
+.product-list__col-actions {
+  width: 8.5rem;
+}
+
+.product-list__product-cell {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.product-list__thumb {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius);
+  background: rgb(15 23 42 / 0.04);
+}
+
+.product-list__product-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.product-list__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.product-list__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.product-list__badge--new {
+  background: rgb(37 99 235 / 0.12);
+  color: var(--color-primary);
+}
+
+.product-list__badge--low {
+  background: rgb(220 38 38 / 0.12);
+  color: #dc2626;
+}
+
+.product-list__name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+}
+
+.product-list__sku {
+  font-size: var(--text-xs);
+  opacity: 0.72;
+}
+
+.product-list__car-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid rgb(37 99 235 / 0.2);
+  border-radius: 0.375rem;
+  background: rgb(37 99 235 / 0.06);
+  color: var(--color-primary);
+  font-size: 0.625rem;
+  cursor: pointer;
+}
+
+.product-list__car-more {
+  opacity: 0.85;
+}
+
+.product-list__stock--low {
+  color: #dc2626;
+  font-weight: var(--font-weight-medium);
+}
+
+.product-list__unit {
+  opacity: 0.72;
+}
+
+.product-list__wh-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-sm);
+}
+
+.product-list__wh-btn {
+  font-size: var(--text-xs);
 }

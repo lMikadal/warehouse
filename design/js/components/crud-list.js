@@ -958,7 +958,7 @@
           .join("");
 
         if (!state.config.readOnly && (can("update") || can("delete"))) {
-          cells += '<td class="data-table__actions">';
+          cells += '<td class="data-table__actions-cell"><div class="data-table__actions">';
           if (state.config.canEdit !== false && can("update")) {
             cells +=
               '<button type="button" class="btn btn--icon crud-edit" data-id="' +
@@ -983,7 +983,7 @@
               escapeHtml(t("crud.delete")) +
               '"><img src="../assets/icons/trash-2.svg" alt="" width="16" height="16" /></button>';
           }
-          cells += "</td>";
+          cells += "</div></td>";
         }
         return (
           '<tr' +

@@ -97,7 +97,7 @@
 
   function warehouseStats(warehouseId) {
     var placements = activeRows("product_item_warehouse").filter(function (p) {
-      return p.warehouse_id === warehouseId;
+      return rootWarehouseId(p.bin_id) === warehouseId;
     });
     var skuIds = {};
     placements.forEach(function (p) {
@@ -180,6 +180,37 @@
       n = n.parent_id ? getNode(n.parent_id) : null;
     }
     return null;
+  }
+
+  function resolvePathFromBin(binId) {
+    var path = {
+      warehouse_id: null,
+      zone_id: null,
+      shelf_id: null,
+      rack_id: null,
+      bin_id: binId != null ? binId : null,
+    };
+    if (binId == null) return path;
+    var n = getNode(binId);
+    if (!n) return path;
+    var chain = [n];
+    while (n.parent_id) {
+      n = getNode(n.parent_id);
+      if (!n) break;
+      chain.push(n);
+    }
+    chain.forEach(function (node) {
+      if (node.type === "warehouse") path.warehouse_id = node.id;
+      else if (node.type === "zone") path.zone_id = node.id;
+      else if (node.type === "shelf") path.shelf_id = node.id;
+      else if (node.type === "rack") path.rack_id = node.id;
+      else if (node.type === "bin") path.bin_id = node.id;
+    });
+    return path;
+  }
+
+  function rootWarehouseId(binId) {
+    return resolvePathFromBin(binId).warehouse_id;
   }
 
   function countTypeInZoneSubtree(zoneId, type) {
@@ -384,6 +415,8 @@
     validParent: validParent,
     isDescendant: isDescendant,
     ancestorZone: ancestorZone,
+    resolvePathFromBin: resolvePathFromBin,
+    rootWarehouseId: rootWarehouseId,
     canReparentToZone: canReparentToZone,
     reparentNode: reparentNode,
     reorderSiblings: reorderSiblings,

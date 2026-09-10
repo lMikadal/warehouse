@@ -25,12 +25,21 @@
     { id: 20, type: "shelf", sku: "ATW-Z01-S02", parent_id: 4, sort_order: 200, capacity: 40, is_active: true },
     { id: 21, type: "rack", sku: "ATW-Z01-R01", parent_id: 19, sort_order: 100, capacity: 30, is_active: true },
     { id: 22, type: "bin", sku: "ATW-Z01-B01", parent_id: 21, sort_order: 100, capacity: 20, is_active: true },
+    { id: 37, type: "bin", sku: "ATW-Z01-B02", parent_id: 21, sort_order: 200, capacity: 20, is_active: true },
     { id: 23, type: "shelf", sku: "ATW-Z02-S01", parent_id: 5, sort_order: 100, capacity: 45, is_active: true },
     { id: 24, type: "rack", sku: "ATW-Z02-R01", parent_id: 23, sort_order: 100, capacity: 25, is_active: true },
     { id: 25, type: "bin", sku: "ATW-Z02-B01", parent_id: 24, sort_order: 100, capacity: 15, is_active: true },
     { id: 26, type: "shelf", sku: "ATW-Z03-S01", parent_id: 6, sort_order: 100, capacity: 35, is_active: true },
-    { id: 27, type: "rack", sku: "ATW-Z03-R01", parent_id: 6, sort_order: 200, capacity: 20, is_active: false },
-    { id: 28, type: "bin", sku: "ATW-Z03-B01", parent_id: 6, sort_order: 300, capacity: 10, is_active: true },
+    { id: 27, type: "rack", sku: "ATW-Z03-R01", parent_id: 26, sort_order: 200, capacity: 20, is_active: true },
+    { id: 28, type: "bin", sku: "ATW-Z03-B01", parent_id: 27, sort_order: 300, capacity: 10, is_active: true },
+    { id: 29, type: "shelf", sku: "PJB-Z01-S01", parent_id: 10, sort_order: 100, capacity: 50, is_active: true },
+    { id: 30, type: "rack", sku: "PJB-Z01-R01", parent_id: 29, sort_order: 100, capacity: 30, is_active: true },
+    { id: 31, type: "bin", sku: "PJB-Z01-B01", parent_id: 30, sort_order: 100, capacity: 20, is_active: true },
+    { id: 32, type: "shelf", sku: "GS-Z01-S01", parent_id: 15, sort_order: 100, capacity: 50, is_active: true },
+    { id: 33, type: "rack", sku: "GS-Z01-R01", parent_id: 32, sort_order: 100, capacity: 30, is_active: true },
+    { id: 34, type: "bin", sku: "GS-Z01-B01", parent_id: 33, sort_order: 100, capacity: 20, is_active: true },
+    { id: 35, type: "bin", sku: "PJB-Z01-B02", parent_id: 30, sort_order: 200, capacity: 20, is_active: true },
+    { id: 36, type: "bin", sku: "GS-Z01-B02", parent_id: 33, sort_order: 200, capacity: 20, is_active: true },
   ];
 
   global.SEED_WAREHOUSE_LIST = shared.assignTreePaths(defs).map(function (d) {

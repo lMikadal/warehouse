@@ -58,3 +58,27 @@ Applies to `design/` mockups and `frontend/` production UI (when list tables shi
 - Not sortable: grip/drag column, actions column
 - Reset to page 1 when sort changes (same as search/filter)
 - Design: [`design/js/components/crud-list.js`](../../design/js/components/crud-list.js) — sort icons from Lucide (`arrow-up-down`, `arrow-up`, `arrow-down`)
+
+## Column alignment
+
+Applies to `design/` mockups and `frontend/` production UI (list/table cells and headers).
+
+### Numeric (right)
+
+- **When:** columns that display pure numeric values (counts, quantities, money, percentages).
+- **Design:** `data-table__col-numeric` on `th`/`td` (use `.data-table td.data-table__col-numeric` in CSS so alignment beats default `.data-table td { text-align: left }`); sortable headers also use `data-table__sort-col` (sort button aligns end — see `style.css`).
+- **Frontend:** `text-right` + `tabular-nums` on header and cells.
+
+### Center
+
+- **When:** status switches/badges, composite non-text cells (e.g. warehouse label + button), **actions** (icon buttons).
+- **Design:** `data-table__col-center` on centered data/sort headers and cells (compound selectors on `th`/`td` in CSS); **actions** use `data-table__actions-col` (header), `td.data-table__actions-cell` (or module width class) + inner `div.data-table__actions` (inline-flex, `gap: 0.375rem`) — do not put `display: flex` on the `td` itself.
+- **Frontend:** `text-center` / flex center; action row matches design gap.
+
+- Apply the **same alignment class(es)** to the column header (`th`) and body cells (`td`); use a shared column config (e.g. `class` + optional `cellClass` for actions) so header and body do not drift.
+
+### Exceptions
+
+- Mixed number + unit text (e.g. packaging): center or left — not forced right.
+- Dates/datetimes: [dates rule](dates.mdc) — not numeric alignment.
+- Default text columns: left.

@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "product-attr-1";
+  global.SEED_VERSION = "product-list-6";
 
   var tables = {};
 
@@ -92,6 +92,18 @@
     "product_attribute_relation",
   ];
   productAttrTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
+  var productListTables = [
+    "product_list",
+    "product_list_language",
+    "product_list_car",
+    "product_item",
+    "product_item_language",
+  ];
+  productListTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
   });

@@ -1,0 +1,34 @@
+---
+description: Warehouse layout tree and product item stock placement — bin-only anchor.
+alwaysApply: true
+---
+
+# Warehouse placement (product items)
+
+Applies to `design/` seeds and mockups, `backend/` APIs and migrations, and `frontend/` when implementing stock placement.
+
+## Bin-only rule
+
+- Every **`product_item_warehouse`** row stores **`product_item_id`** + **`bin_id NOT NULL`** pointing at `warehouse_list` with **`type = 'bin'`**. Do not persist `warehouse_id`, `zone_id`, `shelf_id`, or `rack_id` on the placement row.
+- **Read path:** resolve warehouse → zone → shelf → rack by walking **`warehouse_list.parent_id`** from the bin up to the root warehouse (design: `warehouseLib.resolvePathFromBin`; backend: join/recursive query).
+- Do not create placements with NULL `bin_id` or stock “at zone/warehouse only”.
+- **`product_item_stock`** references `product_item_warehouse_id`; bin occupancy and capacity checks use **`bin_id`** + sum of `remain_quantity` on linked stock rows.
+
+## One bin, one item
+
+- Among active placements (`deleted_at IS NULL`), each **`bin_id` may appear at most once** — one **product_item** per bin. Different items must not share the same bin.
+- The **same** `product_item_id` may have **multiple** rows (different bins / warehouses).
+- **Design seeds** must not duplicate `bin_id` on `product_item_warehouse`.
+- **Backend:** reject create/update that assigns a bin already used by another item (validation / conflict response).
+- **Frontend:** when picking a bin, exclude bins already assigned to a different item.
+
+## Design seeds
+
+- Extend **`warehouse_list`** (shelf → rack → bin under zone) before adding **`product_item_warehouse`** rows.
+- Seed rows: `{ product_item_id, bin_id }` only (plus audit fields).
+
+## Backend / frontend
+
+- Create/update placement APIs must reject missing or non-bin `bin_id`.
+- UI pickers should select a **bin**; display columns derive the path at render/API response time.
+- When implementing backend migrations, mirror the slim `product_item_warehouse` table from [`design/schema/product_item_warehouse.sql`](../../design/schema/product_item_warehouse.sql).

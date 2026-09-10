@@ -22,8 +22,12 @@ Split-pane CRUD mockups for sidebar **สินค้า** → หมวดห�
 - [ ] Car: drag reorder only among siblings at the same `type_car` level (brand / model / engine) under the same `parent_id`; cross-brand/model/engine drop shows `crud.dragSiblingOnly` (including same index)
 - [ ] Locale switch re-renders labels without losing edit state
 
+## Related phase
+
+- Product list table mockup: [`phase-design-product-list.md`](phase-design-product-list.md)
+
 ## Out of scope (this phase)
 
-- Product list menu (`product_list` → `#`) and `product_list` / `product_item` CRUD pages
+- Full product form CRUD (see product-list stub only)
 - `website_file_id` logo upload on attributes
 - `module-registry` / `crud-list` conversion for attribute pages

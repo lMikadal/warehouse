@@ -25,5 +25,13 @@
       { id: 6, product_item_id: 6, product_item_warehouse_id: 6, remain_quantity: 9200, is_used: true },
       audit(1)
     ),
+    Object.assign(
+      { id: 7, product_item_id: 1, product_item_warehouse_id: 7, remain_quantity: 5, is_used: true },
+      audit(1)
+    ),
+    Object.assign(
+      { id: 8, product_item_id: 1, product_item_warehouse_id: 8, remain_quantity: 3, is_used: true },
+      audit(1)
+    ),
   ];
 })(window);

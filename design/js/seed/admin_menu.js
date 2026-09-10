@@ -245,7 +245,7 @@
       id: 29,
       parent_id: 28,
       module: "product_list",
-      path: "#",
+      path: "pages/product-list.html",
       sort_order: 100,
       labels: { th: "รายการ", en: "List" },
     },

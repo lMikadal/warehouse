@@ -33,12 +33,20 @@
     return !Array.isArray(stored) || stored.length === 0;
   }
 
+  function hasMissingProductListSeed() {
+    var seedItems = global.SEED && global.SEED.product_item;
+    if (!Array.isArray(seedItems) || seedItems.length === 0) return false;
+    var stored = data.product_item;
+    return !Array.isArray(stored) || stored.length === 0;
+  }
+
   function needsReseed() {
     const expected = expectedSeedVersion();
     if (expected && storedSeedVersion() !== expected) return true;
     if (hasLegacyDashboardMenu()) return true;
     if (!hasAdminUsers()) return true;
     if (hasMissingGeoSeed()) return true;
+    if (hasMissingProductListSeed()) return true;
     return false;
   }
 
