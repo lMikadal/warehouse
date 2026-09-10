@@ -996,16 +996,18 @@
         }
         var existing = id ? global.store.getById(key, id) : null;
         var base = {
-          sort_order: existing
+          is_active: values.is_active !== undefined ? !!values.is_active : existing ? existing.is_active : true,
+          updated_at: now(),
+        };
+        if (opts.sortable !== false) {
+          base.sort_order = existing
             ? existing.sort_order
             : (global.store.getAll(key).filter(function (r) {
                 return r.deleted_at == null;
               }).length +
                 1) *
-              10,
-          is_active: values.is_active !== undefined ? !!values.is_active : existing ? existing.is_active : true,
-          updated_at: now(),
-        };
+              10;
+        }
         if (opts.extraSave) opts.extraSave(base, values, existing);
         var rowId = id;
         if (id) global.store.update(key, id, base);
@@ -1052,6 +1054,74 @@
     }),
     { permModule: "location" }
   );
+
+  function memberSettingLangConfig(key, opts) {
+    return Object.assign(
+      settingLangConfig(
+        key,
+        Object.assign(
+          {
+            sortable: false,
+            leadColumns: [{ id: "sku", labelKey: "col.sku" }],
+            formFields: [
+              { key: "sku", labelKey: "col.sku", type: "text" },
+              { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
+              { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+              { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
+            ],
+            extraDefaults: function () {
+              return { sku: "" };
+            },
+            extraGet: function (vals, r) {
+              vals.sku = r.sku || "";
+            },
+            extraSave: function (base, values) {
+              var sku = values.sku != null ? String(values.sku).trim() : "";
+              base.sku = sku || null;
+            },
+            extraValidate: function (values, id) {
+              var sku = values.sku != null ? String(values.sku).trim() : "";
+              if (!sku) return { ok: true, errors: {} };
+              var taken = global.store.getAll(key).some(function (r) {
+                return (
+                  r.deleted_at == null &&
+                  r.id !== id &&
+                  r.sku &&
+                  String(r.sku).toLowerCase() === sku.toLowerCase()
+                );
+              });
+              if (taken) {
+                return { ok: false, errors: { sku: global.i18n.t("error.codeTaken") } };
+              }
+              return { ok: true, errors: {} };
+            },
+            extraSearch: function (row, q) {
+              return String(row.sku || "")
+                .toLowerCase()
+                .indexOf(q) >= 0;
+            },
+          },
+          opts
+        )
+      ),
+      { permModule: "member" }
+    );
+  }
+
+  REGISTRY.member_setting_credit = memberSettingLangConfig("member_setting_credit", {
+    pageTitleKey: "page.memberSettingCredit",
+    pageDescriptionKey: "page.memberSettingCredit.desc",
+  });
+
+  REGISTRY.member_setting_group = memberSettingLangConfig("member_setting_group", {
+    pageTitleKey: "page.memberSettingGroup",
+    pageDescriptionKey: "page.memberSettingGroup.desc",
+  });
+
+  REGISTRY.member_setting_business = memberSettingLangConfig("member_setting_business", {
+    pageTitleKey: "page.memberSettingBusiness",
+    pageDescriptionKey: "page.memberSettingBusiness.desc",
+  });
 
   REGISTRY.setting_vat = {
     permModule: "setting",

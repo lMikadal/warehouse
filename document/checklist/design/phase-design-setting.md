@@ -32,4 +32,4 @@ CRUD mockup pages for sidebar **ตั้งค่า** → seven leaves (`setti
 
 - `website_file_id` logo upload on bank / sale channel
 - `member_setting_relation_id` on sale channel
-- `member_setting_*` pages (Member menu)
+- Member settings CRUD — see [`phase-design-member.md`](phase-design-member.md) (`member_setting_credit` / `group` / `business`; relation still deferred)

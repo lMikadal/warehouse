@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Warehouse — Car categories</title>
+    <title>Warehouse — Group</title>
     <link rel="stylesheet" href="../css/style.css" />
     <script>
       (function () {
@@ -19,7 +19,7 @@
       })();
     </script>
   </head>
-  <body data-attr-type="car" data-perm-module="product" data-perm-type="product_car">
+  <body data-module="member_setting_group" data-perm-module="member" data-perm-type="member_setting_group">
     <div id="app-shell"></div>
 
     <script src="../js/i18n/th.js"></script>
@@ -84,8 +84,10 @@
     <script src="../js/components/modal.js"></script>
     <script src="../js/components/sidebar.js"></script>
     <script src="../js/components/layout.js"></script>
-    <script src="../js/pages/product-attribute.js"></script>
+    <script src="../js/components/crud-list.js"></script>
+    <script src="../js/pages/module-registry.js"></script>
+    <script src="../js/pages/module-page.js"></script>
     <script src="../js/components/dev-bar.js"></script>
-    <script>productAttributePage.boot();</script>
+    <script>modulePage.boot();</script>
   </body>
 </html>

@@ -123,13 +123,18 @@
     var options = opts.options || [];
     var labelKey = opts.labelKey || "";
     var placeholderLabelKey = opts.placeholderLabelKey || labelKey;
+    var requiredMark = opts.required
+      ? ' <span class="form-field__required" aria-hidden="true">*</span>'
+      : "";
     return (
       '<div class="form-field">' +
       '<label for="' +
       escapeAttr(id) +
       '-control"><span data-i18n="' +
       escapeHtml(labelKey) +
-      '"></span></label>' +
+      '"></span>' +
+      requiredMark +
+      "</label>" +
       '<div class="chip-multi-select" id="' +
       escapeAttr(id) +
       '" data-chip-multi-select data-options="' +
@@ -146,7 +151,10 @@
       '<div class="chip-multi-select__chips"></div></div>' +
       '<button type="button" class="chip-multi-select__toggle" aria-haspopup="listbox">' +
       '<img src="../assets/icons/chevron-down.svg" alt="" width="16" height="16" /></button></div>' +
-      '<div class="chip-multi-select__dropdown" hidden role="listbox"></div></div></div>'
+      '<div class="chip-multi-select__dropdown" hidden role="listbox"></div></div>' +
+      '<div class="form-field__error-slot" aria-live="polite">' +
+      '<p class="form-field__error" hidden role="alert"></p>' +
+      "</div></div>"
     );
   }
 

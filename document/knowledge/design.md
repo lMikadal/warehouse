@@ -31,7 +31,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 ## Script load order (every page)
 
 1. `js/i18n/th.js` + `en.js` + `i18n.js`
-2. `js/seed/website_language.js` → **`js/seed/_admin_shared.js`** (must load before any seed file that calls `ADMIN_SEED_SHARED`) → `website_*` geo seeds → `admin_*.js` → `setting_*` seeds → `index.js`
+2. `js/seed/website_language.js` → **`js/seed/_admin_shared.js`** (must load before any seed file that calls `ADMIN_SEED_SHARED`) → `website_*` geo seeds → `admin_*.js` → `setting_*` seeds → `member_setting_*` seeds (incl. `member_setting_relation.js`) → `index.js`
 3. `js/store.js`
 4. `js/realtime.js` (authenticated module pages)
 5. `js/nav.js`
@@ -47,6 +47,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - Login: `pages/login.html` → `auth.resolveLandingPath()` → `sidebar.getFirstPath()` (first **navigable** permitted sidebar leaf: real `path`, not `#` or dialog) → `nav.resolve()` once
 - Menus with `path: "#"` may appear in the sidebar when permitted but cannot be login landing targets until wired to a real HTML page
 - **Settings submenu** (7 leaves under **ตั้งค่า**, id 14): `pages/setting-bank.html` … `pages/setting-prefix.html` — flat-list CRUD via `module-registry.js`; permissions use `permModule: "setting"`; no import/export UI or permission actions on setting pages
+- **Member settings** (nested under **สมาชิก → ตั้งค่า**, menu id 34): `pages/member-setting-credit.html` / `member-setting-group.html` are lookup CRUD via `memberSettingLangConfig`; `pages/member-setting-business.html` is a warehouse-style expandable list (`memberSettingBusinessPage`) — expand shows `member_setting_relation` rows (status, delete); **create/edit business modal** holds credit × group chip multi-selects (optional on create; edit prefill unique credits/groups then cartesian sync on save). Each **new** combo creates a `setting_sale_channel` row with `member_setting_relation_id`, `is_default: true`, and a composed th/en name (`อู่ · เงินสด · ราคาปลีก`). Optional unique `sku`; no `sort_order` on lookup tables.
 - **VAT** (`setting_vat`): singleton — one seed row, edit-only (`view` + `update` permissions; no create/delete); no `sort_order` → `sortable: false` (no drag-and-drop); `showSearch: false` / `showPagination: false` — table only, no toolbar search or pager
 - If login still redirects to removed pages (e.g. `dashboard.html`): hard refresh (Ctrl+Shift+R) to bypass cached JS, or use dev-bar **Reset store** / bump `SEED_VERSION` so `store.init()` re-seeds
 - Login page: full-bleed split on desktop (brand gradient panel + form column); mobile single card; fixed icon toolbar (lang/theme); leading field icons; placeholders, password eye toggle, required red `*`, under-field validation errors
@@ -58,6 +59,8 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
   - `pages/admin-user.html` — `admin_user` CRUD (role/type/status filters; password toggle on form)
   - `pages/admin-role.html` — `admin_role` + `admin_role_language` CRUD; create/edit modal includes menu-grouped permission matrix (`js/components/role-permission-matrix.js`)
   - `pages/setting-bank.html` … `pages/setting-prefix.html` — setting module flat-list CRUD (`setting_*` + `*_language` where applicable)
+  - `pages/member-setting-credit.html` / `member-setting-group.html` — member lookup CRUD (`memberSettingLangConfig`)
+  - `pages/member-setting-business.html` — expandable business list + credit×group relations (`member-setting-lib.js`)
 - List + modal create/edit on the same page (no separate form HTML); delete uses confirm modal + toast
 - **Modal / dialog design**: backdrop blur (`backdrop-filter: blur(4px)` + `rgb(15 23 42 / 0.45)`), panel elevated (`border-radius: 0.75rem`, `box-shadow`), structure = `modal__header` (border-bottom) → `modal__content` (padded) → `modal__footer` (border-top); close = Lucide `x.svg` ghost icon button; `is_active` checkbox in forms renders as `.crud-switch` (green, with thumb) inside `.form-field--switch` row; `name_th` + `name_en` auto-grouped in `.crud-form__row` (2-column grid, stacks on mobile); compact form spacing (`gap: 0.5rem`); modal widths via `--modal-max-width` — **36rem** base (generic + confirm), **42rem** CRUD form (`.crud-modal`), **56rem** role permission matrix (`.crud-modal--wide`); entry animation `modal-fade-in` (overlay) + `modal-scale-in` (panel)
 - Module pages call `auth.requireAuth()` then `permissions.guardPage(module, type)`
@@ -253,7 +256,7 @@ Checks per file:
 ## Store / realtime
 
 - Store key: `warehouse-design-store`
-- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `location-crud-1`)
+- Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `member-business-relations-1`)
 - `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `website_country` is empty in the store
 - **`pages/db.html`** must load the same geo seed scripts as module pages (`website_country.js` … `website_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console

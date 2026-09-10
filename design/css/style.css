@@ -5171,6 +5171,10 @@ select.product-list-form__hist-filter-control {
   font-size: var(--text-sm);
 }
 
+.msb-rel-table {
+  margin-bottom: 1rem;
+}
+
 .wh-zone-grid {
   display: grid;
   gap: 1rem;

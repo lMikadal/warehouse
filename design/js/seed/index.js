@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "product-list-14";
+  global.SEED_VERSION = "member-business-relations-1";
 
   var tables = {};
 
@@ -53,6 +53,20 @@
     "setting_prefix_language",
   ];
   settingTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
+  var memberSettingTables = [
+    "member_setting_credit",
+    "member_setting_credit_language",
+    "member_setting_group",
+    "member_setting_group_language",
+    "member_setting_business",
+    "member_setting_business_language",
+    "member_setting_relation",
+  ];
+  memberSettingTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
   });
