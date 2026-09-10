@@ -12,6 +12,7 @@ CREATE TABLE product_item_stock (
     product_item_id         BIGINT        NOT NULL REFERENCES product_item(id)              ON DELETE RESTRICT, -- stocked variant
     product_item_warehouse_id BIGINT      NOT NULL REFERENCES product_item_warehouse(id)   ON DELETE RESTRICT, -- item placement path
     purchase_order_item_id  BIGINT        REFERENCES purchase_order_item(id)             ON DELETE SET NULL, -- PO line that received this lot
+    supplier_user_id        BIGINT        REFERENCES supplier_user(id)                   ON DELETE SET NULL, -- partner when lot not linked to PO line
     order_quantity          NUMERIC(15,4) NOT NULL DEFAULT 0,     -- ordered qty for this lot
     order_free_gift         NUMERIC(15,4) NOT NULL DEFAULT 0,     -- free-gift qty in this lot
     quantity                NUMERIC(15,4) NOT NULL DEFAULT 0,     -- total qty received in this lot
@@ -36,5 +37,6 @@ CREATE UNIQUE INDEX uq_product_item_stock_active
 CREATE INDEX idx_product_item_stock_item        ON product_item_stock (product_item_id)              WHERE deleted_at IS NULL;
 CREATE INDEX idx_product_item_stock_placement   ON product_item_stock (product_item_warehouse_id)    WHERE deleted_at IS NULL;
 CREATE INDEX idx_product_item_stock_po_item     ON product_item_stock (purchase_order_item_id) WHERE purchase_order_item_id IS NOT NULL;
+CREATE INDEX idx_product_item_stock_supplier    ON product_item_stock (supplier_user_id) WHERE supplier_user_id IS NOT NULL AND deleted_at IS NULL;
 CREATE INDEX idx_product_item_stock_created_by  ON product_item_stock (created_by) WHERE created_by IS NOT NULL;
 CREATE INDEX idx_product_item_stock_updated_by  ON product_item_stock (updated_by) WHERE updated_by IS NOT NULL;

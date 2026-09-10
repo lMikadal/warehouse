@@ -987,7 +987,7 @@
         return result;
       },
       save: function (values, id) {
-        if (values.is_default) {
+        if (values.is_default && opts.statusSwitchExclusive) {
           global.store.getAll(key).forEach(function (r, idx) {
             if (r.is_default && r.id !== id) {
               global.store.updateAt(key, idx, { is_default: false, updated_at: now() });
@@ -1191,7 +1191,7 @@
     pageTitleKey: "page.settingSaleChannel",
     pageDescriptionKey: "page.settingSaleChannel.desc",
     statusSwitchField: "is_default",
-    statusSwitchExclusive: true,
+    statusSwitchExclusive: false,
     columns: [
       { id: "name", labelKey: "col.name" },
       {

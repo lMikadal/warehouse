@@ -6,11 +6,11 @@
       audit(1)
     ),
     Object.assign(
-      { id: 2, website_file_id: null, is_active: true, is_default: false, member_setting_relation_id: null, sort_order: 200 },
+      { id: 2, website_file_id: null, is_active: true, is_default: true, member_setting_relation_id: null, sort_order: 200 },
       audit(2)
     ),
     Object.assign(
-      { id: 3, website_file_id: null, is_active: true, is_default: false, member_setting_relation_id: null, sort_order: 300 },
+      { id: 3, website_file_id: null, is_active: true, is_default: true, member_setting_relation_id: null, sort_order: 300 },
       audit(3)
     ),
     Object.assign(

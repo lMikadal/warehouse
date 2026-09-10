@@ -21,7 +21,7 @@ CRUD mockup pages for sidebar **ตั้งค่า** → seven leaves (`setti
 - [x] All seven `pages/setting-*.html` return HTTP 200; registry + seed smoke test passes
 - [x] Claim reason: at least one of claim/return required on save (validated in registry)
 - [x] Prefix: unique `code` validation (validated in registry)
-- [x] Sale channel: exclusive default switch via `statusSwitchField: is_default`
+- [x] Sale channel: multiple defaults allowed (`statusSwitchExclusive: false` on `is_default`)
 - [x] Staff role seed has no `setting.*.view` permissions (Settings group hidden for `staff`/`staff`)
 - [x] VAT page: single row, no Add/Export/Delete; edit modal works
 - [x] Other setting pages: no Export/Import header buttons

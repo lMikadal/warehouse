@@ -27,6 +27,14 @@
     <script src="../js/i18n/i18n.js"></script>
     <script src="../js/seed/website_language.js"></script>
     <script src="../js/seed/_admin_shared.js"></script>
+    <script src="../js/seed/website_country.js"></script>
+    <script src="../js/seed/website_country_language.js"></script>
+    <script src="../js/seed/website_province.js"></script>
+    <script src="../js/seed/website_province_language.js"></script>
+    <script src="../js/seed/website_district.js"></script>
+    <script src="../js/seed/website_district_language.js"></script>
+    <script src="../js/seed/website_sub_district.js"></script>
+    <script src="../js/seed/website_sub_district_language.js"></script>
     <script src="../js/seed/admin_menu.js"></script>
     <script src="../js/seed/admin_menu_language.js"></script>
     <script src="../js/seed/admin_permission.js"></script>
@@ -35,27 +43,59 @@
     <script src="../js/seed/admin_role_language.js"></script>
     <script src="../js/seed/admin_role_permission.js"></script>
     <script src="../js/seed/admin_user.js"></script>
+    <script src="../js/seed/setting_bank.js"></script>
+    <script src="../js/seed/setting_bank_language.js"></script>
+    <script src="../js/seed/setting_vat.js"></script>
+    <script src="../js/seed/setting_payment_method.js"></script>
+    <script src="../js/seed/setting_payment_method_language.js"></script>
+    <script src="../js/seed/setting_sale_channel.js"></script>
+    <script src="../js/seed/setting_sale_channel_language.js"></script>
+    <script src="../js/seed/setting_code.js"></script>
+    <script src="../js/seed/setting_claim_reason.js"></script>
+    <script src="../js/seed/setting_claim_reason_language.js"></script>
+    <script src="../js/seed/setting_prefix.js"></script>
+    <script src="../js/seed/setting_prefix_language.js"></script>
+    <script src="../js/seed/supplier_user.js"></script>
+    <script src="../js/seed/supplier_information.js"></script>
+    <script src="../js/seed/supplier_contact.js"></script>
+    <script src="../js/seed/supplier_bank.js"></script>
+    <script src="../js/seed/location_location.js"></script>
+    <script src="../js/seed/location_location_language.js"></script>
+    <script src="../js/seed/warehouse_list.js"></script>
+    <script src="../js/seed/warehouse_list_language.js"></script>
+    <script src="../js/seed/warehouse_condition.js"></script>
+    <script src="../js/seed/product_attribute.js"></script>
+    <script src="../js/seed/product_attribute_language.js"></script>
+    <script src="../js/seed/product_list.js"></script>
+    <script src="../js/seed/product_list_language.js"></script>
+    <script src="../js/seed/product_list_car.js"></script>
+    <script src="../js/seed/product_item.js"></script>
+    <script src="../js/seed/product_item_language.js"></script>
+    <script src="../js/seed/product_item_warehouse.js"></script>
+    <script src="../js/seed/purchase_order.js"></script>
+    <script src="../js/seed/purchase_order_item.js"></script>
+    <script src="../js/seed/order_order.js"></script>
+    <script src="../js/seed/order_order_item.js"></script>
+    <script src="../js/seed/product_item_stock.js"></script>
+    <script src="../js/seed/product_item_price.js"></script>
+    <script src="../js/seed/product_item_supplier.js"></script>
     <script src="../js/seed/index.js"></script>
     <script src="../js/store.js"></script>
+    <script src="../js/realtime.js"></script>
+    <script src="../js/nav.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/permissions.js"></script>
     <script src="../js/components/toast.js"></script>
+    <script src="../js/components/modal.js"></script>
     <script src="../js/components/sidebar.js"></script>
     <script src="../js/components/layout.js"></script>
-    <script>
-      (function () {
-        global.store.init();
-        global.i18n.init();
-        if (!global.auth.requireAuth("login.html")) return;
-        if (!global.permissions.guardPage("product", "product_list", "login.html")) return;
-        global.layout.mount({
-          pageTitle: global.i18n.t("page.productListForm"),
-          contentHtml:
-            '<div class="crud-page"><p class="crud-page-header__desc" data-i18n="page.comingSoon"></p>' +
-            '<p><a class="btn" href="product-list.html" data-i18n="crud.back"></a></p></div>',
-        });
-        global.i18n.init();
-      })();
-    </script>
+    <script src="../js/components/crud-list.js"></script>
+    <script src="../js/warehouse-lib.js"></script>
+    <script src="../js/components/category-cascade-picker.js"></script>
+    <script src="../js/components/warehouse-bin-cascade-picker.js"></script>
+    <script src="../js/components/chip-multi-select.js"></script>
+    <script src="../js/pages/product-list-form.js"></script>
+    <script src="../js/components/dev-bar.js"></script>
+    <script>productListFormPage.boot();</script>
   </body>
 </html>
