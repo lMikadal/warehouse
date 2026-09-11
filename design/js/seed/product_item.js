@@ -10,6 +10,7 @@
         qrcode: "P-ITEM-001-A",
         price: 450,
         price_wholesale: 400,
+        amount_wholesale_price: 1,
         vat_rate: 7,
         promotion: "ส่วนลด 10% เดือนมีนาคม (ตัวอย่าง)",
         unit: "piece",

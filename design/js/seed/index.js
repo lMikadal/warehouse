@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "member-user-orders-3";
+  global.SEED_VERSION = "sales-order-family-split-1";
 
   var tables = {};
 
@@ -148,9 +148,13 @@
   var orderTables = [
     "order_order",
     "order_order_item",
+    "order_order_item_warehouse",
     "order_payment",
     "order_payment_item",
+    "order_payment_method",
     "order_shipping",
+    "order_claim",
+    "order_claim_item",
   ];
   orderTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();

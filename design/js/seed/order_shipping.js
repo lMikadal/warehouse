@@ -1,4 +1,5 @@
 (function (global) {
+  /** store | parking | delivery for each seeded order that has a document */
   global.SEED_ORDER_SHIPPING = [
     { order_order_id: 1, type: "store", received_at: "2026-01-05T14:00:00.000Z" },
     { order_order_id: 2, type: "delivery", received_at: "2026-01-07T09:00:00.000Z" },
@@ -10,5 +11,18 @@
     { order_order_id: 8, type: "store", received_at: "2024-09-05T13:00:00.000Z" },
     { order_order_id: 9, type: "store", received_at: null },
     { order_order_id: 10, type: "delivery", received_at: null },
+    { order_order_id: 11, type: "store", received_at: "2026-03-01T18:00:00.000Z" },
+    { order_order_id: 12, type: "parking", received_at: "2026-03-02T12:00:00.000Z" },
+    { order_order_id: 13, type: "delivery", received_at: "2026-03-03T15:00:00.000Z" },
+    { order_order_id: 14, type: "store", received_at: null },
+    { order_order_id: 15, type: "delivery", received_at: "2026-03-05T09:00:00.000Z" },
+    { order_order_id: 16, type: "store", received_at: null },
+    { order_order_id: 17, type: "parking", received_at: "2026-03-07T11:00:00.000Z" },
+    { order_order_id: 20, type: "store", received_at: "2026-03-10T16:00:00.000Z" },
+    { order_order_id: 21, type: "store", received_at: null },
+    { order_order_id: 22, type: "delivery", received_at: "2026-03-10T17:00:00.000Z" },
+    { order_order_id: 23, type: "store", received_at: null },
+    { order_order_id: 24, type: "parking", received_at: null },
+    { order_order_id: 25, type: "delivery", received_at: "2026-03-12T14:00:00.000Z" },
   ];
 })(window);

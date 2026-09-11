@@ -197,6 +197,16 @@
     return pathname.replace(/-form\.html$/i, ".html");
   }
 
+  /** Map sub-page pathname to sidebar menu list path (form suffix, payment screen, …). */
+  function menuListPathForCurrentPage(pathname) {
+    var formList = listPathFromFormPath(pathname);
+    if (formList) return formList;
+    if (/order-order-payment\.html$/i.test(pathname)) {
+      return pathname.replace(/-payment\.html$/i, ".html");
+    }
+    return null;
+  }
+
   function pathMatches(current, target) {
     return current.endsWith(target) || current === target;
   }
@@ -223,7 +233,7 @@
     if (curLocId && tarLocId) return curLocId === tarLocId;
 
     if (pathMatches(current, target)) return true;
-    var listPath = listPathFromFormPath(current);
+    var listPath = menuListPathForCurrentPage(current);
     return listPath ? pathMatches(listPath, target) : false;
   }
 
@@ -573,13 +583,14 @@
   function findMenuByCurrentPath() {
     var current = normalizePath(window.location.pathname);
     if (!current) return null;
+    var lookup = menuListPathForCurrentPage(current) || current;
     return (
       global.store.getAll("admin_menu").find(function (m) {
         if (m.deleted_at != null || !m.is_active || !m.path || m.path === "#" || m.is_dialog) {
           return false;
         }
         var target = normalizePath(m.path);
-        return target && (current.endsWith(target) || current === target);
+        return target && (lookup.endsWith(target) || lookup === target);
       }) || null
     );
   }

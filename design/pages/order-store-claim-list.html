@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warehouse — order-store-claim-list</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script>
+      (function () {
+        var key = "warehouse-design-theme";
+        var saved = localStorage.getItem(key);
+        var theme =
+          saved === "light" || saved === "dark"
+            ? saved
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body data-perm-module="order" data-perm-type="order_store_claim_list">
+    <div id="app-shell"></div>
+    <script src="../js/pages/order-html-shell.js"></script>
+    <script>
+      orderPageWriteScripts(["../js/components/crud-list.js", "../js/pages/order-store-claim-list.js"]);
+    </script>
+    <script>orderStoreClaimListPage.boot();</script>
+  </body>
+</html>

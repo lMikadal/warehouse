@@ -1,6 +1,6 @@
 -- source: v1 admin_users + v2 v2_admin_users (UUID→BIGSERIAL)
 --   - restored: failed_login_attempts, locked_until (lockout; v2 removed these — security regression)
---   - removed:  password_credit_hash / password_discount_hash (those are approval flows, not passwords)
+--   - password_credit_hash / password_discount_hash: approval PINs (v2 verify-superadmin / verify-discount)
 --   - removed:  is_superadmin → type enum (org hierarchy; admin_role_id still handles fine-grained permissions)
 --   - v2 status BOOLEAN is_active → v1-style enum (supports suspended/locked states)
 CREATE TYPE admin_user_status AS ENUM ('active', 'inactive', 'suspended', 'locked');
@@ -11,6 +11,8 @@ CREATE TABLE admin_user (
     username               VARCHAR(100)      NOT NULL,                 -- login name
     email                  VARCHAR(255),                               -- optional contact email
     password_hash          VARCHAR(255)      NOT NULL,                 -- bcrypt/argon hash
+    password_credit_hash   VARCHAR(255),                               -- credit approval PIN hash (superadmin)
+    password_discount_hash VARCHAR(255),                               -- special discount approval PIN hash
     status                 admin_user_status NOT NULL DEFAULT 'active', -- account lifecycle
     type                   admin_user_type   NOT NULL DEFAULT 'staff', -- org hierarchy tier
     admin_role_id          BIGINT            REFERENCES admin_role(id) ON DELETE SET NULL, -- RBAC role
