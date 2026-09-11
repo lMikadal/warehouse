@@ -32,7 +32,7 @@ CRUD mockup pages for sidebar **สมาชิก → ตั้งค่า** �
 ## Out of scope
 
 - Dedicated `member_setting_relation` menu
-- Member list (`member_user`) page
+- Member list (`member_user`) page — see [`phase-design-member-user.md`](phase-design-member-user.md)
 - Real API / backend integration
 
 ## Related

@@ -323,7 +323,7 @@
       id: 36,
       parent_id: 33,
       module: "member_user",
-      path: "#",
+      path: "pages/member-user.html",
       sort_order: 300,
       labels: { th: "รายชื่อ", en: "List" },
     },

@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "member-tier-1";
+  global.SEED_VERSION = "member-user-orders-3";
 
   var tables = {};
 
@@ -83,6 +83,23 @@
     if (global[key]) tables[name] = global[key];
   });
 
+  if (global.SEED_WEBSITE_FILE) tables.website_file = global.SEED_WEBSITE_FILE;
+
+  var memberUserTables = [
+    "member_user",
+    "member_address",
+    "member_user_setting",
+    "member_user_owner",
+    "member_file",
+    "member_discount",
+    "member_history",
+    "member_history_language",
+  ];
+  memberUserTables.forEach(function (name) {
+    var key = "SEED_" + name.toUpperCase();
+    if (global[key]) tables[name] = global[key];
+  });
+
   var supplierTables = [
     "supplier_user",
     "supplier_information",
@@ -128,7 +145,13 @@
     if (global[key]) tables[name] = global[key];
   });
 
-  var orderTables = ["order_order", "order_order_item"];
+  var orderTables = [
+    "order_order",
+    "order_order_item",
+    "order_payment",
+    "order_payment_item",
+    "order_shipping",
+  ];
   orderTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();
     if (global[key]) tables[name] = global[key];
