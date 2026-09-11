@@ -1476,6 +1476,47 @@ button.crud-icon-btn:has(img[src*="trash"]) img {
   filter: invert(27%) sepia(94%) saturate(2577%) hue-rotate(346deg) brightness(92%) contrast(93%);
 }
 
+.crud-icon-btn--success-outline {
+  border-color: #16a34a;
+}
+
+.crud-icon-btn--success-outline:hover {
+  border-color: #15803d;
+}
+
+.crud-icon-btn--success-outline img {
+  filter: invert(48%) sepia(61%) saturate(638%) hue-rotate(93deg) brightness(92%) contrast(89%);
+}
+
+.crud-icon-btn--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.crud-icon-btn--primary:hover {
+  border-color: var(--color-primary);
+  filter: brightness(1.05);
+}
+
+.crud-icon-btn--primary img {
+  filter: brightness(0) invert(1);
+}
+
+.crud-icon-btn.is-inert {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.crud-icon-btn.is-inert:hover {
+  border-color: var(--color-muted);
+}
+
+[data-theme="dark"] .crud-icon-btn--success-outline img {
+  filter: invert(58%) sepia(45%) saturate(520%) hue-rotate(93deg) brightness(95%) contrast(89%);
+}
+
 .crud-table__expand {
   display: inline-flex;
   align-items: center;
@@ -5277,8 +5318,12 @@ select.product-list-form__hist-filter-control {
   min-width: min(100%, 18rem);
 }
 
-.wh-expand-col {
+.wh-expand-col,
+.wh-expand-cell {
   width: 2.5rem;
+  max-width: 2.5rem;
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 
 .wh-name-cell {

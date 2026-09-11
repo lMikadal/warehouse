@@ -10,7 +10,6 @@
     page: 1,
     pageSize: 10,
     expanded: {},
-    selected: {},
   };
 
   function t(k, params) {
@@ -81,6 +80,13 @@
   function render() {
     var root = document.getElementById("order-order-root");
     if (!root) return;
+    var activeEl = document.activeElement;
+    var restoreSearchFocus =
+      activeEl &&
+      activeEl.getAttribute &&
+      activeEl.getAttribute("data-role") === "search" &&
+      root.contains(activeEl);
+    var restoreSearchCaret = restoreSearchFocus ? activeEl.selectionStart : null;
     var allRows = filtered();
     var meta = lib.paginateRows(allRows, state.page, state.pageSize);
     state.page = meta.page;
@@ -98,18 +104,9 @@
           var tot = lib.orderTotals(r.id);
           var expanded = !!state.expanded[r.id];
           var chevron = expanded ? "chevron-down.svg" : "chevron-right.svg";
-          var chk =
-            '<input type="checkbox" data-pick="' +
-            r.id +
-            '"' +
-            (state.selected[r.id] ? " checked" : "") +
-            (can("update") ? "" : " disabled") +
-            "/>";
           return (
             "<tr>" +
-            '<td class="data-table__col-center">' +
-            chk +
-            '</td><td class="wh-expand-cell">' +
+            '<td class="wh-expand-cell">' +
             (pays.length > 1
               ? '<button type="button" class="btn btn--icon wh-expand" data-expand="' +
                 r.id +
@@ -148,10 +145,18 @@
             "</div></td></tr>"
           );
         }
+        var childOrder = global.store.getById("order_order", r.orderId);
+        var payTot = lib.paymentTotals(r.id);
         return (
-          "<tr class='crud-table__child'><td></td><td></td><td><span class='crud-table__indent'></span>" +
+          "<tr class='crud-table__child'><td class='wh-expand-cell'></td><td class='data-table__col-center'>" +
           lib.escapeHtml(lib.formatOrderSku(r.sku || "")) +
-          '</td><td>—</td><td class="data-table__col-numeric">—</td><td class="data-table__col-numeric">' +
+          "</td><td>" +
+          lib.escapeHtml(childOrder ? lib.memberDisplayName(childOrder) : "—") +
+          '</td><td class="data-table__col-numeric">' +
+          payTot.item_count +
+          " / " +
+          payTot.piece_count +
+          '</td><td class="data-table__col-numeric">' +
           lib.formatMoney(r.total_price) +
           '</td><td class="data-table__col-center"></td><td>—</td><td>' +
           lib.escapeHtml(lib.formatOrderSku(r.sku || "")) +
@@ -179,13 +184,7 @@
       '<div class="order-store-status-filters">' +
       statusFilterHtml() +
       "</div></div>" +
-      (can("update")
-        ? '<div class="crud-toolbar"><button type="button" class="btn btn--primary" data-start-pick>' +
-          t("orderOrder.startPicking") +
-          "</button></div>"
-        : "") +
       '<div class="crud-table-wrap"><div class="crud-table-wrap__body"><table class="data-table crud-table"><thead><tr>' +
-      '<th class="data-table__col-center"></th>' +
       '<th class="wh-expand-col" aria-hidden="true"></th>' +
       '<th class="data-table__col-center">' +
       t("orderOrder.colSku") +
@@ -201,8 +200,10 @@
       t("orderOrder.colVerified") +
       "</th><th>" +
       t("orderOrder.colDocNo") +
-      '</th><th class="data-table__actions-col"></th></tr></thead><tbody>' +
-      (body || "<tr><td colspan=10>—</td></tr>") +
+      '</th><th class="data-table__actions-col" data-i18n="orderForm.colManage">' +
+      t("orderForm.colManage") +
+      "</th></tr></thead><tbody>" +
+      (body || "<tr><td colspan=9>—</td></tr>") +
       "</tbody></table></div></div>" +
       '<nav class="crud-pagination" id="order-order-pagination" aria-label="Pagination"></nav></div>';
 
@@ -220,24 +221,62 @@
     }
     if (global.i18n) global.i18n.init();
     bind(root);
+    if (restoreSearchFocus) {
+      var searchRestore = root.querySelector("[data-role=search]");
+      if (searchRestore) {
+        searchRestore.focus();
+        var caretPos =
+          restoreSearchCaret != null ? restoreSearchCaret : searchRestore.value.length;
+        try {
+          searchRestore.setSelectionRange(caretPos, caretPos);
+        } catch (ignore) {}
+      }
+    }
+  }
+
+  function fulfillStatusForRow(r, orderIdForChild) {
+    if (r.kind === "parent") return r.fulfill_status;
+    var order = global.store.getById("order_order", orderIdForChild);
+    return order ? order.fulfill_status : "";
   }
 
   function actionsHtml(r, orderIdForChild) {
     var oid = r.kind === "child" ? orderIdForChild : r.id;
     var payId = r.kind === "child" ? r.id : null;
-    var href =
+    var viewHref =
       global.nav.resolve("pages/order-order-payment.html?orderId=" + oid + "&mode=view") +
       (payId ? "&paymentId=" + payId : "");
     var viewLabel = lib.escapeHtml(t("action.view"));
-    return (
-      '<a class="crud-icon-btn" href="' +
-      lib.escapeHtml(href) +
+    var pickLabel = lib.escapeHtml(t("orderOrder.startPicking"));
+    var fulfill = fulfillStatusForRow(r, orderIdForChild);
+    var pickActive =
+      can("update") && (fulfill === "pending" || fulfill === "in_progress");
+    var pickHref = global.nav.resolve("pages/order-order-form.html?ids=" + oid);
+    var html =
+      '<a class="crud-icon-btn crud-icon-btn--success-outline" href="' +
+      lib.escapeHtml(viewHref) +
       '" aria-label="' +
       viewLabel +
       '" title="' +
       viewLabel +
-      '"><img src="../assets/icons/file-text.svg" width="18" height="18" alt=""/></a>'
-    );
+      '"><img src="../assets/icons/file-text.svg" width="18" height="18" alt=""/></a>';
+    if (!can("update")) return html;
+    if (pickActive) {
+      html +=
+        '<a class="crud-icon-btn crud-icon-btn--primary" href="' +
+        lib.escapeHtml(pickHref) +
+        '" aria-label="' +
+        pickLabel +
+        '" title="' +
+        pickLabel +
+        '"><img src="../assets/icons/pencil.svg" width="18" height="18" alt=""/></a>';
+    } else {
+      html +=
+        '<span class="crud-icon-btn is-inert" aria-disabled="true" title="' +
+        pickLabel +
+        '"><img src="../assets/icons/pencil.svg" width="18" height="18" alt=""/></span>';
+    }
+    return html;
   }
 
   function bind(root) {
@@ -270,24 +309,6 @@
         render();
       });
     });
-    root.querySelectorAll("[data-pick]").forEach(function (cb) {
-      cb.addEventListener("change", function () {
-        var id = Number(cb.getAttribute("data-pick"));
-        state.selected[id] = cb.checked;
-      });
-    });
-    var startPick = root.querySelector("[data-start-pick]");
-    if (startPick) {
-      startPick.addEventListener("click", function () {
-        var ids = Object.keys(state.selected).filter(function (k) {
-          return state.selected[k];
-        });
-        if (!ids.length) return;
-        global.location.href = global.nav.resolve(
-          "pages/order-order-form.html?ids=" + ids.join(",")
-        );
-      });
-    }
   }
 
   function boot() {

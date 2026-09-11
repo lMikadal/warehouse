@@ -150,6 +150,18 @@
     return { item_count: count, total_price: cart.roundMoney2(total), piece_count: pieces };
   }
 
+  function paymentTotals(paymentId) {
+    var items = paymentItems(paymentId);
+    var count = items.length;
+    var total = items.reduce(function (s, i) {
+      return s + (Number(i.total_price) || 0);
+    }, 0);
+    var pieces = items.reduce(function (s, i) {
+      return s + (Number(i.amount) || 0);
+    }, 0);
+    return { item_count: count, total_price: cart.roundMoney2(total), piece_count: pieces };
+  }
+
   function aggregateFamilyTotals(rootId) {
     var members = familyMembers(rootId);
     var item_count = 0;
@@ -636,6 +648,7 @@
     paymentsForOrder: paymentsForOrder,
     paymentItems: paymentItems,
     orderTotals: orderTotals,
+    paymentTotals: paymentTotals,
     aggregateFamilyTotals: aggregateFamilyTotals,
     statusBadgeHtml: statusBadgeHtml,
     v2SaleStatus: v2SaleStatus,
