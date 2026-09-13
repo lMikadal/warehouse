@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
+import { ClipboardList, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 const meta = {
+  title: "UI/Button",
   component: Button,
   tags: ["autodocs"],
   argTypes: {
@@ -45,4 +47,39 @@ export const Destructive: Story = {
     variant: "destructive",
     children: "Destructive",
   },
+};
+
+export const PrimaryWithIcon: Story = {
+  render: () => (
+    <Button>
+      <Plus />
+      Add warehouse
+    </Button>
+  ),
+};
+
+export const IconGhost: Story = {
+  render: () => (
+    <div className="flex gap-2">
+      <Button variant="ghost" size="icon" aria-label="View">
+        <ClipboardList className="text-current" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-warehouse-action-add hover:text-warehouse-action-add"
+        aria-label="Add"
+      >
+        <Plus className="text-current" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-warehouse-action-delete hover:text-warehouse-action-delete"
+        aria-label="Delete"
+      >
+        <Trash2 className="text-current" />
+      </Button>
+    </div>
+  ),
 };

@@ -2,6 +2,8 @@ import type { Preview } from "@storybook/nextjs";
 
 import { ThemeProvider } from "@/components/theme-provider";
 
+import { withIntl } from "./decorators/intl";
+
 import "../app/globals.css";
 
 const preview: Preview = {
@@ -16,7 +18,23 @@ const preview: Preview = {
       },
     },
   },
+  globalTypes: {
+    locale: {
+      description: "Story locale (next-intl)",
+      toolbar: {
+        icon: "globe",
+        items: [
+          { value: "th", title: "ไทย" },
+          { value: "en", title: "EN" },
+        ],
+      },
+    },
+  },
+  initialGlobals: {
+    locale: "th",
+  },
   decorators: [
+    withIntl,
     (Story) => (
       <ThemeProvider
         attribute="class"

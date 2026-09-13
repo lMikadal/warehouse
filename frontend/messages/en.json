@@ -1,27 +1,72 @@
 {
+  "action": {
+    "view": "View"
+  },
   "app": {
-    "name": "Warehouse",
-    "frontendTitle": "Warehouse frontend"
+    "frontendTitle": "Warehouse frontend",
+    "name": "Warehouse"
   },
-  "lang": {
-    "toggle": "Language",
-    "th": "ไทย",
-    "en": "EN"
+  "col": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "status": "Status"
   },
-  "theme": {
-    "label": "Theme",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System"
-  },
-  "home": {
-    "heading": "Stack smoke test",
-    "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl"
+  "crud": {
+    "actions": "Actions",
+    "delete": "Delete",
+    "edit": "Edit",
+    "filterAll": "All",
+    "next": "Next",
+    "pageOf": "Page {page} of {total}",
+    "prev": "Previous",
+    "rowsPerPage": "Rows per page",
+    "showItemsPrefix": "Show",
+    "showItemsSuffix": "items per page",
+    "sortAsc": "Sort {field} ascending",
+    "sortDesc": "Sort {field} descending",
+    "sortNone": "Sort by {field}",
+    "statusFilter": "Status filter"
   },
   "demo": {
-    "primary": "Primary",
-    "secondary": "Secondary",
+    "destructive": "Destructive",
     "outline": "Outline",
-    "destructive": "Destructive"
+    "primary": "Primary",
+    "secondary": "Secondary"
+  },
+  "error": {
+    "required": "This field is required."
+  },
+  "form": {
+    "placeholder": {
+      "input": "Please enter {label}",
+      "select": "Please select {label}"
+    }
+  },
+  "home": {
+    "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl",
+    "heading": "Stack smoke test"
+  },
+  "lang": {
+    "en": "EN",
+    "th": "ไทย",
+    "toggle": "Language"
+  },
+  "search": {
+    "placeholder": "Search"
+  },
+  "story": {
+    "breadcrumbList": "List",
+    "breadcrumbWarehouse": "Warehouse",
+    "sampleField": "Warehouse name",
+    "sampleName": "ATW"
+  },
+  "theme": {
+    "dark": "Dark",
+    "label": "Theme",
+    "light": "Light",
+    "system": "System"
+  },
+  "warehouse": {
+    "addZone": "Add zone"
   }
 }

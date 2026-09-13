@@ -1,0 +1,18 @@
+---
+description: Do not revert the user's intentional edits; ask before restoring prior behavior.
+alwaysApply: true
+---
+
+# Respect user edits
+
+When the user has changed code, config, copy, layout, or styling in the repo (including during an ongoing task):
+
+1. **Do not revert** their changes to “match the plan,” a prior diff, design parity, or what you assume was the original intent — unless that change **breaks behavior** (build/lint failures, broken UX, security, incorrect API usage, or violations of required project rules such as forms/tables/i18n).
+
+2. **Prefer adapting forward** — implement the requested task on top of what is in the working tree now, not by undoing the user’s edits.
+
+3. **Ask before reverting** — if you believe restoring an earlier version is necessary (bug fix, rule compliance, merge conflict resolution), **stop and ask the user first** with a short reason. Do not silently restore old markup, removed labels, layout, tokens, or copy the user removed or altered.
+
+4. **Incidental cleanup** — do not “fix back” user tweaks while refactoring unrelated code (e.g. pagination copy they changed, borders they removed, Storybook layout). Only touch those lines when the user asks or when fixing a confirmed functional defect.
+
+5. **Plans and checklists** — completing a plan does not override this rule; if the repo differs from the plan because the user edited it, follow the repo and confirm with the user when unsure.

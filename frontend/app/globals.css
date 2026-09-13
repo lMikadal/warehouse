@@ -24,6 +24,9 @@
   --color-status-inactive-fg: rgb(100 116 139);
   --color-action-add: #16a34a;
   --color-action-delete: #dc2626;
+  /* design .crud-switch input:checked track */
+  --color-switch-checked: rgb(34 197 94);
+  --color-switch-thumb-dark: #f8fafc;
   --color-row-expanded: color-mix(
     in srgb,
     var(--color-primary) 4%,
@@ -73,6 +76,8 @@
     var(--color-background)
   );
   --color-nav-active-bg: rgb(59 130 246 / 0.16);
+  --color-switch-checked: rgb(34 197 94);
+  --color-switch-thumb-dark: #f8fafc;
   --shadow-zone-card: 0 1px 2px rgb(0 0 0 / 0.25);
 }
 
@@ -231,6 +236,8 @@
   --color-warehouse-success-bg: var(--color-success-bg);
   --color-warehouse-success-fg: var(--color-success-fg);
   --color-warehouse-success-border: var(--color-success-border);
+  --color-warehouse-switch-checked: var(--color-switch-checked);
+  --color-warehouse-switch-thumb-dark: var(--color-switch-thumb-dark);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);

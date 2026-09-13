@@ -15,12 +15,33 @@ Production UI is built **top-down** through fixed layers. Agent rule: [`.cursor/
 | Layer | Location | Notes |
 |-------|----------|--------|
 | Design tokens | `app/globals.css` | Color, spacing, radius, typography; no raw hex in components |
-| shadcn / base UI | `components/ui/` | Button, Input, Select, Dialog, Table (+ Storybook) |
-| Molecules / organisms | `components/molecules/`, `components/organisms/` | Composed UI; pages import these, not ad-hoc `ui/` stacks |
+| shadcn / base UI | `components/ui/` | Button, **ButtonIcon** (`button-icon.tsx` — square icon-only, tones add/delete), Input, Select, Switch, Badge, Label, Dialog, Table (+ Storybook under `UI/*`) |
+| Molecules | `components/molecules/` | CRUD/search/pagination/table chrome from warehouse-list (see below) |
+| Organisms | `components/organisms/` | **Not started** — Admin shell + list tables compose molecules in a later phase |
 | Design system | Cursor rules + Storybook + this doc | forms, tables, dates, icons |
 | Warehouse pages | `app/[locale]/…` | Inventory, orders, products, users, … |
 
-Handoff from `design/` mockups is unchanged; after tokens and primitives exist, extract repeated patterns into molecules/organisms before route implementation.
+Handoff from `design/` mockups is unchanged; warehouse-list patterns are extracted into **molecules** first; **organisms** and `app/[locale]/…` routes come next.
+
+### Molecules (warehouse-list baseline)
+
+| Component | Role |
+|-----------|------|
+| `CrudSearchField` | Toolbar search (`search.placeholder`) |
+| `StatusFilterGroup` | All / active / inactive segmented filter |
+| `CrudPaginationBar` | Page size 10/25/50/100 + ellipsis pages ([`lib/crud-pagination.ts`](../../frontend/lib/crud-pagination.ts)) |
+| `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
+| `StatusBadge` | Read-only active/inactive pill |
+| `TableIconActions` | View / edit / add (green) / delete (red) icon row |
+| `ExpandRowToggle` | Chevron expand control |
+| `EntityNameCell` | Warehouse icon + name + optional inline edit |
+| `FormField` | Label, required asterisk, placeholder pattern, error slot |
+| `BreadcrumbNav` | Segments via `@/i18n/navigation` `Link` |
+| `CrudPageHeader` | Title + description + actions slot |
+
+Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
+
+Column header sort (data columns): `TableSortHead` + [`lib/table-sort.ts`](../../frontend/lib/table-sort.ts) (`cycleTableSort`, none → asc → desc → none). Pass i18n `sortLabel` from `crud.sortNone` / `sortAsc` / `sortDesc`. Non-sortable columns (grip, actions) stay plain `TableHead`.
 
 ## Design tokens
 
@@ -54,6 +75,7 @@ Do not use shadcn `bg-muted` when the design intent is a **border** — use `bor
 | `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*` |
 | `--color-action-add` | `#16a34a` — crud-add / green actions |
 | `--color-action-delete` | `#dc2626` — crud-delete |
+| `--color-switch-checked` | `rgb(34 197 94)` — shadcn `Switch` / design `.crud-switch` track when on |
 | `--color-row-expanded` | Expanded warehouse row background |
 | `--color-nav-active-bg` | Sidebar active item |
 | `--radius-table-wrap` | `0.75rem` — table + pagination chrome |
@@ -149,9 +171,10 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 
 ## Storybook
 
-- Global styles: `app/globals.css`; `ThemeProvider` in `.storybook/preview.tsx`
+- Global styles: `app/globals.css`; `ThemeProvider` + **`withIntl`** ([`.storybook/decorators/intl.tsx`](../../frontend/.storybook/decorators/intl.tsx)) in `.storybook/preview.tsx` — toolbar **locale** `th` / `en`
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
-- `stories/design-tokens.stories.tsx` — core palette + warehouse-list patterns
+- Stories: `components/ui/*.stories.tsx` → **UI/**; `components/molecules/*.stories.tsx` → **Molecules/**; `stories/design-tokens.stories.tsx` → **Design system/Tokens**
+- No **Organisms/** or **Pages/** stories until organism phase
 
 ### Component workflow (team agreement)
 

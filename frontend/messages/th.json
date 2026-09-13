@@ -1,27 +1,72 @@
 {
+  "action": {
+    "view": "ดู"
+  },
   "app": {
-    "name": "Warehouse",
-    "frontendTitle": "Warehouse frontend"
+    "frontendTitle": "Warehouse frontend",
+    "name": "Warehouse"
   },
-  "lang": {
-    "toggle": "ภาษา",
-    "th": "ไทย",
-    "en": "EN"
+  "col": {
+    "active": "ใช้งาน",
+    "inactive": "ไม่ใช้งาน",
+    "status": "สถานะ"
   },
-  "theme": {
-    "label": "ธีม",
-    "light": "สว่าง",
-    "dark": "มืด",
-    "system": "ระบบ"
-  },
-  "home": {
-    "heading": "ทดสอบสแต็ก",
-    "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl"
+  "crud": {
+    "actions": "การดำเนินการ",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "filterAll": "ทั้งหมด",
+    "next": "ถัดไป",
+    "pageOf": "หน้า {page} / {total}",
+    "prev": "ก่อนหน้า",
+    "rowsPerPage": "จำนวนต่อหน้า",
+    "showItemsPrefix": "แสดง",
+    "showItemsSuffix": "รายการต่อหน้า",
+    "sortAsc": "เรียง {field} จากน้อยไปมาก",
+    "sortDesc": "เรียง {field} จากมากไปน้อย",
+    "sortNone": "เรียงตาม {field}",
+    "statusFilter": "กรองสถานะ"
   },
   "demo": {
-    "primary": "หลัก",
-    "secondary": "รอง",
+    "destructive": "ลบ",
     "outline": "ขอบ",
-    "destructive": "ลบ"
+    "primary": "หลัก",
+    "secondary": "รอง"
+  },
+  "error": {
+    "required": "กรุณากรอกข้อมูลในช่องนี้"
+  },
+  "form": {
+    "placeholder": {
+      "input": "กรุณากรอก{label}",
+      "select": "กรุณาเลือก{label}"
+    }
+  },
+  "home": {
+    "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl",
+    "heading": "ทดสอบสแต็ก"
+  },
+  "lang": {
+    "en": "EN",
+    "th": "ไทย",
+    "toggle": "ภาษา"
+  },
+  "search": {
+    "placeholder": "ค้นหา"
+  },
+  "story": {
+    "breadcrumbList": "รายการ",
+    "breadcrumbWarehouse": "คลังสินค้า",
+    "sampleField": "ชื่อคลังสินค้า",
+    "sampleName": "ATW"
+  },
+  "theme": {
+    "dark": "มืด",
+    "label": "ธีม",
+    "light": "สว่าง",
+    "system": "ระบบ"
+  },
+  "warehouse": {
+    "addZone": "เพิ่มโซน"
   }
 }
