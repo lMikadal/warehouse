@@ -19,7 +19,7 @@ endef
 
 .PHONY: help run \
 	design-schema-check design-serve \
-	frontend-bootstrap frontend-dev frontend-build frontend-lint frontend-shadcn-add \
+	frontend-bootstrap frontend-install frontend-dev frontend-build frontend-lint frontend-shadcn-add \
 	frontend-storybook frontend-storybook-build \
 	backend-dev backend-run backend-test \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
@@ -50,10 +50,15 @@ frontend-bootstrap:
 		bunx shadcn@latest init -d -y && \
 		bun add next-themes next-intl lucide-react
 
+## frontend-install: Install/sync frontend deps (run after pull or package.json change)
+frontend-install:
+	$(call require_dir,$(FRONTEND_DIR))
+	cd $(FRONTEND_DIR) && bun install --frozen-lockfile
+
 ## frontend-dev: Next.js dev server (bun dev)
 frontend-dev:
 	$(call require_dir,$(FRONTEND_DIR))
-	cd $(FRONTEND_DIR) && bun dev
+	cd $(FRONTEND_DIR) && bun install --frozen-lockfile && bun dev
 
 ## frontend-build: Production build (bun run build)
 frontend-build:

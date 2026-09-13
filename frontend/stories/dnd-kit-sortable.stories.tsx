@@ -2,7 +2,7 @@
 
 import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { move } from "@dnd-kit/helpers";
+import { reorderIdsFromSortableEvent } from "@/lib/crud-list-rows";
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { GripVertical } from "lucide-react";
 import { useState } from "react";
@@ -48,7 +48,7 @@ function SortableListDemo() {
     <DragDropProvider
       onDragEnd={(event) => {
         if (event.canceled) return;
-        setItems((prev) => move(prev, event));
+        setItems((prev) => reorderIdsFromSortableEvent(prev, event) ?? prev);
       }}
     >
       <div className="flex max-w-xs flex-col gap-2">

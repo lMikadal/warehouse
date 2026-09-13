@@ -48,7 +48,7 @@ export function StatusFilterGroup({
             key={opt.value || "all"}
             type="button"
             variant="ghost"
-            size="sm"
+            size="lg"
             aria-pressed={active}
             className={cn(
               "rounded-none border-0 px-3 shadow-none",

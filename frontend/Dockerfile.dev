@@ -10,4 +10,5 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["bun", "run", "dev", "--", "-H", "0.0.0.0"]
+# sh -c: bind-mount over /app must not rely on +x on docker-entrypoint.dev.sh
+CMD ["/bin/sh", "-c", "bun install --frozen-lockfile && exec bun run dev -- -H 0.0.0.0"]

@@ -98,7 +98,6 @@ export function CrudPaginationBar({
             <ButtonIcon
               type="button"
               variant="outline"
-              size="md"
               disabled={prevDisabled}
               aria-label={t("prev")}
               onClick={() => onPageChange(page - 1)}
@@ -116,7 +115,7 @@ export function CrudPaginationBar({
                 <Button
                   type="button"
                   variant={item === page ? "default" : "ghost"}
-                  size="icon-sm"
+                  size="icon-lg"
                   className={cn(
                     "min-w-8",
                     item !== page && "text-foreground/72"
@@ -133,7 +132,6 @@ export function CrudPaginationBar({
             <ButtonIcon
               type="button"
               variant="outline"
-              size="md"
               disabled={nextDisabled}
               aria-label={t("next")}
               onClick={() => onPageChange(page + 1)}

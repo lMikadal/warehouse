@@ -1,0 +1,480 @@
+const SEED_TS = "2026-01-01T00:00:00Z";
+
+type MenuDef = {
+  id: number;
+  parent_id?: number;
+  module: string;
+  path?: string | null;
+  icon?: string | null;
+  sort_order: number;
+  is_superadmin_only?: boolean;
+  is_dialog?: boolean;
+  labels: { th: string; en: string };
+};
+
+const MENU_DEFS: MenuDef[] = [
+  {
+    id: 2,
+    module: "admin",
+    icon: "shield-user",
+    sort_order: 100,
+    is_superadmin_only: true,
+    labels: { th: "ผู้ดูแลระบบสูงสุด", en: "Super Admin" },
+  },
+  {
+    id: 3,
+    parent_id: 2,
+    module: "admin_menu",
+    path: "pages/admin-menu.html",
+    sort_order: 100,
+    is_superadmin_only: true,
+    labels: { th: "เมนู", en: "Menu" },
+  },
+  {
+    id: 4,
+    parent_id: 2,
+    module: "admin_permission",
+    path: "pages/admin-permission.html",
+    sort_order: 200,
+    is_superadmin_only: true,
+    labels: { th: "สิทธิ์การใช้งาน", en: "Permission" },
+  },
+  {
+    id: 5,
+    parent_id: 2,
+    module: "admin_language",
+    path: "pages/admin-language.html",
+    sort_order: 300,
+    is_superadmin_only: true,
+    labels: { th: "ภาษา", en: "Language" },
+  },
+  {
+    id: 6,
+    parent_id: 2,
+    module: "admin",
+    sort_order: 400,
+    is_superadmin_only: true,
+    labels: { th: "ที่อยู่", en: "Address" },
+  },
+  {
+    id: 7,
+    parent_id: 6,
+    module: "website_country",
+    path: "pages/website-country.html",
+    sort_order: 100,
+    is_superadmin_only: true,
+    labels: { th: "ประเทศ", en: "Country" },
+  },
+  {
+    id: 8,
+    parent_id: 6,
+    module: "website_province",
+    path: "pages/website-province.html",
+    sort_order: 200,
+    is_superadmin_only: true,
+    labels: { th: "จังหวัด", en: "Province" },
+  },
+  {
+    id: 9,
+    parent_id: 6,
+    module: "website_district",
+    path: "pages/website-district.html",
+    sort_order: 300,
+    is_superadmin_only: true,
+    labels: { th: "เขต / อำเภอ", en: "District" },
+  },
+  {
+    id: 10,
+    parent_id: 6,
+    module: "website_sub_district",
+    path: "pages/website-sub-district.html",
+    sort_order: 400,
+    is_superadmin_only: true,
+    labels: { th: "แขวง / ตำบล", en: "Sub District" },
+  },
+  {
+    id: 11,
+    module: "admin",
+    icon: "user-round",
+    sort_order: 200,
+    labels: { th: "ผู้ดูแลระบบ", en: "Admin" },
+  },
+  {
+    id: 12,
+    parent_id: 11,
+    module: "admin_user",
+    path: "pages/admin-user.html",
+    sort_order: 100,
+    labels: { th: "รายชื่อ", en: "List" },
+  },
+  {
+    id: 13,
+    parent_id: 11,
+    module: "admin_role",
+    path: "pages/admin-role.html",
+    sort_order: 200,
+    labels: { th: "บทบาท", en: "Role" },
+  },
+  {
+    id: 14,
+    module: "setting",
+    icon: "settings",
+    sort_order: 300,
+    labels: { th: "ตั้งค่า", en: "Setting" },
+  },
+  {
+    id: 15,
+    parent_id: 14,
+    module: "setting_bank",
+    path: "pages/setting-bank.html",
+    sort_order: 100,
+    labels: { th: "ธนาคาร", en: "Bank" },
+  },
+  {
+    id: 16,
+    parent_id: 14,
+    module: "setting_vat",
+    path: "pages/setting-vat.html",
+    sort_order: 200,
+    labels: { th: "VAT", en: "VAT" },
+  },
+  {
+    id: 17,
+    parent_id: 14,
+    module: "setting_payment_method",
+    path: "pages/setting-payment-method.html",
+    sort_order: 300,
+    labels: { th: "ช่องทางชำระ", en: "Payment" },
+  },
+  {
+    id: 18,
+    parent_id: 14,
+    module: "setting_sale_channel",
+    path: "pages/setting-sale-channel.html",
+    sort_order: 400,
+    labels: { th: "ช่องทางขาย", en: "Sale Channel" },
+  },
+  {
+    id: 19,
+    parent_id: 14,
+    module: "setting_code",
+    path: "pages/setting-code.html",
+    sort_order: 500,
+    labels: { th: "รหัส", en: "Code" },
+  },
+  {
+    id: 20,
+    parent_id: 14,
+    module: "setting_claim_reason",
+    path: "pages/setting-claim-reason.html",
+    sort_order: 600,
+    labels: { th: "เหตุผลเคลม", en: "Claim Reason" },
+  },
+  {
+    id: 21,
+    parent_id: 14,
+    module: "setting_prefix",
+    path: "pages/setting-prefix.html",
+    sort_order: 700,
+    labels: { th: "คำนำหน้า", en: "Prefix" },
+  },
+  {
+    id: 22,
+    module: "supplier",
+    path: "pages/supplier-user.html",
+    icon: "contact",
+    sort_order: 400,
+    labels: { th: "คู่ค้า", en: "Supplier" },
+  },
+  {
+    id: 23,
+    module: "location",
+    icon: "map-pin",
+    sort_order: 500,
+    labels: { th: "สถานที่", en: "Location" },
+  },
+  {
+    id: 24,
+    parent_id: 23,
+    module: "location_location",
+    path: "pages/location-location.html",
+    sort_order: 100,
+    labels: { th: "รายการ", en: "List" },
+  },
+  {
+    id: 25,
+    module: "warehouse",
+    icon: "warehouse",
+    sort_order: 600,
+    labels: { th: "คลังสินค้า", en: "Warehouse" },
+  },
+  {
+    id: 26,
+    parent_id: 25,
+    module: "warehouse_list",
+    path: "pages/warehouse-list.html",
+    sort_order: 100,
+    labels: { th: "รายการ", en: "List" },
+  },
+  {
+    id: 27,
+    parent_id: 25,
+    module: "warehouse_list",
+    path: "pages/warehouse-list-view.html",
+    sort_order: 200,
+    is_dialog: true,
+    labels: { th: "การจัดการ", en: "Management" },
+  },
+  {
+    id: 28,
+    module: "product",
+    icon: "box",
+    sort_order: 700,
+    labels: { th: "สินค้า", en: "Product" },
+  },
+  {
+    id: 29,
+    parent_id: 28,
+    module: "product_list",
+    path: "pages/product-list.html",
+    sort_order: 100,
+    labels: { th: "รายการ", en: "List" },
+  },
+  {
+    id: 30,
+    parent_id: 28,
+    module: "product_category",
+    path: "pages/product-category.html",
+    sort_order: 200,
+    labels: { th: "หมวดหมู่", en: "Category" },
+  },
+  {
+    id: 31,
+    parent_id: 28,
+    module: "product_brand",
+    path: "pages/product-brand.html",
+    sort_order: 300,
+    labels: { th: "แบรนด์", en: "Brand" },
+  },
+  {
+    id: 32,
+    parent_id: 28,
+    module: "product_car",
+    path: "pages/product-car.html",
+    sort_order: 400,
+    labels: { th: "หมวดหมู่รถยนต์", en: "Car Category" },
+  },
+  {
+    id: 33,
+    module: "member",
+    icon: "users",
+    sort_order: 750,
+    labels: { th: "สมาชิก", en: "Members" },
+  },
+  {
+    id: 34,
+    parent_id: 33,
+    module: "member_setting",
+    sort_order: 100,
+    labels: { th: "ตั้งค่า", en: "Settings" },
+  },
+  {
+    id: 52,
+    parent_id: 34,
+    module: "member_setting_credit",
+    path: "pages/member-setting-credit.html",
+    sort_order: 100,
+    labels: { th: "รูปแบบชำระ", en: "Credit" },
+  },
+  {
+    id: 53,
+    parent_id: 34,
+    module: "member_setting_group",
+    path: "pages/member-setting-group.html",
+    sort_order: 200,
+    labels: { th: "ประเภท", en: "Group" },
+  },
+  {
+    id: 54,
+    parent_id: 34,
+    module: "member_setting_business",
+    path: "pages/member-setting-business.html",
+    sort_order: 300,
+    labels: { th: "กลุ่มธุรกิจ", en: "Business" },
+  },
+  {
+    id: 35,
+    parent_id: 33,
+    module: "member_tier",
+    path: "pages/member-tier.html",
+    sort_order: 200,
+    labels: { th: "ระดับ", en: "Tier" },
+  },
+  {
+    id: 36,
+    parent_id: 33,
+    module: "member_user",
+    path: "pages/member-user.html",
+    sort_order: 300,
+    labels: { th: "รายชื่อ", en: "List" },
+  },
+  {
+    id: 37,
+    module: "order",
+    icon: "coins",
+    sort_order: 800,
+    labels: { th: "ฝ่ายขาย", en: "Sales" },
+  },
+  {
+    id: 38,
+    parent_id: 37,
+    module: "order_ticket",
+    path: "#",
+    sort_order: 100,
+    labels: { th: "คำร้อง", en: "Ticket" },
+  },
+  {
+    id: 39,
+    parent_id: 37,
+    module: "order_store",
+    path: "pages/order-store.html",
+    sort_order: 200,
+    labels: { th: "งานขาย (หน้าร้าน)", en: "Store Sales" },
+  },
+  {
+    id: 55,
+    parent_id: 37,
+    module: "order_order",
+    path: "pages/order-order.html",
+    sort_order: 300,
+    labels: { th: "ใบจัดสินค้า", en: "Picking Slip" },
+  },
+  {
+    id: 56,
+    parent_id: 37,
+    module: "order_store_claim",
+    path: "pages/order-store-claim.html",
+    sort_order: 400,
+    labels: { th: "ทำรายการเคลม / คืน", en: "Process Claim / Return" },
+  },
+  {
+    id: 57,
+    parent_id: 37,
+    module: "order_store_claim_list",
+    path: "pages/order-store-claim-list.html",
+    sort_order: 500,
+    labels: { th: "รายการเคลม / คืน", en: "Claim / Return List" },
+  },
+  {
+    id: 45,
+    module: "order",
+    icon: "shopping-bag",
+    sort_order: 900,
+    labels: { th: "ออเดอร์", en: "Order" },
+  },
+  {
+    id: 46,
+    parent_id: 45,
+    module: "order_purchase",
+    path: "#",
+    sort_order: 100,
+    labels: { th: "คำสั่งซื้อ", en: "Purchase" },
+  },
+  {
+    id: 47,
+    parent_id: 45,
+    module: "order_compare",
+    path: "#",
+    sort_order: 200,
+    labels: { th: "เทียบราคา", en: "Compare" },
+  },
+  {
+    id: 48,
+    parent_id: 45,
+    module: "order_receive",
+    path: "#",
+    sort_order: 300,
+    labels: { th: "รับเข้า", en: "Receive" },
+  },
+  {
+    id: 49,
+    parent_id: 45,
+    module: "order_claim",
+    path: "#",
+    sort_order: 400,
+    labels: { th: "เคลม / คืน", en: "Claim" },
+  },
+  {
+    id: 50,
+    parent_id: 45,
+    module: "order_sales_claim",
+    path: "#",
+    sort_order: 500,
+    labels: { th: "เคลม (ฝ่ายขาย)", en: "Sales Claim" },
+  },
+];
+
+function buildTreePath(
+  id: number,
+  parentId: number | null | undefined,
+  parentById: Record<number, number | null>
+): string {
+  const chain: number[] = [id];
+  const seen: Record<number, true> = { [id]: true };
+  let p = parentId ?? null;
+  while (p != null) {
+    if (seen[p]) {
+      throw new Error(`tree_path cycle at id ${id}`);
+    }
+    seen[p] = true;
+    chain.unshift(p);
+    p = parentById[p] ?? null;
+  }
+  return chain.map((n) => `n${n}`).join(".");
+}
+
+function assignTreePaths(defs: MenuDef[]) {
+  const parentById: Record<number, number | null> = {};
+  defs.forEach((d) => {
+    parentById[d.id] = d.parent_id ?? null;
+  });
+  return defs.map((d) => ({
+    ...d,
+    tree_path: buildTreePath(d.id, d.parent_id ?? null, parentById),
+  }));
+}
+
+export type AdminMenuRow = {
+  id: number;
+  parent_id: number | null;
+  module: string;
+  path: string | null;
+  sort_order: number;
+  is_active: boolean;
+  tree_path: string;
+  labels: { th: string; en: string };
+  created_at: string;
+  updated_at: string;
+};
+
+export function adminMenuLabel(
+  row: AdminMenuRow,
+  locale: "th" | "en"
+): string {
+  return row.labels[locale] ?? row.labels.th;
+}
+
+export function createInitialAdminMenuRows(): AdminMenuRow[] {
+  return assignTreePaths(MENU_DEFS).map((d) => ({
+    id: d.id,
+    parent_id: d.parent_id ?? null,
+    module: d.module,
+    path: d.path ?? null,
+    sort_order: d.sort_order,
+    is_active: true,
+    tree_path: d.tree_path,
+    labels: d.labels,
+    created_at: SEED_TS,
+    updated_at: SEED_TS,
+  }));
+}

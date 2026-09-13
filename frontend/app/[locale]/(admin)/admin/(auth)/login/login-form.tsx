@@ -89,7 +89,7 @@ export function LoginForm() {
             invalid={usernameInvalid}
             onClearInvalid={() => setUsernameInvalid(false)}
           >
-            <InputGroup className="h-11 rounded-login">
+            <InputGroup className="rounded-login">
               <InputGroupAddon align="inline-start">
                 <User className="opacity-45" aria-hidden />
               </InputGroupAddon>
@@ -117,7 +117,7 @@ export function LoginForm() {
             invalid={passwordInvalid}
             onClearInvalid={() => setPasswordInvalid(false)}
           >
-            <InputGroup className="h-11 rounded-login">
+            <InputGroup className="rounded-login">
               <InputGroupAddon align="inline-start">
                 <Lock className="opacity-45" aria-hidden />
               </InputGroupAddon>

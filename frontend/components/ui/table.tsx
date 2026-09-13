@@ -10,6 +10,15 @@ import {
   type TableSortDirection,
 } from "@/lib/table-sort"
 
+/** Header and body row height (CRUD list tables). */
+const TABLE_ROW_HEIGHT_CLASS = "h-[57px]"
+
+/** Design `.data-table th` — tinted head row, muted labels */
+const TABLE_HEAD_CELL_CLASS = cn(
+  TABLE_ROW_HEIGHT_CLASS,
+  "bg-warehouse-table-head font-semibold tracking-[0.01em] text-muted-foreground"
+)
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
@@ -29,7 +38,10 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn(
+        "[&_tr]:border-b [&_tr]:hover:bg-transparent",
+        className
+      )}
       {...props}
     />
   )
@@ -76,7 +88,8 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground has-[[role=checkbox]]:pr-0",
+        TABLE_HEAD_CELL_CLASS,
+        "px-2 text-left align-middle text-sm whitespace-nowrap has-[[role=checkbox]]:pr-0",
         className
       )}
       {...props}
@@ -144,7 +157,8 @@ function TableSortHead({
       scope="col"
       aria-sort={ariaSort}
       className={cn(
-        "h-10 p-0 align-middle font-medium whitespace-nowrap text-foreground",
+        TABLE_HEAD_CELL_CLASS,
+        "p-0 align-middle text-sm whitespace-nowrap",
         align === "right" && "text-right tabular-nums",
         align === "center" && "text-center",
         className
@@ -154,7 +168,7 @@ function TableSortHead({
       <button
         type="button"
         className={cn(
-          "inline-flex w-full items-center gap-1.5 px-2 py-2.5 text-xs font-medium transition-colors",
+          "inline-flex h-full w-full items-center gap-1.5 px-2 text-sm font-semibold text-inherit transition-colors",
           "hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
           alignBtn
         )}
@@ -186,7 +200,8 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap has-[[role=checkbox]]:pr-0",
+        TABLE_ROW_HEIGHT_CLASS,
+        "p-2 align-middle text-sm whitespace-nowrap has-[[role=checkbox]]:pr-0",
         className
       )}
       {...props}

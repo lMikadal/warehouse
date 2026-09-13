@@ -69,6 +69,8 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
 
+**List helpers (lib):** [`format-datetime.ts`](../../frontend/lib/format-datetime.ts) (display dates per [dates.mdc](../../.cursor/rules/dates.mdc)); [`crud-list-rows.ts`](../../frontend/lib/crud-list-rows.ts) (tree flatten, default sort, header sort compare, drag reorder). **First composed CRUD route:** [`system/menu`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-list.tsx) — molecules + `Table`/`TableSortHead` + `@dnd-kit`; data from [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) until API exists.
+
 ### Drag-and-drop (row reorder)
 
 - **Production:** [`@dnd-kit/react`](https://dndkit.com/react/quickstart/) with `DragDropProvider`, `useSortable` (`@dnd-kit/react/sortable`), and `move()` from `@dnd-kit/helpers` on `onDragEnd`.
@@ -118,6 +120,7 @@ Do not use shadcn `bg-muted` when the design intent is a **border** — use `bor
 | `--color-switch-checked` | `rgb(34 197 94)` — shadcn `Switch` / design `.crud-switch` track when on |
 | `--color-row-expanded` | Expanded warehouse row background |
 | `--color-nav-active-bg` | Sidebar active item |
+| `--color-table-head-bg` | CRUD table header row (`.data-table th` tint); Tailwind `bg-warehouse-table-head` |
 | `--radius-table-wrap` | `0.75rem` — table + pagination chrome |
 | `--shadow-zone-card` | Inner zone cards in expanded row |
 
@@ -215,7 +218,7 @@ Port more keys from `design/js/i18n/` into `messages/` as pages ship.
 | Route group | `app/[locale]/(admin)/admin/(backoffice)/` |
 | Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
-| Wired routes | `/admin/system/menu`, `/admin/system/permission` (list UI later; placeholders OK) |
+| Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
 | Nav | [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) + sidebar search filter; breadcrumb map per pathname |
 | Session | Placeholder user `admin` + logout → `/admin/login` until auth API |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |

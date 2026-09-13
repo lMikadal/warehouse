@@ -9,13 +9,20 @@
   "col": {
     "active": "Active",
     "inactive": "Inactive",
-    "status": "Status"
+    "module": "Module",
+    "name": "Name",
+    "path": "Path",
+    "status": "Status",
+    "updatedAt": "Last updated"
   },
   "crud": {
-    "actions": "Actions",
+    "actions": "Manage",
     "delete": "Delete",
+    "dragReorder": "Drag to reorder",
+    "dragSiblingOnly": "Can only reorder within the same group",
     "edit": "Edit",
     "filterAll": "All",
+    "reordered": "Order updated successfully",
     "next": "Next",
     "pageOf": "Page {page} of {total}",
     "prev": "Previous",
@@ -28,6 +35,7 @@
     "statusFilter": "Status filter"
   },
   "error": {
+    "noData": "No data",
     "required": "This field is required."
   },
   "form": {
@@ -83,6 +91,7 @@
   "page": {
     "adminLanguage": "Language",
     "adminMenu": "Menu",
+    "adminMenuDesc": "Manage menu items, routes, and active status in the system",
     "adminPermission": "Permissions",
     "adminRole": "Role",
     "adminUser": "List",
@@ -106,6 +115,7 @@
     "close": "Close",
     "demoError": "Something went wrong.",
     "demoInfo": "Export will be available soon.",
+    "menuEditSoon": "Menu edit form will be available soon.",
     "demoSuccess": "Saved.",
     "demoWarning": "Save the form to persist changes."
   },
