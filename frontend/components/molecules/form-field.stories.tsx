@@ -75,6 +75,13 @@ export const RequiredValidation: Story = {
 
 export const WithPrefilledError: Story = {
   name: "With error (pre-shown)",
+  args: {
+    id: "wh-name-err",
+    labelKey: "story.sampleField",
+    required: true,
+    value: "",
+    onChange: () => {},
+  },
   render: function Render() {
     const [value, setValue] = useState("");
     const [error, setError] = useState<string | null>("กรุณากรอกชื่อคลัง");
@@ -96,6 +103,12 @@ export const WithPrefilledError: Story = {
 
 export const OptionalField: Story = {
   name: "Optional (no required)",
+  args: {
+    id: "wh-opt",
+    labelKey: "story.sampleField",
+    value: "",
+    onChange: () => {},
+  },
   render: function Render() {
     const [value, setValue] = useState("");
     return (
@@ -112,6 +125,12 @@ export const OptionalField: Story = {
 };
 
 export const Disabled: Story = {
+  args: {
+    id: "wh-dis",
+    labelKey: "story.sampleField",
+    value: "Cannot edit",
+    onChange: () => {},
+  },
   render: () => (
     <div className="max-w-sm">
       <FormField

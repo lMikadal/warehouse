@@ -46,7 +46,7 @@ export function ThemeModeSwitch() {
   if (!mounted) {
     return (
       <div
-        className="bg-muted h-8 w-[7.5rem] animate-pulse rounded-lg sm:w-[13.5rem]"
+        className="bg-muted h-8 w-30 animate-pulse rounded-lg sm:w-54"
         aria-hidden
       />
     );

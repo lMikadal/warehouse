@@ -27,6 +27,10 @@ export const Interactive: Story = {
 };
 
 export const Off: Story = {
+  args: {
+    checked: false,
+    onCheckedChange: () => {},
+  },
   render: function Render() {
     const [checked, setChecked] = useState(false);
     return (
@@ -37,6 +41,11 @@ export const Off: Story = {
 
 export const DisabledOn: Story = {
   name: "Disabled (on)",
+  args: {
+    checked: true,
+    onCheckedChange: () => {},
+    disabled: true,
+  },
   render: () => (
     <StatusSwitchField checked={true} onCheckedChange={() => {}} disabled />
   ),
@@ -44,6 +53,11 @@ export const DisabledOn: Story = {
 
 export const DisabledOff: Story = {
   name: "Disabled (off)",
+  args: {
+    checked: false,
+    onCheckedChange: () => {},
+    disabled: true,
+  },
   render: () => (
     <StatusSwitchField checked={false} onCheckedChange={() => {}} disabled />
   ),

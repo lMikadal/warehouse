@@ -1,16 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { JSX } from "react";
 
-import { DataTable } from "./data-table";
-
-const meta = {
-  title: "UI/DataTable",
-  component: DataTable,
-  parameters: { layout: "padded" },
-} satisfies Meta<typeof DataTable>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
+import { DataTable, type DataTableProps } from "./data-table";
 
 type Warehouse = {
   id: number;
@@ -19,7 +11,19 @@ type Warehouse = {
   status: "Active" | "Inactive";
 };
 
-const COLUMNS: ColumnDef<Warehouse, string>[] = [
+// Cast to a concrete component signature so StoryObj infers Warehouse-typed args.
+const WarehouseDataTable = DataTable as (props: DataTableProps<Warehouse, unknown>) => JSX.Element;
+
+const meta = {
+  title: "UI/DataTable",
+  component: WarehouseDataTable,
+  parameters: { layout: "padded" },
+} satisfies Meta<typeof WarehouseDataTable>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+const COLUMNS: ColumnDef<Warehouse, unknown>[] = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "name", header: "Name" },
   { accessorKey: "zone", header: "Zone" },

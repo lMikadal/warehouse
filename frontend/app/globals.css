@@ -249,6 +249,8 @@
   --color-warehouse-success-bg: var(--color-success-bg);
   --color-warehouse-success-fg: var(--color-success-fg);
   --color-warehouse-success-border: var(--color-success-border);
+  --color-warehouse-status-inactive-bg: var(--color-status-inactive-bg);
+  --color-warehouse-status-inactive-fg: var(--color-status-inactive-fg);
   --color-warehouse-switch-checked: var(--color-switch-checked);
   --color-warehouse-switch-thumb-dark: var(--color-switch-thumb-dark);
 

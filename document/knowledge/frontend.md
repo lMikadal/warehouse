@@ -103,8 +103,8 @@ Do not use shadcn `bg-muted` when the design intent is a **border** — use `bor
 | `--color-page-title` | Same as `--color-foreground` (CRUD h1 — not primary blue) |
 | `--color-success` / `--success` (shadcn bridge) | Solid green for filled controls — same as `--color-action-add` (`#16a34a` light); `#22c55e` dark |
 | `--color-success-foreground` | Text on solid success (white light; white dark) |
-| `--color-success-*` (bg/fg/border) | `.wh-badge--active` / `StatusBadge` tint — unchanged |
-| `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*` |
+| `--color-success-*` (bg/fg/border) | `.wh-badge--active` / `StatusBadge` active — `bg-warehouse-success-bg`, `text-warehouse-success-fg` |
+| `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*`; inactive badge — `bg-warehouse-status-inactive-bg`, `text-warehouse-status-inactive-fg` |
 | `--color-action-add` | `#16a34a` — crud-add / green actions |
 | `--color-action-delete` | `#dc2626` — crud-delete |
 | `--color-warning` / `--warning` | `#d97706` light / `#fbbf24` dark — toast warning, `Button` `warning` variant |
@@ -229,6 +229,13 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 - Story globs (`.storybook/main.ts`): `components/**/*.stories.tsx` and `stories/**/*.stories.tsx`
 - Titles: `components/ui/` → **UI/**; `components/molecules/` → **Molecules/**; `stories/component-catalog.stories.tsx` → **Design system/Overview** (theme swatches including **success** / **warning**, Eva-style primitive matrices in `component-catalog-overview.tsx`, then all exported stories via `composeStories`); `stories/dnd-kit-sortable.stories.tsx` → **Design system/DnD Sortable**
 - No **Organisms/** or **Pages/** stories until organism phase
+
+### Story typing conventions
+
+- **Args required with custom `render`:** Storybook 10 + `StoryObj<typeof meta>` treats `args` as required when the component has required props. Every story that uses a custom `render` function must still include a stub `args` object with no-op handlers and minimal prop values — the `render` function owns interactive state but `args` satisfies the type. Pattern already in [`breadcrumb-nav.stories.tsx`](../../frontend/components/molecules/breadcrumb-nav.stories.tsx).
+- **Generic components:** Storybook's `Meta<typeof Component>` infers `unknown` args for generic components (e.g. `DataTable<TData, TValue>`). Fix: cast `component` to a concrete prop signature — `DataTable as (props: DataTableProps<Warehouse, unknown>) => JSX.Element` — so `StoryObj` resolves the right args types. See [`data-table.stories.tsx`](../../frontend/components/ui/data-table.stories.tsx).
+- **Union-prop components:** When a component's props form a discriminated union (e.g. `DatePicker` with `mode="single" | "range"`), `Meta<typeof DatePicker>` collapses to `args: never`. Fix: import and use the concrete single-mode type — `Meta<DatePickerSingleProps>` — so all shared props are optional; range stories use `render` to override.
+- **Catalog:** `component-catalog.stories.tsx` uses `composeStories` from `@storybook/nextjs` (not `@storybook/react`), passing **`.storybook/preview`** as project annotations so nested stories inherit `parameters.nextjs.appDirectory` and Next.js router mocks. Each embedded story calls **`Story.load()`** before render (Storybook loaders initialize navigation mocks). `StoryModule` + webpack `require.context` types live in `component-catalog-load-stories.ts` with a local `RequireContext` interface.
 
 ### Component workflow (team agreement)
 

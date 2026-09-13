@@ -55,6 +55,10 @@ export const AllFour: Story = {
 
 export const WithCallback: Story = {
   name: "With onAction callback",
+  args: {
+    actions: ["view", "edit", "delete"],
+    onAction: () => {},
+  },
   render: function Render() {
     const [last, setLast] = useState<string | null>(null);
     return (

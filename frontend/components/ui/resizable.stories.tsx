@@ -20,7 +20,7 @@ export const Horizontal: Story = {
   render: () => (
     <ResizablePanelGroup
       orientation="horizontal"
-      className="min-h-[120px] max-w-md rounded-lg border"
+      className="min-h-30 max-w-md rounded-lg border"
     >
       <ResizablePanel defaultSize={50} className="p-3 text-sm">
         Panel A

@@ -63,6 +63,13 @@ export const EmptyHidden: Story = {
 
 export const LastPage: Story = {
   name: "Last page",
+  args: {
+    page: 13,
+    pageSize: 10,
+    meta: metaSample,
+    onPageChange: () => {},
+    onPageSizeChange: () => {},
+  },
   render: function Render() {
     const [page, setPage] = useState(13);
     const [pageSize, setPageSize] = useState<PageSizeOption>(10);
@@ -80,6 +87,13 @@ export const LastPage: Story = {
 
 export const SinglePage: Story = {
   name: "Single page (≤ pageSize, bar hidden)",
+  args: {
+    page: 1,
+    pageSize: 10,
+    meta: { total: 7, totalPages: 1 },
+    onPageChange: () => {},
+    onPageSizeChange: () => {},
+  },
   render: () => (
     <CrudPaginationBar
       page={1}
@@ -93,6 +107,13 @@ export const SinglePage: Story = {
 
 export const LargePageSize: Story = {
   name: "Large page size (100)",
+  args: {
+    page: 1,
+    pageSize: 100,
+    meta: { total: 245, totalPages: 3 },
+    onPageChange: () => {},
+    onPageSizeChange: () => {},
+  },
   render: function Render() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState<PageSizeOption>(100);

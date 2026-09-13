@@ -108,15 +108,13 @@ export const WithFooter: Story = {
 export const WithSortHeaders: Story = {
   name: "With sort headers",
   render: function Render() {
-    const [sort, setSort] = useState<{ col: string; dir: TableSortDirection | null }>({
-      col: "",
+    const [sort, setSort] = useState<{ col: string | null; dir: TableSortDirection | null }>({
+      col: null,
       dir: null,
     });
 
-    function handleSort(col: string) {
-      return (dir: TableSortDirection | null) => {
-        setSort({ col, dir });
-      };
+    function handleSort(sortKey: string | null, direction: TableSortDirection | null) {
+      setSort({ col: sortKey, dir: direction });
     }
 
     return (
@@ -128,15 +126,23 @@ export const WithSortHeaders: Story = {
           <TableHeader>
             <TableRow>
               <TableSortHead
-                label="Name"
+                columnKey="name"
+                activeSortKey={sort.col}
                 sortDirection={sort.col === "name" ? sort.dir : null}
-                onSortChange={handleSort("name")}
-              />
+                sortLabel="Sort by Name"
+                onSortChange={handleSort}
+              >
+                Name
+              </TableSortHead>
               <TableSortHead
-                label="Zone"
+                columnKey="zone"
+                activeSortKey={sort.col}
                 sortDirection={sort.col === "zone" ? sort.dir : null}
-                onSortChange={handleSort("zone")}
-              />
+                sortLabel="Sort by Zone"
+                onSortChange={handleSort}
+              >
+                Zone
+              </TableSortHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>

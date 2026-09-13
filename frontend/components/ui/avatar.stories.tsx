@@ -87,7 +87,7 @@ export const Group: Story = {
       <Avatar>
         <AvatarFallback>C</AvatarFallback>
       </Avatar>
-      <AvatarGroupCount count={5} />
+      <AvatarGroupCount>+5</AvatarGroupCount>
     </AvatarGroup>
   ),
 };

@@ -18,8 +18,8 @@ export function StatusBadge({ active, className }: StatusBadgeProps) {
       className={cn(
         "rounded-full border-transparent font-medium",
         active
-          ? "bg-[var(--color-success-bg)] text-[var(--color-success-fg)]"
-          : "bg-[var(--color-status-inactive-bg)] text-[var(--color-status-inactive-fg)]",
+          ? "bg-warehouse-success-bg text-warehouse-success-fg"
+          : "bg-warehouse-status-inactive-bg text-warehouse-status-inactive-fg",
         className
       )}
     >

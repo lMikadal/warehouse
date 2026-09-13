@@ -1,9 +1,13 @@
-/// <reference types="webpack-env" />
-
 export type StoryModule = {
   default?: { title?: string };
   [key: string]: unknown;
 };
+
+/** Minimal webpack require.context shape used only in Storybook (Webpack) builds. */
+interface RequireContext {
+  keys(): string[];
+  (id: string): StoryModule;
+}
 
 export type CatalogGroup = "UI" | "Molecules" | "Design system";
 
@@ -21,15 +25,15 @@ function idFromKey(key: string): string {
 }
 
 function pushFromContext(
-  ctx: __WebpackModuleApi.Context,
+  ctx: RequireContext,
   group: CatalogGroup,
   out: CatalogEntry[]
 ) {
-  ctx.keys().forEach((key) => {
+  ctx.keys().forEach((key: string) => {
     const id = idFromKey(key);
     if (SKIP_STORY_IDS.has(id)) return;
 
-    const storyModule = ctx(key) as StoryModule;
+    const storyModule = ctx(key);
     const metaTitle =
       typeof storyModule.default?.title === "string"
         ? storyModule.default.title
@@ -39,21 +43,27 @@ function pushFromContext(
   });
 }
 
+/** Cast for webpack's require.context — only available in Storybook / Webpack builds. */
+type WebpackRequire = NodeRequire & {
+  context(directory: string, useSubdirectories: boolean, filter: RegExp): RequireContext;
+};
+
 export function loadCatalogEntries(): CatalogEntry[] {
   const entries: CatalogEntry[] = [];
+  const webpackRequire = require as WebpackRequire;
 
   pushFromContext(
-    require.context("../components/ui", false, /\.stories\.tsx$/),
+    webpackRequire.context("../components/ui", false, /\.stories\.tsx$/),
     "UI",
     entries
   );
   pushFromContext(
-    require.context("../components/molecules", false, /\.stories\.tsx$/),
+    webpackRequire.context("../components/molecules", false, /\.stories\.tsx$/),
     "Molecules",
     entries
   );
   pushFromContext(
-    require.context(".", false, /\.stories\.tsx$/),
+    webpackRequire.context(".", false, /\.stories\.tsx$/),
     "Design system",
     entries
   );

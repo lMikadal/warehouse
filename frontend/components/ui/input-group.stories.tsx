@@ -9,8 +9,6 @@ import {
   InputGroupTextarea,
   InputGroupText,
 } from "./input-group";
-import { Button } from "./button";
-
 const meta = {
   title: "UI/InputGroup",
   component: InputGroup,

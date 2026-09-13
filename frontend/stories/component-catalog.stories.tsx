@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { composeStories } from "@storybook/react";
+import { composeStories } from "@storybook/nextjs";
 import type { ComponentType } from "react";
+import { useEffect, useState } from "react";
 
+import projectAnnotations from "../.storybook/preview";
 import {
   GuideCard,
   ThemeBasicsCard,
@@ -13,23 +15,61 @@ import {
   type CatalogGroup,
 } from "./component-catalog-load-stories";
 
+type CSFModule = Parameters<typeof composeStories>[0];
+
+function composeCatalogStories(module: CSFModule) {
+  return composeStories(module, projectAnnotations);
+}
+
+function CatalogComposedStory({
+  Story,
+}: {
+  Story: ComponentType & { load?: () => Promise<void> };
+}) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+    void (async () => {
+      await Story.load?.();
+      if (!cancelled) setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [Story]);
+
+  if (!ready) {
+    return (
+      <p className="text-muted-foreground text-xs" aria-busy="true">
+        …
+      </p>
+    );
+  }
+
+  return <Story />;
+}
+
 const catalogEntries = loadCatalogEntries();
 const groupCounts = countByGroup(catalogEntries);
 
 function ComponentStoryCard({ entry }: { entry: CatalogEntry }) {
-  const composed = composeStories(entry.module);
+  const composed = composeCatalogStories(entry.module as CSFModule);
   const storyNames = Object.keys(composed);
 
   return (
     <GuideCard title={entry.metaTitle} badge={`${storyNames.length} stories`}>
       <div className="space-y-4">
         {storyNames.map((name) => {
-          const Story = composed[name as keyof typeof composed] as ComponentType;
+          const ComposedStory = composed[
+            name as keyof typeof composed
+          ] as ComponentType & { load?: () => Promise<void> };
           return (
             <div key={name} className="space-y-2">
               <p className="text-muted-foreground font-mono text-xs">{name}</p>
-              <div className="border-border max-h-96 overflow-x-auto overflow-y-auto rounded-lg border bg-background p-3">
-                <Story />
+              <div className="border-border max-h-96 overflow-x-auto overflow-y-auto rounded-lg border bg-background">
+                <CatalogComposedStory Story={ComposedStory} />
               </div>
             </div>
           );
@@ -77,7 +117,8 @@ function ComponentCatalogPanel() {
             <li className="text-foreground pt-1 font-medium">
               {catalogEntries.length} components ·{" "}
               {catalogEntries.reduce(
-                (n, e) => n + Object.keys(composeStories(e.module)).length,
+                (n, e) =>
+                  n + Object.keys(composeCatalogStories(e.module as CSFModule)).length,
                 0
               )}{" "}
               stories total

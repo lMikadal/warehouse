@@ -69,6 +69,7 @@ export const Disabled: Story = {
 
 export const AllSizes: Story = {
   name: "All sizes (overview)",
+  args: { "aria-label": "overview", children: <Pencil /> },
   render: () => (
     <div className="flex items-center gap-3">
       <ButtonIcon size="xs" aria-label="xs"><Pencil /></ButtonIcon>
@@ -81,6 +82,7 @@ export const AllSizes: Story = {
 
 export const AllTones: Story = {
   name: "All tones (overview)",
+  args: { "aria-label": "overview", children: <Pencil /> },
   render: () => (
     <div className="flex items-center gap-3">
       <ButtonIcon tone="neutral" aria-label="view"><Eye /></ButtonIcon>

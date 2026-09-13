@@ -61,7 +61,7 @@ export function CrudPaginationBar({
       aria-label="Pagination"
       className={cn("mt-3", className)}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-table-wrap)] bg-background px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-(--radius-table-wrap) bg-background px-3 py-2">
         <div className="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-foreground/55">
           <span className="whitespace-nowrap">{t("showItemsPrefix")}</span>
           <Select
@@ -71,7 +71,7 @@ export function CrudPaginationBar({
             }}
           >
             <SelectTrigger
-              className="w-[4.5rem]"
+              className="w-18"
               aria-label={t("rowsPerPage")}
             >
               <SelectValue />

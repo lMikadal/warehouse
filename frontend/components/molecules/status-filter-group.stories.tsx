@@ -29,6 +29,10 @@ export const Default: Story = {
 
 export const ActiveSelected: Story = {
   name: "Active selected",
+  args: {
+    value: "active",
+    onChange: () => {},
+  },
   render: function Render() {
     const [value, setValue] = useState<StatusFilterValue>("active");
     return <StatusFilterGroup value={value} onChange={setValue} />;
@@ -37,6 +41,10 @@ export const ActiveSelected: Story = {
 
 export const InactiveSelected: Story = {
   name: "Inactive selected",
+  args: {
+    value: "inactive",
+    onChange: () => {},
+  },
   render: function Render() {
     const [value, setValue] = useState<StatusFilterValue>("inactive");
     return <StatusFilterGroup value={value} onChange={setValue} />;

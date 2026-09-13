@@ -71,7 +71,7 @@ export function FormField({
           aria-invalid={error ? true : undefined}
         />
       )}
-      <div className="min-h-[1.25rem]" aria-live="polite">
+      <div className="min-h-5" aria-live="polite">
         {error ? <FieldError>{error}</FieldError> : null}
       </div>
     </Field>
