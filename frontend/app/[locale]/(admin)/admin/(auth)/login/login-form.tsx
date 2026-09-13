@@ -70,7 +70,7 @@ export function LoginForm() {
 
   return (
     <FormCard className="w-full max-w-form shrink-0 bg-background px-2 py-7 lg:rounded-none lg:border-0 lg:px-0 lg:py-0 lg:shadow-none lg:ring-0">
-      <FormCardHeader className="items-center text-center lg:mb-8 lg:items-start lg:text-left">
+      <FormCardHeader className="items-center text-center lg:items-start lg:text-left">
         <FormCardTitle className="text-2xl font-bold tracking-tight lg:text-3xl">
           {tLogin("title")}
         </FormCardTitle>
