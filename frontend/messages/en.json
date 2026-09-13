@@ -17,7 +17,10 @@
   },
   "crud": {
     "actions": "Manage",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete this record?",
     "delete": "Delete",
+    "deleted": "Deleted successfully",
     "dragReorder": "Drag to reorder",
     "dragSiblingOnly": "Can only reorder within the same group",
     "edit": "Edit",

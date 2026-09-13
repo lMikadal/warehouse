@@ -62,6 +62,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |
+| `CrudDeleteConfirmDialog` | Controlled delete confirm (`crud.delete` / `crud.confirmDelete` / `crud.cancel`); destructive confirm button; optional title/description overrides |
 | `FormCard` | shadcn `Card` with form panel surface (border, shadow); re-exports header/content subcomponents |
 | `LocaleThemeToolbar` | Header locale + light/dark icon buttons (admin shell); Storybook **Molecules/LocaleThemeToolbar** |
 
@@ -69,7 +70,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
 
-**List helpers (lib):** [`format-datetime.ts`](../../frontend/lib/format-datetime.ts) (display dates per [dates.mdc](../../.cursor/rules/dates.mdc)); [`crud-list-rows.ts`](../../frontend/lib/crud-list-rows.ts) (tree flatten, default sort, header sort compare, drag reorder). **First composed CRUD route:** [`system/menu`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-list.tsx) — molecules + `Table`/`TableSortHead` + `@dnd-kit`; data from [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) until API exists.
+**List helpers (lib):** [`format-datetime.ts`](../../frontend/lib/format-datetime.ts) (display dates per [dates.mdc](../../.cursor/rules/dates.mdc)); [`crud-list-rows.ts`](../../frontend/lib/crud-list-rows.ts) (tree flatten, default sort, header sort compare, drag reorder). **First composed CRUD route:** [`system/menu`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-list.tsx) — molecules + `Table`/`TableSortHead` + `@dnd-kit`; data from [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) until API exists. Row actions: edit (toast until form) + delete (`CrudDeleteConfirmDialog`, cascade subtree via `tree_path`, `crud.deleted` toast).
 
 ### Drag-and-drop (row reorder)
 

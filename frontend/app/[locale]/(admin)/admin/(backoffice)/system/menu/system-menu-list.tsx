@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { type ComponentProps, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -15,7 +16,10 @@ import {
   type StatusFilterValue,
 } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import { TableIconActions } from "@/components/molecules/table-icon-actions";
+import {
+  TableIconActions,
+  type TableIconActionKey,
+} from "@/components/molecules/table-icon-actions";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import {
   Table,
@@ -92,13 +96,22 @@ function toRowView(row: AdminMenuRow, locale: DisplayLocale): MenuRowView {
   return { ...row, label: adminMenuLabel(row, locale) };
 }
 
+function removeMenuSubtree(rows: AdminMenuRow[], id: number): AdminMenuRow[] {
+  const target = rows.find((row) => row.id === id);
+  if (!target) return rows;
+  const prefix = `${target.tree_path}.`;
+  return rows.filter(
+    (row) => row.id !== id && !row.tree_path.startsWith(prefix)
+  );
+}
+
 type MenuTableRowProps = {
   row: MenuRowView;
   index: number;
   locale: DisplayLocale;
   dragEnabled: boolean;
   onToggleActive: (id: number, active: boolean) => void;
-  onEdit: (id: number) => void;
+  onAction: (id: number, action: TableIconActionKey) => void;
 };
 
 function SortableMenuTableRow({
@@ -106,7 +119,7 @@ function SortableMenuTableRow({
   index,
   locale,
   onToggleActive,
-  onEdit,
+  onAction,
 }: Omit<MenuTableRowProps, "dragEnabled">) {
   const { ref, handleRef, isDragging } = useSortable({
     id: row.id,
@@ -125,7 +138,7 @@ function SortableMenuTableRow({
         dragEnabled
         handleRef={handleRef}
         onToggleActive={onToggleActive}
-        onEdit={onEdit}
+        onAction={onAction}
       />
     </TableRow>
   );
@@ -136,7 +149,7 @@ function StaticMenuTableRow({
   locale,
   dragEnabled,
   onToggleActive,
-  onEdit,
+  onAction,
 }: Omit<MenuTableRowProps, "index">) {
   return (
     <TableRow>
@@ -145,7 +158,7 @@ function StaticMenuTableRow({
         locale={locale}
         dragEnabled={dragEnabled}
         onToggleActive={onToggleActive}
-        onEdit={onEdit}
+        onAction={onAction}
       />
     </TableRow>
   );
@@ -157,14 +170,14 @@ function MenuTableCells({
   dragEnabled,
   handleRef,
   onToggleActive,
-  onEdit,
+  onAction,
 }: {
   row: MenuRowView;
   locale: DisplayLocale;
   dragEnabled: boolean;
   handleRef?: (element: Element | null) => void;
   onToggleActive: (id: number, active: boolean) => void;
-  onEdit: (id: number) => void;
+  onAction: (id: number, action: TableIconActionKey) => void;
 }) {
   const tCrud = useTranslations("crud");
   const depth = treeDepth(row.tree_path);
@@ -209,8 +222,8 @@ function MenuTableCells({
       <TableCell className="text-center">{formatDateTime(row.updated_at, locale)}</TableCell>
       <TableCell className="text-center">
         <TableIconActions
-          actions={["edit"]}
-          onAction={() => onEdit(row.id)}
+          actions={["edit", "delete"]}
+          onAction={(action) => onAction(row.id, action)}
         />
       </TableCell>
     </>
@@ -234,6 +247,7 @@ export function SystemMenuList() {
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fullSorted = useMemo(() => {
     const filtered = filterMenuRows(rows, query, statusFilter, locale);
@@ -276,8 +290,19 @@ export function SystemMenuList() {
     toast.success(tToast("demoSuccess"));
   };
 
-  const handleEdit = () => {
+  const handleRowAction = (id: number, action: TableIconActionKey) => {
+    if (action === "delete") {
+      setDeleteId(id);
+      return;
+    }
     toast.info(tToast("menuEditSoon"));
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteId == null) return;
+    setRows((prev) => removeMenuSubtree(prev, deleteId));
+    setDeleteId(null);
+    toast.success(tCrud("deleted"));
   };
 
   const handleDragEnd: ComponentProps<
@@ -433,7 +458,7 @@ export function SystemMenuList() {
                       index={index}
                       locale={locale}
                       onToggleActive={handleToggleActive}
-                      onEdit={handleEdit}
+                      onAction={handleRowAction}
                     />
                   ))
                 ) : (
@@ -455,7 +480,7 @@ export function SystemMenuList() {
                     locale={locale}
                     dragEnabled={false}
                     onToggleActive={handleToggleActive}
-                    onEdit={handleEdit}
+                    onAction={handleRowAction}
                   />
                 ))
               ) : (
@@ -479,6 +504,14 @@ export function SystemMenuList() {
           setPageSize(size);
           setPage(1);
         }}
+      />
+
+      <CrudDeleteConfirmDialog
+        open={deleteId != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
