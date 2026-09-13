@@ -1,6 +1,7 @@
 import type { Preview } from "@storybook/nextjs";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { withIntl } from "./decorators/intl";
 
@@ -43,9 +44,11 @@ const preview: Preview = {
         storageKey="warehouse-design-theme"
         disableTransitionOnChange
       >
-        <div className="bg-background text-foreground p-6 font-sans">
-          <Story />
-        </div>
+        <TooltipProvider>
+          <div className="bg-background text-foreground p-6 font-sans">
+            <Story />
+          </div>
+        </TooltipProvider>
       </ThemeProvider>
     ),
   ],

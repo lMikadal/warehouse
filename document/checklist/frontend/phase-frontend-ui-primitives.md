@@ -10,8 +10,10 @@ Base shadcn set, Storybook coverage, and folder scaffold for molecules — middl
 
 - [x] `frontend/components/molecules/` exists with warehouse-list-oriented molecules + stories
 - [ ] `frontend/components/organisms/` (deferred — not required for this milestone)
-- [x] shadcn: **Input**, **Select**, **Dialog**, **Table**, **Switch**, **Badge**, **Label** under `components/ui/` (Button already present)
-- [x] Co-located `*.stories.tsx` for each shared `components/ui/` primitive above
+- [x] shadcn **base-nova** batch under `components/ui/` (avatar, breadcrumb, button-group, card, checkbox, collapsible, combobox, drawer, dropdown-menu, field, input-group, input-otp, item, marker, pagination, progress, radio-group, resizable, scroll-area, sidebar, skeleton, spinner, tabs, textarea, toggle, toggle-group, tooltip, calendar, popover, command, separator, sheet, … plus existing Button, Input, Select, Dialog, Table, Switch, Badge, Label, Sonner)
+- [x] Manual **`date-picker`**, **`data-table`** (`@tanstack/react-table@8`); `hooks/use-mobile.ts` for sidebar
+- [x] Co-located `*.stories.tsx` for each `components/ui/` export
+- [x] Molecules refactored: **BreadcrumbNav** → `breadcrumb`; **FormField** → `field`; **CrudPaginationBar** → `pagination`
 - [x] First molecules from [`design/pages/warehouse-list.html`](../../../design/pages/warehouse-list.html) (search, status filter, pagination, table actions, …) with Storybook
 - [x] Update `document/knowledge/frontend.md` for folder / primitive conventions
 

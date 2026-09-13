@@ -3,8 +3,8 @@
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, type ChangeEvent } from "react";
 
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 export type FormFieldProps = {
@@ -62,8 +62,11 @@ export function FormField({
   );
 
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={id}>
+    <Field
+      data-invalid={error ? true : undefined}
+      className={cn("gap-1.5", className)}
+    >
+      <FieldLabel htmlFor={id}>
         {label}
         {required ? (
           <span className="text-[#dc2626]" aria-hidden>
@@ -71,7 +74,7 @@ export function FormField({
             *
           </span>
         ) : null}
-      </Label>
+      </FieldLabel>
       {children ?? (
         <Input
           id={id}
@@ -87,12 +90,8 @@ export function FormField({
         />
       )}
       <div className="min-h-[1.25rem]" aria-live="polite">
-        {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
+        {error ? <FieldError>{error}</FieldError> : null}
       </div>
-    </div>
+    </Field>
   );
 }

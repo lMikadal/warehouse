@@ -15,7 +15,7 @@ Production UI is built **top-down** through fixed layers. Agent rule: [`.cursor/
 | Layer | Location | Notes |
 |-------|----------|--------|
 | Design tokens | `app/globals.css` | Color, spacing, radius, typography; no raw hex in components |
-| shadcn / base UI | `components/ui/` | Button, **ButtonIcon** (`button-icon.tsx` — square icon-only, tones add/delete), Input, Select, Switch, Badge, Label, Dialog, Table, **Sonner** (`sonner.tsx` + `toast` from `sonner` package) (+ Storybook under `UI/*`) |
+| shadcn / base UI | `components/ui/` | Full shadcn **base-nova** set (see **Atomic grouping** below) + **ButtonIcon**, **DatePicker**, **DataTable** (TanStack v8); Storybook `UI/*` |
 | Molecules | `components/molecules/` | CRUD/search/pagination/table chrome from warehouse-list (see below) |
 | Organisms | `components/organisms/` | **Not started** — Admin shell + list tables compose molecules in a later phase |
 | Design system | Cursor rules + Storybook + this doc | forms, tables, dates, icons |
@@ -23,20 +23,44 @@ Production UI is built **top-down** through fixed layers. Agent rule: [`.cursor/
 
 Handoff from `design/` mockups is unchanged; warehouse-list patterns are extracted into **molecules** first; **organisms** and `app/[locale]/…` routes come next.
 
+**App chrome:** `<TooltipProvider>` wraps locale layout children ([`app/[locale]/layout.tsx`](../../frontend/app/[locale]/layout.tsx)) for shadcn tooltips. **Hooks:** [`hooks/use-mobile.ts`](../../frontend/hooks/use-mobile.ts) supports `Sidebar` (not an atom — do not import from pages directly).
+
+### Atomic grouping (`components/ui/` = atoms)
+
+All shadcn CLI output stays in `components/ui/`. Molecules compose these with warehouse i18n/routing; organisms compose molecules (later).
+
+| Group | `components/ui/` | Role |
+|-------|------------------|------|
+| Actions | `button`, `button-icon`, `button-group`, `toggle`, `toggle-group` | Clicks, segmented controls |
+| Form controls | `input`, `textarea`, `checkbox`, `radio-group`, `switch`, `select`, `input-otp`, `input-group`, `label`, `field` | Controls + accessible field wrappers |
+| Pickers | `calendar`, `date-picker`, `combobox`, `command`, `popover` | Date / searchable selection |
+| Layout / surface | `card`, `separator`, `scroll-area`, `resizable`, `collapsible`, `item` | Containers, lists, panels |
+| Navigation / chrome | `breadcrumb`, `tabs`, `pagination`, `dropdown-menu`, `sidebar`, `sheet` | Nav primitives (menu config lives in organisms) |
+| Overlay | `dialog`, `drawer`, `popover`, `tooltip` | Modals, sheets, hints |
+| Feedback | `progress`, `skeleton`, `spinner`, `sonner`, `marker` | Loading, progress, inline status |
+| Media / identity | `avatar`, `badge` | User / entity visuals |
+| Data display | `table`, `data-table` | Rows/columns; CRUD sort/pager still via molecules + [`lib/table-sort.ts`](../../frontend/lib/table-sort.ts) |
+
+**Molecules (compose atoms):** `BreadcrumbNav` → `breadcrumb` + `@/i18n/navigation` `Link`; `FormField` → `field` + `input` (forms rules); `CrudPaginationBar` → `pagination` + `select` + [`lib/crud-pagination.ts`](../../frontend/lib/crud-pagination.ts).
+
+**Organisms (future):** Admin shell (`sidebar` + header), CRUD list (`data-table` + TanStack + pagination/actions molecules), form pages (`FieldSet` / many `FormField`s).
+
+Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`). **`date-picker`** and **`data-table`** are not in the CLI registry — maintained manually (`date-picker` = Calendar + Popover; `data-table` = `@tanstack/react-table@8` + `Table`).
+
 ### Molecules (warehouse-list baseline)
 
 | Component | Role |
 |-----------|------|
 | `CrudSearchField` | Toolbar search (`search.placeholder`) |
 | `StatusFilterGroup` | All / active / inactive segmented filter |
-| `CrudPaginationBar` | Page size 10/25/50/100 + ellipsis pages ([`lib/crud-pagination.ts`](../../frontend/lib/crud-pagination.ts)) |
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
 | `TableIconActions` | View / edit / add (green) / delete (red) icon row |
 | `ExpandRowToggle` | Chevron expand control |
 | `EntityNameCell` | Warehouse icon + name + optional inline edit |
-| `FormField` | Label, required asterisk, placeholder pattern, error slot |
-| `BreadcrumbNav` | Segments via `@/i18n/navigation` `Link` |
+| `FormField` | shadcn `Field` / `FieldLabel` / `FieldError` + `Input`; required asterisk, placeholder pattern, error slot |
+| `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
+| `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.

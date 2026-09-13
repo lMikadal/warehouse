@@ -69,7 +69,7 @@ frontend-lint:
 frontend-shadcn-add:
 	$(call require_dir,$(FRONTEND_DIR))
 	@test -n "$(COMPONENT)" || (echo "usage: make frontend-shadcn-add COMPONENT=<name>"; exit 1)
-	cd $(FRONTEND_DIR) && bunx shadcn@latest add $(COMPOENNT)
+	cd $(FRONTEND_DIR) && bunx shadcn@latest add $(COMPONENT)
 
 ## frontend-storybook: Storybook dev server (port 6006)
 frontend-storybook:

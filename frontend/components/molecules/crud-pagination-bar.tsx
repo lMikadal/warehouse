@@ -6,6 +6,11 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import {
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+} from "@/components/ui/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -82,37 +87,33 @@ export function CrudPaginationBar({
           <span className="whitespace-nowrap">{t("showItemsSuffix")}</span>
         </div>
 
-        <div className="inline-flex items-center gap-1.5">
-          <ButtonIcon
-            type="button"
-            variant="outline"
-            size="md"
-            disabled={prevDisabled}
-            aria-label={t("prev")}
-            onClick={() => onPageChange(page - 1)}
-          >
-            <ChevronLeft className="text-current" />
-          </ButtonIcon>
-          <div
-            role="group"
-            aria-label={t("pageOf", {
-              page,
-              total: meta.totalPages,
-            })}
-            className="inline-flex items-center gap-0.5"
-          >
-            {pageItems.map((item, idx) =>
-              item === "..." ? (
-                <span
-                  key={`ellipsis-${idx}`}
-                  className="inline-flex h-8 min-w-8 items-center justify-center text-sm text-foreground/45 select-none"
-                  aria-hidden
-                >
-                  …
-                </span>
-              ) : (
+        <PaginationContent
+          className="gap-1.5"
+          aria-label={t("pageOf", {
+            page,
+            total: meta.totalPages,
+          })}
+        >
+          <PaginationItem>
+            <ButtonIcon
+              type="button"
+              variant="outline"
+              size="md"
+              disabled={prevDisabled}
+              aria-label={t("prev")}
+              onClick={() => onPageChange(page - 1)}
+            >
+              <ChevronLeft className="text-current" />
+            </ButtonIcon>
+          </PaginationItem>
+          {pageItems.map((item, idx) =>
+            item === "..." ? (
+              <PaginationItem key={`ellipsis-${idx}`}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={item}>
                 <Button
-                  key={item}
                   type="button"
                   variant={item === page ? "default" : "ghost"}
                   size="icon-sm"
@@ -125,20 +126,22 @@ export function CrudPaginationBar({
                 >
                   {item}
                 </Button>
-              )
-            )}
-          </div>
-          <ButtonIcon
-            type="button"
-            variant="outline"
-            size="md"
-            disabled={nextDisabled}
-            aria-label={t("next")}
-            onClick={() => onPageChange(page + 1)}
-          >
-            <ChevronRight className="text-current" />
-          </ButtonIcon>
-        </div>
+              </PaginationItem>
+            )
+          )}
+          <PaginationItem>
+            <ButtonIcon
+              type="button"
+              variant="outline"
+              size="md"
+              disabled={nextDisabled}
+              aria-label={t("next")}
+              onClick={() => onPageChange(page + 1)}
+            >
+              <ChevronRight className="text-current" />
+            </ButtonIcon>
+          </PaginationItem>
+        </PaginationContent>
       </div>
     </nav>
   );
