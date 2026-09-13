@@ -58,11 +58,12 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
 | `TableIconActions` | View / edit / add (green) / delete (red) icon row |
-| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern, optional `invalid` styling (no inline error text — callers use toast or page-level `FieldError`); shared `Input` defaults `maxLength` **100** on text-like types (`DEFAULT_INPUT_MAX_LENGTH`, overridable per field) |
+| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern (unchanged when invalid); when `invalid`, `FieldError` with `error.required` under the control + reserved `min-h-5` slot; clear via `onClearInvalid` on change; shared `Input` defaults `maxLength` **100** on text-like types (`DEFAULT_INPUT_MAX_LENGTH`, overridable per field) |
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |
 | `CrudDeleteConfirmDialog` | Controlled delete confirm (`crud.delete` / `crud.confirmDelete` / `crud.cancel`); destructive confirm button; optional title/description overrides |
+| `CrudFormSheet` | Compound right `Sheet` for CRUD create/edit: `CrudFormSheet` + `CrudFormSheetHeader` / `Body` / `Footer` (bordered header/footer, scroll body, dismiss + save); form element stays in the route |
 | `FormCard` | shadcn `Card` with form panel surface (border, shadow); re-exports header/content subcomponents |
 | `LocaleThemeToolbar` | Header locale + light/dark icon buttons (admin shell); Storybook **Molecules/LocaleThemeToolbar** |
 

@@ -1,26 +1,14 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/sonner";
 
 import { FormField } from "./form-field";
 
 const meta = {
   title: "Molecules/FormField",
   component: FormField,
-  decorators: [
-    (Story) => (
-      <>
-        <Story />
-        <Toaster />
-      </>
-    ),
-  ],
 } satisfies Meta<typeof FormField>;
 
 export default meta;
@@ -55,10 +43,8 @@ export const RequiredValidation: Story = {
     onChange: () => {},
   },
   render: function Render() {
-    const t = useTranslations();
     const [value, setValue] = useState("");
     const [invalid, setInvalid] = useState(false);
-    const label = t("story.sampleField");
 
     return (
       <div className="max-w-sm space-y-3">
@@ -75,8 +61,8 @@ export const RequiredValidation: Story = {
           type="button"
           onClick={() => {
             if (!value.trim()) {
-              toast.error(t("form.placeholder.input", { label }));
               setInvalid(true);
+              document.getElementById("wh-name-validated")?.focus();
             }
           }}
         >

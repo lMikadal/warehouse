@@ -2,21 +2,32 @@
 
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
-import { toast } from "sonner";
 
+import {
+  CrudFormSheet,
+  CrudFormSheetBody,
+  CrudFormSheetFooter,
+  CrudFormSheetHeader,
+} from "@/components/molecules/crud-form-sheet";
 import { FormField } from "@/components/molecules/form-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import type { AdminMenuRow } from "@/lib/admin-menu-mock";
+
+type MenuRequiredFieldKey = "nameTh" | "nameEn" | "module";
+
+const MENU_REQUIRED_FIELDS: {
+  key: MenuRequiredFieldKey;
+  id: string;
+}[] = [
+  { key: "nameTh", id: "menu-edit-name-th" },
+  { key: "nameEn", id: "menu-edit-name-en" },
+  { key: "module", id: "menu-edit-module" },
+];
+
+function emptyMenuRequiredInvalid(): Record<MenuRequiredFieldKey, boolean> {
+  return { nameTh: false, nameEn: false, module: false };
+}
 
 export type SystemMenuEditPayload = {
   nameTh: string;
@@ -59,32 +70,56 @@ function SystemMenuEditForm({
 }: SystemMenuEditFormProps) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
-  const tError = useTranslations("error");
 
   const [nameTh, setNameTh] = useState(initial.nameTh);
   const [nameEn, setNameEn] = useState(initial.nameEn);
   const [path, setPath] = useState(initial.path);
   const [moduleValue, setModuleValue] = useState(initial.module);
   const [isActive, setIsActive] = useState(initial.isActive);
+  const [fieldInvalid, setFieldInvalid] = useState(emptyMenuRequiredInvalid);
 
   const moduleLocked = mode === "edit";
+
+  const clearFieldInvalid = (key: MenuRequiredFieldKey) => {
+    setFieldInvalid((prev) =>
+      prev[key] ? { ...prev, [key]: false } : prev
+    );
+  };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const trimmedTh = nameTh.trim();
-    const trimmedEn = nameEn.trim();
-    const trimmedModule = moduleValue.trim();
-    if (!trimmedTh || !trimmedEn || (!moduleLocked && !trimmedModule)) {
-      toast.error(tError("required"));
+    const trimmed = {
+      nameTh: nameTh.trim(),
+      nameEn: nameEn.trim(),
+      module: moduleValue.trim(),
+    };
+
+    const nextInvalid = emptyMenuRequiredInvalid();
+    let firstInvalidId: string | undefined;
+
+    for (const field of MENU_REQUIRED_FIELDS) {
+      if (field.key === "module" && moduleLocked) continue;
+
+      const empty = !trimmed[field.key];
+      nextInvalid[field.key] = empty;
+      if (empty && firstInvalidId === undefined) {
+        firstInvalidId = field.id;
+      }
+    }
+
+    setFieldInvalid(nextInvalid);
+
+    if (firstInvalidId) {
+      document.getElementById(firstInvalidId)?.focus();
       return;
     }
 
     onSave(editId, {
-      nameTh: trimmedTh,
-      nameEn: trimmedEn,
+      nameTh: trimmed.nameTh,
+      nameEn: trimmed.nameEn,
       path: path.trim(),
-      module: moduleLocked ? initial.module : trimmedModule,
+      module: moduleLocked ? initial.module : trimmed.module,
       isActive,
     });
     onClose();
@@ -99,13 +134,15 @@ function SystemMenuEditForm({
       onSubmit={handleSubmit}
       noValidate
     >
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+      <CrudFormSheetBody>
         <FormField
           id="menu-edit-name-th"
           labelKey="col.nameTh"
           required
           value={nameTh}
           onChange={setNameTh}
+          invalid={fieldInvalid.nameTh}
+          onClearInvalid={() => clearFieldInvalid("nameTh")}
         />
 
         <FormField
@@ -114,6 +151,8 @@ function SystemMenuEditForm({
           required
           value={nameEn}
           onChange={setNameEn}
+          invalid={fieldInvalid.nameEn}
+          onClearInvalid={() => clearFieldInvalid("nameEn")}
         />
 
         <FormField
@@ -144,6 +183,8 @@ function SystemMenuEditForm({
             required
             value={moduleValue}
             onChange={setModuleValue}
+            invalid={fieldInvalid.module}
+            onClearInvalid={() => clearFieldInvalid("module")}
           />
         )}
 
@@ -151,16 +192,9 @@ function SystemMenuEditForm({
           <span className="text-sm font-medium">{tCol("active")}</span>
           <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
         </div>
-      </div>
+      </CrudFormSheetBody>
 
-      <SheetFooter className="flex-row justify-end gap-2 border-t border-border">
-        <SheetClose render={<Button type="button" variant="outline" size="lg" />}>
-          {dismissLabel}
-        </SheetClose>
-        <Button type="submit" size="lg">
-          {tCrud("save")}
-        </Button>
-      </SheetFooter>
+      <CrudFormSheetFooter dismissLabel={dismissLabel} />
     </form>
   );
 }
@@ -211,24 +245,17 @@ export function SystemMenuEditSheet({
         : null;
 
   return (
-    <Sheet open={sheetOpen} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-lg"
-      >
-        <SheetHeader className="border-b border-border">
-          <SheetTitle>{title}</SheetTitle>
-        </SheetHeader>
+    <CrudFormSheet open={sheetOpen} onOpenChange={onOpenChange}>
+      <CrudFormSheetHeader title={title} />
 
-        {formProps ? (
-          <SystemMenuEditForm
-            key={formKey}
-            {...formProps}
-            onSave={onSave}
-            onClose={handleClose}
-          />
-        ) : null}
-      </SheetContent>
-    </Sheet>
+      {formProps ? (
+        <SystemMenuEditForm
+          key={formKey}
+          {...formProps}
+          onSave={onSave}
+          onClose={handleClose}
+        />
+      ) : null}
+    </CrudFormSheet>
   );
 }
