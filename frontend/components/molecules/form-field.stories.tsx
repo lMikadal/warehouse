@@ -122,29 +122,12 @@ export const OptionalField: Story = {
   },
 };
 
-export const Disabled: Story = {
+export const ReadOnly: Story = {
   args: {
-    id: "wh-dis",
+    id: "wh-ro",
     labelKey: "col.name",
     value: "Cannot edit",
     onChange: () => {},
+    readOnly: true,
   },
-  render: () => (
-    <div className="max-w-sm">
-      <FormField
-        id="wh-dis"
-        labelKey="col.name"
-        value="Cannot edit"
-        onChange={() => {}}
-      >
-        <input
-          id="wh-dis"
-          disabled
-          value="Cannot edit"
-          readOnly
-          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm disabled:opacity-50 disabled:pointer-events-none disabled:bg-input/50"
-        />
-      </FormField>
-    </div>
-  ),
 };

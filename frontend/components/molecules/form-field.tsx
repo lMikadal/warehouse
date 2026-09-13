@@ -16,6 +16,7 @@ export type FormFieldProps = {
   onChange: (value: string) => void;
   invalid?: boolean;
   onClearInvalid?: () => void;
+  readOnly?: boolean;
   children?: ReactNode;
   className?: string;
   maxLength?: number;
@@ -30,6 +31,7 @@ export function FormField({
   onChange,
   invalid,
   onClearInvalid,
+  readOnly,
   children,
   className,
   maxLength,
@@ -40,10 +42,11 @@ export function FormField({
 
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
+      if (readOnly) return;
       onChange(e.target.value);
       onClearInvalid?.();
     },
-    [onChange, onClearInvalid]
+    [onChange, onClearInvalid, readOnly]
   );
 
   return (
@@ -66,11 +69,13 @@ export function FormField({
           type={type}
           inputMode={type === "tel" ? "tel" : undefined}
           autoComplete={type === "tel" ? "tel" : undefined}
-          required={required}
+          required={required && !readOnly}
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
           maxLength={maxLength}
+          readOnly={readOnly}
+          disabled={readOnly}
           aria-invalid={invalid ? true : undefined}
           aria-describedby={invalid ? `${id}-error` : undefined}
         />

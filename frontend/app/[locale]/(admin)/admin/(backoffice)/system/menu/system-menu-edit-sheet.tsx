@@ -11,7 +11,6 @@ import {
 } from "@/components/molecules/crud-form-sheet";
 import { FormField } from "@/components/molecules/form-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import { Input } from "@/components/ui/input";
 import type { AdminMenuRow } from "@/lib/admin-menu-mock";
 
 type MenuRequiredFieldKey = "nameTh" | "nameEn" | "module";
@@ -78,7 +77,7 @@ function SystemMenuEditForm({
   const [isActive, setIsActive] = useState(initial.isActive);
   const [fieldInvalid, setFieldInvalid] = useState(emptyMenuRequiredInvalid);
 
-  const moduleLocked = mode === "edit";
+  const locked = mode === "edit";
 
   const clearFieldInvalid = (key: MenuRequiredFieldKey) => {
     setFieldInvalid((prev) =>
@@ -99,7 +98,7 @@ function SystemMenuEditForm({
     let firstInvalidId: string | undefined;
 
     for (const field of MENU_REQUIRED_FIELDS) {
-      if (field.key === "module" && moduleLocked) continue;
+      if (field.key === "module" && locked) continue;
 
       const empty = !trimmed[field.key];
       nextInvalid[field.key] = empty;
@@ -118,8 +117,8 @@ function SystemMenuEditForm({
     onSave(editId, {
       nameTh: trimmed.nameTh,
       nameEn: trimmed.nameEn,
-      path: path.trim(),
-      module: moduleLocked ? initial.module : trimmed.module,
+      path: locked ? initial.path : path.trim(),
+      module: locked ? initial.module : trimmed.module,
       isActive,
     });
     onClose();
@@ -160,33 +159,19 @@ function SystemMenuEditForm({
           labelKey="form.field.path"
           value={path}
           onChange={setPath}
+          readOnly={locked}
         />
 
-        {moduleLocked ? (
-          <FormField
-            id="menu-edit-module"
-            labelKey="form.field.module"
-            value={moduleValue}
-            onChange={() => {}}
-          >
-            <Input
-              id="menu-edit-module"
-              disabled
-              value={moduleValue}
-              readOnly
-            />
-          </FormField>
-        ) : (
-          <FormField
-            id="menu-edit-module"
-            labelKey="form.field.module"
-            required
-            value={moduleValue}
-            onChange={setModuleValue}
-            invalid={fieldInvalid.module}
-            onClearInvalid={() => clearFieldInvalid("module")}
-          />
-        )}
+        <FormField
+          id="menu-edit-module"
+          labelKey="form.field.module"
+          required={!locked}
+          value={moduleValue}
+          onChange={setModuleValue}
+          invalid={fieldInvalid.module}
+          onClearInvalid={() => clearFieldInvalid("module")}
+          readOnly={locked}
+        />
 
         <div className="flex items-center justify-between gap-4 pt-1">
           <span className="text-sm font-medium">{tForm("field.active")}</span>
