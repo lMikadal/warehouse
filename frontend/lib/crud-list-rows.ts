@@ -55,6 +55,25 @@ export function flattenTreeRows<T extends TreeSortableRow>(rows: T[]): T[] {
   return out;
 }
 
+/** Keep rows that match `rowMatches` plus every ancestor (tree list search/status filters). */
+export function filterTreeRowsPreservingAncestors<T extends TreeSortableRow>(
+  rows: T[],
+  rowMatches: (row: T) => boolean
+): T[] {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const include = new Set<number>();
+  for (const row of rows) {
+    if (!rowMatches(row)) continue;
+    let cur: T | undefined = row;
+    while (cur) {
+      include.add(cur.id);
+      const pid = cur.parent_id;
+      cur = pid == null ? undefined : byId.get(pid);
+    }
+  }
+  return rows.filter((r) => include.has(r.id));
+}
+
 export function defaultSortRows<T extends TreeSortableRow>(rows: T[]): T[] {
   const copy = rows.slice();
   if (copy.some((r) => r.tree_path != null && r.tree_path !== "")) {
@@ -342,6 +361,19 @@ function reorderFlatSortOrderSelfCheck(): void {
   }
 }
 
+function filterTreeRowsPreservingAncestorsSelfCheck() {
+  type Row = TreeSortableRow & { name: string };
+  const rows: Row[] = [
+    { id: 1, parent_id: null, sort_order: 10, tree_path: "a", name: "root" },
+    { id: 2, parent_id: 1, sort_order: 10, tree_path: "a.b", name: "child" },
+  ];
+  const out = filterTreeRowsPreservingAncestors(rows, (r) => r.name === "child");
+  if (out.length !== 2 || out[0]?.id !== 1) {
+    throw new Error("filterTreeRowsPreservingAncestors self-check failed");
+  }
+}
+
 if (import.meta.main) {
   reorderFlatSortOrderSelfCheck();
+  filterTreeRowsPreservingAncestorsSelfCheck();
 }

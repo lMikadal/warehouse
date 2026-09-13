@@ -47,6 +47,7 @@ import {
 import {
   applyHeaderSort,
   defaultSortRows,
+  filterTreeRowsPreservingAncestors,
   isTreeDragIntoOwnSubtree,
   reorderFlatSortOrder,
   reorderIdsFromSortableEvent,
@@ -87,7 +88,7 @@ function filterMenuRows(
   locale: DisplayLocale
 ): AdminMenuRow[] {
   const q = query.trim().toLowerCase();
-  return rows.filter((row) => {
+  return filterTreeRowsPreservingAncestors(rows, (row) => {
     if (status === "active" && !row.is_active) return false;
     if (status === "inactive" && row.is_active) return false;
     if (!q) return true;
@@ -259,10 +260,13 @@ export function SystemMenuList() {
   const [menuSheet, setMenuSheet] = useState<SystemMenuSheetState | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
 
+  const searchActive = query.trim() !== "";
+  const listFiltered = searchActive || statusFilter !== "";
+
   const fullSorted = useMemo(() => {
     const filtered = filterMenuRows(rows, query, statusFilter, locale);
     const withLabel = filtered.map((r) => toRowView(r, locale));
-    if (sortKey && sortDir) {
+    if (!listFiltered && sortKey && sortDir) {
       return applyHeaderSort(withLabel, sortKey, sortDir, (row) => ({
         label: row.label,
         module: row.module,
@@ -272,19 +276,21 @@ export function SystemMenuList() {
       }));
     }
     return defaultSortRows(withLabel).map((r) => toRowView(r, locale));
-  }, [rows, query, statusFilter, locale, sortKey, sortDir]);
+  }, [rows, query, statusFilter, locale, sortKey, sortDir, listFiltered]);
 
   const total = fullSorted.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * pageSize;
   const pageRows = fullSorted.slice(pageStart, pageStart + pageSize);
-  const dragEnabled = sortKey == null;
+  const headerSortActive = sortKey != null && sortDir != null;
+  const dragEnabled = !listFiltered && !headerSortActive;
 
   const handleSortChange = (
     nextKey: string | null,
     nextDir: TableSortDirection | null
   ) => {
+    if (listFiltered) return;
     setSortKey(nextKey);
     setSortDir(nextDir);
     setPage(1);
@@ -406,6 +412,8 @@ export function SystemMenuList() {
           value={query}
           onChange={(value) => {
             setQuery(value);
+            setSortKey(null);
+            setSortDir(null);
             setPage(1);
           }}
         />
@@ -413,101 +421,110 @@ export function SystemMenuList() {
           value={statusFilter}
           onChange={(value) => {
             setStatusFilter(value);
+            setSortKey(null);
+            setSortDir(null);
             setPage(1);
           }}
         />
       </div>
 
       <div className="surface-table-wrap">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10" aria-hidden />
-              <TableSortHead
-                columnKey="label"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                onSortChange={handleSortChange}
-                sortLabel={sortFieldLabel(
-                  tCrud,
-                  tCol,
-                  sortKey,
-                  sortDir,
-                  "name"
-                )}
-              >
-                {tCol("name")}
-              </TableSortHead>
-              <TableSortHead
-                columnKey="module"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                onSortChange={handleSortChange}
-                sortLabel={sortFieldLabel(
-                  tCrud,
-                  tCol,
-                  sortKey,
-                  sortDir,
-                  "module"
-                )}
-              >
-                {tCol("module")}
-              </TableSortHead>
-              <TableSortHead
-                columnKey="path"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                onSortChange={handleSortChange}
-                sortLabel={sortFieldLabel(
-                  tCrud,
-                  tCol,
-                  sortKey,
-                  sortDir,
-                  "path"
-                )}
-              >
-                {tCol("path")}
-              </TableSortHead>
-              <TableSortHead
-                columnKey="is_active"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                onSortChange={handleSortChange}
-                align="center"
-                sortLabel={sortFieldLabel(
-                  tCrud,
-                  tCol,
-                  sortKey,
-                  sortDir,
-                  "status"
-                )}
-              >
-                {tCol("status")}
-              </TableSortHead>
-              <TableSortHead
-                align="center"
-                columnKey="updated_at"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                onSortChange={handleSortChange}
-                sortLabel={sortFieldLabel(
-                  tCrud,
-                  tCol,
-                  sortKey,
-                  sortDir,
-                  "updatedAt"
-                )}
-              >
-                {tCol("updatedAt")}
-              </TableSortHead>
-              <TableHead align="center" className="text-center">{tCrud("table.actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          {dragEnabled ? (
-            <DragDropProvider onDragEnd={handleDragEnd}>
-              <TableBody key={sortableEpoch}>
-                {pageRows.length  ? (
-                  pageRows.map((row, index) => (
+        <DragDropProvider onDragEnd={handleDragEnd}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10" aria-hidden />
+                <TableSortHead
+                  columnKey="label"
+                  sortable={!listFiltered}
+                  activeSortKey={sortKey}
+                  sortDirection={sortDir}
+                  onSortChange={handleSortChange}
+                  sortLabel={sortFieldLabel(
+                    tCrud,
+                    tCol,
+                    sortKey,
+                    sortDir,
+                    "name"
+                  )}
+                >
+                  {tCol("name")}
+                </TableSortHead>
+                <TableSortHead
+                  columnKey="module"
+                  sortable={!listFiltered}
+                  activeSortKey={sortKey}
+                  sortDirection={sortDir}
+                  onSortChange={handleSortChange}
+                  sortLabel={sortFieldLabel(
+                    tCrud,
+                    tCol,
+                    sortKey,
+                    sortDir,
+                    "module"
+                  )}
+                >
+                  {tCol("module")}
+                </TableSortHead>
+                <TableSortHead
+                  columnKey="path"
+                  sortable={!listFiltered}
+                  activeSortKey={sortKey}
+                  sortDirection={sortDir}
+                  onSortChange={handleSortChange}
+                  sortLabel={sortFieldLabel(
+                    tCrud,
+                    tCol,
+                    sortKey,
+                    sortDir,
+                    "path"
+                  )}
+                >
+                  {tCol("path")}
+                </TableSortHead>
+                <TableSortHead
+                  columnKey="is_active"
+                  sortable={!listFiltered}
+                  activeSortKey={sortKey}
+                  sortDirection={sortDir}
+                  onSortChange={handleSortChange}
+                  align="center"
+                  sortLabel={sortFieldLabel(
+                    tCrud,
+                    tCol,
+                    sortKey,
+                    sortDir,
+                    "status"
+                  )}
+                >
+                  {tCol("status")}
+                </TableSortHead>
+                <TableSortHead
+                  align="center"
+                  columnKey="updated_at"
+                  sortable={!listFiltered}
+                  activeSortKey={sortKey}
+                  sortDirection={sortDir}
+                  onSortChange={handleSortChange}
+                  sortLabel={sortFieldLabel(
+                    tCrud,
+                    tCol,
+                    sortKey,
+                    sortDir,
+                    "updatedAt"
+                  )}
+                >
+                  {tCol("updatedAt")}
+                </TableSortHead>
+                <TableHead align="center" className="text-center">
+                  {tCrud("table.actions")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody key={dragEnabled ? sortableEpoch : "header-sort"}>
+              {pageRows.length ? (
+                pageRows.map((row, index) =>
+                  dragEnabled ? (
                     <SortableMenuTableRow
                       key={row.id}
                       row={row}
@@ -516,39 +533,27 @@ export function SystemMenuList() {
                       onToggleActive={handleToggleActive}
                       onAction={handleRowAction}
                     />
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={COLUMN_COUNT} className="text-center">
-                      {tError("noData")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </DragDropProvider>
-          ) : (
-            <TableBody>
-              {pageRows.length ? (
-                pageRows.map((row) => (
-                  <StaticMenuTableRow
-                    key={row.id}
-                    row={row}
-                    locale={locale}
-                    dragEnabled={false}
-                    onToggleActive={handleToggleActive}
-                    onAction={handleRowAction}
-                  />
-                ))
+                  ) : (
+                    <StaticMenuTableRow
+                      key={row.id}
+                      row={row}
+                      locale={locale}
+                      dragEnabled={false}
+                      onToggleActive={handleToggleActive}
+                      onAction={handleRowAction}
+                    />
+                  )
+                )
               ) : (
                 <TableRow>
-                  <TableCell colSpan={COLUMN_COUNT} className="h-24 text-center">
-                    —
+                  <TableCell colSpan={COLUMN_COUNT} className="text-center">
+                    {tError("noData")}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
-          )}
-        </Table>
+          </Table>
+        </DragDropProvider>
       </div>
 
       <CrudPaginationBar
