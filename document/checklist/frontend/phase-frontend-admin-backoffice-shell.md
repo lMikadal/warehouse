@@ -7,7 +7,7 @@ Admin chrome for `(backoffice)` routes — sidebar, header, main frame. Design s
 ## Phase checklist
 
 - [x] `components/organisms/admin-backoffice-shell.tsx` + Storybook **Organisms/AdminBackofficeShell**
-- [x] Static nav data [`frontend/lib/admin-nav.ts`](../../../frontend/lib/admin-nav.ts) (until `admin_menu` API)
+- [x] Static nav data [`frontend/lib/admin-menu-mock.ts`](../../../frontend/lib/admin-menu-mock.ts) (`ADMIN_NAV_TREE`; until `admin_menu` API)
 - [x] [`(backoffice)/layout.tsx`](../../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) wraps children with shell
 - [x] i18n keys: `nav.*`, `adminNav.*`, `page.*` (menu/permission labels)
 - [x] `document/knowledge/frontend.md` updated

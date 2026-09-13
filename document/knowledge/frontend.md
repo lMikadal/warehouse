@@ -43,7 +43,7 @@ All shadcn CLI output stays in `components/ui/`. Molecules compose these with wa
 
 **Molecules (compose atoms):** `BreadcrumbNav` → `breadcrumb` + `@/i18n/navigation` `Link`; `FormField` → `field` + `input` (forms rules); `CrudPaginationBar` → `pagination` + `select` + [`lib/crud-pagination.ts`](../../frontend/lib/crud-pagination.ts).
 
-**Organisms:** **`AdminBackofficeShell`** — `SidebarProvider` + brand/search/collapsible nav/footer + header (`BreadcrumbNav`, `LocaleThemeToolbar`) + `bg-page-wash` main; Storybook **Organisms/AdminBackofficeShell**. Nav tree is static in [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) until `admin_menu` API exists (mirrors design seed shape).
+**Organisms:** **`AdminBackofficeShell`** — `SidebarProvider` + brand/search/collapsible nav/footer + header (`BreadcrumbNav`, `LocaleThemeToolbar`) + `bg-page-wash` main; Storybook **Organisms/AdminBackofficeShell**. Nav tree comes from [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) (`adminNavTreeFromRows` / `ADMIN_NAV_TREE`) until `admin_menu` API exists.
 
 **Organisms (future):** CRUD list shell (`data-table` + TanStack + pagination/actions molecules), form pages (`FieldSet` / many `FormField`s).
 
@@ -226,7 +226,7 @@ Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 | `page-auth.json` | `page.login` — admin sign-in screen |
 | `page-system.json` | `page.adminMenu` (list header/sheet); add more `page.*` when routes ship |
 
-Sidebar / breadcrumb labels live in [`admin-nav.ts`](../../frontend/lib/admin-nav.ts) as mock `labels: { th, en }` until `admin_menu` API returns display names — not in `messages/`.
+Sidebar / breadcrumb labels live in [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) as mock `labels: { th, en }` until `admin_menu` API returns display names — not in `messages/`.
 
 Storybook stories reuse production keys where applicable (e.g. `col.name`, `page.adminMenu.title`).
 
@@ -236,7 +236,7 @@ Add keys when a route or nav node ships — no unused placeholders. Port copy fr
 
 Each screen under `page.<screenId>`:
 
-- `title` — page header (and breadcrumb on wired routes via `admin-nav.ts` mock)
+- `title` — page header (and breadcrumb on wired routes via `admin-menu-mock.ts`)
 - `desc` — optional list header description
 - `add` — optional primary create CTA when phrasing is not `crud.create` + title
 
@@ -254,7 +254,7 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
 | Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
-| Nav | [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) — mock `labels` per node + breadcrumb map; sidebar search filter |
+| Nav | [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) — `ADMIN_NAV_TREE`, breadcrumb map, sidebar search filter |
 | Session | Placeholder user `admin` + logout → `/admin/login` until auth API |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
 

@@ -1,14 +1,17 @@
 "use client";
 
 import {
+  Box,
   ChevronRight,
   ClipboardList,
+  Coins,
   Contact,
   LogOut,
   MapPin,
   Package,
   Settings,
   ShieldUser,
+  ShoppingBag,
   ShoppingCart,
   UserRound,
   Users,
@@ -55,7 +58,7 @@ import {
   filterAdminNavTree,
   type AdminNavIcon,
   type AdminNavNode,
-} from "@/lib/admin-nav";
+} from "@/lib/admin-menu-mock";
 import { cn } from "@/lib/utils";
 
 const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
@@ -65,8 +68,11 @@ const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
   contact: Contact,
   "map-pin": MapPin,
   warehouse: Warehouse,
+  box: Box,
   package: Package,
   users: Users,
+  coins: Coins,
+  "shopping-bag": ShoppingBag,
   "shopping-cart": ShoppingCart,
   "clipboard-list": ClipboardList,
 };
@@ -92,6 +98,7 @@ function userInitial(username: string): string {
 function NavIcon({ icon }: { icon?: AdminNavIcon }) {
   if (!icon) return null;
   const Icon = NAV_ICONS[icon];
+  if (!Icon) return null;
   return <Icon className="text-current" aria-hidden />;
 }
 
