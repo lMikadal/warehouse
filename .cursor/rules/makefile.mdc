@@ -1,3 +1,8 @@
+---
+description: Prefer root Makefile targets over raw bun, go, docker compose, and design-serve.
+alwaysApply: true
+---
+
 # Makefile for framework commands
 
 Framework and Docker commands used by skills live in the root `Makefile`. Agents must use those targets from the repo root.

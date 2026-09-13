@@ -1,15 +1,41 @@
 ---
 name: frontend
 description: >-
-  Build Warehouse app production UI in frontend/ with Next.js App Router, bun,
-  Tailwind CSS v4, shadcn/ui, blue-white theme, light/dark mode, and th/en
-  i18n. Use when working under frontend/, converting design mockups to React,
-  or wiring API calls to the Go backend.
+  Build Warehouse production UI in frontend/ with Next.js App Router, bun,
+  Tailwind v4, shadcn/ui, molecules/organisms, Storybook, next-intl, Sonner,
+  make frontend-storybook-build. Use when converting design mockups, route
+  pages under app/, or wiring the Go API.
 ---
 
 # Frontend (Next.js)
 
 Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, shadcn/ui.
+
+## Agent navigation
+
+- **Index:** [`.cursor/README.md`](../../README.md)
+- **Invoke:** `/frontend`
+- **Route entry:** [`frontend/AGENTS.md`](../../../frontend/AGENTS.md)
+
+## Related rules (read when relevant)
+
+| Topic | Rule |
+|-------|------|
+| Layer stack / new components | [`.cursor/rules/design-system.mdc`](../../rules/design-system.mdc) |
+| Storybook / route pages | [`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc) |
+| Forms | [`.cursor/rules/forms.mdc`](../../rules/forms.mdc) |
+| Tables | [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) |
+| Date display | [`.cursor/rules/dates.mdc`](../../rules/dates.mdc) |
+| Icons | [`.cursor/rules/icons.mdc`](../../rules/icons.mdc) |
+| Docs sync | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |
+| Commands | [`.cursor/rules/makefile.mdc`](../../rules/makefile.mdc) |
+
+## Read order
+
+1. This file — scope, stack, UX, API
+2. Rules from the table for the task
+3. Matching Storybook stories before implementing `app/` pages
+4. `document/checklist/frontend/` + `document/knowledge/frontend.md` if behavior changes
 
 ## Scope
 
@@ -129,6 +155,16 @@ Full rules: [`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc), [`.curso
 2. **New shared component** — Ask the user every time (name, layer, why reuse failed). No new file in those folders and no `make frontend-shadcn-add` until approved.
 3. **Before reuse on pages** — Read the matching story for variants/props; optional dev: `make frontend-storybook` (port 6006).
 4. **Before done** — Any change under `frontend/components/**`: run `make frontend-storybook-build` from repo root; fix failures in the same turn.
+
+## Route page checklist (`frontend/app/**`)
+
+Full rule: [storybook.mdc](../../rules/storybook.mdc) **Warehouse pages**.
+
+1. **Map UI to stories** — For each block on the page, find **UI/**, **Molecules/**, or **Design system/Overview → Catalog**; do not invent route-only markup when a story exists.
+2. **Match stories** — Same components, variants, sizes, and state styling as the story (theme/locale via app layout + i18n, not hardcoded copy).
+3. **Forms & tables** — Use **FormField** and storied list molecules; [forms.mdc](../../rules/forms.mdc) and [tables.mdc](../../rules/tables.mdc) override primitive **UI/Field** demos where they differ.
+4. **Missing story** — Add or update `*.stories.tsx` in the same change, then wire the page to that component.
+5. **Build** — Run `make frontend-storybook-build` only if the change touched `components/` or stories (page-only edits do not require it).
 
 ## From design → frontend
 

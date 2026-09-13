@@ -26,6 +26,19 @@ Page-only work under `frontend/app/**` that does not touch `components/` does no
 
 Atomic reuse and user approval for **new** shared components: [design-system.mdc](design-system.mdc).
 
+## Warehouse pages (`frontend/app/**`)
+
+When **creating or changing** route pages under `frontend/app/` (including `[locale]/…`), treat Storybook as the **implementation spec** for shared UI—not the component source file alone and not copy-pasted `design/` markup.
+
+| Step | Requirement |
+|------|-------------|
+| **Inventory** | Before writing page JSX, map each UI block to an existing story: sidebar **UI/** and **Molecules/**, plus **Design system/Overview → Catalog** for matrices and cross-cutting chrome. |
+| **Compose** | Import **molecules/organisms** (or minimal `ui/` only where stories do). Match **variant**, **size**, **orientation**, and state classes (invalid, success, warning) as shown in stories. |
+| **Forms** | Production CRUD/forms: follow [forms.mdc](forms.mdc) via **Molecules/FormField** and related molecule stories (search, status, switches). **UI/Field** stories are primitive layout/state demos only—they do not override form validation rules on pages. |
+| **Lists/tables** | Follow [tables.mdc](tables.mdc) using storied molecules (pagination bar, table icon actions, filters)—match story layout and i18n patterns. |
+| **Gap** | If the page needs a pattern with no story, add or update `*.stories.tsx` in the same change (see **Before reuse**), then use it on the page. Do not leave one-off route markup as the source of truth. |
+| **Verify** | Changes that **only** touch `app/**` do not require `make frontend-storybook-build`. If the same change edits `components/` or stories, run the build as in **Agent workflow (component changes)**. |
+
 ## Running Storybook
 
 From repo root: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006) — optional for local visual review; not the required agent checkpoint.
@@ -41,5 +54,6 @@ Components that call `useTranslations` need `NextIntlClientProvider` + messages 
 ## Do not
 
 - Invent one-off styling for shadcn/ui primitives when a story already documents the intended variants.
+- Implement route UI by reading component source alone when a matching Storybook story exists.
 - Skip Storybook when adding a new reusable `components/ui/` export that other routes will import.
 - Finish `frontend/components/**` work without running `make frontend-storybook-build` when the change touched that tree.

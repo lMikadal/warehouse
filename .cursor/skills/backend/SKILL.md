@@ -1,15 +1,37 @@
 ---
 name: backend
 description: >-
-  Build Warehouse app Go Echo APIs in backend/ and Docker in infrastructure/
-  with strong security, reusable domain modules, and th/en API messages. Use
-  when working under backend/ or infrastructure/, adding handlers, migrations
-  from design/schema/, compose services, or Dockerfiles.
+  Build Warehouse Go Echo v5 APIs, goose PostgreSQL migrations from
+  design/schema/, Redis when needed, and Docker compose in infrastructure/.
+  Use for handlers, services, migrations, compose, and th/en API messages.
 ---
 
 # Backend + Infrastructure
 
 Warehouse app API in `backend/` (Go + Echo v5) and Docker in `infrastructure/`.
+
+## Agent navigation
+
+- **Index:** [`.cursor/README.md`](../../README.md)
+- **Invoke:** `/backend`
+- **Schema shape for migrations:** [`.cursor/skills/design/reference.md`](../design/reference.md)
+
+## Related rules (read when relevant)
+
+| Topic | Rule |
+|-------|------|
+| List APIs (page, limit, sort) | [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) |
+| Bin placement | [`.cursor/rules/warehouse.mdc`](../../rules/warehouse.mdc) |
+| Docs + Postman | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |
+| Commands | [`.cursor/rules/makefile.mdc`](../../rules/makefile.mdc) |
+| Minimal diffs | [`.cursor/rules/ponytail.mdc`](../../rules/ponytail.mdc) |
+
+## Read order
+
+1. This file — layout, workflow, migrations vs design schema
+2. [`design/reference.md`](../design/reference.md) when adding or changing tables
+3. Rules from the table for the task
+4. `document/checklist/backend/` or `infrastructure/` + knowledge + `/tester` for API changes
 
 ## Scope
 
@@ -122,13 +144,11 @@ Do not run raw `docker compose`, `air`, `go run`, or goose when a make target ex
 |-----------------------|------------------------------------------|
 | `backend/.../migrations/` | What goose actually runs |
 
-- Table names: `{module}_{entity}` all snake_case, singular entity (e.g. `product_item`) — goose `CREATE TABLE` must match; do not rename when migrating
-- Multilingual: companion `{base}_language` tables — do not flatten to `name_th` / `name_en` columns
-- Columns: English snake_case; base tables include `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`; `*_language` tables include only `created_at`, `updated_at` (no soft-delete / by columns)
-- Tree tables: `parent_id` + `tree_path` (LTREE) + `sort_order` together; self-FK `ON DELETE RESTRICT`; GIST + unique active `tree_path` indexes (see design skill)
-- **List endpoints:** follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc) — accept `page` + `limit`; tree lists: hierarchical order (sibling `sort_order` → `id` per `parent_id`, DFS pre-order); flat: `sort_order` → `created_at`; else `created_at` → `id`. `ORDER BY tree_path` alone does not match UI sibling order.
-- IDs: `id BIGSERIAL` primary keys and `BIGINT` FK columns per `design/schema/` — do not copy UUID PKs from legacy v2 migrations; when porting old shapes (e.g. `warehouse_conditions`), map UUID columns to `BIGINT` FK names in design schema
-- Column comments: inline `--` on every non-audit column in `design/schema/` (English; skip audit sets per table kind — see design skill)
+Naming, enums, trees, audit, and multilingual rules: **[`.cursor/skills/design/reference.md`](../design/reference.md)** (do not duplicate here).
+
+- Goose `CREATE TABLE` must match design table names — do not rename when migrating
+- **List endpoints:** follow [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) — accept `page` + `limit`; tree lists: hierarchical order (sibling `sort_order` → `id` per `parent_id`, DFS pre-order); flat: `sort_order` → `created_at`; else `created_at` → `id`. `ORDER BY tree_path` alone does not match UI sibling order.
+- IDs: `BIGSERIAL` / `BIGINT` per design — do not copy UUID PKs from legacy v2; map to design FK names when porting
 - When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
 
 ## Do not

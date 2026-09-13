@@ -1,14 +1,32 @@
 ---
 name: tester
 description: >-
-  Test Warehouse backend APIs and maintain a handoff-ready Postman Collection
-  v2.1 at document/postman/postman.json. Use when testing API endpoints, writing
-  API test cases, updating Postman collections, or working under document/postman/.
+  Test Warehouse backend APIs and maintain Postman Collection v2.1 at
+  document/postman/postman.json plus env.example. Use for API test cases,
+  curl/httpie smoke tests, make run / backend-dev, and Postman handoff.
 ---
 
 # Tester (backend API + Postman)
 
 Test the **backend first** and keep `document/postman/postman.json` ready for user import or handoff.
+
+## Agent navigation
+
+- **Index:** [`.cursor/README.md`](../../README.md)
+- **Invoke:** `/tester`
+
+## Related rules (read when relevant)
+
+| Topic | Rule |
+|-------|------|
+| Postman + checklist sync | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |
+| Start stack / backend | [`.cursor/rules/makefile.mdc`](../../rules/makefile.mdc) |
+
+## Read order
+
+1. This file — collection rules and test workflow
+2. Handler/DTO in `backend/` for the endpoint under test
+3. Update `document/postman/postman.json` in the same turn when APIs change
 
 ## Scope
 

@@ -35,7 +35,7 @@ Scope: **`frontend/` only**. Handoff from `design/` mockups stays in `.cursor/sk
 | **Base UI** | Same as shadcn primitives | Required set before feature pages: **Button**, **Input**, **Select**, **Dialog**, **Table** — each with a co-located `*.stories.tsx` when shared. Add via `make frontend-shadcn-add COMPONENT=<name>`. |
 | **Atomic design** | `components/molecules/`, `components/organisms/` | **Molecules:** small compositions (labeled field, search row, pager strip). **Organisms:** CRUD toolbar, data table shell, admin chrome sections. Route pages compose **molecules/organisms**, not ad-hoc stacks of `ui/` — except trivial one-off leaf usage. |
 | **Design system** | Rules + Storybook + docs | Cross-cutting standards: this file, [forms.mdc](forms.mdc), [tables.mdc](tables.mdc), [dates.mdc](dates.mdc), [icons.mdc](icons.mdc), [storybook.mdc](storybook.mdc), `document/knowledge/frontend.md`. New **shared** UI exports need a Storybook story. |
-| **Warehouse pages** | `frontend/app/[locale]/…` | Domain routes (e.g. inventory, orders, products, users): API + i18n, compose organisms, follow tables/forms/dates rules. |
+| **Warehouse pages** | `frontend/app/[locale]/…` | Domain routes (e.g. inventory, orders, products, users): API + i18n, compose organisms/molecules per Storybook stories; follow [storybook.mdc](storybook.mdc) **Warehouse pages** workflow plus tables/forms/dates rules. |
 
 ## Dependency direction
 
@@ -51,7 +51,7 @@ Scope: **`frontend/` only**. Handoff from `design/` mockups stays in `.cursor/sk
 
 Before implementing a **new screen**, **design handoff**, or **new UI pattern** (including from `design/` mockups):
 
-0. **Inventory** — Search and list what already exists under `frontend/components/ui/`, `components/molecules/`, `components/organisms/`, and co-located `*.stories.tsx` (Storybook catalog). Prefer compose/reuse over new files.
+0. **Inventory** — Search and list what already exists under `frontend/components/ui/`, `components/molecules/`, `components/organisms/`, and co-located `*.stories.tsx` (Storybook catalog). For **route pages** under `frontend/app/**`, also follow the Storybook page workflow in [storybook.mdc](storybook.mdc). Prefer compose/reuse over new files.
 1. **Reuse order** — existing **organism** → **molecule** → **`ui/`** primitive → only then propose something new.
 2. **New shared component** — A new file or new public export in `ui/`, `molecules/`, `organisms/`, a new shared file under `components/`, or `make frontend-shadcn-add COMPONENT=<name>` requires **user approval every time**. Stop and ask (e.g. `AskQuestion`) with a short proposal: proposed name, layer, what was searched, and why existing pieces are insufficient. Do **not** create the file until the user approves.
 3. **Edits to existing components** — No extra approval; still follow the Storybook build step in [storybook.mdc](storybook.mdc) when `components/` changes.

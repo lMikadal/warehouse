@@ -240,6 +240,7 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 ### Component workflow (team agreement)
 
 - Before new UI or design handoff: inventory `components/ui/`, `molecules/`, `organisms/`, and Storybook stories; compose existing pieces first.
+- **Route pages** (`frontend/app/[locale]/…`): implement shared UI to match Storybook (**UI/**, **Molecules/**, **Design system/Overview** catalog)—see [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc) **Warehouse pages**; [forms.mdc](../../.cursor/rules/forms.mdc) / [tables.mdc](../../.cursor/rules/tables.mdc) apply on production forms and lists.
 - **New shared component** (new file/export in those layers or `make frontend-shadcn-add`): requires explicit user approval every time — see [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc).
 - After any change under `frontend/components/**`: run `make frontend-storybook-build` before considering the task done — see [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc).
 
