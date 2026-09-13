@@ -69,7 +69,7 @@ function SystemMenuEditForm({
   onClose,
 }: SystemMenuEditFormProps) {
   const tCrud = useTranslations("crud");
-  const tCol = useTranslations("col");
+  const tForm = useTranslations("form");
 
   const [nameTh, setNameTh] = useState(initial.nameTh);
   const [nameEn, setNameEn] = useState(initial.nameEn);
@@ -125,7 +125,7 @@ function SystemMenuEditForm({
     onClose();
   };
 
-  const dismissLabel = mode === "create" ? tCrud("back") : tCrud("cancel");
+  const dismissLabel = mode === "create" ? tCrud("btn.back") : tCrud("btn.cancel");
 
   return (
     <form
@@ -137,7 +137,7 @@ function SystemMenuEditForm({
       <CrudFormSheetBody>
         <FormField
           id="menu-edit-name-th"
-          labelKey="col.nameTh"
+          labelKey="form.field.nameTh"
           required
           value={nameTh}
           onChange={setNameTh}
@@ -147,7 +147,7 @@ function SystemMenuEditForm({
 
         <FormField
           id="menu-edit-name-en"
-          labelKey="col.nameEn"
+          labelKey="form.field.nameEn"
           required
           value={nameEn}
           onChange={setNameEn}
@@ -157,7 +157,7 @@ function SystemMenuEditForm({
 
         <FormField
           id="menu-edit-path"
-          labelKey="col.path"
+          labelKey="form.field.path"
           value={path}
           onChange={setPath}
         />
@@ -165,7 +165,7 @@ function SystemMenuEditForm({
         {moduleLocked ? (
           <FormField
             id="menu-edit-module"
-            labelKey="col.module"
+            labelKey="form.field.module"
             value={moduleValue}
             onChange={() => {}}
           >
@@ -179,7 +179,7 @@ function SystemMenuEditForm({
         ) : (
           <FormField
             id="menu-edit-module"
-            labelKey="col.module"
+            labelKey="form.field.module"
             required
             value={moduleValue}
             onChange={setModuleValue}
@@ -189,7 +189,7 @@ function SystemMenuEditForm({
         )}
 
         <div className="flex items-center justify-between gap-4 pt-1">
-          <span className="text-sm font-medium">{tCol("active")}</span>
+          <span className="text-sm font-medium">{tForm("field.active")}</span>
           <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
         </div>
       </CrudFormSheetBody>
@@ -205,14 +205,14 @@ export function SystemMenuEditSheet({
   onSave,
 }: SystemMenuEditSheetProps) {
   const tCrud = useTranslations("crud");
-  const tPage = useTranslations("page");
+  const tPageMenu = useTranslations("page.adminMenu");
 
   const sheetOpen = state != null;
 
   const handleClose = () => onOpenChange(false);
 
   const title =
-    state?.mode === "create" ? tPage("adminMenuAdd") : tCrud("edit");
+    state?.mode === "create" ? tPageMenu("add") : tCrud("btn.edit");
 
   const formKey =
     state?.mode === "edit" ? `edit-${state.row.id}` : "create";

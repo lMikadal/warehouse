@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "logout": "Log out",
+    "noMenu": "No menu",
+    "openMenu": "Open menu",
+    "search": "Search menu"
+  },
+  "lang": {
+    "en": "EN",
+    "th": "ไทย",
+    "toggle": "Language"
+  },
+  "theme": {
+    "dark": "Dark",
+    "label": "Theme",
+    "light": "Light",
+    "system": "System",
+    "toggle": "Toggle theme"
+  },
+  "toast": {
+    "demoError": "Something went wrong.",
+    "demoInfo": "Export will be available soon.",
+    "demoSuccess": "Saved.",
+    "demoWarning": "Save the form to persist changes."
+  }
+}

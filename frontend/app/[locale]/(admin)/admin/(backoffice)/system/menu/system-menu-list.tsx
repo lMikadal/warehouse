@@ -70,11 +70,11 @@ function sortFieldLabel(
 ): string {
   const field = tCol(fieldKey);
   if (sortKey !== fieldKey || !sortDir) {
-    return tCrud("sortNone", { field });
+    return tCrud("sort.none", { field });
   }
   return sortDir === "desc"
-    ? tCrud("sortDesc", { field })
-    : tCrud("sortAsc", { field });
+    ? tCrud("sort.desc", { field })
+    : tCrud("sort.asc", { field });
 }
 
 function filterMenuRows(
@@ -225,7 +225,7 @@ function MenuTableCells({
           size="md"
           ref={dragEnabled ? handleRef : undefined}
           disabled={!dragEnabled}
-          aria-label={tCrud("dragReorder")}
+          aria-label={tCrud("reorder.drag")}
           className={cn(
             "shrink-0 text-muted-foreground",
             dragEnabled
@@ -268,7 +268,7 @@ function MenuTableCells({
 export function SystemMenuList() {
   const locale = useLocale() as DisplayLocale;
   const tError = useTranslations("error");
-  const tPage = useTranslations("page");
+  const tPageMenu = useTranslations("page.adminMenu");
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
 
@@ -322,7 +322,7 @@ export function SystemMenuList() {
         r.id === id ? { ...r, is_active: active, updated_at: now } : r
       )
     );
-    toast.success(tCrud("saved"));
+    toast.success(tCrud("toast.saved"));
   };
 
   const handleSaveMenu = (
@@ -332,7 +332,7 @@ export function SystemMenuList() {
     if (id == null) {
       setRows((prev) => [...prev, buildRootMenuRow(prev, payload)]);
       setMenuSheet(null);
-      toast.success(tCrud("created"));
+      toast.success(tCrud("toast.created"));
       return;
     }
     const now = new Date().toISOString();
@@ -350,7 +350,7 @@ export function SystemMenuList() {
       )
     );
     setMenuSheet(null);
-    toast.success(tCrud("saved"));
+    toast.success(tCrud("toast.saved"));
   };
 
   const handleRowAction = (id: number, action: TableIconActionKey) => {
@@ -368,7 +368,7 @@ export function SystemMenuList() {
     if (deleteId == null) return;
     setRows((prev) => removeMenuSubtree(prev, deleteId));
     setDeleteId(null);
-    toast.success(tCrud("deleted"));
+    toast.success(tCrud("toast.deleted"));
   };
 
   const handleDragEnd: ComponentProps<
@@ -389,7 +389,7 @@ export function SystemMenuList() {
       dstRow == null ||
       srcRow.parent_id !== dstRow.parent_id
     ) {
-      toast.warning(tCrud("dragSiblingOnly"));
+      toast.warning(tCrud("reorder.siblingOnly"));
       return;
     }
     const next = reorderFlatSortOrder(
@@ -401,14 +401,14 @@ export function SystemMenuList() {
     );
     if (next == null) return;
     setRows(next);
-    toast.success(tCrud("reordered"));
+    toast.success(tCrud("toast.reordered"));
   };
 
   return (
     <div className="space-y-4">
       <CrudPageHeader
-        title={tPage("adminMenu")}
-        description={tPage("adminMenuDesc")}
+        title={tPageMenu("title")}
+        description={tPageMenu("desc")}
         actions={
           <Button
             type="button"
@@ -416,7 +416,7 @@ export function SystemMenuList() {
             onClick={() => setMenuSheet({ mode: "create" })}
           >
             <Plus className="text-current" />
-            {tPage("adminMenuAdd")}
+            {tPageMenu("add")}
           </Button>
         }
       />
@@ -520,7 +520,7 @@ export function SystemMenuList() {
               >
                 {tCol("updatedAt")}
               </TableSortHead>
-              <TableHead align="center" className="text-center">{tCrud("actions")}</TableHead>
+              <TableHead align="center" className="text-center">{tCrud("table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           {dragEnabled ? (

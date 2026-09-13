@@ -22,15 +22,15 @@ import {
 
 export function LoginForm() {
   const t = useTranslations();
-  const tLogin = useTranslations("login");
+  const tPage = useTranslations("page.login");
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [usernameInvalid, setUsernameInvalid] = useState(false);
   const [passwordInvalid, setPasswordInvalid] = useState(false);
 
-  const usernameLabel = tLogin("username");
-  const passwordLabel = tLogin("password.label");
+  const usernameLabel = tPage("username");
+  const passwordLabel = tPage("password.label");
   const usernamePlaceholder = t("form.placeholder.input", {
     label: usernameLabel,
   });
@@ -63,7 +63,7 @@ export function LoginForm() {
     setUsernameInvalid(false);
     setPasswordInvalid(false);
 
-    toast.success(tLogin("success"));
+    toast.success(tPage("success"));
 
     // ponytail: API auth not wired — hook POST /auth/login here when backend ships
   }
@@ -72,17 +72,17 @@ export function LoginForm() {
     <FormCard className="w-full max-w-form shrink-0 bg-background px-2 py-7 lg:rounded-none lg:border-0 lg:px-0 lg:py-0 lg:shadow-none lg:ring-0">
       <FormCardHeader className="items-center text-center lg:items-start lg:text-left">
         <FormCardTitle className="text-2xl font-bold tracking-tight lg:text-3xl">
-          {tLogin("title")}
+          {tPage("title")}
         </FormCardTitle>
         <FormCardDescription className="lg:hidden">
-          {tLogin("description")}
+          {tPage("desc")}
         </FormCardDescription>
       </FormCardHeader>
       <FormCardContent>
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <FormField
             id="login-username"
-            labelKey="login.username"
+            labelKey="page.login.username"
             required
             value={username}
             onChange={setUsername}
@@ -110,7 +110,7 @@ export function LoginForm() {
 
           <FormField
             id="login-password"
-            labelKey="login.password.label"
+            labelKey="page.login.password.label"
             required
             value={password}
             onChange={setPassword}
@@ -138,7 +138,7 @@ export function LoginForm() {
           </FormField>
 
           <Button type="submit" className="mt-3 h-11 w-full font-semibold">
-            {tLogin("submit")}
+            {tPage("submit")}
           </Button>
         </form>
       </FormCardContent>

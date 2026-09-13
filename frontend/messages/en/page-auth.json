@@ -1,0 +1,14 @@
+{
+  "page": {
+    "login": {
+      "desc": "Warehouse management system",
+      "password": {
+        "label": "Password"
+      },
+      "submit": "Sign in",
+      "success": "Login successful",
+      "title": "Sign in",
+      "username": "Username"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "app": {
+    "frontendTitle": "Warehouse",
+    "name": "Warehouse"
+  },
+  "home": {
+    "adminLogin": "เข้าสู่ระบบผู้ดูแล"
+  }
+}

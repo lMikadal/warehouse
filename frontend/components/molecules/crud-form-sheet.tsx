@@ -85,7 +85,7 @@ export function CrudFormSheetFooter({
         {dismissLabel}
       </SheetClose>
       <Button type="submit" size="lg">
-        {tCrud("save")}
+        {tCrud("btn.save")}
       </Button>
     </SheetFooter>
   );

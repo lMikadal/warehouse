@@ -55,7 +55,7 @@ function Input({
   ...props
 }: React.ComponentProps<"input">) {
   const resolvedMaxLength = resolveInputMaxLength(type, maxLength)
-  const t = useTranslations("login")
+  const t = useTranslations("form")
   const isTel = type === "tel"
   const isPassword = type === "password"
   const [showPassword, setShowPassword] = React.useState(false)

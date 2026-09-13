@@ -1,0 +1,11 @@
+{
+  "col": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "module": "Module",
+    "name": "Name",
+    "path": "Path",
+    "status": "Status",
+    "updatedAt": "Last updated"
+  }
+}

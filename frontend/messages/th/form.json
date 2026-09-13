@@ -1,0 +1,21 @@
+{
+  "form": {
+    "field": {
+      "active": "ใช้งาน",
+      "module": "โมดูล",
+      "nameEn": "ชื่อ (English)",
+      "nameTh": "ชื่อ (ไทย)",
+      "path": "เส้นทาง"
+    },
+    "placeholder": {
+      "input": "กรุณากรอก{label}"
+    },
+    "password": {
+      "hide": "ซ่อนรหัสผ่าน",
+      "show": "แสดงรหัสผ่าน"
+    }
+  },
+  "search": {
+    "placeholder": "ค้นหา"
+  }
+}

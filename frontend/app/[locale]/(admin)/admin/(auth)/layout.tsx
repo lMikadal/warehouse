@@ -10,7 +10,7 @@ type Props = {
 
 export default async function AdminAuthLayout({ children }: Props) {
   const tApp = await getTranslations("app");
-  const tLogin = await getTranslations("login");
+  const tPageLogin = await getTranslations("page.login");
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-[radial-gradient(ellipse_80%_55%_at_15%_-5%,color-mix(in_srgb,var(--color-primary)_10%,transparent),transparent_55%),var(--color-background)] dark:bg-[radial-gradient(ellipse_80%_55%_at_15%_-5%,color-mix(in_srgb,var(--color-primary)_14%,transparent),transparent_55%),var(--color-background)]">
@@ -38,7 +38,7 @@ export default async function AdminAuthLayout({ children }: Props) {
               {tApp("name")}
             </span>
             <p className="mt-3.5 max-w-72 text-base leading-normal opacity-[0.88]">
-              {tLogin("description")}
+              {tPageLogin("desc")}
             </p>
           </div>
         </aside>

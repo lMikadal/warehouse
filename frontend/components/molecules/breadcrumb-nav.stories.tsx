@@ -1,7 +1,6 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { useTranslations } from "next-intl";
 
 import { BreadcrumbNav } from "./breadcrumb-nav";
 
@@ -17,17 +16,14 @@ export const WarehouseList: Story = {
   args: {
     segments: [],
   },
-  render: function Render() {
-    const t = useTranslations("story");
-    return (
-      <BreadcrumbNav
-        segments={[
-          { label: t("breadcrumbWarehouse"), href: "/" },
-          { label: t("breadcrumbList") },
-        ]}
-      />
-    );
-  },
+  render: () => (
+    <BreadcrumbNav
+      segments={[
+        { label: "ผู้ดูแลระบบสูงสุด", href: "/" },
+        { label: "เมนู" },
+      ]}
+    />
+  ),
 };
 
 export const SingleSegment: Story = {

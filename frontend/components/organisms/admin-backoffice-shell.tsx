@@ -15,7 +15,7 @@ import {
   Warehouse,
   type LucideIcon,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { BreadcrumbNav, type BreadcrumbSegment } from "@/components/molecules/breadcrumb-nav";
@@ -50,6 +50,7 @@ import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
 import { Link } from "@/i18n/navigation";
 import {
   ADMIN_NAV_TREE,
+  adminNavLabel,
   breadcrumbDefsForPath,
   filterAdminNavTree,
   type AdminNavIcon,
@@ -96,7 +97,7 @@ function NavIcon({ icon }: { icon?: AdminNavIcon }) {
 
 type NavRenderContext = {
   pathname: string;
-  labelForKey: (key: string) => string;
+  locale: string;
   depth: number;
 };
 
@@ -128,7 +129,7 @@ function AdminNavNodeView({
   node: AdminNavNode;
   ctx: NavRenderContext;
 }) {
-  const label = ctx.labelForKey(node.labelKey);
+  const label = adminNavLabel(node.labels, ctx.locale);
   const hasChildren = (node.children?.length ?? 0) > 0;
   const active = isPathActive(ctx.pathname, node.href);
 
@@ -227,27 +228,26 @@ export function AdminBackofficeShell({
   breadcrumbSegments,
 }: AdminBackofficeShellProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const pathname = useLocalizedPathname();
   const [navQuery, setNavQuery] = useState("");
 
-  const labelForKey = (key: string) => t(key as Parameters<typeof t>[0]);
-
   const filteredTree = useMemo(
-    () => filterAdminNavTree(ADMIN_NAV_TREE, navQuery, labelForKey),
-    [navQuery, t],
+    () => filterAdminNavTree(ADMIN_NAV_TREE, navQuery, locale),
+    [navQuery, locale],
   );
 
   const segments = useMemo((): BreadcrumbSegment[] => {
     if (breadcrumbSegments) return breadcrumbSegments;
     return breadcrumbDefsForPath(pathname).map((seg) => ({
-      label: labelForKey(seg.labelKey),
+      label: adminNavLabel(seg.labels, locale),
       href: seg.href,
     }));
-  }, [breadcrumbSegments, pathname, t]);
+  }, [breadcrumbSegments, pathname, locale]);
 
   const navCtx: NavRenderContext = {
     pathname,
-    labelForKey,
+    locale,
     depth: 0,
   };
 

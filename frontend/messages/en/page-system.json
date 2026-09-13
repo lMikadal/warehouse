@@ -1,0 +1,9 @@
+{
+  "page": {
+    "adminMenu": {
+      "add": "Add menu",
+      "desc": "Manage menu items, routes, and active status in the system",
+      "title": "Menu"
+    }
+  }
+}

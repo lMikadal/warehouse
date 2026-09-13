@@ -31,7 +31,7 @@ export function StatusFilterGroup({
   return (
     <div
       role="group"
-      aria-label={tCrud("statusFilter")}
+      aria-label={tCrud("filter.status")}
       className={cn(
         "inline-flex overflow-hidden rounded-lg border border-border",
         className
@@ -41,7 +41,7 @@ export function StatusFilterGroup({
         const active = value === opt.value;
         const label =
           opt.labelKey === "filterAll"
-            ? tCrud("filterAll")
+            ? tCrud("filter.all")
             : tCol(opt.labelKey);
         return (
           <Button

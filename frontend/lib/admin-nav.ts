@@ -12,70 +12,100 @@ export type AdminNavIcon =
   | "shopping-cart"
   | "clipboard-list";
 
+/** ponytail: mock labels in-repo until API returns display names per locale */
+export type AdminNavLabels = {
+  th: string;
+  en: string;
+};
+
 export type AdminNavNode = {
   id: string;
-  /** next-intl message key */
-  labelKey: string;
+  labels: AdminNavLabels;
   href?: string;
   icon?: AdminNavIcon;
   defaultOpen?: boolean;
   children?: AdminNavNode[];
 };
 
+export function adminNavLabel(labels: AdminNavLabels, locale: string): string {
+  return locale === "en" ? labels.en : labels.th;
+}
+
 export const ADMIN_NAV_TREE: AdminNavNode[] = [
   {
     id: "super-admin",
-    labelKey: "adminNav.superAdmin",
+    labels: { th: "ผู้ดูแลระบบสูงสุด", en: "Super Admin" },
     icon: "shield-user",
     defaultOpen: true,
     children: [
       {
         id: "admin-menu",
-        labelKey: "page.adminMenu",
+        labels: { th: "เมนู", en: "Menu" },
         href: "/admin/system/menu",
       },
       {
         id: "admin-permission",
-        labelKey: "page.adminPermission",
+        labels: { th: "สิทธิ์การใช้งาน", en: "Permissions" },
         href: "/admin/system/permission",
       },
-      { id: "admin-language", labelKey: "page.adminLanguage" },
+      {
+        id: "admin-language",
+        labels: { th: "ภาษา", en: "Language" },
+      },
       {
         id: "address",
-        labelKey: "adminNav.address",
+        labels: { th: "ที่อยู่", en: "Address" },
         children: [
-          { id: "country", labelKey: "page.websiteCountry" },
-          { id: "province", labelKey: "page.websiteProvince" },
-          { id: "district", labelKey: "page.websiteDistrict" },
-          { id: "sub-district", labelKey: "page.websiteSubDistrict" },
+          {
+            id: "country",
+            labels: { th: "ประเทศ", en: "Country" },
+          },
+          {
+            id: "province",
+            labels: { th: "จังหวัด", en: "Province" },
+          },
+          {
+            id: "district",
+            labels: { th: "เขต / อำเภอ", en: "District" },
+          },
+          {
+            id: "sub-district",
+            labels: { th: "แขวง / ตำบล", en: "Sub District" },
+          },
         ],
       },
     ],
   },
   {
     id: "admin",
-    labelKey: "adminNav.admin",
+    labels: { th: "ผู้ดูแลระบบ", en: "Admin" },
     icon: "user-round",
     children: [
-      { id: "admin-user", labelKey: "page.adminUser" },
-      { id: "admin-role", labelKey: "page.adminRole" },
+      {
+        id: "admin-user",
+        labels: { th: "รายชื่อ", en: "List" },
+      },
+      {
+        id: "admin-role",
+        labels: { th: "บทบาท", en: "Role" },
+      },
     ],
   },
 ];
 
 export type BreadcrumbSegmentDef = {
-  labelKey: string;
+  labels: AdminNavLabels;
   href?: string;
 };
 
 const BREADCRUMB_BY_PATH: Record<string, BreadcrumbSegmentDef[]> = {
   "/admin/system/menu": [
-    { labelKey: "adminNav.superAdmin" },
-    { labelKey: "page.adminMenu" },
+    { labels: { th: "ผู้ดูแลระบบสูงสุด", en: "Super Admin" } },
+    { labels: { th: "เมนู", en: "Menu" } },
   ],
   "/admin/system/permission": [
-    { labelKey: "adminNav.superAdmin" },
-    { labelKey: "page.adminPermission" },
+    { labels: { th: "ผู้ดูแลระบบสูงสุด", en: "Super Admin" } },
+    { labels: { th: "สิทธิ์การใช้งาน", en: "Permissions" } },
   ],
 };
 
@@ -86,13 +116,13 @@ export function breadcrumbDefsForPath(pathname: string): BreadcrumbSegmentDef[] 
 function nodeMatchesQuery(
   node: AdminNavNode,
   query: string,
-  labelForKey: (key: string) => string,
+  locale: string,
 ): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  if (labelForKey(node.labelKey).toLowerCase().includes(q)) return true;
+  if (adminNavLabel(node.labels, locale).toLowerCase().includes(q)) return true;
   return (node.children ?? []).some((child) =>
-    nodeMatchesQuery(child, query, labelForKey),
+    nodeMatchesQuery(child, query, locale),
   );
 }
 
@@ -100,7 +130,7 @@ function nodeMatchesQuery(
 export function filterAdminNavTree(
   nodes: AdminNavNode[],
   query: string,
-  labelForKey: (key: string) => string,
+  locale: string,
 ): AdminNavNode[] {
   const q = query.trim().toLowerCase();
   if (!q) return nodes;
@@ -109,7 +139,9 @@ export function filterAdminNavTree(
     const out: AdminNavNode[] = [];
     for (const node of list) {
       const children = node.children ? walk(node.children) : undefined;
-      const selfMatch = labelForKey(node.labelKey).toLowerCase().includes(q);
+      const selfMatch = adminNavLabel(node.labels, locale)
+        .toLowerCase()
+        .includes(q);
       if (selfMatch || (children && children.length > 0)) {
         out.push({
           ...node,
@@ -127,7 +159,7 @@ export function filterAdminNavTree(
 // ponytail: self-check — breadcrumb map must stay aligned with wired routes
 if (process.env.NODE_ENV !== "production") {
   const menu = breadcrumbDefsForPath("/admin/system/menu");
-  if (menu.length !== 2 || menu[1]?.labelKey !== "page.adminMenu") {
+  if (menu.length !== 2 || menu[1]?.labels.th !== "เมนู") {
     throw new Error("admin-nav: menu breadcrumb drift");
   }
 }

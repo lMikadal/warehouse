@@ -204,14 +204,46 @@ Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 
 - Locales: `th` (default), `en`
 - Routes: ภาษาไทย (default) ที่ **`/`** ไม่มี `/th`; อังกฤษที่ **`/en`…**
-- Messages: `frontend/messages/th.json`, `en.json`
+- Messages: per-locale JSON fragments under `frontend/messages/{th,en}/`, merged by [`load-messages.ts`](../../frontend/messages/load-messages.ts) (same object for app + Storybook)
 - Config: `frontend/i18n/routing.ts`, `request.ts`, `navigation.ts`
 - Server locale: `i18n/request.ts` reads `[locale]` via Next.js `next/root-params` (static rendering + `getTranslations` / server `NextIntlClientProvider`); do not use deprecated `setRequestLocale`
 - Layout: server `NextIntlClientProvider` (no manual `getMessages` / `locale` props — filled from `i18n/request.ts` per [App Router getting started](https://next-intl.dev/docs/getting-started/app-router)); locale routing per [routing setup](https://next-intl.dev/docs/routing/setup)
 - Client navigation: `@/i18n/navigation` (`Link`, `useRouter`, `usePathname`)
 - Header: `LocaleSwitch` (ไทย / EN) + `ThemeModeSwitch`
 
-Port more keys from `design/js/i18n/` into `messages/` as pages ship.
+### Message fragments (by file)
+
+| File | Namespaces |
+|------|------------|
+| `app.json` | `app`, `home` |
+| `chrome.json` | `nav`, `lang`, `theme`, `toast` (demo keys for Storybook) |
+| `form.json` | `form` — `field.*`, placeholders, password a11y; **`search.placeholder`** (same file, `search` namespace) |
+| `crud.json` | `crud` — nested: `btn`, `toast`, `deleteConfirm`, `table`, `pagination`, `sort`, `filter`, `reorder` |
+| `col.json` | `col` — shared column/field labels |
+| `error.json` | `error` |
+| `action.json` | `action` — short icon aria verbs |
+| `page-auth.json` | `page.login` — admin sign-in screen |
+| `page-system.json` | `page.adminMenu` (list header/sheet); add more `page.*` when routes ship |
+
+Sidebar / breadcrumb labels live in [`admin-nav.ts`](../../frontend/lib/admin-nav.ts) as mock `labels: { th, en }` until `admin_menu` API returns display names — not in `messages/`.
+
+Storybook stories reuse production keys where applicable (e.g. `col.name`, `page.adminMenu.title`).
+
+Add keys when a route or nav node ships — no unused placeholders. Port copy from `design/js/i18n/` (`page.foo` + `page.foo.desc` flat keys → nested `page.foo.title` / `page.foo.desc`).
+
+### Page copy shape
+
+Each screen under `page.<screenId>`:
+
+- `title` — page header (and breadcrumb on wired routes via `admin-nav.ts` mock)
+- `desc` — optional list header description
+- `add` — optional primary create CTA when phrasing is not `crud.create` + title
+
+Example: `useTranslations("page.adminMenu")` → `t("title")`, `t("desc")`, `t("add")`.
+
+Shared reuse: `crud.*`, `col.*` (table columns), `form.field.*` (form labels), `form.placeholder.input`, `search.placeholder` — see [forms.mdc](../../.cursor/rules/forms.mdc).
+
+Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 
 ### Admin backoffice shell
 
@@ -221,7 +253,7 @@ Port more keys from `design/js/i18n/` into `messages/` as pages ship.
 | Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
 | Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
-| Nav | [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) + sidebar search filter; breadcrumb map per pathname |
+| Nav | [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) — mock `labels` per node + breadcrumb map; sidebar search filter |
 | Session | Placeholder user `admin` + logout → `/admin/login` until auth API |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
 

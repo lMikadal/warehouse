@@ -1,0 +1,43 @@
+{
+  "crud": {
+    "btn": {
+      "back": "Back",
+      "cancel": "Cancel",
+      "create": "Add",
+      "delete": "Delete",
+      "edit": "Edit",
+      "save": "Save"
+    },
+    "deleteConfirm": "Delete this record?",
+    "filter": {
+      "all": "All",
+      "status": "Status filter"
+    },
+    "pagination": {
+      "next": "Next",
+      "pageOf": "Page {page} of {total}",
+      "prev": "Previous",
+      "rowsPerPage": "Rows per page",
+      "showItemsPrefix": "Show",
+      "showItemsSuffix": "items per page"
+    },
+    "reorder": {
+      "drag": "Drag to reorder",
+      "siblingOnly": "Can only reorder within the same group"
+    },
+    "sort": {
+      "asc": "Sort {field} ascending",
+      "desc": "Sort {field} descending",
+      "none": "Sort by {field}"
+    },
+    "table": {
+      "actions": "Manage"
+    },
+    "toast": {
+      "created": "Record added successfully",
+      "deleted": "Deleted successfully",
+      "reordered": "Order updated successfully",
+      "saved": "Saved successfully"
+    }
+  }
+}

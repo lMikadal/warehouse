@@ -63,7 +63,7 @@ export function CrudPaginationBar({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-(--radius-table-wrap) bg-background px-3 py-2">
         <div className="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-foreground/55">
-          <span className="whitespace-nowrap">{t("showItemsPrefix")}</span>
+          <span className="whitespace-nowrap">{t("pagination.showItemsPrefix")}</span>
           <Select
             value={String(pageSize)}
             onValueChange={(v) => {
@@ -72,7 +72,7 @@ export function CrudPaginationBar({
           >
             <SelectTrigger
               className="w-18"
-              aria-label={t("rowsPerPage")}
+              aria-label={t("pagination.rowsPerPage")}
             >
               <SelectValue />
             </SelectTrigger>
@@ -84,12 +84,12 @@ export function CrudPaginationBar({
               ))}
             </SelectContent>
           </Select>
-          <span className="whitespace-nowrap">{t("showItemsSuffix")}</span>
+          <span className="whitespace-nowrap">{t("pagination.showItemsSuffix")}</span>
         </div>
 
         <PaginationContent
           className="gap-1.5"
-          aria-label={t("pageOf", {
+          aria-label={t("pagination.pageOf", {
             page,
             total: meta.totalPages,
           })}
@@ -99,7 +99,7 @@ export function CrudPaginationBar({
               type="button"
               variant="outline"
               disabled={prevDisabled}
-              aria-label={t("prev")}
+              aria-label={t("pagination.prev")}
               onClick={() => onPageChange(page - 1)}
             >
               <ChevronLeft className="text-current" />
@@ -133,7 +133,7 @@ export function CrudPaginationBar({
               type="button"
               variant="outline"
               disabled={nextDisabled}
-              aria-label={t("next")}
+              aria-label={t("pagination.next")}
               onClick={() => onPageChange(page + 1)}
             >
               <ChevronRight className="text-current" />

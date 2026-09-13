@@ -1,0 +1,21 @@
+{
+  "form": {
+    "field": {
+      "active": "Active",
+      "module": "Module",
+      "nameEn": "Name (English)",
+      "nameTh": "Name (Thai)",
+      "path": "Path"
+    },
+    "placeholder": {
+      "input": "Please enter {label}"
+    },
+    "password": {
+      "hide": "Hide password",
+      "show": "Show password"
+    }
+  },
+  "search": {
+    "placeholder": "Search"
+  }
+}

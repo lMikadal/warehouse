@@ -3,6 +3,8 @@ import { getRequestConfig } from "next-intl/server";
 import * as rootParams from "next/root-params";
 import { notFound } from "next/navigation";
 
+import { loadMessages, type AppLocale } from "../messages/load-messages";
+
 import { routing } from "./routing";
 
 export default getRequestConfig(async ({ locale }) => {
@@ -17,6 +19,6 @@ export default getRequestConfig(async ({ locale }) => {
 
   return {
     locale,
-    messages: (await import(`../messages/${locale}.json`)).default,
+    messages: loadMessages(locale as AppLocale),
   };
 });

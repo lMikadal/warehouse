@@ -44,13 +44,12 @@ export function TableIconActions({
 }: TableIconActionsProps) {
   const tCrud = useTranslations("crud");
   const tAction = useTranslations("action");
-  const tWh = useTranslations("warehouse");
 
   const labelFor = (key: TableIconActionKey) => {
     if (key === "view") return tAction("view");
-    if (key === "edit") return tCrud("edit");
-    if (key === "delete") return tCrud("delete");
-    return tWh("addZone");
+    if (key === "edit") return tCrud("btn.edit");
+    if (key === "delete") return tCrud("btn.delete");
+    return tCrud("btn.create");
   };
 
   return (

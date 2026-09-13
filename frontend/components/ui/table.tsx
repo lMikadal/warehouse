@@ -119,7 +119,7 @@ function TableSortHead({
     direction: TableSortDirection | null
   ) => void
   align?: TableSortAlign
-  /** i18n aria-label (crud.sortNone / sortAsc / sortDesc) from parent */
+  /** i18n aria-label (`crud.sort.none` / `sort.asc` / `sort.desc`) from parent */
   sortLabel: string
   sortable?: boolean
 }) {

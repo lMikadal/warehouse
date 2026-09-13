@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     id: "wh-name",
-    labelKey: "story.sampleField",
+    labelKey: "col.name",
     value: "",
     onChange: () => {},
   },
@@ -26,7 +26,7 @@ export const Default: Story = {
     return (
       <FormField
         id="wh-name"
-        labelKey="story.sampleField"
+        labelKey="col.name"
         required
         value={value}
         onChange={setValue}
@@ -38,7 +38,7 @@ export const Default: Story = {
 export const RequiredValidation: Story = {
   args: {
     id: "wh-name-validated",
-    labelKey: "story.sampleField",
+    labelKey: "col.name",
     value: "",
     onChange: () => {},
   },
@@ -50,7 +50,7 @@ export const RequiredValidation: Story = {
       <div className="max-w-sm space-y-3">
         <FormField
           id="wh-name-validated"
-          labelKey="story.sampleField"
+          labelKey="col.name"
           required
           value={value}
           onChange={setValue}
@@ -77,7 +77,7 @@ export const InvalidVisualOnly: Story = {
   name: "Invalid (visual only)",
   args: {
     id: "wh-name-err",
-    labelKey: "story.sampleField",
+    labelKey: "col.name",
     required: true,
     value: "",
     onChange: () => {},
@@ -88,7 +88,7 @@ export const InvalidVisualOnly: Story = {
       <div className="max-w-sm">
         <FormField
           id="wh-name-err"
-          labelKey="story.sampleField"
+          labelKey="col.name"
           required
           value={value}
           onChange={setValue}
@@ -103,7 +103,7 @@ export const OptionalField: Story = {
   name: "Optional (no required)",
   args: {
     id: "wh-opt",
-    labelKey: "story.sampleField",
+    labelKey: "col.name",
     value: "",
     onChange: () => {},
   },
@@ -113,7 +113,7 @@ export const OptionalField: Story = {
       <div className="max-w-sm">
         <FormField
           id="wh-opt"
-          labelKey="story.sampleField"
+          labelKey="col.name"
           value={value}
           onChange={setValue}
         />
@@ -125,7 +125,7 @@ export const OptionalField: Story = {
 export const Disabled: Story = {
   args: {
     id: "wh-dis",
-    labelKey: "story.sampleField",
+    labelKey: "col.name",
     value: "Cannot edit",
     onChange: () => {},
   },
@@ -133,7 +133,7 @@ export const Disabled: Story = {
     <div className="max-w-sm">
       <FormField
         id="wh-dis"
-        labelKey="story.sampleField"
+        labelKey="col.name"
         value="Cannot edit"
         onChange={() => {}}
       >

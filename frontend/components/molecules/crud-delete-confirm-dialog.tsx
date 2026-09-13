@@ -38,18 +38,18 @@ export function CrudDeleteConfirmDialog({
         <div className="flex flex-col items-center gap-4 text-center">
           <TriangleAlert className="size-20 text-destructive" strokeWidth={2} />
           <DialogHeader className="items-center gap-2 sm:text-center">
-            <DialogTitle className="sr-only">{title ?? tCrud("delete")}</DialogTitle>
+            <DialogTitle className="sr-only">{title ?? tCrud("btn.delete")}</DialogTitle>
             <DialogDescription className="text-base text-foreground">
-              {description ?? tCrud("confirmDelete")}
+              {description ?? tCrud("deleteConfirm")}
             </DialogDescription>
           </DialogHeader>
         </div>
         <DialogFooter >
           <DialogClose render={<Button variant="outline" size="lg" />}>
-            {tCrud("cancel")}
+            {tCrud("btn.cancel")}
           </DialogClose>
           <Button type="button" size="lg" variant="destructive" onClick={onConfirm}>
-            {tCrud("delete")}
+            {tCrud("btn.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>
