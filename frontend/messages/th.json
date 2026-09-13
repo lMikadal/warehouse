@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "Warehouse",
+    "frontendTitle": "Warehouse frontend"
+  },
+  "lang": {
+    "toggle": "ภาษา",
+    "th": "ไทย",
+    "en": "EN"
+  },
+  "theme": {
+    "label": "ธีม",
+    "light": "สว่าง",
+    "dark": "มืด",
+    "system": "ระบบ"
+  },
+  "home": {
+    "heading": "ทดสอบสแต็ก",
+    "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl"
+  },
+  "demo": {
+    "primary": "หลัก",
+    "secondary": "รอง",
+    "outline": "ขอบ",
+    "destructive": "ลบ"
+  }
+}

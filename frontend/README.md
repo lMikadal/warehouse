@@ -1,60 +1,36 @@
-# Warehouse frontend
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Production UI for the Warehouse app — inventory, users, orders, and related warehouse workflows.
+## Getting Started
 
-Not a generic Next.js starter. Screens come from approved mockups under `design/`, then talk to the Go API.
-
-## Stack
-
-| Piece | Choice |
-|-------|--------|
-| Framework | Next.js App Router |
-| Package manager | bun |
-| CSS | Tailwind CSS v4 |
-| Components | shadcn/ui (`components/ui/`) |
-| Theme | blue + white, light / dark (`next-themes`) |
-| i18n | Thai + English (`next-intl`, default `th`) |
-| Icons | Lucide (`lucide-react`) |
-| API | `NEXT_PUBLIC_API_URL` (default `http://localhost:1323`) |
-
-## Getting started
-
-From the **repo root** (not this folder):
+First, run the development server:
 
 ```bash
-make frontend-bootstrap   # one-time: Next.js + shadcn + stack deps
-make frontend-dev         # http://localhost:3000
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Copy env sample and adjust if needed:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-cp frontend/env.example frontend/.env.local
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Other targets: `make frontend-build`, `make frontend-lint`, `make frontend-shadcn-add COMPONENT=<name>`. Run `make help` for the full list. Prefer make over raw `bun` / `bunx`.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Layout
+## Learn More
 
-```
-frontend/
-├── app/                 # routes, layouts
-├── components/
-│   └── ui/              # shadcn only
-├── lib/
-│   └── utils.ts
-├── env.example
-└── package.json
-```
+To learn more about Next.js, take a look at the following resources:
 
-## Conventions
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-- Source UI from `design/` when converting approved screens
-- Call the real backend — do not invent parallel APIs or keep design mock `store.js` / `localStorage` in production
-- Theme tokens and th/en copy should match design
-- Agent guidance: see `AGENTS.md` (points at repo `.cursor/` skill and rules)
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Docs
+## Deploy on Vercel
 
-- Knowledge: `document/knowledge/frontend.md`
-- Phase checklists: `document/checklist/frontend/`
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

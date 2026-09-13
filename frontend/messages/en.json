@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "Warehouse",
+    "frontendTitle": "Warehouse frontend"
+  },
+  "lang": {
+    "toggle": "Language",
+    "th": "ไทย",
+    "en": "EN"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "home": {
+    "heading": "Stack smoke test",
+    "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl"
+  },
+  "demo": {
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "outline": "Outline",
+    "destructive": "Destructive"
+  }
+}

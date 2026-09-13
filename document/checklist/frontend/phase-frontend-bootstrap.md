@@ -6,7 +6,7 @@ Scaffold the Warehouse production UI under `frontend/` with packages only (no cu
 
 - [x] Extend root `Makefile` `frontend-bootstrap` (mkdir, non-interactive create-next-app + shadcn init, stack deps)
 - [x] Run `make frontend-bootstrap` (Next.js App Router, TypeScript, Tailwind v4, ESLint, shadcn)
-- [x] Install stack deps: `next-themes`, `next-intl`, `lucide-react`
+- [x] Install stack deps: shadcn init + `next-themes`, `next-intl`, `lucide-react`
 - [x] Add `frontend/env.example` with `NEXT_PUBLIC_API_URL=http://localhost:1323`
 - [x] Confirm `components.json` + `lib/utils.ts` exist
 
