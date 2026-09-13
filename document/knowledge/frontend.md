@@ -15,7 +15,7 @@ Production UI is built **top-down** through fixed layers. Agent rule: [`.cursor/
 | Layer | Location | Notes |
 |-------|----------|--------|
 | Design tokens | `app/globals.css` | Color, spacing, radius, typography; no raw hex in components |
-| shadcn / base UI | `components/ui/` | Button, **ButtonIcon** (`button-icon.tsx` — square icon-only, tones add/delete), Input, Select, Switch, Badge, Label, Dialog, Table (+ Storybook under `UI/*`) |
+| shadcn / base UI | `components/ui/` | Button, **ButtonIcon** (`button-icon.tsx` — square icon-only, tones add/delete), Input, Select, Switch, Badge, Label, Dialog, Table, **Sonner** (`sonner.tsx` + `toast` from `sonner` package) (+ Storybook under `UI/*`) |
 | Molecules | `components/molecules/` | CRUD/search/pagination/table chrome from warehouse-list (see below) |
 | Organisms | `components/organisms/` | **Not started** — Admin shell + list tables compose molecules in a later phase |
 | Design system | Cursor rules + Storybook + this doc | forms, tables, dates, icons |
@@ -75,6 +75,7 @@ Do not use shadcn `bg-muted` when the design intent is a **border** — use `bor
 | `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*` |
 | `--color-action-add` | `#16a34a` — crud-add / green actions |
 | `--color-action-delete` | `#dc2626` — crud-delete |
+| `--color-warning` | `#d97706` light / `#fbbf24` dark — toast warning accent (design `.toast--warning`) |
 | `--color-switch-checked` | `rgb(34 197 94)` — shadcn `Switch` / design `.crud-switch` track when on |
 | `--color-row-expanded` | Expanded warehouse row background |
 | `--color-nav-active-bg` | Sidebar active item |
@@ -136,6 +137,24 @@ Example CRUD content: `max-w-crud-page px-admin-content` inside `bg-page-wash`.
 | `text-sm` | Breadcrumb, meta |
 | `text-base` | Table body |
 | `text-xl` + bold | `.crud-page-header__title` (foreground color) |
+
+### Notifications (toast)
+
+Handoff from [`design/js/components/toast.js`](../../design/js/components/toast.js): top-right stack, types `success` | `error` | `warning` | `info`, 4s auto-dismiss (no close button — dismiss via timeout or swipe).
+
+| Design | Frontend |
+|--------|----------|
+| `toast.show(msg, 'success')` | `toast.success(msg)` |
+| `toast.show(msg, 'error')` | `toast.error(msg)` |
+| `toast.show(msg, 'warning')` | `toast.warning(msg)` |
+| `toast.show(msg, 'info')` | `toast.info(msg)` |
+
+- **Host:** `<Toaster />` from `@/components/ui/sonner` once in `app/[locale]/layout.tsx` (inside `ThemeProvider`).
+- **API:** `import { toast } from "sonner"` — pass translated strings at call sites (`toast.success(t('crud.saved'))`).
+- **Styling:** overrides in `app/globals.css` on `[data-sonner-toast]` (left accent border, design shadow); Lucide icons in `sonner.tsx`.
+- **Rule:** every mutation (POST/PATCH/DELETE) shows success or error toast — no silent mutations.
+
+Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 
 ## i18n
 

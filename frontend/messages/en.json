@@ -60,6 +60,13 @@
     "sampleField": "Warehouse name",
     "sampleName": "ATW"
   },
+  "toast": {
+    "close": "Close",
+    "demoError": "Something went wrong.",
+    "demoInfo": "Export will be available soon.",
+    "demoSuccess": "Saved.",
+    "demoWarning": "Save the form to persist changes."
+  },
   "theme": {
     "dark": "Dark",
     "label": "Theme",
