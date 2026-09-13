@@ -47,10 +47,22 @@ Scope: **`frontend/` only**. Handoff from `design/` mockups stays in `.cursor/sk
 
 ## When adding or changing UI
 
+### Reuse gate (mandatory)
+
+Before implementing a **new screen**, **design handoff**, or **new UI pattern** (including from `design/` mockups):
+
+0. **Inventory** — Search and list what already exists under `frontend/components/ui/`, `components/molecules/`, `components/organisms/`, and co-located `*.stories.tsx` (Storybook catalog). Prefer compose/reuse over new files.
+1. **Reuse order** — existing **organism** → **molecule** → **`ui/`** primitive → only then propose something new.
+2. **New shared component** — A new file or new public export in `ui/`, `molecules/`, `organisms/`, a new shared file under `components/`, or `make frontend-shadcn-add COMPONENT=<name>` requires **user approval every time**. Stop and ask (e.g. `AskQuestion`) with a short proposal: proposed name, layer, what was searched, and why existing pieces are insufficient. Do **not** create the file until the user approves.
+3. **Edits to existing components** — No extra approval; still follow the Storybook build step in [storybook.mdc](storybook.mdc) when `components/` changes.
+
+Then apply the layer checklist:
+
 1. **Token?** — If the need is a new semantic color/spacing/radius, add it in `globals.css` (and design-tokens story if visual).
 2. **Existing shadcn?** — Check `components/ui/` and Storybook before creating a custom control.
 3. **Right folder?** — One-off page layout stays in the route; repeated pattern → molecule; screen section reused across routes → organism.
 4. **Story?** — Shared `ui/`, molecule, or organism → add or update `*.stories.tsx` ([storybook.mdc](storybook.mdc)).
+5. **Verify?** — After any `frontend/components/**` change, run `make frontend-storybook-build` ([storybook.mdc](storybook.mdc)).
 
 ## Do not
 
@@ -58,3 +70,4 @@ Scope: **`frontend/` only**. Handoff from `design/` mockups stays in `.cursor/sk
 - Import `components/ui/*` heavily from route pages when an organism should own that composition.
 - Ship shared UI without Storybook coverage.
 - Bypass the layer stack for “speed” (duplicate Button styling, table chrome, or form field markup on each page).
+- Add a new shared component without explicit user approval after the reuse gate inventory.

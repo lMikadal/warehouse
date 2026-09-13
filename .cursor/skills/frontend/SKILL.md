@@ -121,12 +121,18 @@ frontend/
 └── package.json
 ```
 
-## Storybook (component baseline)
+## Component work checklist
 
-When pulling in a component from `components/`, **check Storybook first** ([`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc)): read or run the matching `*.stories.tsx` for variants/props before wiring it into a page. Dev: `make frontend-storybook` (port 6006).
+Full rules: [`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc), [`.cursor/rules/design-system.mdc`](../../rules/design-system.mdc).
+
+1. **Before new UI** — Inventory `components/ui/`, `molecules/`, `organisms/`, and `*.stories.tsx`; reuse organism → molecule → `ui/` before proposing anything new.
+2. **New shared component** — Ask the user every time (name, layer, why reuse failed). No new file in those folders and no `make frontend-shadcn-add` until approved.
+3. **Before reuse on pages** — Read the matching story for variants/props; optional dev: `make frontend-storybook` (port 6006).
+4. **Before done** — Any change under `frontend/components/**`: run `make frontend-storybook-build` from repo root; fix failures in the same turn.
 
 ## From design → frontend
 
+0. **Atomic inventory** — Same as checklist step 1; if a new molecule/organism/`ui/` piece is needed, get user approval before implementation.
 1. Read the approved page under `design/pages/`
 2. Map layout to React + Tailwind (all four breakpoints)
 3. Prefer shadcn (`Button`, `Input`, `Dialog`, `Table`, …) over custom CSS clones
@@ -240,6 +246,8 @@ Follow [`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc):
 ## Do not
 
 - Edit `design/` mockups unless the user asks
+- Create new shared components (`ui/`, molecules, organisms) without user approval after the reuse inventory
+- Finish work that touched `frontend/components/**` without `make frontend-storybook-build`
 - Bypass shadcn with raw form controls when a component already exists
 - Hardcode single-language or light-only UI
 - Add a second CSS framework or replace bun with npm/yarn without being asked

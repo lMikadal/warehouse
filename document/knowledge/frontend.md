@@ -153,6 +153,12 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
 - `stories/design-tokens.stories.tsx` — core palette + warehouse-list patterns
 
+### Component workflow (team agreement)
+
+- Before new UI or design handoff: inventory `components/ui/`, `molecules/`, `organisms/`, and Storybook stories; compose existing pieces first.
+- **New shared component** (new file/export in those layers or `make frontend-shadcn-add`): requires explicit user approval every time — see [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc).
+- After any change under `frontend/components/**`: run `make frontend-storybook-build` before considering the task done — see [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc).
+
 ## Docs
 
 - Agent skill: `.cursor/skills/frontend/SKILL.md`
