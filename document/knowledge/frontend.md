@@ -56,8 +56,6 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
 | `TableIconActions` | View / edit / add (green) / delete (red) icon row |
-| `ExpandRowToggle` | Chevron expand control |
-| `EntityNameCell` | Warehouse icon + name + optional inline edit |
 | `FormField` | shadcn `Field` / `FieldLabel` / `FieldError` + `Input`; required asterisk, placeholder pattern, error slot |
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
@@ -103,18 +101,21 @@ Do not use shadcn `bg-muted` when the design intent is a **border** — use `bor
 |----------|------|
 | `--color-primary` | Primary blue, buttons, active nav |
 | `--color-page-title` | Same as `--color-foreground` (CRUD h1 — not primary blue) |
-| `--color-success-*` | `.wh-badge--active` |
+| `--color-success` / `--success` (shadcn bridge) | Solid green for filled controls — same as `--color-action-add` (`#16a34a` light); `#22c55e` dark |
+| `--color-success-foreground` | Text on solid success (white light; white dark) |
+| `--color-success-*` (bg/fg/border) | `.wh-badge--active` / `StatusBadge` tint — unchanged |
 | `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*` |
 | `--color-action-add` | `#16a34a` — crud-add / green actions |
 | `--color-action-delete` | `#dc2626` — crud-delete |
-| `--color-warning` | `#d97706` light / `#fbbf24` dark — toast warning accent (design `.toast--warning`) |
+| `--color-warning` / `--warning` | `#d97706` light / `#fbbf24` dark — toast warning, `Button` `warning` variant |
+| `--color-warning-foreground` | White on warning (light); `#0f172a` on amber (dark) |
 | `--color-switch-checked` | `rgb(34 197 94)` — shadcn `Switch` / design `.crud-switch` track when on |
 | `--color-row-expanded` | Expanded warehouse row background |
 | `--color-nav-active-bg` | Sidebar active item |
 | `--radius-table-wrap` | `0.75rem` — table + pagination chrome |
 | `--shadow-zone-card` | Inner zone cards in expanded row |
 
-Tailwind theme aliases: `--color-warehouse-*` in `@theme` (e.g. `bg-warehouse-border`, `text-warehouse-action-add`).
+Tailwind theme aliases: `--color-warehouse-*` in `@theme` (e.g. `bg-warehouse-border`, `text-warehouse-action-add`); semantic solids `bg-success`, `bg-warning`, `text-success-foreground`, `text-warning-foreground` via `--success` / `--warning` bridge.
 
 ### shadcn bridge
 
@@ -226,7 +227,7 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 - Global styles: `app/globals.css`; `ThemeProvider` + **`withIntl`** ([`.storybook/decorators/intl.tsx`](../../frontend/.storybook/decorators/intl.tsx)) in `.storybook/preview.tsx` — toolbar **locale** `th` / `en`
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
 - Story globs (`.storybook/main.ts`): `components/**/*.stories.tsx` and `stories/**/*.stories.tsx`
-- Titles: `components/ui/` → **UI/**; `components/molecules/` → **Molecules/**; `stories/design-tokens.stories.tsx` → **Design system/Tokens**; `stories/dnd-kit-sortable.stories.tsx` → **Design system/DnD Sortable**
+- Titles: `components/ui/` → **UI/**; `components/molecules/` → **Molecules/**; `stories/component-catalog.stories.tsx` → **Design system/Overview** (theme swatches including **success** / **warning**, Eva-style primitive matrices in `component-catalog-overview.tsx`, then all exported stories via `composeStories`); `stories/dnd-kit-sortable.stories.tsx` → **Design system/DnD Sortable**
 - No **Organisms/** or **Pages/** stories until organism phase
 
 ### Component workflow (team agreement)

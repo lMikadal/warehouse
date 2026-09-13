@@ -16,6 +16,8 @@ const meta = {
         "secondary",
         "ghost",
         "destructive",
+        "success",
+        "warning",
         "link",
       ],
     },
@@ -46,6 +48,20 @@ export const Destructive: Story = {
   args: {
     variant: "destructive",
     children: "Destructive",
+  },
+};
+
+export const Success: Story = {
+  args: {
+    variant: "success",
+    children: "Success",
+  },
+};
+
+export const Warning: Story = {
+  args: {
+    variant: "warning",
+    children: "Warning",
   },
 };
 

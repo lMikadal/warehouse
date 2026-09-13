@@ -24,7 +24,10 @@
   --color-status-inactive-fg: rgb(100 116 139);
   --color-action-add: #16a34a;
   --color-action-delete: #dc2626;
+  --color-success: var(--color-action-add);
+  --color-success-foreground: #ffffff;
   --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
   /* design .crud-switch input:checked track */
   --color-switch-checked: rgb(34 197 94);
   --color-switch-thumb-dark: #f8fafc;
@@ -63,7 +66,10 @@
   --color-border: #334155;
   --color-subtle: #1e293b;
   --color-error: #f87171;
+  --color-success: #22c55e;
+  --color-success-foreground: #ffffff;
   --color-warning: #fbbf24;
+  --color-warning-foreground: #0f172a;
 
   --color-success-bg: rgb(22 101 52 / 0.35);
   --color-success-fg: #86efac;
@@ -222,6 +228,10 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -284,6 +294,10 @@
   --accent: var(--color-subtle);
   --accent-foreground: var(--color-foreground);
   --destructive: var(--color-error);
+  --success: var(--color-success);
+  --success-foreground: var(--color-success-foreground);
+  --warning: var(--color-warning);
+  --warning-foreground: var(--color-warning-foreground);
   --border: var(--color-border);
   --input: var(--color-border);
   --ring: rgb(37 99 235 / 0.35);
@@ -319,6 +333,10 @@
   --accent: var(--color-subtle);
   --accent-foreground: var(--color-foreground);
   --destructive: var(--color-error);
+  --success: var(--color-success);
+  --success-foreground: var(--color-success-foreground);
+  --warning: var(--color-warning);
+  --warning-foreground: var(--color-warning-foreground);
   --border: var(--color-border);
   --input: var(--color-border);
   --ring: rgb(59 130 246 / 0.45);

@@ -3,7 +3,11 @@
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
 
 export type CrudSearchFieldProps = {
@@ -22,19 +26,17 @@ export function CrudSearchField({
   const t = useTranslations("search");
 
   return (
-    <div className={cn("relative min-w-[12rem] flex-1", className)}>
-      <Search
-        className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden
-      />
-      <Input
+    <InputGroup className={cn("min-w-48 flex-1", className)}>
+      <InputGroupAddon align="inline-start">
+        <Search aria-hidden />
+      </InputGroupAddon>
+      <InputGroupInput
         id={id}
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={t("placeholder")}
-        className="pl-8"
       />
-    </div>
+    </InputGroup>
   );
 }
