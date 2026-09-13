@@ -8,6 +8,20 @@ Scaffold + stack deps: Next.js 16.3.5, Tailwind v4, shadcn/ui, `lucide-react`, `
 
 Env sample: `frontend/env.example` → `NEXT_PUBLIC_API_URL=http://localhost:1323/api/v1`.
 
+## UI architecture (layer stack)
+
+Production UI is built **top-down** through fixed layers. Agent rule: [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc).
+
+| Layer | Location | Notes |
+|-------|----------|--------|
+| Design tokens | `app/globals.css` | Color, spacing, radius, typography; no raw hex in components |
+| shadcn / base UI | `components/ui/` | Button, Input, Select, Dialog, Table (+ Storybook) |
+| Molecules / organisms | `components/molecules/`, `components/organisms/` | Composed UI; pages import these, not ad-hoc `ui/` stacks |
+| Design system | Cursor rules + Storybook + this doc | forms, tables, dates, icons |
+| Warehouse pages | `app/[locale]/…` | Inventory, orders, products, users, … |
+
+Handoff from `design/` mockups is unchanged; after tokens and primitives exist, extract repeated patterns into molecules/organisms before route implementation.
+
 ## Design tokens
 
 **Source of truth:** [`design/css/style.css`](../../design/css/style.css) — primary reference page [`design/pages/warehouse-list.html`](../../design/pages/warehouse-list.html). Also see [`design/design.json`](../../design/design.json) for global breakpoints and palette names.

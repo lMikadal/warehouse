@@ -10,6 +10,7 @@ Warehouse blue-white design tokens in Tailwind v4 + shadcn, aligned with design 
 - [x] Storybook `stories/design-tokens.stories.tsx`
 - [x] Align tokens with `design/pages/warehouse-list.html` (semantic badge/table/zone tokens)
 - [x] Update `document/knowledge/frontend.md`
+- [x] Document UI layer stack in `.cursor` (`design-system.mdc`, frontend skill, subprojects link)
 
 ## Required checklist
 

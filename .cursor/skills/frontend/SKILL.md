@@ -51,6 +51,20 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 - Toggle with `data-theme` or `.dark` on `html` — match design
 - Light: white surface + clear blue; Dark: dark surface + blue with enough contrast
 
+## UI architecture (layer stack)
+
+Build **top-down**: design tokens → shadcn/ui → base primitives → molecules/organisms → design-system standards → warehouse route pages. Full rules: [`.cursor/rules/design-system.mdc`](../../rules/design-system.mdc).
+
+| Step | What |
+|------|------|
+| Tokens | `app/globals.css` — color, spacing, radius, typography |
+| shadcn + base UI | `components/ui/` — Button, Input, Select, Dialog, Table (+ stories) |
+| Atomic | `components/molecules/`, `components/organisms/` |
+| Design system | Cursor rules + Storybook + `document/knowledge/frontend.md` |
+| Pages | `app/[locale]/…` — inventory, orders, products, users, etc. |
+
+Pages compose organisms/molecules; avoid stacking many `ui/` imports on routes except trivial cases.
+
 ### i18n (frontend)
 
 - `next-intl` (same idea as parent Warehouse frontend)
@@ -92,9 +106,14 @@ Keep default shadcn config; enable dark mode; add `next-themes` + `next-intl`. D
 
 ```
 frontend/
-├── app/              # routes, layouts
+├── app/              # routes, layouts (warehouse pages)
 ├── components/
-│   └── ui/           # shadcn only (+ *.stories.tsx)
+│   ├── ui/           # shadcn atoms (+ *.stories.tsx)
+│   ├── molecules/    # small compositions (labeled field, pager strip, …)
+│   ├── organisms/    # CRUD toolbar, data table shell, admin chrome, …
+│   ├── locale-switch.tsx
+│   ├── theme-mode-switch.tsx
+│   └── theme-provider.tsx
 ├── .storybook/       # Storybook config
 ├── lib/
 │   ├── utils.ts
@@ -113,7 +132,8 @@ When pulling in a component from `components/`, **check Storybook first** ([`.cu
 3. Prefer shadcn (`Button`, `Input`, `Dialog`, `Table`, …) over custom CSS clones
 4. Port theme tokens (blue-white, light/dark) and i18n keys from design
 5. Map `design/assets/icons/<name>.svg` → PascalCase `lucide-react` component (same Lucide name)
-6. Do not keep mock `store.js` / `localStorage` in production — call the real API
+6. After tokens and base `ui/` exist, extract repeated mockup chunks into **molecules/organisms** before wiring the route page
+7. Do not keep mock `store.js` / `localStorage` in production — call the real API
 
 ## API
 

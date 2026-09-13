@@ -1,0 +1,60 @@
+---
+description: Frontend UI layer stack — design tokens through warehouse pages (atomic composition).
+globs: frontend/**
+alwaysApply: false
+---
+
+# Frontend UI layer stack
+
+Build production UI **top-down** through fixed layers. Do not skip layers (e.g. raw hex on a page, or a page that stacks five `ui/` imports instead of an organism).
+
+```mermaid
+flowchart TD
+  tokens[DesignTokens]
+  shadcn[shadcn_ui]
+  primitives[BaseUI]
+  atomic[AtomicDesign]
+  ds[DesignSystem]
+  pages[WarehousePages]
+
+  tokens -->|"color spacing radius typography"| shadcn
+  shadcn --> primitives
+  primitives -->|"Button Input Select Dialog Table"| atomic
+  atomic -->|"Molecule Organism"| ds
+  ds -->|"usage standards"| pages
+```
+
+Scope: **`frontend/` only**. Handoff from `design/` mockups stays in `.cursor/skills/frontend/SKILL.md` (“From design → frontend”).
+
+## Layer responsibilities
+
+| Layer | Location | Rules |
+|-------|----------|--------|
+| **Design tokens** | `frontend/app/globals.css` only | Color, spacing, radius, typography, warehouse semantics. Consumers use Tailwind theme aliases or `var(--…)` — **no raw hex** in components or pages. |
+| **shadcn/ui** | `frontend/components/ui/` | Primitives generated/customized via shadcn; extend with `cn()` + CVA. Do not duplicate controls outside `ui/`. |
+| **Base UI** | Same as shadcn primitives | Required set before feature pages: **Button**, **Input**, **Select**, **Dialog**, **Table** — each with a co-located `*.stories.tsx` when shared. Add via `make frontend-shadcn-add COMPONENT=<name>`. |
+| **Atomic design** | `components/molecules/`, `components/organisms/` | **Molecules:** small compositions (labeled field, search row, pager strip). **Organisms:** CRUD toolbar, data table shell, admin chrome sections. Route pages compose **molecules/organisms**, not ad-hoc stacks of `ui/` — except trivial one-off leaf usage. |
+| **Design system** | Rules + Storybook + docs | Cross-cutting standards: this file, [forms.mdc](forms.mdc), [tables.mdc](tables.mdc), [dates.mdc](dates.mdc), [icons.mdc](icons.mdc), [storybook.mdc](storybook.mdc), `document/knowledge/frontend.md`. New **shared** UI exports need a Storybook story. |
+| **Warehouse pages** | `frontend/app/[locale]/…` | Domain routes (e.g. inventory, orders, products, users): API + i18n, compose organisms, follow tables/forms/dates rules. |
+
+## Dependency direction
+
+**tokens → `ui/` → molecules → organisms → pages**
+
+- Lower layers must not depend on pages or feature-specific organisms.
+- Organisms must not introduce new colors or spacing — use tokens and primitives only.
+- Token changes happen in `globals.css` and propagate downward; do not patch colors on individual pages.
+
+## When adding or changing UI
+
+1. **Token?** — If the need is a new semantic color/spacing/radius, add it in `globals.css` (and design-tokens story if visual).
+2. **Existing shadcn?** — Check `components/ui/` and Storybook before creating a custom control.
+3. **Right folder?** — One-off page layout stays in the route; repeated pattern → molecule; screen section reused across routes → organism.
+4. **Story?** — Shared `ui/`, molecule, or organism → add or update `*.stories.tsx` ([storybook.mdc](storybook.mdc)).
+
+## Do not
+
+- Put design tokens in separate CSS files or inline theme objects in components.
+- Import `components/ui/*` heavily from route pages when an organism should own that composition.
+- Ship shared UI without Storybook coverage.
+- Bypass the layer stack for “speed” (duplicate Button styling, table chrome, or form field markup on each page).
