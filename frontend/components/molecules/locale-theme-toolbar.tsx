@@ -3,8 +3,14 @@
 import { Languages, Moon, Sun } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { usePathname, useRouter } from "@/i18n/navigation";
+
+import { ButtonIcon } from "@/components/ui/button-icon";
+import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
+import { useRouter } from "@/i18n/navigation";
 import { cn } from "cn";
+
+const toolbarButtonClass =
+  "size-10 border-foreground/10 bg-background/70 backdrop-blur-sm hover:border-primary [&_svg]:size-5";
 
 type LocaleThemeToolbarProps = {
   className?: string;
@@ -13,7 +19,7 @@ type LocaleThemeToolbarProps = {
 export function LocaleThemeToolbar({ className }: LocaleThemeToolbarProps) {
   const t = useTranslations();
   const locale = useLocale();
-  const pathname = usePathname();
+  const pathname = useLocalizedPathname();
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -22,26 +28,30 @@ export function LocaleThemeToolbar({ className }: LocaleThemeToolbarProps) {
 
   return (
     <div className={cn("flex gap-1.5", className)}>
-      <button
+      <ButtonIcon
         type="button"
-        className="inline-flex size-10 items-center justify-center rounded-(--login-radius) border border-foreground/10 bg-background/70 backdrop-blur-sm hover:border-primary"
+        variant="outline"
+        size="md"
+        className={toolbarButtonClass}
         aria-label={t("lang.toggle")}
         onClick={() => router.replace(pathname, { locale: nextLocale })}
       >
-        <Languages className="size-5 text-current" />
-      </button>
-      <button
+        <Languages className="text-current" />
+      </ButtonIcon>
+      <ButtonIcon
         type="button"
-        className="inline-flex size-10 items-center justify-center rounded-(--login-radius) border border-foreground/10 bg-background/70 backdrop-blur-sm hover:border-primary"
+        variant="outline"
+        size="md"
+        className={toolbarButtonClass}
         aria-label={t("theme.toggle")}
         onClick={() => setTheme(isDark ? "light" : "dark")}
       >
         {isDark ? (
-          <Sun className="size-5 text-current" />
+          <Sun className="text-current" />
         ) : (
-          <Moon className="size-5 text-current" />
+          <Moon className="text-current" />
         )}
-      </button>
+      </ButtonIcon>
     </div>
   );
 }

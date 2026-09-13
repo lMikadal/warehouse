@@ -2,6 +2,7 @@
 
 import { Star } from "lucide-react";
 
+import { FormCard } from "@/components/molecules/form-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Breadcrumb,
@@ -62,9 +63,7 @@ export function GuideCard({
   className?: string;
 }) {
   return (
-    <article
-      className={`border-border bg-card shadow-zone-card space-y-4 rounded-xl border p-5 ${className}`}
-    >
+    <FormCard className={`gap-4 p-5 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
           <h3 className="text-base font-semibold tracking-tight">{title}</h3>
@@ -79,7 +78,7 @@ export function GuideCard({
         ) : null}
       </div>
       {children}
-    </article>
+    </FormCard>
   );
 }
 

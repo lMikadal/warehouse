@@ -3,7 +3,7 @@
     "view": "View"
   },
   "app": {
-    "frontendTitle": "Warehouse frontend",
+    "frontendTitle": "Warehouse",
     "name": "Warehouse"
   },
   "col": {
@@ -27,12 +27,6 @@
     "sortNone": "Sort by {field}",
     "statusFilter": "Status filter"
   },
-  "demo": {
-    "destructive": "Destructive",
-    "outline": "Outline",
-    "primary": "Primary",
-    "secondary": "Secondary"
-  },
   "error": {
     "required": "This field is required."
   },
@@ -43,8 +37,23 @@
     }
   },
   "home": {
+    "adminLogin": "Admin sign in",
     "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl",
     "heading": "Stack smoke test"
+  },
+  "login": {
+    "description": "Warehouse management system",
+    "error": {
+      "invalid": "Invalid username or password"
+    },
+    "password": {
+      "hide": "Hide password",
+      "label": "Password",
+      "show": "Show password"
+    },
+    "submit": "Sign in",
+    "title": "Sign in",
+    "username": "Username"
   },
   "lang": {
     "en": "EN",
@@ -71,7 +80,8 @@
     "dark": "Dark",
     "label": "Theme",
     "light": "Light",
-    "system": "System"
+    "system": "System",
+    "toggle": "Toggle theme"
   },
   "warehouse": {
     "addZone": "Add zone"

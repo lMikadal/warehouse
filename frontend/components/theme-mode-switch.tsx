@@ -3,9 +3,11 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
+import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
 function useMounted() {
@@ -28,12 +30,23 @@ const modeIcons = {
 
 export function ThemeDocumentSync() {
   const { resolvedTheme } = useTheme();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!resolvedTheme) return;
     document.documentElement.dataset.theme =
       resolvedTheme === "dark" ? "dark" : "light";
   }, [resolvedTheme]);
+
+  useEffect(() => {
+    const locale =
+      routing.locales.find(
+        (loc) =>
+          loc !== routing.defaultLocale &&
+          (pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)),
+      ) ?? routing.defaultLocale;
+    document.documentElement.lang = locale;
+  }, [pathname]);
 
   return null;
 }

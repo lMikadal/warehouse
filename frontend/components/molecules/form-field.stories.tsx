@@ -3,14 +3,24 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
 
 import { FormField } from "./form-field";
 
 const meta = {
   title: "Molecules/FormField",
   component: FormField,
+  decorators: [
+    (Story) => (
+      <>
+        <Story />
+        <Toaster />
+      </>
+    ),
+  ],
 } satisfies Meta<typeof FormField>;
 
 export default meta;
@@ -45,9 +55,10 @@ export const RequiredValidation: Story = {
     onChange: () => {},
   },
   render: function Render() {
-    const t = useTranslations("error");
+    const t = useTranslations();
     const [value, setValue] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    const [invalid, setInvalid] = useState(false);
+    const label = t("story.sampleField");
 
     return (
       <div className="max-w-sm space-y-3">
@@ -57,13 +68,16 @@ export const RequiredValidation: Story = {
           required
           value={value}
           onChange={setValue}
-          error={error}
-          onClearError={() => setError(null)}
+          invalid={invalid}
+          onClearInvalid={() => setInvalid(false)}
         />
         <Button
           type="button"
           onClick={() => {
-            if (!value.trim()) setError(t("required"));
+            if (!value.trim()) {
+              toast.error(t("form.placeholder.input", { label }));
+              setInvalid(true);
+            }
           }}
         >
           Validate
@@ -73,8 +87,8 @@ export const RequiredValidation: Story = {
   },
 };
 
-export const WithPrefilledError: Story = {
-  name: "With error (pre-shown)",
+export const InvalidVisualOnly: Story = {
+  name: "Invalid (visual only)",
   args: {
     id: "wh-name-err",
     labelKey: "story.sampleField",
@@ -84,7 +98,6 @@ export const WithPrefilledError: Story = {
   },
   render: function Render() {
     const [value, setValue] = useState("");
-    const [error, setError] = useState<string | null>("กรุณากรอกชื่อคลัง");
     return (
       <div className="max-w-sm">
         <FormField
@@ -93,8 +106,7 @@ export const WithPrefilledError: Story = {
           required
           value={value}
           onChange={setValue}
-          error={error}
-          onClearError={() => setError(null)}
+          invalid
         />
       </div>
     );

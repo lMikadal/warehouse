@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, type ChangeEvent } from "react";
 
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +14,8 @@ export type FormFieldProps = {
   type?: React.ComponentProps<typeof Input>["type"];
   value: string;
   onChange: (value: string) => void;
-  error?: string | null;
-  onClearError?: () => void;
+  invalid?: boolean;
+  onClearInvalid?: () => void;
   children?: ReactNode;
   className?: string;
 };
@@ -27,8 +27,8 @@ export function FormField({
   type = "text",
   value,
   onChange,
-  error,
-  onClearError,
+  invalid,
+  onClearInvalid,
   children,
   className,
 }: FormFieldProps) {
@@ -39,14 +39,14 @@ export function FormField({
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       onChange(e.target.value);
-      onClearError?.();
+      onClearInvalid?.();
     },
-    [onChange, onClearError]
+    [onChange, onClearInvalid]
   );
 
   return (
     <Field
-      data-invalid={error ? true : undefined}
+      data-invalid={invalid ? true : undefined}
       className={cn("gap-1.5", className)}
     >
       <FieldLabel htmlFor={id}>
@@ -68,12 +68,9 @@ export function FormField({
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
-          aria-invalid={error ? true : undefined}
+          aria-invalid={invalid ? true : undefined}
         />
       )}
-      <div className="min-h-5" aria-live="polite">
-        {error ? <FieldError>{error}</FieldError> : null}
-      </div>
     </Field>
   );
 }

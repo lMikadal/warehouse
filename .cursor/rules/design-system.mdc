@@ -58,7 +58,7 @@ Before implementing a **new screen**, **design handoff**, or **new UI pattern** 
 
 Then apply the layer checklist:
 
-1. **Token?** — If the need is a new semantic color/spacing/radius, add it in `globals.css` (and design-tokens story if visual).
+1. **Token?** — If the need is a new semantic color/spacing/radius, add it in `globals.css` (and design-tokens story if visual). New `@utility` or bespoke classes → [globals-css.mdc](globals-css.mdc) (ask user first).
 2. **Existing shadcn?** — Check `components/ui/` and Storybook before creating a custom control.
 3. **Right folder?** — One-off page layout stays in the route; repeated pattern → molecule; screen section reused across routes → organism.
 4. **Story?** — Shared `ui/`, molecule, or organism → add or update `*.stories.tsx` ([storybook.mdc](storybook.mdc)).

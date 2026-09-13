@@ -3,7 +3,7 @@
     "view": "ดู"
   },
   "app": {
-    "frontendTitle": "Warehouse frontend",
+    "frontendTitle": "Warehouse",
     "name": "Warehouse"
   },
   "col": {
@@ -27,12 +27,6 @@
     "sortNone": "เรียงตาม {field}",
     "statusFilter": "กรองสถานะ"
   },
-  "demo": {
-    "destructive": "ลบ",
-    "outline": "ขอบ",
-    "primary": "หลัก",
-    "secondary": "รอง"
-  },
   "error": {
     "required": "กรุณากรอกข้อมูลในช่องนี้"
   },
@@ -43,8 +37,23 @@
     }
   },
   "home": {
+    "adminLogin": "เข้าสู่ระบบผู้ดูแล",
     "description": "Tailwind v4 · shadcn/ui · lucide-react · next-themes · next-intl",
     "heading": "ทดสอบสแต็ก"
+  },
+  "login": {
+    "description": "ระบบจัดการคลังสินค้า Warehouse",
+    "error": {
+      "invalid": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+    },
+    "password": {
+      "hide": "ซ่อนรหัสผ่าน",
+      "label": "รหัสผ่าน",
+      "show": "แสดงรหัสผ่าน"
+    },
+    "submit": "เข้าสู่ระบบ",
+    "title": "เข้าสู่ระบบ",
+    "username": "ชื่อผู้ใช้"
   },
   "lang": {
     "en": "EN",
@@ -71,7 +80,8 @@
     "dark": "มืด",
     "label": "ธีม",
     "light": "สว่าง",
-    "system": "ระบบ"
+    "system": "ระบบ",
+    "toggle": "สลับธีม"
   },
   "warehouse": {
     "addZone": "เพิ่มโซน"

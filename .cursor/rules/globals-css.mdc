@@ -1,0 +1,30 @@
+---
+description: Gate new custom classes and @utility in frontend/app/globals.css — ask first; compose existing utilities.
+globs: frontend/app/globals.css
+alwaysApply: false
+---
+
+# globals.css custom classes
+
+Applies when editing [`frontend/app/globals.css`](../../frontend/app/globals.css).
+
+## Before adding or renaming
+
+Stop and **AskQuestion** before you:
+
+- Add a new `@utility …`
+- Add a bespoke single-purpose class meant for repeated use in JSX
+- Duplicate styling that Tailwind utilities or `cn()` on molecules/organisms can express
+
+Briefly state: what you searched, existing `@utility` / tokens considered, and why composition is insufficient.
+
+## Prefer (in order)
+
+1. **Tailwind + `cn()`** on shared components (`components/molecules/`, `components/organisms/`)
+2. **Existing `@utility`** — e.g. `shadow-zone-card`, `max-w-form`, `bg-login-page`, `bg-page-wash`, layout utilities (`px-page`, `max-w-crud-page`)
+3. **CSS variables** in `:root` / `.dark` and shadcn `@theme inline` bridge — token layer per [design-system.mdc](design-system.mdc); no extra approval for semantic variables when design tokens change
+
+## Do not
+
+- Add a new `@utility` for one page or one screen without user approval
+- Copy the same gradient/shadow block under a second name — reuse or bundle on a molecule instead

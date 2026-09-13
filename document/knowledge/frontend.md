@@ -56,10 +56,11 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
 | `TableIconActions` | View / edit / add (green) / delete (red) icon row |
-| `FormField` | shadcn `Field` / `FieldLabel` / `FieldError` + `Input`; required asterisk, placeholder pattern, error slot |
+| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern, optional `invalid` styling (no inline error text — callers use toast or page-level `FieldError`) |
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |
+| `FormCard` | shadcn `Card` with form panel surface (border, shadow); re-exports header/content subcomponents |
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
 
@@ -182,7 +183,7 @@ Handoff from [`design/js/components/toast.js`](../../design/js/components/toast.
 | `toast.show(msg, 'warning')` | `toast.warning(msg)` |
 | `toast.show(msg, 'info')` | `toast.info(msg)` |
 
-- **Host:** `<Toaster />` from `@/components/ui/sonner` once in `app/[locale]/layout.tsx` (inside `ThemeProvider`).
+- **Host:** `<Toaster />` from `@/components/ui/sonner` once in `app/[locale]/layout.tsx`. Root `<html>` / `<body>`, `ThemeProvider`, and `globals.css` import live in the same `[locale]/layout.tsx` (required so `next/root-params` exposes `[locale]`).
 - **API:** `import { toast } from "sonner"` — pass translated strings at call sites (`toast.success(t('crud.saved'))`).
 - **Styling:** overrides in `app/globals.css` on `[data-sonner-toast]` (left accent border, design shadow); Lucide icons in `sonner.tsx`.
 - **Rule:** every mutation (POST/PATCH/DELETE) shows success or error toast — no silent mutations.
@@ -195,10 +196,24 @@ Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 - Routes: ภาษาไทย (default) ที่ **`/`** ไม่มี `/th`; อังกฤษที่ **`/en`…**
 - Messages: `frontend/messages/th.json`, `en.json`
 - Config: `frontend/i18n/routing.ts`, `request.ts`, `navigation.ts`
+- Server locale: `i18n/request.ts` reads `[locale]` via Next.js `next/root-params` (static rendering + `getMessages` / `getTranslations`); do not use deprecated `setRequestLocale`
 - Client navigation: `@/i18n/navigation` (`Link`, `useRouter`, `usePathname`)
 - Header: `LocaleSwitch` (ไทย / EN) + `ThemeModeSwitch`
 
 Port more keys from `design/js/i18n/` into `messages/` as pages ship.
+
+### Login route (admin)
+
+| Item | Detail |
+|------|--------|
+| Path | `/admin/login` (default locale `th` has no `/th` prefix) |
+| Design source | [`design/pages/login.html`](../../design/pages/login.html) |
+| Files | [`(auth)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(auth)/layout.tsx) (split shell + brand aside), [`login/page.tsx`](../../frontend/app/[locale]/(admin)/admin/(auth)/login/page.tsx) + `login-form.tsx` |
+| Compose | `(auth)/layout`: toolbar, brand panel at `lg`; login page: `FormCard`, `FormField`, `InputGroup` + Lucide `User` / `Lock`; password visibility on shared `Input` |
+| Tokens | `max-w-form` in `app/globals.css`; mobile radial wash uses `--color-primary`; brand gradient uses `primary` token stops |
+| Phase | **UI + client validation only** — submit does not call the API yet (no backend login endpoint) |
+| Required empty submit | `toast.error` with `form.placeholder.input` copy (first invalid field); both fields may show invalid chrome; no under-field text |
+| Entry | Home stack page links via `home.adminLogin` → `/admin/login` |
 
 ## Docker
 
@@ -215,7 +230,7 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 |-------|----------|
 | Next.js | 16.3.5 App Router `app/[locale]/` |
 | i18n | next-intl, default `th` |
-| Theme | next-themes, `storageKey` `warehouse-design-theme`, `data-theme` on `<html>` |
+| Theme | next-themes in `app/[locale]/layout.tsx`, `storageKey` `warehouse-design-theme`, `data-theme` on `<html>` |
 | Icons | lucide-react |
 | Components | shadcn/ui → `components/ui/` |
 | Drag and drop | `@dnd-kit/react` + `@dnd-kit/helpers` — list/table reorder (modern API; not legacy `@dnd-kit/core`) |
