@@ -65,6 +65,14 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
 
+### Drag-and-drop (row reorder)
+
+- **Production:** [`@dnd-kit/react`](https://dndkit.com/react/quickstart/) with `DragDropProvider`, `useSortable` (`@dnd-kit/react/sortable`), and `move()` from `@dnd-kit/helpers` on `onDragEnd`.
+- **Design mockups:** HTML5 `draggable` in `design/` only — do not port that mechanism to `frontend/`.
+- **When to enable:** tables with a `sort_order` column only ([`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc)); grip column (Lucide `GripVertical`) on the handle; disable DnD while a column header sort is active.
+- **Scope:** wrap each sortable list/table in its own `DragDropProvider` (not the locale layout).
+- **Storybook baseline:** **Design system/DnD Sortable** — [`stories/dnd-kit-sortable.stories.tsx`](../../frontend/stories/dnd-kit-sortable.stories.tsx).
+
 Column header sort (data columns): `TableSortHead` + [`lib/table-sort.ts`](../../frontend/lib/table-sort.ts) (`cycleTableSort`, none → asc → desc → none). Pass i18n `sortLabel` from `crud.sortNone` / `sortAsc` / `sortDesc`. Non-sortable columns (grip, actions) stay plain `TableHead`.
 
 ## Design tokens
@@ -209,6 +217,7 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 | Theme | next-themes, `storageKey` `warehouse-design-theme`, `data-theme` on `<html>` |
 | Icons | lucide-react |
 | Components | shadcn/ui → `components/ui/` |
+| Drag and drop | `@dnd-kit/react` + `@dnd-kit/helpers` — list/table reorder (modern API; not legacy `@dnd-kit/core`) |
 | Design tokens | `app/globals.css` only |
 | Storybook | `@storybook/nextjs` (Webpack), v10.6 |
 
@@ -216,7 +225,8 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 
 - Global styles: `app/globals.css`; `ThemeProvider` + **`withIntl`** ([`.storybook/decorators/intl.tsx`](../../frontend/.storybook/decorators/intl.tsx)) in `.storybook/preview.tsx` — toolbar **locale** `th` / `en`
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
-- Stories: `components/ui/*.stories.tsx` → **UI/**; `components/molecules/*.stories.tsx` → **Molecules/**; `stories/design-tokens.stories.tsx` → **Design system/Tokens**
+- Story globs (`.storybook/main.ts`): `components/**/*.stories.tsx` and `stories/**/*.stories.tsx`
+- Titles: `components/ui/` → **UI/**; `components/molecules/` → **Molecules/**; `stories/design-tokens.stories.tsx` → **Design system/Tokens**; `stories/dnd-kit-sortable.stories.tsx` → **Design system/DnD Sortable**
 - No **Organisms/** or **Pages/** stories until organism phase
 
 ### Component workflow (team agreement)

@@ -16,6 +16,7 @@ Base shadcn set, Storybook coverage, and folder scaffold for molecules — middl
 - [x] Molecules refactored: **BreadcrumbNav** → `breadcrumb`; **FormField** → `field`; **CrudPaginationBar** → `pagination`
 - [x] First molecules from [`design/pages/warehouse-list.html`](../../../design/pages/warehouse-list.html) (search, status filter, pagination, table actions, …) with Storybook
 - [x] Update `document/knowledge/frontend.md` for folder / primitive conventions
+- [x] `@dnd-kit/react` + `@dnd-kit/helpers`; Storybook **Design system/DnD Sortable** (`stories/dnd-kit-sortable.stories.tsx`)
 
 ## Required checklist
 
