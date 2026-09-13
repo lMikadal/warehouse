@@ -58,7 +58,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
 | `TableIconActions` | View / edit / add (green) / delete (red) icon row |
-| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern, optional `invalid` styling (no inline error text — callers use toast or page-level `FieldError`) |
+| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern, optional `invalid` styling (no inline error text — callers use toast or page-level `FieldError`); shared `Input` defaults `maxLength` **100** on text-like types (`DEFAULT_INPUT_MAX_LENGTH`, overridable per field) |
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |

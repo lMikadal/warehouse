@@ -16,15 +16,45 @@ function sanitizeTel(value: string): string {
 const inputClassName =
   "h-10 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
 
+/** Default for text-like inputs; override with explicit `maxLength`. */
+export const DEFAULT_INPUT_MAX_LENGTH = 100
+
+const TYPES_WITHOUT_DEFAULT_MAX_LENGTH = new Set([
+  "checkbox",
+  "color",
+  "date",
+  "datetime-local",
+  "file",
+  "hidden",
+  "month",
+  "number",
+  "radio",
+  "range",
+  "time",
+  "week",
+])
+
+function resolveInputMaxLength(
+  type: string | undefined,
+  maxLength: number | undefined
+): number | undefined {
+  if (maxLength != null) return maxLength
+  const resolvedType = type ?? "text"
+  if (TYPES_WITHOUT_DEFAULT_MAX_LENGTH.has(resolvedType)) return undefined
+  return DEFAULT_INPUT_MAX_LENGTH
+}
+
 function Input({
   className,
   type,
+  maxLength,
   inputMode,
   autoComplete,
   onChange,
   onPaste,
   ...props
 }: React.ComponentProps<"input">) {
+  const resolvedMaxLength = resolveInputMaxLength(type, maxLength)
   const t = useTranslations("login")
   const isTel = type === "tel"
   const isPassword = type === "password"
@@ -68,6 +98,7 @@ function Input({
           autoComplete={autoComplete ?? "current-password"}
           data-slot="input"
           className={cn(inputClassName, "pr-10", className)}
+          maxLength={resolvedMaxLength}
           onChange={handleChange}
           onPaste={handlePaste}
           {...props}
@@ -98,6 +129,7 @@ function Input({
       autoComplete={isTel ? (autoComplete ?? "tel") : autoComplete}
       data-slot="input"
       className={cn(inputClassName, className)}
+      maxLength={resolvedMaxLength}
       onChange={handleChange}
       onPaste={handlePaste}
       {...props}

@@ -100,22 +100,21 @@ function SystemMenuEditForm({
       noValidate
     >
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField
-            id="menu-edit-name-th"
-            labelKey="col.nameTh"
-            required
-            value={nameTh}
-            onChange={setNameTh}
-          />
-          <FormField
-            id="menu-edit-name-en"
-            labelKey="col.nameEn"
-            required
-            value={nameEn}
-            onChange={setNameEn}
-          />
-        </div>
+        <FormField
+          id="menu-edit-name-th"
+          labelKey="col.nameTh"
+          required
+          value={nameTh}
+          onChange={setNameTh}
+        />
+
+        <FormField
+          id="menu-edit-name-en"
+          labelKey="col.nameEn"
+          required
+          value={nameEn}
+          onChange={setNameEn}
+        />
 
         <FormField
           id="menu-edit-path"

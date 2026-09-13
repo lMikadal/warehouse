@@ -18,6 +18,7 @@ export type FormFieldProps = {
   onClearInvalid?: () => void;
   children?: ReactNode;
   className?: string;
+  maxLength?: number;
 };
 
 export function FormField({
@@ -31,6 +32,7 @@ export function FormField({
   onClearInvalid,
   children,
   className,
+  maxLength,
 }: FormFieldProps) {
   const t = useTranslations();
   const label = t(labelKey);
@@ -68,6 +70,7 @@ export function FormField({
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
+          maxLength={maxLength}
           aria-invalid={invalid ? true : undefined}
         />
       )}
