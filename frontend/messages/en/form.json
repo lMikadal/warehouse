@@ -5,10 +5,16 @@
       "module": "Module",
       "nameEn": "Name (English)",
       "nameTh": "Name (Thai)",
-      "path": "Path"
+      "path": "Path",
+      "parent": "Parent menu",
+      "parentRoot": "None (top level)"
+    },
+    "combobox": {
+      "noResults": "No results"
     },
     "placeholder": {
-      "input": "Please enter {label}"
+      "input": "Please enter {label}",
+      "select": "Please select {label}"
     },
     "password": {
       "hide": "Hide password",

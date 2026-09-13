@@ -5,10 +5,16 @@
       "module": "โมดูล",
       "nameEn": "ชื่อ (English)",
       "nameTh": "ชื่อ (ไทย)",
-      "path": "เส้นทาง"
+      "path": "เส้นทาง",
+      "parent": "เมนูหลัก",
+      "parentRoot": "ไม่มี (เมนูระดับบนสุด)"
+    },
+    "combobox": {
+      "noResults": "ไม่พบรายการ"
     },
     "placeholder": {
-      "input": "กรุณากรอก{label}"
+      "input": "กรุณากรอก{label}",
+      "select": "กรุณาเลือก{label}"
     },
     "password": {
       "hide": "ซ่อนรหัสผ่าน",

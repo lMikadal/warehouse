@@ -39,7 +39,9 @@ import {
 } from "@/components/ui/table";
 import {
   adminMenuLabel,
+  appendAdminMenuRow,
   createInitialAdminMenuRows,
+  updateAdminMenuRow,
   type AdminMenuRow,
 } from "@/lib/admin-menu-mock";
 import {
@@ -101,35 +103,6 @@ function filterMenuRows(
 
 function toRowView(row: AdminMenuRow, locale: DisplayLocale): MenuRowView {
   return { ...row, label: adminMenuLabel(row, locale) };
-}
-
-function nextMenuId(rows: AdminMenuRow[]): number {
-  return rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
-}
-
-function buildRootMenuRow(
-  rows: AdminMenuRow[],
-  payload: SystemMenuEditPayload
-): AdminMenuRow {
-  const id = nextMenuId(rows);
-  const now = new Date().toISOString();
-  const rootSiblings = rows.filter((r) => r.parent_id == null);
-  const maxSort = rootSiblings.reduce(
-    (max, r) => Math.max(max, r.sort_order),
-    0
-  );
-  return {
-    id,
-    parent_id: null,
-    module: payload.module.trim(),
-    path: payload.path || null,
-    sort_order: maxSort + 100,
-    is_active: payload.isActive,
-    tree_path: `n${id}`,
-    labels: { th: payload.nameTh, en: payload.nameEn },
-    created_at: now,
-    updated_at: now,
-  };
 }
 
 function removeMenuSubtree(rows: AdminMenuRow[], id: number): AdminMenuRow[] {
@@ -332,25 +305,17 @@ export function SystemMenuList() {
     payload: SystemMenuEditPayload
   ) => {
     if (id == null) {
-      setRows((prev) => [...prev, buildRootMenuRow(prev, payload)]);
+      setRows((prev) => appendAdminMenuRow(prev, payload));
       setMenuSheet(null);
       toast.success(tCrud("toast.created"));
       return;
     }
-    const now = new Date().toISOString();
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              labels: { th: payload.nameTh, en: payload.nameEn },
-              path: payload.path || null,
-              is_active: payload.isActive,
-              updated_at: now,
-            }
-          : r
-      )
-    );
+    const next = updateAdminMenuRow(rows, id, payload);
+    if (next == null) {
+      toast.error(tError("invalidParent"));
+      return;
+    }
+    setRows(next);
     setMenuSheet(null);
     toast.success(tCrud("toast.saved"));
   };
@@ -599,6 +564,7 @@ export function SystemMenuList() {
 
       <SystemMenuEditSheet
         state={menuSheet}
+        menuRows={rows}
         onOpenChange={(open) => {
           if (!open) setMenuSheet(null);
         }}

@@ -1,3 +1,5 @@
+import { defaultSortRows, treeDepth } from "@/lib/crud-list-rows";
+
 const SEED_TS = "2026-01-01T00:00:00Z";
 
 type MenuDef = {
@@ -477,4 +479,153 @@ export function createInitialAdminMenuRows(): AdminMenuRow[] {
     created_at: SEED_TS,
     updated_at: SEED_TS,
   }));
+}
+
+/** Combobox value for root (no parent); not empty string — Base UI items must not be nullish. */
+export const MENU_PARENT_ROOT_VALUE = "__root__";
+
+function nextAdminMenuId(rows: AdminMenuRow[]): number {
+  return rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
+}
+
+function maxSortUnderParent(
+  rows: AdminMenuRow[],
+  parentId: number | null,
+  excludeId?: number
+): number {
+  return rows
+    .filter(
+      (r) =>
+        (r.parent_id ?? null) === parentId &&
+        (excludeId == null || r.id !== excludeId)
+    )
+    .reduce((max, r) => Math.max(max, r.sort_order), 0);
+}
+
+function recomputeAllTreePaths(rows: AdminMenuRow[]): AdminMenuRow[] {
+  const parentById: Record<number, number | null> = {};
+  rows.forEach((r) => {
+    parentById[r.id] = r.parent_id ?? null;
+  });
+  return rows.map((r) => ({
+    ...r,
+    tree_path: buildTreePath(r.id, r.parent_id ?? null, parentById),
+  }));
+}
+
+export function menuSubtreeIds(
+  rows: AdminMenuRow[],
+  rootId: number
+): Set<number> {
+  const root = rows.find((r) => r.id === rootId);
+  if (!root) return new Set();
+  const prefix = `${root.tree_path}.`;
+  const ids = new Set<number>([rootId]);
+  rows.forEach((r) => {
+    if (r.tree_path.startsWith(prefix)) ids.add(r.id);
+  });
+  return ids;
+}
+
+export type MenuParentOption = { value: string; label: string };
+
+export function menuParentPickerOptions(
+  rows: AdminMenuRow[],
+  locale: "th" | "en",
+  rootOptionLabel: string,
+  excludeMenuId?: number | null
+): MenuParentOption[] {
+  const excluded =
+    excludeMenuId != null ? menuSubtreeIds(rows, excludeMenuId) : new Set<number>();
+  const sorted = defaultSortRows(rows);
+  const options: MenuParentOption[] = [
+    { value: MENU_PARENT_ROOT_VALUE, label: rootOptionLabel },
+  ];
+  for (const row of sorted) {
+    if (excluded.has(row.id)) continue;
+    const depth = treeDepth(row.tree_path);
+    const indent = depth > 0 ? "\u00a0".repeat(depth * 2) : "";
+    options.push({
+      value: String(row.id),
+      label: `${indent}${adminMenuLabel(row, locale)}`,
+    });
+  }
+  return options;
+}
+
+export function isInvalidMenuParent(
+  rows: AdminMenuRow[],
+  menuId: number | null,
+  newParentId: number | null
+): boolean {
+  if (newParentId == null || menuId == null) return false;
+  if (newParentId === menuId) return true;
+  const self = rows.find((r) => r.id === menuId);
+  const candidate = rows.find((r) => r.id === newParentId);
+  if (!self || !candidate) return true;
+  const prefix = `${self.tree_path}.`;
+  return (
+    candidate.id === menuId ||
+    candidate.tree_path.startsWith(prefix)
+  );
+}
+
+export type AdminMenuSaveFields = {
+  nameTh: string;
+  nameEn: string;
+  path: string;
+  module: string;
+  isActive: boolean;
+  parentId: number | null;
+};
+
+export function appendAdminMenuRow(
+  rows: AdminMenuRow[],
+  payload: AdminMenuSaveFields
+): AdminMenuRow[] {
+  const id = nextAdminMenuId(rows);
+  const now = new Date().toISOString();
+  const parent_id = payload.parentId;
+  const sort_order = maxSortUnderParent(rows, parent_id) + 100;
+  const row: AdminMenuRow = {
+    id,
+    parent_id,
+    module: payload.module.trim(),
+    path: payload.path || null,
+    sort_order,
+    is_active: payload.isActive,
+    tree_path: `n${id}`,
+    labels: { th: payload.nameTh, en: payload.nameEn },
+    created_at: now,
+    updated_at: now,
+  };
+  return recomputeAllTreePaths([...rows, row]);
+}
+
+export function updateAdminMenuRow(
+  rows: AdminMenuRow[],
+  id: number,
+  payload: AdminMenuSaveFields
+): AdminMenuRow[] | null {
+  if (isInvalidMenuParent(rows, id, payload.parentId)) return null;
+  const prev = rows.find((r) => r.id === id);
+  if (!prev) return null;
+  const now = new Date().toISOString();
+  const parentChanged =
+    (prev.parent_id ?? null) !== (payload.parentId ?? null);
+  const next = rows.map((r) => {
+    if (r.id !== id) return r;
+    return {
+      ...r,
+      labels: { th: payload.nameTh, en: payload.nameEn },
+      path: payload.path || null,
+      is_active: payload.isActive,
+      parent_id: payload.parentId,
+      sort_order: parentChanged
+        ? maxSortUnderParent(rows, payload.parentId, id) + 100
+        : r.sort_order,
+      updated_at: now,
+    };
+  });
+  return recomputeAllTreePaths(next);
 }

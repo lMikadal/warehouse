@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { type FormEvent, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { type FormEvent, useMemo, useState } from "react";
 
 import {
   CrudFormSheet,
@@ -11,7 +11,21 @@ import {
 } from "@/components/molecules/crud-form-sheet";
 import { FormField } from "@/components/molecules/form-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import type { AdminMenuRow } from "@/lib/admin-menu-mock";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import {
+  type AdminMenuRow,
+  MENU_PARENT_ROOT_VALUE,
+  menuParentPickerOptions,
+} from "@/lib/admin-menu-mock";
+import type { DisplayLocale } from "@/lib/format-datetime";
 
 type MenuRequiredFieldKey = "nameTh" | "nameEn" | "module";
 
@@ -34,6 +48,7 @@ export type SystemMenuEditPayload = {
   path: string;
   module: string;
   isActive: boolean;
+  parentId: number | null;
 };
 
 export type SystemMenuSheetState =
@@ -42,31 +57,101 @@ export type SystemMenuSheetState =
 
 export type SystemMenuEditSheetProps = {
   state: SystemMenuSheetState | null;
+  menuRows: AdminMenuRow[];
   onOpenChange: (open: boolean) => void;
   onSave: (id: number | null, payload: SystemMenuEditPayload) => void;
 };
 
 type SystemMenuEditFormProps = {
   mode: "edit" | "create";
+  menuRows: AdminMenuRow[];
   initial: {
     nameTh: string;
     nameEn: string;
     path: string;
     module: string;
     isActive: boolean;
+    parentValue: string;
   };
   editId: number | null;
   onSave: (id: number | null, payload: SystemMenuEditPayload) => void;
   onClose: () => void;
 };
 
+function MenuParentComboboxField({
+  id,
+  value,
+  onChange,
+  options,
+  invalid,
+  onClearInvalid,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  invalid?: boolean;
+  onClearInvalid?: () => void;
+}) {
+  const t = useTranslations();
+  const tError = useTranslations("error");
+  const label = t("form.field.parent");
+  const placeholder = t("form.placeholder.select", { label });
+  const emptyLabel = t("form.combobox.noResults");
+
+  return (
+    <Field
+      data-invalid={invalid ? true : undefined}
+      className="gap-1.5"
+    >
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Combobox
+        items={options}
+        value={value}
+        itemToStringLabel={(itemValue) =>
+          options.find((o) => o.value === itemValue)?.label ?? ""
+        }
+        onValueChange={(next) => {
+          onChange(next ?? MENU_PARENT_ROOT_VALUE);
+          onClearInvalid?.();
+        }}
+      >
+        <ComboboxInput
+          id={id}
+          className="w-full"
+          placeholder={placeholder}
+          aria-label={label}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={invalid ? `${id}-error` : undefined}
+          showClear={value !== MENU_PARENT_ROOT_VALUE}
+        />
+        <ComboboxContent>
+          <ComboboxList>
+            {(item) => (
+              <ComboboxItem key={item.value} value={item.value}>
+                {item.label}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+          <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
+        </ComboboxContent>
+      </Combobox>
+      {invalid ? (
+        <FieldError id={`${id}-error`}>{tError("invalidParent")}</FieldError>
+      ) : null}
+    </Field>
+  );
+}
+
 function SystemMenuEditForm({
   mode,
+  menuRows,
   initial,
   editId,
   onSave,
   onClose,
 }: SystemMenuEditFormProps) {
+  const locale = useLocale() as DisplayLocale;
   const tCrud = useTranslations("crud");
   const tForm = useTranslations("form");
 
@@ -75,14 +160,33 @@ function SystemMenuEditForm({
   const [path, setPath] = useState(initial.path);
   const [moduleValue, setModuleValue] = useState(initial.module);
   const [isActive, setIsActive] = useState(initial.isActive);
+  const [parentValue, setParentValue] = useState(initial.parentValue);
   const [fieldInvalid, setFieldInvalid] = useState(emptyMenuRequiredInvalid);
+  const [parentInvalid, setParentInvalid] = useState(false);
 
   const locked = mode === "edit";
+
+  const parentOptions = useMemo(
+    () =>
+      menuParentPickerOptions(
+        menuRows,
+        locale,
+        tForm("field.parentRoot"),
+        editId
+      ),
+    [menuRows, locale, tForm, editId]
+  );
 
   const clearFieldInvalid = (key: MenuRequiredFieldKey) => {
     setFieldInvalid((prev) =>
       prev[key] ? { ...prev, [key]: false } : prev
     );
+  };
+
+  const parseParentId = (value: string): number | null => {
+    if (value === MENU_PARENT_ROOT_VALUE) return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -109,8 +213,18 @@ function SystemMenuEditForm({
 
     setFieldInvalid(nextInvalid);
 
+    const parentId = parseParentId(parentValue);
+    const parentMissing =
+      parentValue !== MENU_PARENT_ROOT_VALUE &&
+      parentId == null;
+    setParentInvalid(parentMissing);
+
     if (firstInvalidId) {
       document.getElementById(firstInvalidId)?.focus();
+      return;
+    }
+    if (parentMissing) {
+      document.getElementById("menu-edit-parent")?.focus();
       return;
     }
 
@@ -120,6 +234,7 @@ function SystemMenuEditForm({
       path: locked ? initial.path : path.trim(),
       module: locked ? initial.module : trimmed.module,
       isActive,
+      parentId,
     });
     onClose();
   };
@@ -154,12 +269,13 @@ function SystemMenuEditForm({
           onClearInvalid={() => clearFieldInvalid("nameEn")}
         />
 
-        <FormField
-          id="menu-edit-path"
-          labelKey="form.field.path"
-          value={path}
-          onChange={setPath}
-          readOnly={locked}
+        <MenuParentComboboxField
+          id="menu-edit-parent"
+          value={parentValue}
+          onChange={setParentValue}
+          options={parentOptions}
+          invalid={parentInvalid}
+          onClearInvalid={() => setParentInvalid(false)}
         />
 
         <FormField
@@ -170,6 +286,14 @@ function SystemMenuEditForm({
           onChange={setModuleValue}
           invalid={fieldInvalid.module}
           onClearInvalid={() => clearFieldInvalid("module")}
+          readOnly={locked}
+        />
+
+        <FormField
+          id="menu-edit-path"
+          labelKey="form.field.path"
+          value={path}
+          onChange={setPath}
           readOnly={locked}
         />
 
@@ -186,6 +310,7 @@ function SystemMenuEditForm({
 
 export function SystemMenuEditSheet({
   state,
+  menuRows,
   onOpenChange,
   onSave,
 }: SystemMenuEditSheetProps) {
@@ -213,6 +338,10 @@ export function SystemMenuEditSheet({
             path: state.row.path ?? "",
             module: state.row.module,
             isActive: state.row.is_active,
+            parentValue:
+              state.row.parent_id == null
+                ? MENU_PARENT_ROOT_VALUE
+                : String(state.row.parent_id),
           },
         }
       : state?.mode === "create"
@@ -225,6 +354,7 @@ export function SystemMenuEditSheet({
               path: "",
               module: "",
               isActive: true,
+              parentValue: MENU_PARENT_ROOT_VALUE,
             },
           }
         : null;
@@ -236,6 +366,7 @@ export function SystemMenuEditSheet({
       {formProps ? (
         <SystemMenuEditForm
           key={formKey}
+          menuRows={menuRows}
           {...formProps}
           onSave={onSave}
           onClose={handleClose}

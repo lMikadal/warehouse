@@ -1,5 +1,6 @@
 {
   "error": {
+    "invalidParent": "Cannot set parent to this menu or its sub-menu",
     "noData": "No data"
   }
 }
