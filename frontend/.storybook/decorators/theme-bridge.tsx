@@ -1,6 +1,6 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { useEffect } from "react";
 
 function backgroundMode(globals: Record<string, unknown>): "light" | "dark" | null {

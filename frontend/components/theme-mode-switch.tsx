@@ -2,7 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { usePathname } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
-function useMounted() {
+export function useMounted() {
   return useSyncExternalStore(
     () => () => {},
     () => true,

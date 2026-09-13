@@ -51,6 +51,7 @@
       "label": "Password",
       "show": "Show password"
     },
+    "success": "Login successful",
     "submit": "Sign in",
     "title": "Sign in",
     "username": "Username"

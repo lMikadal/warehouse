@@ -2,8 +2,9 @@
 
 import { Languages, Moon, Sun } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useTheme } from "next-themes";
 
+import { useTheme } from "@/components/theme-provider";
+import { useMounted } from "@/components/theme-mode-switch";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
 import { useRouter } from "@/i18n/navigation";
@@ -21,10 +22,11 @@ export function LocaleThemeToolbar({ className }: LocaleThemeToolbarProps) {
   const locale = useLocale();
   const pathname = useLocalizedPathname();
   const router = useRouter();
+  const mounted = useMounted();
   const { resolvedTheme, setTheme } = useTheme();
 
   const nextLocale = locale === "th" ? "en" : "th";
-  const isDark = resolvedTheme === "dark";
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <div className={cn("flex gap-1.5", className)}>
@@ -46,7 +48,9 @@ export function LocaleThemeToolbar({ className }: LocaleThemeToolbarProps) {
         aria-label={t("theme.toggle")}
         onClick={() => setTheme(isDark ? "light" : "dark")}
       >
-        {isDark ? (
+        {!mounted ? (
+          <Moon className="text-current opacity-0" aria-hidden />
+        ) : isDark ? (
           <Sun className="text-current" />
         ) : (
           <Moon className="text-current" />

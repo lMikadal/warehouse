@@ -8,7 +8,7 @@ import {
   Loader2,
   TriangleAlert,
 } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 function TypeIcon({

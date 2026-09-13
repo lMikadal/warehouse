@@ -63,6 +63,8 @@ export function LoginForm() {
     setUsernameInvalid(false);
     setPasswordInvalid(false);
 
+    toast.success(tLogin("success"));
+
     // ponytail: API auth not wired — hook POST /auth/login here when backend ships
   }
 
