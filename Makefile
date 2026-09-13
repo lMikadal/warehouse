@@ -20,6 +20,7 @@ endef
 .PHONY: help run \
 	design-schema-check design-serve \
 	frontend-bootstrap frontend-dev frontend-build frontend-lint frontend-shadcn-add \
+	frontend-storybook frontend-storybook-build \
 	backend-dev backend-run backend-test \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
 	docker-up docker-up-d docker-down docker-build docker-logs docker-prod-up docker-prod-down
@@ -69,6 +70,16 @@ frontend-shadcn-add:
 	$(call require_dir,$(FRONTEND_DIR))
 	@test -n "$(COMPONENT)" || (echo "usage: make frontend-shadcn-add COMPONENT=<name>"; exit 1)
 	cd $(FRONTEND_DIR) && bunx shadcn@latest add $(COMPOENNT)
+
+## frontend-storybook: Storybook dev server (port 6006)
+frontend-storybook:
+	$(call require_dir,$(FRONTEND_DIR))
+	cd $(FRONTEND_DIR) && bun run storybook
+
+## frontend-storybook-build: Static Storybook build (storybook-static/)
+frontend-storybook-build:
+	$(call require_dir,$(FRONTEND_DIR))
+	cd $(FRONTEND_DIR) && bun run build-storybook
 
 ## backend-dev: Hot-reload API with air (.air.toml)
 backend-dev:

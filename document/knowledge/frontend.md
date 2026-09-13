@@ -26,7 +26,7 @@ Port more keys from `design/js/i18n/` into `messages/` as pages ship.
 
 ## Dev commands
 
-From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`, `make frontend-shadcn-add COMPONENT=<name>`.
+From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`, `make frontend-shadcn-add COMPONENT=<name>`, `make frontend-storybook`, `make frontend-storybook-build`.
 
 ## Stack (current)
 
@@ -37,6 +37,15 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 | Theme | next-themes, `storageKey` `warehouse-design-theme`, `data-theme` on `<html>` |
 | Icons | lucide-react |
 | Components | shadcn/ui → `components/ui/` |
+| Storybook | `@storybook/nextjs` (Webpack), v10.6 — co-located `*.stories.tsx` under `components/` |
+
+## Storybook
+
+- Framework: [`@storybook/nextjs`](https://storybook.js.org/docs/get-started/frameworks/nextjs/) (App Router: `nextjs.appDirectory: true` in `.storybook/preview.tsx`)
+- Global styles + theme: imports `app/globals.css`; wraps stories in `ThemeProvider` (same keys as the app)
+- Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
+- Static build: `make frontend-storybook-build` → `frontend/storybook-static/`
+- Example: `components/ui/button.stories.tsx`
 
 ## Docs
 
