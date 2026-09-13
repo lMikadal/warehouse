@@ -2,12 +2,18 @@
 
 import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ComponentProps, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+import {
+  SystemMenuEditSheet,
+  type SystemMenuEditPayload,
+  type SystemMenuSheetState,
+} from "./system-menu-edit-sheet";
+import { Button } from "@/components/ui/button";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -94,6 +100,35 @@ function filterMenuRows(
 
 function toRowView(row: AdminMenuRow, locale: DisplayLocale): MenuRowView {
   return { ...row, label: adminMenuLabel(row, locale) };
+}
+
+function nextMenuId(rows: AdminMenuRow[]): number {
+  return rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
+}
+
+function buildRootMenuRow(
+  rows: AdminMenuRow[],
+  payload: SystemMenuEditPayload
+): AdminMenuRow {
+  const id = nextMenuId(rows);
+  const now = new Date().toISOString();
+  const rootSiblings = rows.filter((r) => r.parent_id == null);
+  const maxSort = rootSiblings.reduce(
+    (max, r) => Math.max(max, r.sort_order),
+    0
+  );
+  return {
+    id,
+    parent_id: null,
+    module: payload.module.trim(),
+    path: payload.path || null,
+    sort_order: maxSort + 100,
+    is_active: payload.isActive,
+    tree_path: `n${id}`,
+    labels: { th: payload.nameTh, en: payload.nameEn },
+    created_at: now,
+    updated_at: now,
+  };
 }
 
 function removeMenuSubtree(rows: AdminMenuRow[], id: number): AdminMenuRow[] {
@@ -236,7 +271,6 @@ export function SystemMenuList() {
   const tPage = useTranslations("page");
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
-  const tToast = useTranslations("toast");
 
   const [rows, setRows] = useState<AdminMenuRow[]>(() =>
     createInitialAdminMenuRows()
@@ -248,6 +282,7 @@ export function SystemMenuList() {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [menuSheet, setMenuSheet] = useState<SystemMenuSheetState | null>(null);
 
   const fullSorted = useMemo(() => {
     const filtered = filterMenuRows(rows, query, statusFilter, locale);
@@ -287,7 +322,35 @@ export function SystemMenuList() {
         r.id === id ? { ...r, is_active: active, updated_at: now } : r
       )
     );
-    toast.success(tToast("demoSuccess"));
+    toast.success(tCrud("saved"));
+  };
+
+  const handleSaveMenu = (
+    id: number | null,
+    payload: SystemMenuEditPayload
+  ) => {
+    if (id == null) {
+      setRows((prev) => [...prev, buildRootMenuRow(prev, payload)]);
+      setMenuSheet(null);
+      toast.success(tCrud("created"));
+      return;
+    }
+    const now = new Date().toISOString();
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              labels: { th: payload.nameTh, en: payload.nameEn },
+              path: payload.path || null,
+              is_active: payload.isActive,
+              updated_at: now,
+            }
+          : r
+      )
+    );
+    setMenuSheet(null);
+    toast.success(tCrud("saved"));
   };
 
   const handleRowAction = (id: number, action: TableIconActionKey) => {
@@ -295,7 +358,10 @@ export function SystemMenuList() {
       setDeleteId(id);
       return;
     }
-    toast.info(tToast("menuEditSoon"));
+    if (action === "edit") {
+      const row = rows.find((r) => r.id === id);
+      if (row) setMenuSheet({ mode: "edit", row });
+    }
   };
 
   const handleConfirmDelete = () => {
@@ -343,6 +409,16 @@ export function SystemMenuList() {
       <CrudPageHeader
         title={tPage("adminMenu")}
         description={tPage("adminMenuDesc")}
+        actions={
+          <Button
+            type="button"
+            size="lg"
+            onClick={() => setMenuSheet({ mode: "create" })}
+          >
+            <Plus className="text-current" />
+            {tPage("adminMenuAdd")}
+          </Button>
+        }
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -504,6 +580,14 @@ export function SystemMenuList() {
           setPageSize(size);
           setPage(1);
         }}
+      />
+
+      <SystemMenuEditSheet
+        state={menuSheet}
+        onOpenChange={(open) => {
+          if (!open) setMenuSheet(null);
+        }}
+        onSave={handleSaveMenu}
       />
 
       <CrudDeleteConfirmDialog
