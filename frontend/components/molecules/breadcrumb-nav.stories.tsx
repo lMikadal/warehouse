@@ -29,3 +29,34 @@ export const WarehouseList: Story = {
     );
   },
 };
+
+export const SingleSegment: Story = {
+  args: {
+    segments: [{ label: "Warehouses" }],
+  },
+};
+
+export const TwoSegments: Story = {
+  args: {
+    segments: [
+      { label: "Warehouses", href: "/" },
+      { label: "Warehouse A" },
+    ],
+  },
+};
+
+export const DeepPath: Story = {
+  args: {
+    segments: [
+      { label: "Home", href: "/" },
+      { label: "Warehouses", href: "/warehouses" },
+      { label: "Warehouse A", href: "/warehouses/a" },
+      { label: "Zone 1" },
+    ],
+  },
+};
+
+export const Empty: Story = {
+  name: "Empty (renders nothing)",
+  args: { segments: [] },
+};

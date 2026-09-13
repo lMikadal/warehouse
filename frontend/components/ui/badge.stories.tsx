@@ -1,56 +1,33 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "./badge";
 
 const meta = {
   title: "UI/Badge",
   component: Badge,
-  tags: ["autodocs"],
+  parameters: { layout: "centered" },
 } satisfies Meta<typeof Badge>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    children: "Badge",
-  },
-};
+export const Default: Story = { args: { children: "Default" } };
+export const Secondary: Story = { args: { variant: "secondary", children: "Secondary" } };
+export const Destructive: Story = { args: { variant: "destructive", children: "Destructive" } };
+export const Outline: Story = { args: { variant: "outline", children: "Outline" } };
+export const Ghost: Story = { args: { variant: "ghost", children: "Ghost" } };
+export const Link: Story = { args: { variant: "link", children: "Link" } };
 
-export const WarehouseStatus: Story = {
+export const AllVariants: Story = {
+  name: "All variants (overview)",
   render: () => (
     <div className="flex flex-wrap gap-2">
-      <Badge
-        className={cn(
-          "rounded-full border-transparent",
-          "bg-[var(--color-success-bg)] text-[var(--color-success-fg)]"
-        )}
-      >
-        wh-badge active
-      </Badge>
-      <Badge
-        variant="secondary"
-        className="rounded-full opacity-80"
-      >
-        wh-badge inactive
-      </Badge>
-      <Badge
-        className={cn(
-          "rounded-full border-transparent",
-          "bg-[var(--color-status-active-bg)] text-[var(--color-status-active-fg)]"
-        )}
-      >
-        crud-badge active
-      </Badge>
-      <Badge
-        className={cn(
-          "rounded-full border-transparent",
-          "bg-[var(--color-status-inactive-bg)] text-[var(--color-status-inactive-fg)]"
-        )}
-      >
-        crud-badge inactive
-      </Badge>
+      <Badge>Default</Badge>
+      <Badge variant="secondary">Secondary</Badge>
+      <Badge variant="destructive">Destructive</Badge>
+      <Badge variant="outline">Outline</Badge>
+      <Badge variant="ghost">Ghost</Badge>
+      <Badge variant="link">Link</Badge>
     </div>
   ),
 };

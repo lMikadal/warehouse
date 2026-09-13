@@ -1,146 +1,151 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
   TableSortHead,
   type TableSortDirection,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+} from "./table";
 
 const meta = {
   title: "UI/Table",
   component: Table,
-  tags: ["autodocs"],
+  parameters: { layout: "padded" },
 } satisfies Meta<typeof Table>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const AlignmentSample: Story = {
+const ROWS = [
+  { id: 1, name: "Warehouse A", zone: "Zone 1", status: "Active" },
+  { id: 2, name: "Warehouse B", zone: "Zone 2", status: "Inactive" },
+  { id: 3, name: "Warehouse C", zone: "Zone 3", status: "Active" },
+  { id: 4, name: "Warehouse D", zone: "Zone 1", status: "Active" },
+  { id: 5, name: "Warehouse E", zone: "Zone 4", status: "Inactive" },
+];
+
+export const Default: Story = {
   render: () => (
-    <div className="surface-table-wrap overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead className="text-right tabular-nums">Qty</TableHead>
-            <TableHead className="text-center">Status</TableHead>
-            <TableHead className="text-center">Actions</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>#</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Zone</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {ROWS.map((row) => (
+          <TableRow key={row.id}>
+            <TableCell>{row.id}</TableCell>
+            <TableCell>{row.name}</TableCell>
+            <TableCell>{row.zone}</TableCell>
+            <TableCell>{row.status}</TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow>
-            <TableCell>ATW</TableCell>
-            <TableCell className="text-right tabular-nums">1,240</TableCell>
-            <TableCell className="text-center">Active</TableCell>
-            <TableCell className="text-center">
-              <div className="inline-flex justify-center gap-1.5">···</div>
-            </TableCell>
-          </TableRow>
-          <TableRow className={cn("bg-row-expanded")}>
-            <TableCell colSpan={4} className="text-sm text-muted-foreground">
-              Expanded row uses bg-row-expanded
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   ),
 };
 
-type Row = { id: number; name: string; qty: number };
+export const WithCaption: Story = {
+  render: () => (
+    <Table>
+      <TableCaption>List of warehouses (5 total)</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {ROWS.slice(0, 3).map((row) => (
+          <TableRow key={row.id}>
+            <TableCell>{row.name}</TableCell>
+            <TableCell>{row.status}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  ),
+};
 
-const sampleRows: Row[] = [
-  { id: 1, name: "ATW", qty: 1240 },
-  { id: 2, name: "BKK", qty: 890 },
-  { id: 3, name: "CNX", qty: 2100 },
-];
+export const WithFooter: Story = {
+  name: "With footer",
+  render: () => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead className="text-right">Qty</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow><TableCell>Item A</TableCell><TableCell className="text-right">12</TableCell></TableRow>
+        <TableRow><TableCell>Item B</TableCell><TableCell className="text-right">8</TableCell></TableRow>
+        <TableRow><TableCell>Item C</TableCell><TableCell className="text-right">5</TableCell></TableRow>
+      </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell>Total</TableCell>
+          <TableCell className="text-right">25</TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
+  ),
+};
 
-function sortLabel(
-  t: ReturnType<typeof useTranslations<"crud">>,
-  field: string,
-  sortKey: string | null,
-  sortDir: TableSortDirection | null,
-  columnKey: string
-) {
-  if (sortKey !== columnKey || !sortDir) {
-    return t("sortNone", { field });
-  }
-  if (sortDir === "desc") return t("sortDesc", { field });
-  return t("sortAsc", { field });
-}
-
-export const SortableHeaders: Story = {
+export const WithSortHeaders: Story = {
+  name: "With sort headers",
   render: function Render() {
-    const t = useTranslations("crud");
-    const [sortKey, setSortKey] = useState<string | null>(null);
-    const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
+    const [sort, setSort] = useState<{ col: string; dir: TableSortDirection | null }>({
+      col: "",
+      dir: null,
+    });
 
-    const rows = useMemo(() => {
-      const copy = [...sampleRows];
-      if (!sortKey || !sortDir) return copy;
-      copy.sort((a, b) => {
-        const av = sortKey === "name" ? a.name : a.qty;
-        const bv = sortKey === "name" ? b.name : b.qty;
-        const cmp =
-          typeof av === "number"
-            ? av - (bv as number)
-            : String(av).localeCompare(String(bv));
-        return sortDir === "desc" ? -cmp : cmp;
-      });
-      return copy;
-    }, [sortKey, sortDir]);
+    function handleSort(col: string) {
+      return (dir: TableSortDirection | null) => {
+        setSort({ col, dir });
+      };
+    }
 
     return (
-      <div className="surface-table-wrap overflow-hidden">
+      <div className="space-y-2">
+        <p className="text-muted-foreground text-xs">
+          Active: {sort.col || "—"} {sort.dir || ""}
+        </p>
         <Table>
           <TableHeader>
             <TableRow>
               <TableSortHead
-                columnKey="name"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                sortLabel={sortLabel(t, "Name", sortKey, sortDir, "name")}
-                onSortChange={(key, dir) => {
-                  setSortKey(key);
-                  setSortDir(dir);
-                }}
-              >
-                Name
-              </TableSortHead>
+                label="Name"
+                sortDirection={sort.col === "name" ? sort.dir : null}
+                onSortChange={handleSort("name")}
+              />
               <TableSortHead
-                columnKey="qty"
-                align="right"
-                activeSortKey={sortKey}
-                sortDirection={sortDir}
-                sortLabel={sortLabel(t, "Qty", sortKey, sortDir, "qty")}
-                onSortChange={(key, dir) => {
-                  setSortKey(key);
-                  setSortDir(dir);
-                }}
-              >
-                Qty
-              </TableSortHead>
-              <TableHead className="text-center">Actions</TableHead>
+                label="Zone"
+                sortDirection={sort.col === "zone" ? sort.dir : null}
+                onSortChange={handleSort("zone")}
+              />
+              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
+            {ROWS.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>{row.name}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {row.qty.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-center">···</TableCell>
+                <TableCell>{row.zone}</TableCell>
+                <TableCell>{row.status}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -148,4 +153,26 @@ export const SortableHeaders: Story = {
       </div>
     );
   },
+};
+
+export const EmptyState: Story = {
+  name: "Empty state",
+  render: () => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Zone</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow>
+          <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+            No warehouses found.
+          </TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
+  ),
 };

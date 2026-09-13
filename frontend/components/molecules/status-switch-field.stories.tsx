@@ -25,3 +25,26 @@ export const Interactive: Story = {
     );
   },
 };
+
+export const Off: Story = {
+  render: function Render() {
+    const [checked, setChecked] = useState(false);
+    return (
+      <StatusSwitchField checked={checked} onCheckedChange={setChecked} />
+    );
+  },
+};
+
+export const DisabledOn: Story = {
+  name: "Disabled (on)",
+  render: () => (
+    <StatusSwitchField checked={true} onCheckedChange={() => {}} disabled />
+  ),
+};
+
+export const DisabledOff: Story = {
+  name: "Disabled (off)",
+  render: () => (
+    <StatusSwitchField checked={false} onCheckedChange={() => {}} disabled />
+  ),
+};

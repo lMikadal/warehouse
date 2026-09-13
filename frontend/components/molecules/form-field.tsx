@@ -38,27 +38,10 @@ export function FormField({
 
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      let next = e.target.value;
-      if (type === "tel") {
-        next = next.replace(/[^\d-]/g, "");
-      }
-      onChange(next);
+      onChange(e.target.value);
       onClearError?.();
     },
-    [onChange, onClearError, type]
-  );
-
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLInputElement>) => {
-      if (type !== "tel") return;
-      e.preventDefault();
-      const pasted = e.clipboardData
-        .getData("text")
-        .replace(/[^\d-]/g, "");
-      onChange(value + pasted);
-      onClearError?.();
-    },
-    [onChange, onClearError, type, value]
+    [onChange, onClearError]
   );
 
   return (
@@ -84,7 +67,6 @@ export function FormField({
           required={required}
           value={value}
           onChange={handleChange}
-          onPaste={handlePaste}
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
         />

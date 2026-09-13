@@ -3,7 +3,6 @@ import { composeStories } from "@storybook/react";
 import type { ComponentType } from "react";
 
 import {
-  CatalogOverviewPanels,
   GuideCard,
   ThemeBasicsCard,
 } from "./component-catalog-overview";
@@ -88,7 +87,6 @@ function ComponentCatalogPanel() {
 
         <main className="grid gap-5 xl:grid-cols-2">
           <ThemeBasicsCard />
-          <CatalogOverviewPanels />
           {catalogEntries.map((entry) => (
             <ComponentStoryCard key={`${entry.group}-${entry.id}`} entry={entry} />
           ))}

@@ -45,7 +45,7 @@ All shadcn CLI output stays in `components/ui/`. Molecules compose these with wa
 
 **Organisms (future):** Admin shell (`sidebar` + header), CRUD list (`data-table` + TanStack + pagination/actions molecules), form pages (`FieldSet` / many `FormField`s).
 
-Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`). **`date-picker`** and **`data-table`** are not in the CLI registry — maintained manually (`date-picker` = Calendar + Popover; `data-table` = `@tanstack/react-table@8` + `Table`).
+Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`). **`date-picker`** and **`data-table`** are not in the CLI registry — maintained manually (`date-picker` = Calendar + Popover, default `mode="single"` with ISO `YYYY-MM-DD`; `mode="range"` uses `{ from?, to? }` ISO strings, two-month calendar, closes when both ends are set; `data-table` = `@tanstack/react-table@8` + `Table`).
 
 ### Molecules (warehouse-list baseline)
 
