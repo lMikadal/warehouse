@@ -31,5 +31,5 @@ Notes:
 - **Frontend route pages** (`frontend/app/**`) → follow [storybook.mdc](storybook.mdc) **Warehouse pages** workflow (match UI/Molecules stories; forms/tables rules stay authoritative)
 - **Frontend layer stack** → follow [`.cursor/rules/design-system.mdc`](design-system.mdc) (tokens → shadcn → atomic → pages)
 - **New `@utility` / custom classes in `globals.css`** → follow [`.cursor/rules/globals-css.mdc`](globals-css.mdc) (ask user first; compose existing utilities)
-- **Frontend `components/` changes** → atomic reuse gate + user approval for new shared UI ([design-system.mdc](design-system.mdc)); run `make frontend-storybook-build` before done ([storybook.mdc](storybook.mdc))
+- **Frontend `components/` changes** → atomic reuse gate + user approval for new shared UI ([design-system.mdc](design-system.mdc)); add or update co-located `*.stories.tsx` in the **same change** + run `make frontend-storybook-build` before done ([storybook.mdc](storybook.mdc))
 - Invoke directly with `/design`, `/frontend`, `/backend`, `/tester`

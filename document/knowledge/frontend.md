@@ -17,7 +17,7 @@ Production UI is built **top-down** through fixed layers. Agent rule: [`.cursor/
 | Design tokens | `app/globals.css` | Color, spacing, radius, typography; no raw hex in components |
 | shadcn / base UI | `components/ui/` | Full shadcn **base-nova** set (see **Atomic grouping** below) + **ButtonIcon**, **DatePicker**, **DataTable** (TanStack v8); Storybook `UI/*` |
 | Molecules | `components/molecules/` | CRUD/search/pagination/table chrome from warehouse-list (see below) |
-| Organisms | `components/organisms/` | **Not started** — Admin shell + list tables compose molecules in a later phase |
+| Organisms | `components/organisms/` | **Admin backoffice shell** (`AdminBackofficeShell`); CRUD list organisms still deferred |
 | Design system | Cursor rules + Storybook + this doc | forms, tables, dates, icons |
 | Warehouse pages | `app/[locale]/…` | Inventory, orders, products, users, … |
 
@@ -43,7 +43,9 @@ All shadcn CLI output stays in `components/ui/`. Molecules compose these with wa
 
 **Molecules (compose atoms):** `BreadcrumbNav` → `breadcrumb` + `@/i18n/navigation` `Link`; `FormField` → `field` + `input` (forms rules); `CrudPaginationBar` → `pagination` + `select` + [`lib/crud-pagination.ts`](../../frontend/lib/crud-pagination.ts).
 
-**Organisms (future):** Admin shell (`sidebar` + header), CRUD list (`data-table` + TanStack + pagination/actions molecules), form pages (`FieldSet` / many `FormField`s).
+**Organisms:** **`AdminBackofficeShell`** — `SidebarProvider` + brand/search/collapsible nav/footer + header (`BreadcrumbNav`, `LocaleThemeToolbar`) + `bg-page-wash` main; Storybook **Organisms/AdminBackofficeShell**. Nav tree is static in [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) until `admin_menu` API exists (mirrors design seed shape).
+
+**Organisms (future):** CRUD list shell (`data-table` + TanStack + pagination/actions molecules), form pages (`FieldSet` / many `FormField`s).
 
 Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`). **`date-picker`** and **`data-table`** are not in the CLI registry — maintained manually (`date-picker` = Calendar + Popover, default `mode="single"` with ISO `YYYY-MM-DD`; `mode="range"` uses `{ from?, to? }` ISO strings, two-month calendar, closes when both ends are set; `data-table` = `@tanstack/react-table@8` + `Table`).
 
@@ -61,6 +63,9 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |
 | `FormCard` | shadcn `Card` with form panel surface (border, shadow); re-exports header/content subcomponents |
+| `LocaleThemeToolbar` | Header locale + light/dark icon buttons (admin shell); Storybook **Molecules/LocaleThemeToolbar** |
+
+**App chrome** (files under `components/` root, Storybook titles under **Molecules/**): `LocaleSwitch` (th/en segmented control — **Molecules/LocaleSwitch**), `ThemeModeSwitch` (light/dark/system — **Molecules/ThemeModeSwitch**). `ThemeDocumentSync` and `theme-provider` are layout-only — no separate stories.
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
 
@@ -203,6 +208,18 @@ Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 
 Port more keys from `design/js/i18n/` into `messages/` as pages ship.
 
+### Admin backoffice shell
+
+| Item | Detail |
+|------|--------|
+| Route group | `app/[locale]/(admin)/admin/(backoffice)/` |
+| Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
+| Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
+| Wired routes | `/admin/system/menu`, `/admin/system/permission` (list UI later; placeholders OK) |
+| Nav | [`lib/admin-nav.ts`](../../frontend/lib/admin-nav.ts) + sidebar search filter; breadcrumb map per pathname |
+| Session | Placeholder user `admin` + logout → `/admin/login` until auth API |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
+
 ### Login route (admin)
 
 | Item | Detail |
@@ -244,7 +261,8 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
 - Story globs (`.storybook/main.ts`): `components/**/*.stories.tsx` and `stories/**/*.stories.tsx`
 - Titles: `components/ui/` → **UI/**; `components/molecules/` → **Molecules/**; `stories/component-catalog.stories.tsx` → **Design system/Overview** (theme swatches including **success** / **warning**, Eva-style primitive matrices in `component-catalog-overview.tsx`, then all exported stories via `composeStories`); `stories/dnd-kit-sortable.stories.tsx` → **Design system/DnD Sortable**
-- No **Organisms/** or **Pages/** stories until organism phase
+- **Organisms/** — `AdminBackofficeShell`; **Molecules/** also lists app chrome (`LocaleSwitch`, `ThemeModeSwitch`, `LocaleThemeToolbar`); **Pages/** stories still deferred
+- **Same change as components:** every new visible export under `frontend/components/**` must ship with co-located `*.stories.tsx` in that change — see [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc) **Mandatory stories (same change)**
 
 ### Story typing conventions
 
@@ -256,6 +274,7 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 ### Component workflow (team agreement)
 
 - Before new UI or design handoff: inventory `components/ui/`, `molecules/`, `organisms/`, and Storybook stories; compose existing pieces first.
+- **New or changed component:** add or update co-located `*.stories.tsx` in the **same change** (mandatory for visible exports) — [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc) **Mandatory stories (same change)**.
 - **Route pages** (`frontend/app/[locale]/…`): implement shared UI to match Storybook (**UI/**, **Molecules/**, **Design system/Overview** catalog)—see [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc) **Warehouse pages**; [forms.mdc](../../.cursor/rules/forms.mdc) / [tables.mdc](../../.cursor/rules/tables.mdc) apply on production forms and lists.
 - **New shared component** (new file/export in those layers or `make frontend-shadcn-add`): requires explicit user approval every time — see [`.cursor/rules/design-system.mdc`](../../.cursor/rules/design-system.mdc).
 - After any change under `frontend/components/**`: run `make frontend-storybook-build` before considering the task done — see [`.cursor/rules/storybook.mdc`](../../.cursor/rules/storybook.mdc).

@@ -64,7 +64,7 @@ function Button({
     return React.cloneElement(child, {
       className: cn(classes, child.props.className),
       "data-slot": "button",
-    })
+    } as Partial<typeof child.props> & { className?: string; "data-slot"?: string })
   }
 
   return (

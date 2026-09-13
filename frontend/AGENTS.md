@@ -8,6 +8,7 @@ Before editing code here, read:
 4. [`.cursor/rules/icons.mdc`](../.cursor/rules/icons.mdc) — Lucide only (`lucide-react`)
 5. [`.cursor/rules/ponytail.mdc`](../.cursor/rules/ponytail.mdc) — minimal diffs
 6. [`.cursor/rules/subprojects.mdc`](../.cursor/rules/subprojects.mdc) — which skill maps to which folder
+7. [`.cursor/rules/storybook.mdc`](../.cursor/rules/storybook.mdc) — every new or UI-affecting change under `components/**` needs co-located `*.stories.tsx` in the same change + `make frontend-storybook-build`
 
 Do not invent parallel APIs or bypass make targets that already exist (`make help`).
 

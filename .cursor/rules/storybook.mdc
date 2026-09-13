@@ -1,5 +1,5 @@
 ---
-description: Use Storybook as the baseline when reusing frontend UI components.
+description: Add or update co-located Storybook stories in the same change as frontend component work; use Storybook as the reuse baseline.
 globs: frontend/**
 alwaysApply: false
 ---
@@ -12,13 +12,27 @@ When **using**, **composing**, or **handing off** UI from `frontend/components/`
 
 1. Check for a co-located story: `components/**/*.stories.tsx` (same folder as the component).
 2. If a story exists, match **variant**, **size**, and usage shown there (light/dark is already wired in `.storybook/preview.tsx` via `ThemeProvider`).
-3. If no story exists yet for a shared `components/ui/` piece you depend on, add a minimal story first (or in the same change) so Storybook stays the baseline.
+3. If no story exists yet for a piece under `frontend/components/**` you depend on, add a minimal story first (or in the same change) so Storybook stays the baseline.
+
+## Mandatory stories (same change)
+
+| Trigger | Requirement |
+|---------|-------------|
+| **New** `.tsx` under `frontend/components/**` that exports a **visible** React component | Add co-located `<basename>.stories.tsx` in the **same change** |
+| **Edit** props, variants, layout, or behavior stories should reflect | Update existing stories or add a new story variant |
+| **`make frontend-shadcn-add`** | Co-located story per [design-system.mdc](design-system.mdc) Base UI |
+
+**Exceptions** (no separate story required):
+
+- Provider-only modules (e.g. `theme-provider.tsx`)
+- Null-render app sync helpers (e.g. `ThemeDocumentSync`)
+- Hooks exported from component files — cover via the visual component’s story (e.g. `useMounted` via `ThemeModeSwitch` / `LocaleThemeToolbar`)
 
 ## Agent workflow (component changes)
 
 Applies when **editing or adding** anything under `frontend/components/**` (`ui/`, `molecules/`, `organisms/`, and shared root components such as `locale-switch.tsx`).
 
-1. Add or update co-located `*.stories.tsx` when the change affects shared UI (see **Before reuse**).
+1. Add or update co-located `*.stories.tsx` per **Mandatory stories (same change)** — not optional for new visual exports.
 2. Before marking the task done, from repo root run **`make frontend-storybook-build`** — required verification (compile/static build; no dev server required).
 3. If the build fails, fix stories, imports, and types in the same turn before completing the task.
 
@@ -55,5 +69,6 @@ Components that call `useTranslations` need `NextIntlClientProvider` + messages 
 
 - Invent one-off styling for shadcn/ui primitives when a story already documents the intended variants.
 - Implement route UI by reading component source alone when a matching Storybook story exists.
-- Skip Storybook when adding a new reusable `components/ui/` export that other routes will import.
+- Add a new visible component under `frontend/components/**` (`ui/`, `molecules/`, `organisms/`, or shared root chrome) without a co-located story in the same change.
+- Skip Storybook when adding a new export that other routes or organisms will import.
 - Finish `frontend/components/**` work without running `make frontend-storybook-build` when the change touched that tree.

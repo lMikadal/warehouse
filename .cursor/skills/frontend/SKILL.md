@@ -153,8 +153,9 @@ Full rules: [`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc), [`.curso
 
 1. **Before new UI** — Inventory `components/ui/`, `molecules/`, `organisms/`, and `*.stories.tsx`; reuse organism → molecule → `ui/` before proposing anything new.
 2. **New shared component** — Ask the user every time (name, layer, why reuse failed). No new file in those folders and no `make frontend-shadcn-add` until approved.
-3. **Before reuse on pages** — Read the matching story for variants/props; optional dev: `make frontend-storybook` (port 6006).
-4. **Before done** — Any change under `frontend/components/**`: run `make frontend-storybook-build` from repo root; fix failures in the same turn.
+3. **Same change as component** — Add or update co-located `*.stories.tsx` for every new visible export or UI-affecting edit under `frontend/components/**` (see [storybook.mdc](../../rules/storybook.mdc) **Mandatory stories**).
+4. **Before reuse on pages** — Read the matching story for variants/props; optional dev: `make frontend-storybook` (port 6006).
+5. **Before done** — Any change under `frontend/components/**`: run `make frontend-storybook-build` from repo root; fix failures in the same turn.
 
 ## Route page checklist (`frontend/app/**`)
 

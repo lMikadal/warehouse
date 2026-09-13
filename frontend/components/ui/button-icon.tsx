@@ -37,7 +37,7 @@ export type ButtonIconProps = Omit<
 function ButtonIcon({
   className,
   variant = "ghost",
-  size = "sm",
+  size = "lg",
   tone = "neutral",
   children,
   ...props

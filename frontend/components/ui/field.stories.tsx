@@ -77,8 +77,11 @@ export const WithError: Story = {
 export const Required: Story = {
   render: () => (
     <Field orientation="vertical">
-      <FieldLabel htmlFor="wh-req" required>
+      <FieldLabel htmlFor="wh-req">
         Warehouse name
+        <span className="text-destructive" aria-hidden>
+          *
+        </span>
       </FieldLabel>
       <Input id="wh-req" required placeholder="Enter name" />
     </Field>

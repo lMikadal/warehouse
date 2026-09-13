@@ -44,7 +44,7 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | [`dates.mdc`](rules/dates.mdc) | UI | yes | — | `design/`, `frontend/` display | Date and datetime display format for design mockups and frontend UI. |
 | [`icons.mdc`](rules/icons.mdc) | UI | yes | — | `design/`, `frontend/` | Use Lucide icons only — SVG files in design, lucide-react in frontend. |
 | [`warehouse.mdc`](rules/warehouse.mdc) | Domain | yes | — | placement, stock | Warehouse layout tree and product item stock placement — bin-only anchor. |
-| [`storybook.mdc`](rules/storybook.mdc) | Frontend | no | `frontend/**` | components, `app/` | Use Storybook as the baseline when reusing frontend UI components. |
+| [`storybook.mdc`](rules/storybook.mdc) | Frontend | no | `frontend/**` | components, `app/` | Co-located Storybook stories required in the same change as component work; Storybook is the reuse baseline. |
 | [`design-system.mdc`](rules/design-system.mdc) | Frontend | no | `frontend/**` | `frontend/components/` | Frontend UI layer stack — design tokens through warehouse pages (atomic composition). |
 
 ## Task → read this

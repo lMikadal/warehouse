@@ -56,10 +56,42 @@
     "title": "Sign in",
     "username": "Username"
   },
+  "adminNav": {
+    "address": "Address",
+    "admin": "Admin",
+    "location": "Location",
+    "member": "Member",
+    "order": "Order",
+    "product": "Product",
+    "sales": "Sales",
+    "setting": "Setting",
+    "superAdmin": "Super Admin",
+    "supplier": "Supplier",
+    "warehouse": "Warehouse"
+  },
   "lang": {
     "en": "EN",
     "th": "ไทย",
     "toggle": "Language"
+  },
+  "nav": {
+    "logout": "Log out",
+    "noMenu": "No menu",
+    "openMenu": "Open menu",
+    "search": "Search menu"
+  },
+  "page": {
+    "adminLanguage": "Language",
+    "adminMenu": "Menu",
+    "adminPermission": "Permissions",
+    "adminRole": "Role",
+    "adminUser": "List",
+    "settingBank": "Bank",
+    "settingVat": "VAT",
+    "websiteCountry": "Country",
+    "websiteDistrict": "District",
+    "websiteProvince": "Province",
+    "websiteSubDistrict": "Sub District"
   },
   "search": {
     "placeholder": "Search"

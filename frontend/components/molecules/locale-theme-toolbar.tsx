@@ -11,7 +11,7 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "cn";
 
 const toolbarButtonClass =
-  "size-10 border-foreground/10 bg-background/70 backdrop-blur-sm hover:border-primary [&_svg]:size-5";
+  "border-foreground/10 bg-background/70 backdrop-blur-sm hover:border-primary ";
 
 type LocaleThemeToolbarProps = {
   className?: string;
@@ -33,7 +33,6 @@ export function LocaleThemeToolbar({ className }: LocaleThemeToolbarProps) {
       <ButtonIcon
         type="button"
         variant="outline"
-        size="md"
         className={toolbarButtonClass}
         aria-label={t("lang.toggle")}
         onClick={() => router.replace(pathname, { locale: nextLocale })}
@@ -43,7 +42,6 @@ export function LocaleThemeToolbar({ className }: LocaleThemeToolbarProps) {
       <ButtonIcon
         type="button"
         variant="outline"
-        size="md"
         className={toolbarButtonClass}
         aria-label={t("theme.toggle")}
         onClick={() => setTheme(isDark ? "light" : "dark")}

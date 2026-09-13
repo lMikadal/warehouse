@@ -56,10 +56,42 @@
     "title": "เข้าสู่ระบบ",
     "username": "ชื่อผู้ใช้"
   },
+  "adminNav": {
+    "address": "ที่อยู่",
+    "admin": "ผู้ดูแลระบบ",
+    "location": "สถานที่",
+    "member": "สมาชิก",
+    "order": "คำสั่งซื้อ",
+    "product": "สินค้า",
+    "sales": "ขาย",
+    "setting": "ตั้งค่า",
+    "superAdmin": "ผู้ดูแลระบบสูงสุด",
+    "supplier": "คู่ค้า",
+    "warehouse": "คลังสินค้า"
+  },
   "lang": {
     "en": "EN",
     "th": "ไทย",
     "toggle": "ภาษา"
+  },
+  "nav": {
+    "logout": "ออกจากระบบ",
+    "noMenu": "ไม่มีเมนู",
+    "openMenu": "เปิดเมนู",
+    "search": "ค้นหาเมนู"
+  },
+  "page": {
+    "adminLanguage": "ภาษา",
+    "adminMenu": "เมนู",
+    "adminPermission": "สิทธิ์การใช้งาน",
+    "adminRole": "บทบาท",
+    "adminUser": "รายชื่อ",
+    "settingBank": "ธนาคาร",
+    "settingVat": "VAT",
+    "websiteCountry": "ประเทศ",
+    "websiteDistrict": "เขต / อำเภอ",
+    "websiteProvince": "จังหวัด",
+    "websiteSubDistrict": "แขวง / ตำบล"
   },
   "search": {
     "placeholder": "ค้นหา"
