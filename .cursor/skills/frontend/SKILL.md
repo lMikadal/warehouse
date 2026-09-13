@@ -94,12 +94,17 @@ Keep default shadcn config; enable dark mode; add `next-themes` + `next-intl`. D
 frontend/
 ├── app/              # routes, layouts
 ├── components/
-│   └── ui/           # shadcn only
+│   └── ui/           # shadcn only (+ *.stories.tsx)
+├── .storybook/       # Storybook config
 ├── lib/
 │   ├── utils.ts
 │   └── format-datetime.ts
 └── package.json
 ```
+
+## Storybook (component baseline)
+
+When pulling in a component from `components/`, **check Storybook first** ([`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc)): read or run the matching `*.stories.tsx` for variants/props before wiring it into a page. Dev: `make frontend-storybook` (port 6006).
 
 ## From design → frontend
 

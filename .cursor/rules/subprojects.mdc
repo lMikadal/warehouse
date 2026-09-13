@@ -25,4 +25,5 @@ Notes:
 - **Forms** → follow [`.cursor/rules/forms.mdc`](forms.mdc)
 - **Date/datetime display** → follow [`.cursor/rules/dates.mdc`](dates.mdc)
 - **Warehouse layout / item placement** → follow [`.cursor/rules/warehouse.mdc`](warehouse.mdc) (bin-only `product_item_warehouse`)
+- **Frontend component reuse** → follow [`.cursor/rules/storybook.mdc`](storybook.mdc) (Storybook as baseline)
 - Invoke directly with `/design`, `/frontend`, `/backend`, `/tester`
