@@ -161,7 +161,87 @@ export function findDragMoveIndices(
   };
 }
 
-/** Reorder flat sorted list; reassign sort_order on all rows (design crud-list, no sortParentKey). */
+/** Page-local drag indices: prefer before/after diff, fall back to sortable event source. */
+export function resolvePageDragIndices(
+  before: number[],
+  after: number[] | null,
+  event: { operation?: { source?: unknown } }
+): { from: number; to: number } | null {
+  if (after) {
+    const diff = findDragMoveIndices(before, after);
+    if (diff) return diff;
+  }
+  const ev = sortableIndicesFromSource(event.operation?.source);
+  if (!ev || ev.from === ev.to) return null;
+  if (ev.from < 0 || ev.from >= before.length) return null;
+  if (ev.to < 0 || ev.to >= before.length) return null;
+  return ev;
+}
+
+/** True when `nodePath` is strictly under `ancestorPath` in materialized tree_path. */
+export function isTreePathDescendant(
+  ancestorPath: string,
+  nodePath: string
+): boolean {
+  const prefix = `${ancestorPath}.`;
+  return nodePath.startsWith(prefix);
+}
+
+/** In DFS-flat `fullSorted`, index span of `srcRow` and its descendants. */
+export function treeSubtreeIndexRange<T extends TreeSortableRow>(
+  fullSorted: T[],
+  srcRow: T
+): { start: number; end: number } | null {
+  const srcPath = srcRow.tree_path;
+  const start = fullSorted.findIndex((r) => r.id === srcRow.id);
+  if (start < 0) return null;
+  if (!srcPath) return { start, end: start };
+  let end = start;
+  for (let i = start + 1; i < fullSorted.length; i++) {
+    const path = fullSorted[i].tree_path;
+    if (path && isTreePathDescendant(srcPath, path)) end = i;
+    else break;
+  }
+  return { start, end };
+}
+
+/** Drop would place `srcRow` among or on its own descendants in flat order. */
+export function isTreeDragIntoOwnSubtree<T extends TreeSortableRow>(
+  fullSorted: T[],
+  srcRow: T,
+  absTo: number
+): boolean {
+  const range = treeSubtreeIndexRange(fullSorted, srcRow);
+  if (!range) return false;
+  const dstRow = fullSorted[absTo];
+  const srcPath = srcRow.tree_path;
+  if (
+    dstRow?.tree_path &&
+    srcPath &&
+    isTreePathDescendant(srcPath, dstRow.tree_path)
+  ) {
+    return true;
+  }
+  if (absTo !== range.start && absTo > range.start && absTo <= range.end) {
+    return true;
+  }
+  return false;
+}
+
+function treePathReorderBlocked<T extends TreeSortableRow>(
+  srcRow: T,
+  dstRow: T
+): boolean {
+  const srcPath = srcRow.tree_path;
+  const dstPath = dstRow.tree_path;
+  if (!srcPath || !dstPath) return false;
+  return (
+    isTreePathDescendant(srcPath, dstPath) ||
+    isTreePathDescendant(dstPath, srcPath)
+  );
+}
+
+/** Reorder within same sibling group; reassign sort_order for that group only. */
 export function reorderFlatSortOrder<T extends TreeSortableRow>(
   allRows: T[],
   fullSorted: T[],
@@ -174,13 +254,20 @@ export function reorderFlatSortOrder<T extends TreeSortableRow>(
   const dstRow = fullSorted[absTo];
   if (srcRow == null || dstRow == null) return null;
   if (!sameParentCheck(srcRow, dstRow)) return null;
+  if (treePathReorderBlocked(srcRow, dstRow)) return null;
 
-  const reordered = fullSorted.slice();
-  reordered.splice(absFrom, 1);
-  reordered.splice(absTo, 0, srcRow);
+  const parentKey = srcRow.parent_id ?? null;
+  const siblings = fullSorted.filter(
+    (r) => (r.parent_id ?? null) === parentKey
+  );
+  const fromSib = siblings.findIndex((r) => r.id === srcRow.id);
+  const toSib = siblings.findIndex((r) => r.id === dstRow.id);
+  if (fromSib < 0 || toSib < 0) return null;
+
+  const reorderedSiblings = arrayMoveIds(siblings, fromSib, toSib);
 
   const orderById = new Map<number, number>();
-  reordered.forEach((row, idx) => {
+  reorderedSiblings.forEach((row, idx) => {
     orderById.set(row.id, (idx + 1) * 10);
   });
 
@@ -193,4 +280,68 @@ export function reorderFlatSortOrder<T extends TreeSortableRow>(
     return { ...row, sort_order: newOrder, updated_at: now };
   });
   return changed ? next : null;
+}
+
+/** ponytail: run with `bun lib/crud-list-rows.ts` from frontend/ */
+function reorderFlatSortOrderSelfCheck(): void {
+  type Row = TreeSortableRow & { id: number };
+  const rows: Row[] = [
+    {
+      id: 1,
+      parent_id: null,
+      sort_order: 100,
+      tree_path: "n1",
+      created_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: 2,
+      parent_id: 1,
+      sort_order: 100,
+      tree_path: "n1.n2",
+      created_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: 3,
+      parent_id: null,
+      sort_order: 200,
+      tree_path: "n3",
+      created_at: "2026-01-01T00:00:00Z",
+    },
+  ];
+  const fullSorted = flattenTreeRows(rows);
+  const sameParent = (a: Row, b: Row) => a.parent_id === b.parent_id;
+  const absFrom = fullSorted.findIndex((r) => r.id === 3);
+  const absTo = fullSorted.findIndex((r) => r.id === 1);
+  const next = reorderFlatSortOrder(
+    rows,
+    fullSorted,
+    absFrom,
+    absTo,
+    sameParent
+  );
+  if (!next) throw new Error("expected reorder to apply");
+  const child = next.find((r) => r.id === 2);
+  if (child?.sort_order !== 100) {
+    throw new Error("child sort_order must be unchanged");
+  }
+  const flat = flattenTreeRows(next);
+  const ids = flat.map((r) => r.id);
+  if (ids.indexOf(1) > ids.indexOf(2)) {
+    throw new Error("parent must stay before descendant in flatten order");
+  }
+  if (treePathReorderBlocked(rows[0], rows[1]) !== true) {
+    throw new Error("expected descendant drop to be blocked");
+  }
+  const parentIdx = fullSorted.findIndex((r) => r.id === 1);
+  const childIdx = fullSorted.findIndex((r) => r.id === 2);
+  if (!isTreeDragIntoOwnSubtree(fullSorted, rows[0], childIdx)) {
+    throw new Error("expected drag onto child to count as into own subtree");
+  }
+  if (isTreeDragIntoOwnSubtree(fullSorted, rows[0], parentIdx)) {
+    throw new Error("drag onto self must not count as into subtree");
+  }
+}
+
+if (import.meta.main) {
+  reorderFlatSortOrderSelfCheck();
 }

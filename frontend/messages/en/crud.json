@@ -23,6 +23,7 @@
     },
     "reorder": {
       "drag": "Drag to reorder",
+      "intoSubtree": "Cannot move a menu item under its own sub-menu",
       "siblingOnly": "Can only reorder within the same group"
     },
     "sort": {

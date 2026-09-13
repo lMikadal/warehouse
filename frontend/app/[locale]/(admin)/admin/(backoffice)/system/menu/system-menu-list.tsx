@@ -45,9 +45,10 @@ import {
 import {
   applyHeaderSort,
   defaultSortRows,
-  findDragMoveIndices,
+  isTreeDragIntoOwnSubtree,
   reorderFlatSortOrder,
   reorderIdsFromSortableEvent,
+  resolvePageDragIndices,
   treeDepth,
 } from "@/lib/crud-list-rows";
 import type { PageSizeOption } from "@/lib/crud-pagination";
@@ -283,6 +284,7 @@ export function SystemMenuList() {
   const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [menuSheet, setMenuSheet] = useState<SystemMenuSheetState | null>(null);
+  const [sortableEpoch, setSortableEpoch] = useState(0);
 
   const fullSorted = useMemo(() => {
     const filtered = filterMenuRows(rows, query, statusFilter, locale);
@@ -374,22 +376,32 @@ export function SystemMenuList() {
   const handleDragEnd: ComponentProps<
     typeof DragDropProvider
   >["onDragEnd"] = (event) => {
+    const scheduleRejectDrag = (toastMessage?: string) => {
+      queueMicrotask(() => {
+        setSortableEpoch((e) => e + 1);
+        if (toastMessage) toast.error(toastMessage);
+      });
+    };
+
     if (event.canceled || !dragEnabled) return;
     const before = pageRows.map((r) => r.id);
     const after = reorderIdsFromSortableEvent(before, event);
-    if (!after) return;
-    const indices = findDragMoveIndices(before, after);
+    const indices = resolvePageDragIndices(before, after, event);
     if (!indices) return;
     const absFrom = pageStart + indices.from;
     const absTo = pageStart + indices.to;
     const srcRow = fullSorted[absFrom];
     const dstRow = fullSorted[absTo];
-    if (
-      srcRow == null ||
-      dstRow == null ||
-      srcRow.parent_id !== dstRow.parent_id
-    ) {
-      toast.warning(tCrud("reorder.siblingOnly"));
+    if (srcRow == null || dstRow == null) {
+      scheduleRejectDrag();
+      return;
+    }
+    if (isTreeDragIntoOwnSubtree(fullSorted, srcRow, absTo)) {
+      scheduleRejectDrag(tCrud("reorder.intoSubtree"));
+      return;
+    }
+    if (srcRow.parent_id !== dstRow.parent_id) {
+      scheduleRejectDrag(tCrud("reorder.siblingOnly"));
       return;
     }
     const next = reorderFlatSortOrder(
@@ -399,7 +411,10 @@ export function SystemMenuList() {
       absTo,
       (a, b) => a.parent_id === b.parent_id
     );
-    if (next == null) return;
+    if (next == null) {
+      scheduleRejectDrag(tCrud("reorder.siblingOnly"));
+      return;
+    }
     setRows(next);
     toast.success(tCrud("toast.reordered"));
   };
@@ -525,7 +540,7 @@ export function SystemMenuList() {
           </TableHeader>
           {dragEnabled ? (
             <DragDropProvider onDragEnd={handleDragEnd}>
-              <TableBody>
+              <TableBody key={sortableEpoch}>
                 {pageRows.length  ? (
                   pageRows.map((row, index) => (
                     <SortableMenuTableRow

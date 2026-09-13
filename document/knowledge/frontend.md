@@ -58,7 +58,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
 | `TableIconActions` | View / edit / add (green) / delete (red) icon row |
-| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern (unchanged when invalid); when `invalid`, `FieldError` with `error.required` under the control + reserved `min-h-5` slot; clear via `onClearInvalid` on change; shared `Input` defaults `maxLength` **100** on text-like types (`DEFAULT_INPUT_MAX_LENGTH`, overridable per field) |
+| `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern (unchanged when invalid); when `invalid`, `FieldError` with `error.required` under the control + reserved `min-h-5` slot; clear via `onClearInvalid` on change; `readOnly` locks the default `Input` (`readOnly` + `disabled`) so callers do not fork a second field / children override; shared `Input` defaults `maxLength` **100** on text-like types (`DEFAULT_INPUT_MAX_LENGTH`, overridable per field) |
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
 | `CrudPageHeader` | Title + description + actions slot |
@@ -71,7 +71,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 
 Shared list pagination logic must not be duplicated — use `CrudPaginationBar` + `buildPageItems`.
 
-**List helpers (lib):** [`format-datetime.ts`](../../frontend/lib/format-datetime.ts) (display dates per [dates.mdc](../../.cursor/rules/dates.mdc)); [`crud-list-rows.ts`](../../frontend/lib/crud-list-rows.ts) (tree flatten, default sort, header sort compare, drag reorder). **First composed CRUD route:** [`system/menu`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-list.tsx) — molecules + `Table`/`TableSortHead` + `@dnd-kit`; data from [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) until API exists. Row actions: edit + header **Add menu** open co-located [`system-menu-edit-sheet.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-edit-sheet.tsx) (right `Sheet`; edit = read-only module, create = editable module; mock persist, `crud.saved` / `crud.created` toast) + delete (`CrudDeleteConfirmDialog`, cascade subtree via `tree_path`, `crud.deleted` toast).
+**List helpers (lib):** [`format-datetime.ts`](../../frontend/lib/format-datetime.ts) (display dates per [dates.mdc](../../.cursor/rules/dates.mdc)); [`crud-list-rows.ts`](../../frontend/lib/crud-list-rows.ts) (tree flatten, default sort, header sort compare, drag reorder). **First composed CRUD route:** [`system/menu`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-list.tsx) — molecules + `Table`/`TableSortHead` + `@dnd-kit`; data from [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) until API exists. Row actions: edit + header **Add menu** open co-located [`system-menu-edit-sheet.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-edit-sheet.tsx) (right `Sheet`; edit = read-only path + module, create = editable path + module; mock persist, `crud.saved` / `crud.created` toast) + delete (`CrudDeleteConfirmDialog`, cascade subtree via `tree_path`, `crud.deleted` toast).
 
 ### Drag-and-drop (row reorder)
 
@@ -80,6 +80,7 @@ Shared list pagination logic must not be duplicated — use `CrudPaginationBar` 
 - **When to enable:** tables with a `sort_order` column only ([`.cursor/rules/tables.mdc`](../../.cursor/rules/tables.mdc)); grip column (Lucide `GripVertical`) on the handle; disable DnD while a column header sort is active.
 - **Scope:** wrap each sortable list/table in its own `DragDropProvider` (not the locale layout).
 - **Storybook baseline:** **Design system/DnD Sortable** — [`stories/dnd-kit-sortable.stories.tsx`](../../frontend/stories/dnd-kit-sortable.stories.tsx).
+- **Tree lists (`tree_path`):** [`reorderFlatSortOrder`](../../frontend/lib/crud-list-rows.ts) reorders **siblings only** (same `parent_id`), updates `sort_order` for that group only, and rejects drops on a node’s own subtree (`isTreeDragIntoOwnSubtree` / `isTreePathDescendant`). Invalid drop → `toast.error` (`crud.reorder.intoSubtree` or `crud.reorder.siblingOnly`) and remount sortable rows via `TableBody` `key` (`sortableEpoch`) so UI matches `fullSorted` without remounting `DragDropProvider` (system menu list).
 
 Column header sort (data columns): `TableSortHead` + [`lib/table-sort.ts`](../../frontend/lib/table-sort.ts) (`cycleTableSort`, none → asc → desc → none). Pass i18n `sortLabel` from `crud.sortNone` / `sortAsc` / `sortDesc`. Non-sortable columns (grip, actions) stay plain `TableHead`.
 
