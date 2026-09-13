@@ -1,11 +1,29 @@
-import type { Preview } from "@storybook/nextjs";
+import type { Decorator, Preview } from "@storybook/nextjs";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { withIntl } from "./decorators/intl";
+import { StorybookThemeBridge } from "./decorators/theme-bridge";
 
 import "../app/globals.css";
+
+const withThemeShell: Decorator = (Story, context) => (
+  <ThemeProvider
+    attribute="class"
+    defaultTheme="system"
+    enableSystem
+    storageKey="warehouse-design-theme"
+    disableTransitionOnChange
+  >
+    <StorybookThemeBridge globals={context.globals as Record<string, unknown>} />
+    <TooltipProvider>
+      <div className="bg-background text-foreground p-6 font-sans">
+        <Story />
+      </div>
+    </TooltipProvider>
+  </ThemeProvider>
+);
 
 const preview: Preview = {
   parameters: {
@@ -34,24 +52,7 @@ const preview: Preview = {
   initialGlobals: {
     locale: "th",
   },
-  decorators: [
-    withIntl,
-    (Story) => (
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        storageKey="warehouse-design-theme"
-        disableTransitionOnChange
-      >
-        <TooltipProvider>
-          <div className="bg-background text-foreground p-6 font-sans">
-            <Story />
-          </div>
-        </TooltipProvider>
-      </ThemeProvider>
-    ),
-  ],
+  decorators: [withIntl, withThemeShell],
 };
 
 export default preview;

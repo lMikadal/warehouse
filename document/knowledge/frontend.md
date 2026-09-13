@@ -224,7 +224,7 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 
 ## Storybook
 
-- Global styles: `app/globals.css`; `ThemeProvider` + **`withIntl`** ([`.storybook/decorators/intl.tsx`](../../frontend/.storybook/decorators/intl.tsx)) in `.storybook/preview.tsx` — toolbar **locale** `th` / `en`
+- Global styles: `app/globals.css`; `ThemeProvider` + **`withIntl`** ([`.storybook/decorators/intl.tsx`](../../frontend/.storybook/decorators/intl.tsx)) + **`StorybookThemeBridge`** ([`.storybook/decorators/theme-bridge.tsx`](../../frontend/.storybook/decorators/theme-bridge.tsx)) in `.storybook/preview.tsx` — toolbar **locale** `th` / `en`; built-in **backgrounds** Light/Dark toolbar drives `next-themes` (not just canvas paint)
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
 - Story globs (`.storybook/main.ts`): `components/**/*.stories.tsx` and `stories/**/*.stories.tsx`
 - Titles: `components/ui/` → **UI/**; `components/molecules/` → **Molecules/**; `stories/component-catalog.stories.tsx` → **Design system/Overview** (theme swatches including **success** / **warning**, Eva-style primitive matrices in `component-catalog-overview.tsx`, then all exported stories via `composeStories`); `stories/dnd-kit-sortable.stories.tsx` → **Design system/DnD Sortable**
