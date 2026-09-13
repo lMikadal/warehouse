@@ -8,6 +8,99 @@ Scaffold + stack deps: Next.js 16.3.5, Tailwind v4, shadcn/ui, `lucide-react`, `
 
 Env sample: `frontend/env.example` → `NEXT_PUBLIC_API_URL=http://localhost:1323/api/v1`.
 
+## Design tokens
+
+**Source of truth:** [`design/css/style.css`](../../design/css/style.css) — primary reference page [`design/pages/warehouse-list.html`](../../design/pages/warehouse-list.html). Also see [`design/design.json`](../../design/design.json) for global breakpoints and palette names.
+
+**Implementation:** single file [`frontend/app/globals.css`](../../frontend/app/globals.css) — Warehouse `:root` / `.dark`, `@utility`, then `@import shadcn/tailwind.css`, `@theme inline`, `@layer base`. When design CSS changes for warehouse/admin CRUD, update the matching section in `globals.css` in the same change.
+
+### Theme
+
+- Light/dark: `next-themes` (`.dark` on `<html>`) + `data-theme="light|dark"` via `ThemeDocumentSync` (same keys as design: `warehouse-design-theme`)
+- Typography: `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` — no Geist
+
+### Muted vs border vs subtle (warehouse-list)
+
+| Variable | Light | Role on warehouse-list |
+|----------|-------|-------------------------|
+| `--color-muted` | `#e2e8f0` | Design name — same as border color on cards/tables |
+| `--color-border` | `#e2e8f0` | `crud-table-wrap`, `wh-zone-card`, toolbar inputs |
+| `--color-subtle` | `#f1f5f9` | Light fills (nav hover, shadcn `--muted` background) |
+| `--border` / `--input` (shadcn) | `var(--color-border)` | Tailwind `border-border`, inputs |
+
+Do not use shadcn `bg-muted` when the design intent is a **border** — use `border-border` / `border-warehouse-border`.
+
+### Semantic CSS variables (warehouse-list)
+
+| Variable | Role |
+|----------|------|
+| `--color-primary` | Primary blue, buttons, active nav |
+| `--color-page-title` | Same as `--color-foreground` (CRUD h1 — not primary blue) |
+| `--color-success-*` | `.wh-badge--active` |
+| `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*` |
+| `--color-action-add` | `#16a34a` — crud-add / green actions |
+| `--color-action-delete` | `#dc2626` — crud-delete |
+| `--color-row-expanded` | Expanded warehouse row background |
+| `--color-nav-active-bg` | Sidebar active item |
+| `--radius-table-wrap` | `0.75rem` — table + pagination chrome |
+| `--shadow-zone-card` | Inner zone cards in expanded row |
+
+Tailwind theme aliases: `--color-warehouse-*` in `@theme` (e.g. `bg-warehouse-border`, `text-warehouse-action-add`).
+
+### shadcn bridge
+
+| shadcn | Maps from |
+|--------|-----------|
+| `--primary` | `--color-primary` |
+| `--background` | `--color-background` |
+| `--muted` | `--color-subtle` (fill, not border) |
+| `--border` | `--color-border` |
+| `--destructive` | `--color-error` |
+| `--sidebar-accent` | `--color-nav-active-bg` |
+
+### Breakpoints (mobile-first)
+
+| Tailwind | Width | Design name |
+|----------|-------|-------------|
+| default | &lt; 640px | mobile |
+| `sm:` | ≥ 640px | tablet+ |
+| `lg:` | ≥ 1024px | computer |
+| `xl:` | ≥ 1440px | computerWide |
+
+Custom variant: `tablet-landscape:` — `(min-width: 640px) and (orientation: landscape) and (max-height: 900px)`.
+
+### Layout constants
+
+| Token | Value |
+|-------|-------|
+| `--width-sidebar` | 16.25rem |
+| `--max-width-crud-page` | 1280px (1440px from `xl` via `max-w-crud-page`) |
+| `--max-width-form` | 26rem |
+
+### Layout utilities
+
+| Class | Use |
+|-------|-----|
+| `px-page` | Generic page horizontal padding (design.json `space.pagePadding`) |
+| `px-admin-content` | `.admin-content` padding (warehouse shell main area) |
+| `max-w-crud-page` | `.crud-page` max width |
+| `grid-wh-zone` | Expanded row zone cards (1 → 2 → 3 columns) |
+| `surface-table-wrap` | `.crud-table-wrap` |
+| `bg-row-expanded` | `.wh-expanded-row` |
+| `bg-page-wash` | `.admin-layout` atmosphere |
+| `grid-form-row` / `grid-form-main-sidebar` | Form layouts (non-warehouse) |
+
+Example CRUD content: `max-w-crud-page px-admin-content` inside `bg-page-wash`.
+
+### Typography (admin / warehouse-list)
+
+| Utility | Typical use |
+|---------|-------------|
+| `text-xs` | Table header |
+| `text-sm` | Breadcrumb, meta |
+| `text-base` | Table body |
+| `text-xl` + bold | `.crud-page-header__title` (foreground color) |
+
 ## i18n
 
 - Locales: `th` (default), `en`
@@ -37,15 +130,14 @@ From repo root: `make frontend-dev`, `make frontend-build`, `make frontend-lint`
 | Theme | next-themes, `storageKey` `warehouse-design-theme`, `data-theme` on `<html>` |
 | Icons | lucide-react |
 | Components | shadcn/ui → `components/ui/` |
-| Storybook | `@storybook/nextjs` (Webpack), v10.6 — co-located `*.stories.tsx` under `components/` |
+| Design tokens | `app/globals.css` only |
+| Storybook | `@storybook/nextjs` (Webpack), v10.6 |
 
 ## Storybook
 
-- Framework: [`@storybook/nextjs`](https://storybook.js.org/docs/get-started/frameworks/nextjs/) (App Router: `nextjs.appDirectory: true` in `.storybook/preview.tsx`)
-- Global styles + theme: imports `app/globals.css`; wraps stories in `ThemeProvider` (same keys as the app)
+- Global styles: `app/globals.css`; `ThemeProvider` in `.storybook/preview.tsx`
 - Dev: `make frontend-storybook` → [http://localhost:6006](http://localhost:6006)
-- Static build: `make frontend-storybook-build` → `frontend/storybook-static/`
-- Example: `components/ui/button.stories.tsx`
+- `stories/design-tokens.stories.tsx` — core palette + warehouse-list patterns
 
 ## Docs
 
