@@ -11,7 +11,7 @@ import {
   REFRESH_TOKEN_COOKIE,
   type AuthUser,
 } from "@/lib/auth-cookies";
-import type { AdminNavNode } from "@/lib/admin-menu-mock";
+import type { AdminNavNode } from "@/lib/admin-nav-api";
 
 export async function getAccessToken(): Promise<string | undefined> {
   const jar = await cookies();

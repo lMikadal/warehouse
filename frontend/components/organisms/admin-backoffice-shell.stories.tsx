@@ -2,9 +2,24 @@
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
 
-import { ADMIN_NAV_TREE } from "@/lib/admin-menu-mock";
+import { apiNavTreeToAdminNodes } from "@/lib/admin-nav-api";
 
 import { AdminBackofficeShell } from "./admin-backoffice-shell";
+
+const storyNavTree = apiNavTreeToAdminNodes([
+  {
+    id: 2,
+    icon: "shield-user",
+    labels: { th: "ผู้ดูแลระบบสูงสุด", en: "Super Admin" },
+    children: [
+      {
+        id: 3,
+        labels: { th: "เมนู", en: "Menu" },
+        path: "/admin/system/menu",
+      },
+    ],
+  },
+]);
 
 const meta = {
   title: "Organisms/AdminBackofficeShell",
@@ -20,7 +35,7 @@ const storyUser = { username: "admin" };
 export const MenuRoute: Story = {
   name: "Menu breadcrumb",
   args: {
-    navTree: ADMIN_NAV_TREE,
+    navTree: storyNavTree,
     user: storyUser,
     breadcrumbSegments: undefined,
     children: (
@@ -36,7 +51,7 @@ export const MenuRoute: Story = {
 
 export const CustomBreadcrumb: Story = {
   args: {
-    navTree: ADMIN_NAV_TREE,
+    navTree: storyNavTree,
     user: storyUser,
     breadcrumbSegments: [
       { label: "Super Admin", href: "/admin/system/menu" },

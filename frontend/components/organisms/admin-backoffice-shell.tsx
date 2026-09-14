@@ -51,14 +51,14 @@ import {
 } from "@/components/ui/sidebar";
 import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
 import { Link, useRouter } from "@/i18n/navigation";
-import { breadcrumbFromNavTree } from "@/lib/admin-nav-api";
-import type { AuthUser } from "@/lib/auth-cookies";
 import {
   adminNavLabel,
+  breadcrumbFromNavTree,
   filterAdminNavTree,
   type AdminNavIcon,
   type AdminNavNode,
-} from "@/lib/admin-menu-mock";
+} from "@/lib/admin-nav-api";
+import type { AuthUser } from "@/lib/auth-cookies";
 import { cn } from "@/lib/utils";
 
 const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
@@ -136,11 +136,23 @@ function navCollapsibleMountKey(nodeId: string, ctx: NavRenderContext): string {
   return `${nodeId}-${ctx.navSearchActive ? "search" : "idle"}`;
 }
 
+function navBranchContainsActivePath(
+  node: AdminNavNode,
+  pathname: string
+): boolean {
+  if (isPathActive(pathname, node.href)) return true;
+  return (node.children ?? []).some((c) =>
+    navBranchContainsActivePath(c, pathname)
+  );
+}
+
 function navCollapsibleDefaultOpen(
   node: AdminNavNode,
   ctx: NavRenderContext
 ): boolean {
-  return ctx.navSearchActive ? true : (node.defaultOpen ?? false);
+  if (ctx.navSearchActive) return true;
+  if (node.defaultOpen) return true;
+  return navBranchContainsActivePath(node, ctx.pathname);
 }
 
 function isPathActive(pathname: string, href: string | undefined): boolean {

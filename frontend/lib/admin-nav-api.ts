@@ -1,10 +1,36 @@
-import {
-  type AdminNavIcon,
-  type AdminNavLabels,
-  type AdminNavNode,
-  type BreadcrumbSegmentDef,
-  adminNavLabel,
-} from "@/lib/admin-menu-mock";
+export type AdminNavIcon =
+  | "shield-user"
+  | "user-round"
+  | "settings"
+  | "contact"
+  | "map-pin"
+  | "warehouse"
+  | "box"
+  | "package"
+  | "users"
+  | "coins"
+  | "shopping-bag"
+  | "shopping-cart"
+  | "clipboard-list";
+
+export type AdminNavLabels = {
+  th: string;
+  en: string;
+};
+
+export type AdminNavNode = {
+  id: string;
+  labels: AdminNavLabels;
+  href?: string;
+  icon?: AdminNavIcon;
+  defaultOpen?: boolean;
+  children?: AdminNavNode[];
+};
+
+export type BreadcrumbSegmentDef = {
+  labels: AdminNavLabels;
+  href?: string;
+};
 
 export type ApiNavNode = {
   id: number;
@@ -34,6 +60,10 @@ const KNOWN_ICONS = new Set<string>([
   "shopping-cart",
   "clipboard-list",
 ]);
+
+export function adminNavLabel(labels: AdminNavLabels, locale: string): string {
+  return locale === "en" ? labels.en : labels.th;
+}
 
 function toNavIcon(raw?: string | null): AdminNavIcon | undefined {
   if (!raw) return undefined;
@@ -104,4 +134,34 @@ export function navLabelsForPath(
   const chain = findNavChain(pathname, tree);
   if (!chain?.length) return undefined;
   return adminNavLabel(chain[chain.length - 1]!.labels, locale);
+}
+
+/** Returns a pruned copy of the tree for sidebar search (design #sidebar-search). */
+export function filterAdminNavTree(
+  nodes: AdminNavNode[],
+  query: string,
+  locale: string
+): AdminNavNode[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return nodes;
+
+  const walk = (list: AdminNavNode[]): AdminNavNode[] => {
+    const out: AdminNavNode[] = [];
+    for (const node of list) {
+      const children = node.children ? walk(node.children) : undefined;
+      const selfMatch = adminNavLabel(node.labels, locale)
+        .toLowerCase()
+        .includes(q);
+      if (selfMatch || (children && children.length > 0)) {
+        out.push({
+          ...node,
+          children,
+          defaultOpen: true,
+        });
+      }
+    }
+    return out;
+  };
+
+  return walk(nodes);
 }
