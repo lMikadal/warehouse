@@ -4,8 +4,8 @@
 
   var tables = {};
 
-  if (global.SEED_WEBSITE_LANGUAGE) {
-    tables.website_language = global.SEED_WEBSITE_LANGUAGE;
+  if (global.SEED_SYSTEM_LANGUAGE) {
+    tables.system_language = global.SEED_SYSTEM_LANGUAGE;
   }
 
   var geoTables = [

@@ -42,7 +42,7 @@ Applies when the table has **`parent_id` + `tree_path`** (e.g. `system_menu`, `w
 | `admin_user` | Use `status` enum — list `?status=` and `PATCH { "status" }`, not `is_active`. |
 | `admin_user_session`, auth internals | No public list toggle API. |
 | Nested / parent-scoped rows | Reorder via parent update or sub-resource — not top-level `/reorder`. |
-| `website_language` | Standard `is_active` list filter + partial `PATCH`; **also** exclusive `is_default` (clear other rows when set true; cannot deactivate while default). |
+| `system_language` | Standard `is_active` list filter + partial `PATCH`; **also** exclusive `is_default` (clear other rows when set true; cannot deactivate while default). |
 | Table has `is_active` but no list module yet | Omit endpoints until the list API exists (YAGNI). |
 
 ## Inventory

@@ -27,7 +27,7 @@ export const PERM_PAGES: PermPage[] = [
   {
     permModule: "admin",
     type: "admin_language",
-    resource: "/api/v1/website/languages",
+    resource: "/api/v1/system/languages",
   },
   {
     permModule: "admin",

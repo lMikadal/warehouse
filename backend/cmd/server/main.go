@@ -17,7 +17,6 @@ import (
 	authmod "github.com/lMikadal/warehouse/backend/internal/module/auth"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
-	"github.com/lMikadal/warehouse/backend/internal/module/website"
 	"github.com/lMikadal/warehouse/backend/internal/server"
 )
 
@@ -83,12 +82,10 @@ func main() {
 	authmod.RegisterAuthedRoutes(authed, authHandler)
 
 	rbacProtected := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac), pkgauth.RequirePermission(rbac))
-	system.RegisterRoutes(rbacProtected, menuSvc, permSvc)
+	langRepo := system.NewLanguageRepository(deps.DB)
+	langHandler := system.NewLanguageHandler(langRepo)
+	system.RegisterRoutes(rbacProtected, menuSvc, permSvc, langHandler)
 	admin.RegisterRoutes(rbacProtected.Group("/admin"), roleHandler, userHandler)
-
-	langRepo := website.NewLanguageRepository(deps.DB)
-	langHandler := website.NewLanguageHandler(langRepo)
-	website.RegisterRoutes(rbacProtected, langHandler)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

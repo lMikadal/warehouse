@@ -39,8 +39,8 @@ for f in "$SCHEMA_DIR"/*.sql; do
     err "[$filename] table name '$table' does not match filename"
   fi
 
-  # ── Rule 3: *_language files (companion tables, not the website_language registry itself) ───
-  if [[ "$filename" == *_language && "$filename" != "website_language" ]]; then
+  # ── Rule 3: *_language files (companion tables, not the system_language registry itself) ───
+  if [[ "$filename" == *_language && "$filename" != "system_language" ]]; then
     if ! grep -q '\blocale\b' "$f"; then
       err "[$filename] missing 'locale' column"
     fi

@@ -1,4 +1,4 @@
-package website
+package system
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	ErrNotFound            = errors.New("language not found")
-	ErrDeactivateDefault   = errors.New("cannot deactivate default language")
-	ErrDuplicateLocale     = errors.New("locale already exists")
-	ErrInvalidReorder      = errors.New("invalid reorder")
+	ErrLanguageNotFound          = errors.New("language not found")
+	ErrLanguageDeactivateDefault = errors.New("cannot deactivate default language")
+	ErrLanguageDuplicateLocale   = errors.New("locale already exists")
+	ErrLanguageInvalidReorder    = errors.New("invalid reorder")
 )
 
 type LanguageRepository struct {
@@ -41,6 +41,8 @@ type LanguageListFilter struct {
 	Limit    int
 	Search   string
 	IsActive *bool
+	Sort     string
+	Order    string
 }
 
 type LanguageCreateInput struct {
@@ -59,6 +61,26 @@ type LanguagePatch struct {
 	ActorID   int64
 }
 
+var allowedLanguageListSort = map[string]string{
+	"locale":     "locale",
+	"name":       "name",
+	"is_active":  "is_active",
+	"is_default": "is_default",
+	"updated_at": "updated_at",
+}
+
+func languageListOrderBy(sortCol, order string) string {
+	col, ok := allowedLanguageListSort[sortCol]
+	if !ok {
+		return "sort_order ASC, id ASC"
+	}
+	dir := "ASC"
+	if order == "desc" {
+		dir = "DESC"
+	}
+	return fmt.Sprintf("%s %s, id ASC", col, dir)
+}
+
 func (r *LanguageRepository) List(ctx context.Context, f LanguageListFilter) ([]LanguageRow, int64, error) {
 	where := []string{"deleted_at IS NULL"}
 	args := []any{}
@@ -75,12 +97,13 @@ func (r *LanguageRepository) List(ctx context.Context, f LanguageListFilter) ([]
 	}
 	w := strings.Join(where, " AND ")
 	var total int64
-	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM website_language WHERE "+w, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM system_language WHERE "+w, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
+	orderBy := languageListOrderBy(f.Sort, f.Order)
 	q := fmt.Sprintf(`
 SELECT id, locale, name, sort_order, is_active, is_default, updated_at
-FROM website_language WHERE %s ORDER BY sort_order ASC, id ASC LIMIT $%d OFFSET $%d`, w, n, n+1)
+FROM system_language WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`, w, orderBy, n, n+1)
 	args = append(args, f.Limit, (f.Page-1)*f.Limit)
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -100,7 +123,7 @@ FROM website_language WHERE %s ORDER BY sort_order ASC, id ASC LIMIT $%d OFFSET 
 
 func (r *LanguageRepository) Get(ctx context.Context, id int64) (*LanguageRow, error) {
 	row, err := r.scanOne(ctx, `SELECT id, locale, name, sort_order, is_active, is_default, updated_at
-FROM website_language WHERE id = $1 AND deleted_at IS NULL`, id)
+FROM system_language WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -118,7 +141,7 @@ func (r *LanguageRepository) Create(ctx context.Context, in LanguageCreateInput)
 	defer tx.Rollback()
 
 	var maxSort int
-	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(sort_order), 0) FROM website_language WHERE deleted_at IS NULL`).Scan(&maxSort); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(sort_order), 0) FROM system_language WHERE deleted_at IS NULL`).Scan(&maxSort); err != nil {
 		return 0, err
 	}
 	active := in.IsActive
@@ -128,17 +151,17 @@ func (r *LanguageRepository) Create(ctx context.Context, in LanguageCreateInput)
 	}
 	var id int64
 	err = tx.QueryRowContext(ctx, `
-INSERT INTO website_language (locale, name, sort_order, is_active, is_default, created_by, updated_by)
+INSERT INTO system_language (locale, name, sort_order, is_active, is_default, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING id`,
-		in.Locale, in.Name, maxSort+10, active, isDefault, nullInt64(in.ActorID)).Scan(&id)
+		in.Locale, in.Name, maxSort+10, active, isDefault, languageNullInt64(in.ActorID)).Scan(&id)
 	if err != nil {
-		if isUniqueViolation(err) {
-			return 0, ErrDuplicateLocale
+		if isLanguageUniqueViolation(err) {
+			return 0, ErrLanguageDuplicateLocale
 		}
 		return 0, err
 	}
 	if isDefault {
-		if err := clearOtherDefaults(ctx, tx, id, in.ActorID); err != nil {
+		if err := clearOtherLanguageDefaults(ctx, tx, id, in.ActorID); err != nil {
 			return 0, err
 		}
 	}
@@ -166,21 +189,21 @@ func resolveLanguageUpdate(cur LanguageRow, patch LanguagePatch) (locale, name s
 		active = true
 	}
 	if !active && isDefault {
-		return "", "", false, false, ErrDeactivateDefault
+		return "", "", false, false, ErrLanguageDeactivateDefault
 	}
 	if patch.IsActive != nil && !*patch.IsActive && cur.IsDefault && (patch.IsDefault == nil || *patch.IsDefault) {
-		return "", "", false, false, ErrDeactivateDefault
+		return "", "", false, false, ErrLanguageDeactivateDefault
 	}
 	return locale, name, active, isDefault, nil
 }
 
 func (r *LanguageRepository) Update(ctx context.Context, id int64, patch LanguagePatch) error {
-	cur, err := r.getForUpdate(ctx, id)
+	cur, err := r.getLanguageForUpdate(ctx, id)
 	if err != nil {
 		return err
 	}
 	if cur == nil {
-		return ErrNotFound
+		return ErrLanguageNotFound
 	}
 	locale, name, active, isDefault, err := resolveLanguageUpdate(*cur, patch)
 	if err != nil {
@@ -194,17 +217,17 @@ func (r *LanguageRepository) Update(ctx context.Context, id int64, patch Languag
 	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, `
-UPDATE website_language
+UPDATE system_language
 SET locale = $2, name = $3, is_active = $4, is_default = $5, updated_at = NOW(), updated_by = $6
-WHERE id = $1 AND deleted_at IS NULL`, id, locale, name, active, isDefault, nullInt64(patch.ActorID))
+WHERE id = $1 AND deleted_at IS NULL`, id, locale, name, active, isDefault, languageNullInt64(patch.ActorID))
 	if err != nil {
-		if isUniqueViolation(err) {
-			return ErrDuplicateLocale
+		if isLanguageUniqueViolation(err) {
+			return ErrLanguageDuplicateLocale
 		}
 		return err
 	}
 	if isDefault {
-		if err := clearOtherDefaults(ctx, tx, id, patch.ActorID); err != nil {
+		if err := clearOtherLanguageDefaults(ctx, tx, id, patch.ActorID); err != nil {
 			return err
 		}
 	}
@@ -213,26 +236,26 @@ WHERE id = $1 AND deleted_at IS NULL`, id, locale, name, active, isDefault, null
 
 func (r *LanguageRepository) SoftDelete(ctx context.Context, id int64, actorID int64) error {
 	res, err := r.db.ExecContext(ctx, `
-UPDATE website_language SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2
-WHERE id = $1 AND deleted_at IS NULL`, id, nullInt64(actorID))
+UPDATE system_language SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2
+WHERE id = $1 AND deleted_at IS NULL`, id, languageNullInt64(actorID))
 	if err != nil {
 		return err
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return ErrNotFound
+		return ErrLanguageNotFound
 	}
 	return nil
 }
 
 func (r *LanguageRepository) Reorder(ctx context.Context, dragID, targetID int64, actorID int64) error {
-	rows, err := r.loadAllNodes(ctx)
+	rows, err := r.loadAllLanguageNodes(ctx)
 	if err != nil {
 		return err
 	}
 	next, err := tree.ReorderSiblings(rows, dragID, targetID)
 	if err != nil {
-		return ErrInvalidReorder
+		return ErrLanguageInvalidReorder
 	}
 	orderByID := map[int64]int{}
 	for _, n := range next {
@@ -245,17 +268,17 @@ func (r *LanguageRepository) Reorder(ctx context.Context, dragID, targetID int64
 	defer tx.Rollback()
 	for id, so := range orderByID {
 		if _, err := tx.ExecContext(ctx, `
-UPDATE website_language SET sort_order = $2, updated_at = NOW(), updated_by = $3
-WHERE id = $1 AND deleted_at IS NULL`, id, so, nullInt64(actorID)); err != nil {
+UPDATE system_language SET sort_order = $2, updated_at = NOW(), updated_by = $3
+WHERE id = $1 AND deleted_at IS NULL`, id, so, languageNullInt64(actorID)); err != nil {
 			return err
 		}
 	}
 	return tx.Commit()
 }
 
-func (r *LanguageRepository) loadAllNodes(ctx context.Context) ([]tree.Node, error) {
+func (r *LanguageRepository) loadAllLanguageNodes(ctx context.Context) ([]tree.Node, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, sort_order FROM website_language WHERE deleted_at IS NULL ORDER BY sort_order ASC, id ASC`)
+SELECT id, sort_order FROM system_language WHERE deleted_at IS NULL ORDER BY sort_order ASC, id ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -271,9 +294,9 @@ SELECT id, sort_order FROM website_language WHERE deleted_at IS NULL ORDER BY so
 	return out, rows.Err()
 }
 
-func (r *LanguageRepository) getForUpdate(ctx context.Context, id int64) (*LanguageRow, error) {
+func (r *LanguageRepository) getLanguageForUpdate(ctx context.Context, id int64) (*LanguageRow, error) {
 	return r.scanOne(ctx, `SELECT id, locale, name, sort_order, is_active, is_default, updated_at
-FROM website_language WHERE id = $1 AND deleted_at IS NULL`, id)
+FROM system_language WHERE id = $1 AND deleted_at IS NULL`, id)
 }
 
 func (r *LanguageRepository) scanOne(ctx context.Context, q string, id int64) (*LanguageRow, error) {
@@ -286,21 +309,21 @@ func (r *LanguageRepository) scanOne(ctx context.Context, q string, id int64) (*
 	return &row, nil
 }
 
-func clearOtherDefaults(ctx context.Context, tx *sql.Tx, keepID int64, actorID int64) error {
+func clearOtherLanguageDefaults(ctx context.Context, tx *sql.Tx, keepID int64, actorID int64) error {
 	_, err := tx.ExecContext(ctx, `
-UPDATE website_language SET is_default = FALSE, updated_at = NOW(), updated_by = $2
-WHERE deleted_at IS NULL AND id <> $1 AND is_default = TRUE`, keepID, nullInt64(actorID))
+UPDATE system_language SET is_default = FALSE, updated_at = NOW(), updated_by = $2
+WHERE deleted_at IS NULL AND id <> $1 AND is_default = TRUE`, keepID, languageNullInt64(actorID))
 	return err
 }
 
-func nullInt64(id int64) sql.NullInt64 {
+func languageNullInt64(id int64) sql.NullInt64 {
 	if id == 0 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: id, Valid: true}
 }
 
-func isUniqueViolation(err error) bool {
+func isLanguageUniqueViolation(err error) bool {
 	if err == nil {
 		return false
 	}

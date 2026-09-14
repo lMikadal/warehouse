@@ -3,6 +3,8 @@
     "action": "Action",
     "active": "Active",
     "code": "Permission code",
+    "default": "Default",
+    "locale": "Locale",
     "inactive": "Inactive",
     "module": "Module",
     "type": "Type",

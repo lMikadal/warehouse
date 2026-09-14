@@ -1,4 +1,4 @@
-window.SEED_WEBSITE_LANGUAGE = [
+window.SEED_SYSTEM_LANGUAGE = [
   {
     id: 1,
     locale: "th",

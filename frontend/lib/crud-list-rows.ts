@@ -156,7 +156,7 @@ export function arrayMoveIds<T>(array: T[], from: number, to: number): T[] {
   return next;
 }
 
-function sortableIndicesFromSource(
+export function sortableIndicesFromSource(
   source: unknown
 ): { from: number; to: number } | null {
   if (source == null || typeof source !== "object") return null;

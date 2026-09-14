@@ -33,11 +33,11 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "system.system_menu.update" {
 		t.Fatalf("reorder prefix: got %q %v", code, ok)
 	}
-	code, ok = CodeForRoute("GET", "/api/v1/website/languages/3")
+	code, ok = CodeForRoute("GET", "/api/v1/system/languages/3")
 	if !ok || code != "admin.admin_language.view" {
 		t.Fatalf("language get: got %q %v", code, ok)
 	}
-	code, ok = CodeForRoute("PATCH", "/api/v1/website/languages/reorder")
+	code, ok = CodeForRoute("PATCH", "/api/v1/system/languages/reorder")
 	if !ok || code != "admin.admin_language.update" {
 		t.Fatalf("language reorder: got %q %v", code, ok)
 	}

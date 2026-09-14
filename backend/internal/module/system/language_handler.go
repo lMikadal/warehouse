@@ -1,16 +1,14 @@
-package website
+package system
 
 import (
 	"errors"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
-	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -34,7 +32,7 @@ type languageItem struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func rowToItem(r LanguageRow) languageItem {
+func rowToLanguageItem(r LanguageRow) languageItem {
 	return languageItem{
 		ID: r.ID, Locale: r.Locale, Name: r.Name, SortOrder: r.SortOrder,
 		IsActive: r.IsActive, IsDefault: r.IsDefault, UpdatedAt: r.UpdatedAt,
@@ -48,6 +46,12 @@ func (h *LanguageHandler) list(c *echo.Context) error {
 		active := v == "true" || v == "1"
 		f.IsActive = &active
 	}
+	sortCol := strings.TrimSpace(c.QueryParam("sort"))
+	order := strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
+	if sortCol != "" && (order == "asc" || order == "desc") {
+		f.Sort = sortCol
+		f.Order = order
+	}
 	rows, total, err := h.repo.List(c.Request().Context(), f)
 	if err != nil {
 		applog.HTTPError(c, "list languages", err)
@@ -55,7 +59,7 @@ func (h *LanguageHandler) list(c *echo.Context) error {
 	}
 	items := make([]languageItem, len(rows))
 	for i, r := range rows {
-		items[i] = rowToItem(r)
+		items[i] = rowToLanguageItem(r)
 	}
 	return c.JSON(http.StatusOK, api.NewListResponse(items, total, q))
 }
@@ -73,7 +77,7 @@ func (h *LanguageHandler) get(c *echo.Context) error {
 	if row == nil {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "language not found"})
 	}
-	return c.JSON(http.StatusOK, rowToItem(*row))
+	return c.JSON(http.StatusOK, rowToLanguageItem(*row))
 }
 
 type languageCreateBody struct {
@@ -109,7 +113,7 @@ func (h *LanguageHandler) create(c *echo.Context) error {
 		Locale: locale, Name: name, IsActive: active, IsDefault: isDefault, ActorID: actorID(c),
 	})
 	if err != nil {
-		if errors.Is(err, ErrDuplicateLocale) {
+		if errors.Is(err, ErrLanguageDuplicateLocale) {
 			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "locale already exists"})
 		}
 		applog.HTTPError(c, "create language", err)
@@ -153,13 +157,13 @@ func (h *LanguageHandler) patch(c *echo.Context) error {
 	}
 	err = h.repo.Update(c.Request().Context(), id, patch)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, ErrLanguageNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "language not found"})
 		}
-		if errors.Is(err, ErrDeactivateDefault) {
+		if errors.Is(err, ErrLanguageDeactivateDefault) {
 			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "cannot deactivate default language"})
 		}
-		if errors.Is(err, ErrDuplicateLocale) {
+		if errors.Is(err, ErrLanguageDuplicateLocale) {
 			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "locale already exists"})
 		}
 		applog.HTTPError(c, "patch language", err)
@@ -174,7 +178,7 @@ func (h *LanguageHandler) delete(c *echo.Context) error {
 		return err
 	}
 	if err := h.repo.SoftDelete(c.Request().Context(), id, actorID(c)); err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, ErrLanguageNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "language not found"})
 		}
 		applog.HTTPError(c, "delete language", err)
@@ -183,13 +187,13 @@ func (h *LanguageHandler) delete(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-type reorderBody struct {
+type languageReorderBody struct {
 	DragID   int64 `json:"drag_id"`
 	TargetID int64 `json:"target_id"`
 }
 
 func (h *LanguageHandler) reorder(c *echo.Context) error {
-	var body reorderBody
+	var body languageReorderBody
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
@@ -198,31 +202,11 @@ func (h *LanguageHandler) reorder(c *echo.Context) error {
 	}
 	err := h.repo.Reorder(c.Request().Context(), body.DragID, body.TargetID, actorID(c))
 	if err != nil {
-		if errors.Is(err, ErrInvalidReorder) {
+		if errors.Is(err, ErrLanguageInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})
 		}
 		applog.HTTPError(c, "reorder languages", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "reorder failed"})
 	}
 	return c.NoContent(http.StatusNoContent)
-}
-
-func pathID(c *echo.Context) (int64, error) {
-	return parsePositiveIntParam(c, "id")
-}
-
-func parsePositiveIntParam(c *echo.Context, name string) (int64, error) {
-	id, err := strconv.ParseInt(c.Param(name), 10, 64)
-	if err != nil || id <= 0 {
-		_ = c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid id"})
-		return 0, err
-	}
-	return id, nil
-}
-
-func actorID(c *echo.Context) int64 {
-	if p, ok := pkgauth.PrincipalFrom(c); ok {
-		return p.UserID
-	}
-	return 0
 }

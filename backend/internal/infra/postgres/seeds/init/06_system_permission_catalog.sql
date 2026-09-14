@@ -2,12 +2,12 @@
 
 INSERT INTO system_permission (id, code, module, type, action, resource, method, is_active)
 VALUES
-  (25, 'admin.admin_language.view', 'admin', 'admin_language', 'view', '/api/v1/website/languages', 'GET', TRUE),
-  (26, 'admin.admin_language.create', 'admin', 'admin_language', 'create', '/api/v1/website/languages', 'POST', TRUE),
-  (27, 'admin.admin_language.update', 'admin', 'admin_language', 'update', '/api/v1/website/languages', 'PATCH', TRUE),
-  (28, 'admin.admin_language.delete', 'admin', 'admin_language', 'delete', '/api/v1/website/languages', 'DELETE', TRUE),
-  (29, 'admin.admin_language.import', 'admin', 'admin_language', 'import', '/api/v1/website/languages', 'POST', FALSE),
-  (30, 'admin.admin_language.export', 'admin', 'admin_language', 'export', '/api/v1/website/languages', 'GET', FALSE),
+  (25, 'admin.admin_language.view', 'admin', 'admin_language', 'view', '/api/v1/system/languages', 'GET', TRUE),
+  (26, 'admin.admin_language.create', 'admin', 'admin_language', 'create', '/api/v1/system/languages', 'POST', TRUE),
+  (27, 'admin.admin_language.update', 'admin', 'admin_language', 'update', '/api/v1/system/languages', 'PATCH', TRUE),
+  (28, 'admin.admin_language.delete', 'admin', 'admin_language', 'delete', '/api/v1/system/languages', 'DELETE', TRUE),
+  (29, 'admin.admin_language.import', 'admin', 'admin_language', 'import', '/api/v1/system/languages', 'POST', FALSE),
+  (30, 'admin.admin_language.export', 'admin', 'admin_language', 'export', '/api/v1/system/languages', 'GET', FALSE),
   (31, 'admin.website_country.view', 'admin', 'website_country', 'view', '/api/v1/website/countries', 'GET', TRUE),
   (32, 'admin.website_country.create', 'admin', 'website_country', 'create', '/api/v1/website/countries', 'POST', TRUE),
   (33, 'admin.website_country.update', 'admin', 'website_country', 'update', '/api/v1/website/countries', 'PATCH', TRUE),

@@ -53,7 +53,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `website_province` | `website_country_id` | [ ] | |
 | `website_district` | `website_province_id` | [ ] | |
 | `website_sub_district` | `website_district_id` | [ ] | |
-| `website_language` | global | [x] | `is_active` + **`is_default`** exclusive + `/reorder` |
+| `system_language` | global | [x] | `is_active` + **`is_default`** exclusive + `/reorder` |
 | `system_menu` | tree | [x] | Use **`/move`**, not `/reorder` |
 | `warehouse_list` | tree | [ ] | Use **`/move`** |
 | `product_attribute` | tree | [ ] | Use **`/move`** (sibling-only for some types in design) |
@@ -76,7 +76,7 @@ Shared logic: [`backend/internal/tree/`](../../../backend/internal/tree/).
 |---------------|------|
 | `admin_user.status` | Enum lifecycle; list filter + partial `PATCH` on `status` |
 | `admin_user_session.is_active` | Revoked by auth flows only |
-| `website_language.is_default` | Exclusive boolean; partial `PATCH` + clear other rows (with standard `is_active` on same resource) |
+| `system_language.is_default` | Exclusive boolean; partial `PATCH` + clear other rows (with standard `is_active` on same resource) |
 | `*_file` (`product_item_file`, `member_file`, `purchase_order_file`, …) | Gallery `sort_order` on parent resource |
 | `supplier_contact`, `supplier_bank` | `sort_order` under `supplier_user_id` |
 | `order_payment_method` | Junction; validates linked `setting_payment_method.is_active` |

@@ -31,7 +31,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 ## Script load order (every page)
 
 1. `js/i18n/th.js` + `en.js` + `i18n.js`
-2. `js/seed/website_language.js` → **`js/seed/_admin_shared.js`** (must load before any seed file that calls `ADMIN_SEED_SHARED`) → `website_*` geo seeds → `admin_*.js` → `setting_*` seeds → `member_setting_*` seeds (incl. `member_setting_relation.js`) → `member_tier*` seeds → `member_user*` (+ address/setting/owner/file/discount/history) seeds → `index.js`
+2. `js/seed/system_language.js` → **`js/seed/_admin_shared.js`** (must load before any seed file that calls `ADMIN_SEED_SHARED`) → `website_*` geo seeds → `admin_*.js` → `setting_*` seeds → `member_setting_*` seeds (incl. `member_setting_relation.js`) → `member_tier*` seeds → `member_user*` (+ address/setting/owner/file/discount/history) seeds → `index.js`
 3. `js/store.js`
 4. `js/realtime.js` (authenticated module pages)
 5. `js/nav.js`
@@ -56,7 +56,7 @@ Open `http://localhost:8080/`. Prefer HTTP over `file://` so `localStorage` and 
 - **Super Admin CRUD pages** (9 thin HTML wrappers + shared `js/components/crud-list.js` + `js/pages/module-registry.js`):
   - `pages/admin-menu.html` — menu tree (edit only)
   - `pages/admin-permission.html` — permission list (read-only; toggle `is_active`)
-  - `pages/admin-language.html` — `website_language` CRUD
+  - `pages/admin-language.html` — `system_language` CRUD
   - `pages/website-country.html` … `pages/website-sub-district.html` — geo hierarchy CRUD with `*_language` rows
   - `pages/admin-user.html` — `admin_user` CRUD (role/type/status filters; password toggle on form)
   - `pages/admin-role.html` — `admin_role` + `admin_role_language` CRUD; create/edit modal includes menu-grouped permission matrix (`js/components/role-permission-matrix.js`)
@@ -179,7 +179,7 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`
 - **`tree_path` labels:** `n{id}` per segment from root to row (e.g. `n2.n6.n7`) — structural only; sibling display order uses `sort_order`. Seeds derive paths via `ADMIN_SEED_SHARED.assignTreePaths()` in [`design/js/seed/_admin_shared.js`](../../design/js/seed/_admin_shared.js)
 - **Geo chain** (`website_*`): `website_country` → `website_province` → `website_district` → `website_sub_district`; typed parent FK + `sort_order` only (not tree tables)
-- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`website_language`, `website_country`, `setting_bank`, `setting_claim_reason`, …)
+- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`system_language`, `website_country`, `setting_bank`, `setting_claim_reason`, …)
 - Money: `NUMERIC(15,4)` · Rate/percent: `NUMERIC(5,2)` · Quantities: `NUMERIC(15,4)` or `INTEGER`
 - Root list tables use `{module}_list` or `{module}_user`: `product_list`, `warehouse_list`, `supplier_user`, `member_user`
   Children drop the repetition: `product_item` (not `product_list_item`), `member_address` (not `member_user_address`)
@@ -262,7 +262,7 @@ Checks per file:
 - `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `website_country` is empty in the store
 - **`pages/db.html`** must load the same geo seed scripts as module pages (`website_country.js` … `website_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
-- Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js` first, then `website_*` + `admin_*.js`, `website_language.js`) merged by `index.js`
+- Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js` first, then `website_*` + `admin_*.js`, `system_language.js`) merged by `index.js`
 - **Geo demo seed** (`website_country` → `website_sub_district`): 2 countries (TH, SG), 13 provinces, 15 districts, 30 sub-districts — each level has th/en `*_language` rows; Chiang Rai province is inactive for status-filter testing
 - Channel name: `warehouse-design`
 - API: `store.init|getAll|getById|create|update|delete|reset`

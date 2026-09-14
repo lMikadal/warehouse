@@ -308,7 +308,7 @@
               "name": "List languages",
               "request": {
                 "method": "GET",
-                "url": "{{baseUrl}}/website/languages?page=1&limit=10&is_active=true"
+                "url": "{{baseUrl}}/system/languages?page=1&limit=10&is_active=true"
               },
               "event": [
                 {
@@ -324,7 +324,7 @@
             },
             {
               "name": "Get language",
-              "request": { "method": "GET", "url": "{{baseUrl}}/website/languages/1" }
+              "request": { "method": "GET", "url": "{{baseUrl}}/system/languages/1" }
             },
             {
               "name": "Create language",
@@ -335,7 +335,7 @@
                   "mode": "raw",
                   "raw": "{\n  \"locale\": \"ja\",\n  \"name\": \"日本語\",\n  \"is_active\": true,\n  \"is_default\": false\n}"
                 },
-                "url": "{{baseUrl}}/website/languages"
+                "url": "{{baseUrl}}/system/languages"
               }
             },
             {
@@ -344,7 +344,7 @@
                 "method": "PATCH",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": { "mode": "raw", "raw": "{\n  \"is_active\": false\n}" },
-                "url": "{{baseUrl}}/website/languages/2"
+                "url": "{{baseUrl}}/system/languages/2"
               }
             },
             {
@@ -353,7 +353,7 @@
                 "method": "PATCH",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": { "mode": "raw", "raw": "{\n  \"is_default\": true\n}" },
-                "url": "{{baseUrl}}/website/languages/2"
+                "url": "{{baseUrl}}/system/languages/2"
               }
             },
             {
@@ -365,7 +365,7 @@
                   "mode": "raw",
                   "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
                 },
-                "url": "{{baseUrl}}/website/languages/reorder"
+                "url": "{{baseUrl}}/system/languages/reorder"
               },
               "event": [
                 {
@@ -381,7 +381,7 @@
             },
             {
               "name": "Delete language",
-              "request": { "method": "DELETE", "url": "{{baseUrl}}/website/languages/99" }
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/system/languages/99" }
             }
           ]
         }

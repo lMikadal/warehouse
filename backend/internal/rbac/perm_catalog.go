@@ -18,7 +18,7 @@ var WavePermPages = []PermPage{
 
 // CatalogPermPages are seeded in 06_system_permission_catalog.sql (routing only; no StartID).
 var CatalogPermPages = []PermPage{
-	{Module: "admin", Type: "admin_language", Resource: "/api/v1/website/languages"},
+	{Module: "admin", Type: "admin_language", Resource: "/api/v1/system/languages"},
 }
 
 func routePermPages() []PermPage {

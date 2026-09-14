@@ -2,7 +2,7 @@
 --   - restored: sub_name, description (v2 dropped them)
 CREATE TABLE product_list_language (
     product_list_id  BIGINT       NOT NULL REFERENCES product_list(id) ON DELETE CASCADE, -- parent product
-    locale           VARCHAR(10)  NOT NULL REFERENCES website_language(locale) ON DELETE RESTRICT, -- th | en
+    locale           VARCHAR(10)  NOT NULL REFERENCES system_language(locale) ON DELETE RESTRICT, -- th | en
     name             VARCHAR(255) NOT NULL,                 -- localized product name
     sub_name         VARCHAR(255),                          -- optional subtitle
     description      TEXT,                                  -- localized long description

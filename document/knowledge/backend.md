@@ -22,9 +22,8 @@ backend/
 │   ├── module/
 │   │   ├── auth/          # login, refresh, logout, me
 │   │   ├── health/
-│   │   ├── system/        # system_menu, system_permission
-│   │   ├── admin/         # users, roles
-│   │   └── website/       # website_language (locales)
+│   │   ├── system/        # system_menu, system_permission, system_language (locales)
+│   │   └── admin/         # users, roles
 │   └── server/
 ├── env.example
 └── go.mod
@@ -147,22 +146,22 @@ Roles list accepts `?is_active=`. Inline status switch: partial `PATCH /admin/ro
 
 Users list accepts `?status=` (not `is_active`). Partial `PATCH` may set `{ "status": "inactive" }` among other fields.
 
-## Website languages
+## System languages (locale registry)
 
-Table `website_language`: locale registry for `*_language` FKs; columns include `sort_order`, `is_active`, exclusive `is_default` (partial unique index requires active default).
+Table `system_language`: locale registry for `*_language` FKs; columns include `sort_order`, `is_active`, exclusive `is_default` (partial unique index requires active default). Renamed from `website_language` via migration `20260316100000_system_language_rename.sql`.
 
 | Method | Path | Permission |
 |--------|------|------------|
-| `GET` | `/website/languages` | `admin.admin_language.view` — `page`, `limit`, `search`, optional `is_active` |
-| `GET` | `/website/languages/:id` | `admin.admin_language.view` |
-| `POST` | `/website/languages` | `admin.admin_language.create` — `{ "locale", "name", "is_active"?, "is_default"? }` |
-| `PATCH` | `/website/languages/reorder` | `admin.admin_language.update` — `{ "drag_id", "target_id" }` → `204` |
-| `PATCH` | `/website/languages/:id` | `admin.admin_language.update` — partial `locale`, `name`, `is_active`, `is_default` |
-| `DELETE` | `/website/languages/:id` | `admin.admin_language.delete` — soft delete |
+| `GET` | `/system/languages` | `admin.admin_language.view` — `page`, `limit`, `search`, optional `is_active`, optional `sort`/`order` |
+| `GET` | `/system/languages/:id` | `admin.admin_language.view` |
+| `POST` | `/system/languages` | `admin.admin_language.create` — `{ "locale", "name", "is_active"?, "is_default"? }` |
+| `PATCH` | `/system/languages/reorder` | `admin.admin_language.update` — `{ "drag_id", "target_id" }` → `204` |
+| `PATCH` | `/system/languages/:id` | `admin.admin_language.update` — partial `locale`, `name`, `is_active`, `is_default` |
+| `DELETE` | `/system/languages/:id` | `admin.admin_language.delete` — soft delete |
 
-Setting `is_default: true` clears other defaults and forces `is_active: true`. Deactivating the current default returns `409`. Module: [`internal/module/website/`](../../backend/internal/module/website/).
+Setting `is_default: true` clears other defaults and forces `is_active: true`. Deactivating the current default returns `409`. Handlers: [`internal/module/system/language_*.go`](../../backend/internal/module/system/).
 
-Migration `20260315100000_website_language_is_active.sql` adds `is_active`.
+Migration `20260315100000_website_language_is_active.sql` adds `is_active` (applied before table rename).
 
 ## List mutations
 
@@ -176,7 +175,7 @@ Convention ([`.cursor/rules/crud-mutations.mdc`](../../.cursor/rules/crud-mutati
 
 Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderSiblings`, `RecomputePaths`). RBAC: `PATCH` on subpaths `/move` and `/reorder` maps to `{module}.{type}.update` via resource prefix match.
 
-**Exceptions:** `admin_user` uses `status`; `system_permission` list is read-only but uses the same active patch shape; `website_language` also has exclusive `is_default`; nested rows and `*_file` galleries reorder on the parent API.
+**Exceptions:** `admin_user` uses `status`; `system_permission` list is read-only but uses the same active patch shape; `system_language` also has exclusive `is_default`; nested rows and `*_file` galleries reorder on the parent API.
 
 ## Migrations and seeds
 
@@ -192,9 +191,9 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 | `make backend-dev` | air |
 | `make backend-test` | `go test ./...` |
 
-Wave 1 schema: shared enums, `website_language`, `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
+Wave 1 schema: shared enums, locale registry (`system_language` after rename), `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
 
-Init seeds: `01_website_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction).
+Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction).
 
 **Regenerate seeds** (from `frontend/`):
 

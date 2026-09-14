@@ -9,7 +9,7 @@
   var PERM_PAGES = [
     { permModule: "system", type: "system_menu", resource: "/api/v1/system/menus" },
     { permModule: "system", type: "system_permission", resource: "/api/v1/system/permissions" },
-    { permModule: "admin", type: "admin_language", resource: "/api/v1/website/languages" },
+    { permModule: "admin", type: "admin_language", resource: "/api/v1/system/languages" },
     { permModule: "admin", type: "website_country", resource: "/api/v1/website/countries" },
     { permModule: "admin", type: "website_province", resource: "/api/v1/website/provinces" },
     { permModule: "admin", type: "website_district", resource: "/api/v1/website/districts" },

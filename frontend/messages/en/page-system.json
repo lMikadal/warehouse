@@ -8,6 +8,12 @@
     "adminPermission": {
       "desc": "View and toggle permissions by module and type",
       "title": "Permissions"
+    },
+    "adminLanguage": {
+      "add": "Add language",
+      "desc": "Manage supported locales and the default language",
+      "editTitle": "Edit language",
+      "title": "Languages"
     }
   }
 }

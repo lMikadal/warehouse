@@ -4,7 +4,7 @@
     "../js/i18n/th.js",
     "../js/i18n/en.js",
     "../js/i18n/i18n.js",
-    "../js/seed/website_language.js",
+    "../js/seed/system_language.js",
     "../js/seed/_admin_shared.js",
     "../js/seed/system_menu.js",
     "../js/seed/system_menu_language.js",

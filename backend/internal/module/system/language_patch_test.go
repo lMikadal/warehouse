@@ -1,4 +1,4 @@
-package website
+package system
 
 import "testing"
 
@@ -7,8 +7,8 @@ func TestResolveLanguageUpdate_DeactivateDefaultConflict(t *testing.T) {
 	active := false
 	patch := LanguagePatch{IsActive: &active}
 	_, _, _, _, err := resolveLanguageUpdate(cur, patch)
-	if err != ErrDeactivateDefault {
-		t.Fatalf("got %v want ErrDeactivateDefault", err)
+	if err != ErrLanguageDeactivateDefault {
+		t.Fatalf("got %v want ErrLanguageDeactivateDefault", err)
 	}
 }
 

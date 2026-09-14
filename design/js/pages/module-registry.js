@@ -285,7 +285,7 @@
     admin_language: {
       permModule: "admin",
       permType: "admin_language",
-      storeTable: "website_language",
+      storeTable: "system_language",
       pageTitleKey: "page.adminLanguage",
       pageDescriptionKey: "page.adminLanguage.desc",
       sortable: true,
@@ -306,7 +306,7 @@
       ],
       listRows: function () {
         return global.store
-          .getAll("website_language")
+          .getAll("system_language")
           .filter(function (r) {
             return r.deleted_at == null;
           })
@@ -324,7 +324,7 @@
       ],
       getFormValues: function (id) {
         if (!id) return { is_default: false };
-        var r = global.store.getById("website_language", id);
+        var r = global.store.getById("system_language", id);
         return {
           locale: r.locale,
           name: r.name,
@@ -336,26 +336,26 @@
       },
       save: function (values, id) {
         if (values.is_default) {
-          global.store.getAll("website_language").forEach(function (r, idx) {
+          global.store.getAll("system_language").forEach(function (r, idx) {
             if (r.is_default && r.id !== id) {
-              global.store.updateAt("website_language", idx, { is_default: false, updated_at: now() });
+              global.store.updateAt("system_language", idx, { is_default: false, updated_at: now() });
             }
           });
         }
-        var existing = id ? global.store.getById("website_language", id) : null;
+        var existing = id ? global.store.getById("system_language", id) : null;
         var patch = {
           locale: values.locale,
           name: values.name,
-          sort_order: existing ? existing.sort_order : (global.store.getAll("website_language").length + 1) * 10,
+          sort_order: existing ? existing.sort_order : (global.store.getAll("system_language").length + 1) * 10,
           is_default: !!values.is_default,
           updated_at: now(),
         };
-        if (id) global.store.update("website_language", id, patch);
+        if (id) global.store.update("system_language", id, patch);
         else
-          global.store.create("website_language", Object.assign(patch, { created_at: now(), deleted_at: null, created_by: 1, updated_by: 1 }));
+          global.store.create("system_language", Object.assign(patch, { created_at: now(), deleted_at: null, created_by: 1, updated_by: 1 }));
       },
       remove: function (id) {
-        global.store.update("website_language", id, { deleted_at: now(), updated_at: now() });
+        global.store.update("system_language", id, { deleted_at: now(), updated_at: now() });
       },
     },
 
