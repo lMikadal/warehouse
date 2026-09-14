@@ -23,6 +23,8 @@
     },
     "reorder": {
       "drag": "Drag to reorder",
+      "dropChild": "Will be a child of {label}",
+      "dropSibling": "Same level as {label}",
       "intoSubtree": "Cannot move a menu item under its own sub-menu",
       "siblingOnly": "Can only reorder within the same group"
     },

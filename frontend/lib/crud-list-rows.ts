@@ -27,6 +27,21 @@ export function treeDepth(treePath: string | null | undefined): number {
   return String(treePath).split(".").length - 1;
 }
 
+/** Vertical zones on a row: top/bottom 25% = sibling, middle 50% = nest as child. */
+export type TreeDropZone = "before" | "child" | "after";
+
+export function resolveTreeDropZone(
+  rowTop: number,
+  rowHeight: number,
+  pointerY: number
+): TreeDropZone {
+  if (rowHeight <= 0) return "after";
+  const rel = (pointerY - rowTop) / rowHeight;
+  if (rel < 0.25) return "before";
+  if (rel > 0.75) return "after";
+  return "child";
+}
+
 /** DFS pre-order by parent_id groups (design crud-list flattenTreeRows). */
 export function flattenTreeRows<T extends TreeSortableRow>(rows: T[]): T[] {
   const byParent: Record<string, T[]> = {};
@@ -373,7 +388,22 @@ function filterTreeRowsPreservingAncestorsSelfCheck() {
   }
 }
 
+function resolveTreeDropZoneSelfCheck(): void {
+  const top = 100;
+  const height = 40;
+  if (resolveTreeDropZone(top, height, top + 5) !== "before") {
+    throw new Error("expected before zone in top 25%");
+  }
+  if (resolveTreeDropZone(top, height, top + 20) !== "child") {
+    throw new Error("expected child zone in middle 50%");
+  }
+  if (resolveTreeDropZone(top, height, top + 38) !== "after") {
+    throw new Error("expected after zone in bottom 25%");
+  }
+}
+
 if (import.meta.main) {
   reorderFlatSortOrderSelfCheck();
   filterTreeRowsPreservingAncestorsSelfCheck();
+  resolveTreeDropZoneSelfCheck();
 }

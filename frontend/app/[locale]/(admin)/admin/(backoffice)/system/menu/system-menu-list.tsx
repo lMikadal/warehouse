@@ -4,7 +4,7 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ComponentProps, useMemo, useState } from "react";
+import { type ComponentProps, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
@@ -41,6 +41,8 @@ import {
   adminMenuLabel,
   appendAdminMenuRow,
   createInitialAdminMenuRows,
+  isInvalidMenuParent,
+  moveAdminMenuRowByTreeDrop,
   updateAdminMenuRow,
   type AdminMenuRow,
 } from "@/lib/admin-menu-mock";
@@ -48,11 +50,10 @@ import {
   applyHeaderSort,
   defaultSortRows,
   filterTreeRowsPreservingAncestors,
-  isTreeDragIntoOwnSubtree,
-  reorderFlatSortOrder,
-  reorderIdsFromSortableEvent,
-  resolvePageDragIndices,
+  isTreePathDescendant,
+  resolveTreeDropZone,
   treeDepth,
+  type TreeDropZone,
 } from "@/lib/crud-list-rows";
 import type { PageSizeOption } from "@/lib/crud-pagination";
 import type { DisplayLocale } from "@/lib/format-datetime";
@@ -62,6 +63,116 @@ import { cn } from "@/lib/utils";
 const COLUMN_COUNT = 7;
 
 type MenuRowView = AdminMenuRow & { label: string };
+
+type MenuDragIntent = {
+  dragId: number;
+  targetId: number;
+  zone: TreeDropZone;
+};
+
+type DndOperation = {
+  source?: { id?: unknown };
+  target?: { id?: unknown } | null;
+  position?: { y?: number; x?: number; current?: { y?: number; x?: number } };
+  activatorEvent?: Event | null;
+};
+
+function pointerClientCoords(
+  operation: DndOperation | undefined
+): { x: number; y: number } | null {
+  const current = operation?.position?.current;
+  if (
+    current &&
+    Number.isFinite(current.x) &&
+    Number.isFinite(current.y)
+  ) {
+    return { x: current.x, y: current.y };
+  }
+  if (operation?.activatorEvent instanceof PointerEvent) {
+    return {
+      x: operation.activatorEvent.clientX,
+      y: operation.activatorEvent.clientY,
+    };
+  }
+  return null;
+}
+
+/** When sortable target stays on the dragged row, hit-test the row under the pointer. */
+function resolveTargetIdFromPointer(
+  operation: DndOperation | undefined,
+  dragId: number
+): number | null {
+  const coords = pointerClientCoords(operation);
+  if (!coords) return null;
+  const stack = document.elementsFromPoint(coords.x, coords.y);
+  for (const el of stack) {
+    const row = el.closest("[data-menu-row-id]");
+    if (!(row instanceof HTMLElement)) continue;
+    const id = Number(row.getAttribute("data-menu-row-id"));
+    if (Number.isFinite(id) && id !== dragId) return id;
+  }
+  return null;
+}
+
+function menuRowDropTargetClass(
+  rowId: number,
+  dropIntent: MenuDragIntent | null
+): string {
+  if (!dropIntent || dropIntent.targetId !== rowId) return "";
+  switch (dropIntent.zone) {
+    case "before":
+      return "shadow-[inset_0_2px_0_0_var(--color-primary)]";
+    case "after":
+      return "shadow-[inset_0_-2px_0_0_var(--color-primary)]";
+    case "child":
+      return cn(
+        "bg-[color-mix(in_srgb,var(--color-primary)_12%,var(--color-background))]",
+        "shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--color-primary)_45%,transparent)]"
+      );
+    default:
+      return "";
+  }
+}
+
+function resolveMenuDragIntent(
+  operation: DndOperation | undefined,
+  fullSorted: MenuRowView[]
+): MenuDragIntent | null {
+  const source = operation?.source;
+  const target = operation?.target;
+  if (source?.id == null) return null;
+  const dragId = Number(source.id);
+  if (!Number.isFinite(dragId)) return null;
+
+  let targetId =
+    target?.id != null ? Number(target.id) : Number.NaN;
+  if (!Number.isFinite(targetId) || targetId === dragId) {
+    const fromPointer = resolveTargetIdFromPointer(operation, dragId);
+    if (fromPointer != null) targetId = fromPointer;
+  }
+  if (!Number.isFinite(targetId) || dragId === targetId) return null;
+
+  const dragRow = fullSorted.find((r) => r.id === dragId);
+  const targetRow = fullSorted.find((r) => r.id === targetId);
+  if (!dragRow || !targetRow) return null;
+
+  if (
+    dragRow.tree_path &&
+    targetRow.tree_path &&
+    isTreePathDescendant(dragRow.tree_path, targetRow.tree_path)
+  ) {
+    return null;
+  }
+
+  const el = document.querySelector(`[data-menu-row-id="${targetId}"]`);
+  if (!(el instanceof HTMLElement)) return null;
+  const rect = el.getBoundingClientRect();
+  const pointerY = pointerClientCoords(operation)?.y;
+  if (pointerY == null || !Number.isFinite(pointerY)) return null;
+
+  const zone = resolveTreeDropZone(rect.top, rect.height, pointerY);
+  return { dragId, targetId, zone };
+}
 
 type ColSortKey = "name" | "module" | "path" | "status" | "updatedAt";
 
@@ -120,14 +231,38 @@ type MenuTableRowProps = {
   index: number;
   locale: DisplayLocale;
   dragEnabled: boolean;
+  dropIntent: MenuDragIntent | null;
   onToggleActive: (id: number, active: boolean) => void;
   onAction: (id: number, action: TableIconActionKey) => void;
 };
+
+function MenuDropHint({
+  row,
+  dropIntent,
+}: {
+  row: MenuRowView;
+  dropIntent: MenuDragIntent | null;
+}) {
+  const tCrud = useTranslations("crud");
+  if (dropIntent == null || dropIntent.targetId !== row.id) return null;
+  const isChild = dropIntent.zone === "child";
+  return (
+    <span
+      className="mb-1 block w-fit max-w-full truncate rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground"
+      aria-live="polite"
+    >
+      {isChild
+        ? tCrud("reorder.dropChild", { label: row.label })
+        : tCrud("reorder.dropSibling", { label: row.label })}
+    </span>
+  );
+}
 
 function SortableMenuTableRow({
   row,
   index,
   locale,
+  dropIntent,
   onToggleActive,
   onAction,
 }: Omit<MenuTableRowProps, "dragEnabled">) {
@@ -140,12 +275,17 @@ function SortableMenuTableRow({
     <TableRow
       ref={ref}
       data-slot="table-row"
-      className={cn(isDragging && "opacity-50")}
+      data-menu-row-id={row.id}
+      className={cn(
+        isDragging && "opacity-50",
+        menuRowDropTargetClass(row.id, dropIntent)
+      )}
     >
       <MenuTableCells
         row={row}
         locale={locale}
         dragEnabled
+        dropIntent={dropIntent}
         handleRef={handleRef}
         onToggleActive={onToggleActive}
         onAction={onAction}
@@ -178,6 +318,7 @@ function MenuTableCells({
   row,
   locale,
   dragEnabled,
+  dropIntent = null,
   handleRef,
   onToggleActive,
   onAction,
@@ -185,6 +326,7 @@ function MenuTableCells({
   row: MenuRowView;
   locale: DisplayLocale;
   dragEnabled: boolean;
+  dropIntent?: MenuDragIntent | null;
   handleRef?: (element: Element | null) => void;
   onToggleActive: (id: number, active: boolean) => void;
   onAction: (id: number, action: TableIconActionKey) => void;
@@ -212,6 +354,7 @@ function MenuTableCells({
         </ButtonIcon>
       </TableCell>
       <TableCell>
+        <MenuDropHint row={row} dropIntent={dropIntent} />
         <span
           className="block"
           style={depth > 0 ? { paddingLeft: `${depth * 1.25}rem` } : undefined}
@@ -259,6 +402,8 @@ export function SystemMenuList() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [menuSheet, setMenuSheet] = useState<SystemMenuSheetState | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
+  const [dragIntent, setDragIntent] = useState<MenuDragIntent | null>(null);
+  const dragIntentRef = useRef<MenuDragIntent | null>(null);
 
   const searchActive = query.trim() !== "";
   const listFiltered = searchActive || statusFilter !== "";
@@ -344,6 +489,17 @@ export function SystemMenuList() {
     toast.success(tCrud("toast.deleted"));
   };
 
+  const syncDragIntent = (operation: DndOperation | undefined) => {
+    if (!dragEnabled) {
+      dragIntentRef.current = null;
+      setDragIntent(null);
+      return;
+    }
+    const next = resolveMenuDragIntent(operation, fullSorted);
+    dragIntentRef.current = next;
+    setDragIntent(next);
+  };
+
   const handleDragEnd: ComponentProps<
     typeof DragDropProvider
   >["onDragEnd"] = (event) => {
@@ -354,36 +510,51 @@ export function SystemMenuList() {
       });
     };
 
+    const intent =
+      dragIntentRef.current ??
+      resolveMenuDragIntent(
+        event.operation as DndOperation | undefined,
+        fullSorted
+      );
+    dragIntentRef.current = null;
+    setDragIntent(null);
+
     if (event.canceled || !dragEnabled) return;
-    const before = pageRows.map((r) => r.id);
-    const after = reorderIdsFromSortableEvent(before, event);
-    const indices = resolvePageDragIndices(before, after, event);
-    if (!indices) return;
-    const absFrom = pageStart + indices.from;
-    const absTo = pageStart + indices.to;
-    const srcRow = fullSorted[absFrom];
-    const dstRow = fullSorted[absTo];
-    if (srcRow == null || dstRow == null) {
+    if (intent == null) {
       scheduleRejectDrag();
       return;
     }
-    if (isTreeDragIntoOwnSubtree(fullSorted, srcRow, absTo)) {
-      scheduleRejectDrag(tCrud("reorder.intoSubtree"));
-      return;
-    }
-    if (srcRow.parent_id !== dstRow.parent_id) {
-      scheduleRejectDrag(tCrud("reorder.siblingOnly"));
-      return;
-    }
-    const next = reorderFlatSortOrder(
+
+    const next = moveAdminMenuRowByTreeDrop(
       rows,
-      fullSorted,
-      absFrom,
-      absTo,
-      (a, b) => a.parent_id === b.parent_id
+      intent.dragId,
+      intent.targetId,
+      intent.zone
     );
     if (next == null) {
-      scheduleRejectDrag(tCrud("reorder.siblingOnly"));
+      const dragRow = rows.find((r) => r.id === intent.dragId);
+      const targetRow = rows.find((r) => r.id === intent.targetId);
+      let errorKey: string | undefined;
+      if (
+        dragRow?.tree_path &&
+        targetRow?.tree_path &&
+        isTreePathDescendant(dragRow.tree_path, targetRow.tree_path)
+      ) {
+        errorKey = "reorder.intoSubtree";
+      } else if (
+        intent.zone === "child" &&
+        isInvalidMenuParent(rows, intent.dragId, intent.targetId)
+      ) {
+        errorKey = "reorder.intoSubtree";
+      } else if (
+        intent.zone !== "child" &&
+        targetRow != null &&
+        targetRow.parent_id != null &&
+        isInvalidMenuParent(rows, intent.dragId, targetRow.parent_id)
+      ) {
+        errorKey = "reorder.intoSubtree";
+      }
+      scheduleRejectDrag(errorKey ? tCrud(errorKey) : undefined);
       return;
     }
     setRows(next);
@@ -429,7 +600,11 @@ export function SystemMenuList() {
       </div>
 
       <div className="surface-table-wrap">
-        <DragDropProvider onDragEnd={handleDragEnd}>
+        <DragDropProvider
+          onDragMove={({ operation }) => syncDragIntent(operation as DndOperation)}
+          onDragOver={({ operation }) => syncDragIntent(operation as DndOperation)}
+          onDragEnd={handleDragEnd}
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -530,6 +705,7 @@ export function SystemMenuList() {
                       row={row}
                       index={index}
                       locale={locale}
+                      dropIntent={dragIntent}
                       onToggleActive={handleToggleActive}
                       onAction={handleRowAction}
                     />

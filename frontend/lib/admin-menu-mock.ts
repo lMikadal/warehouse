@@ -1,4 +1,8 @@
-import { defaultSortRows, treeDepth } from "@/lib/crud-list-rows";
+import {
+  defaultSortRows,
+  treeDepth,
+  type TreeDropZone,
+} from "@/lib/crud-list-rows";
 
 const SEED_TS = "2026-01-01T00:00:00Z";
 
@@ -628,6 +632,125 @@ export function updateAdminMenuRow(
     };
   });
   return recomputeAllTreePaths(next);
+}
+
+function siblingsUnderParent(
+  rows: AdminMenuRow[],
+  parentId: number | null,
+  excludeId?: number
+): AdminMenuRow[] {
+  return rows
+    .filter(
+      (r) =>
+        (r.parent_id ?? null) === parentId &&
+        (excludeId == null || r.id !== excludeId)
+    )
+    .sort((a, b) => {
+      const so = a.sort_order - b.sort_order;
+      if (so !== 0) return so;
+      return a.id - b.id;
+    });
+}
+
+function renormalizeSiblingSortOrders(
+  rows: AdminMenuRow[],
+  parentId: number | null,
+  excludeId: number | undefined,
+  orderById: Map<number, number>
+): void {
+  siblingsUnderParent(rows, parentId, excludeId).forEach((r, i) => {
+    orderById.set(r.id, (i + 1) * 10);
+  });
+}
+
+/** Drag-drop reparent or sibling insert (system menu tree list). */
+export function moveAdminMenuRowByTreeDrop(
+  rows: AdminMenuRow[],
+  dragId: number,
+  targetId: number,
+  zone: TreeDropZone
+): AdminMenuRow[] | null {
+  const dragRow = rows.find((r) => r.id === dragId);
+  const targetRow = rows.find((r) => r.id === targetId);
+  if (!dragRow || !targetRow || dragId === targetId) return null;
+
+  const oldParentId = dragRow.parent_id ?? null;
+  let newParentId: number | null;
+  let insertIndex: number;
+
+  if (zone === "child") {
+    if (isInvalidMenuParent(rows, dragId, targetId)) return null;
+    newParentId = targetId;
+    insertIndex = siblingsUnderParent(rows, newParentId, dragId).length;
+  } else {
+    newParentId = targetRow.parent_id ?? null;
+    if (newParentId != null && isInvalidMenuParent(rows, dragId, newParentId)) {
+      return null;
+    }
+    const destSiblings = siblingsUnderParent(rows, newParentId, dragId);
+    const targetIdx = destSiblings.findIndex((r) => r.id === targetId);
+    if (targetIdx < 0) return null;
+    insertIndex = zone === "before" ? targetIdx : targetIdx + 1;
+  }
+
+  const destSiblings = siblingsUnderParent(rows, newParentId, dragId);
+  const reordered = destSiblings.slice();
+  reordered.splice(insertIndex, 0, dragRow);
+
+  const now = new Date().toISOString();
+  const orderById = new Map<number, number>();
+  reordered.forEach((r, i) => orderById.set(r.id, (i + 1) * 10));
+
+  if (oldParentId !== newParentId) {
+    renormalizeSiblingSortOrders(rows, oldParentId, dragId, orderById);
+  }
+
+  let changed = false;
+  const next = rows.map((r) => {
+    if (r.id === dragId) {
+      const sort_order = orderById.get(dragId) ?? r.sort_order;
+      if (
+        (r.parent_id ?? null) !== newParentId ||
+        r.sort_order !== sort_order
+      ) {
+        changed = true;
+        return {
+          ...r,
+          parent_id: newParentId,
+          sort_order,
+          updated_at: now,
+        };
+      }
+      return r;
+    }
+    const sort_order = orderById.get(r.id);
+    if (sort_order != null && r.sort_order !== sort_order) {
+      changed = true;
+      return { ...r, sort_order, updated_at: now };
+    }
+    return r;
+  });
+
+  if (!changed) return null;
+  return recomputeAllTreePaths(next);
+}
+
+/** ponytail: run with `bun lib/admin-menu-mock.ts` from frontend/ */
+function moveAdminMenuRowByTreeDropSelfCheck(): void {
+  const rows = createInitialAdminMenuRows();
+  const menu2 = rows.find((r) => r.id === 2);
+  const menu12 = rows.find((r) => r.id === 12);
+  if (!menu2 || !menu12) throw new Error("seed rows missing");
+  const childNext = moveAdminMenuRowByTreeDrop(rows, 12, 2, "child");
+  if (!childNext) throw new Error("expected child reparent");
+  const moved = childNext.find((r) => r.id === 12);
+  if (moved?.parent_id !== 2) {
+    throw new Error("menu 12 should be child of menu 2");
+  }
+}
+
+if (import.meta.main) {
+  moveAdminMenuRowByTreeDropSelfCheck();
 }
 
 /** Frontend routes wired in App Router (module → path without locale prefix). */
