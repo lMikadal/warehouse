@@ -25,10 +25,7 @@ import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-conf
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
-import {
-  StatusFilterGroup,
-  type StatusFilterValue,
-} from "@/components/molecules/status-filter-group";
+import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
   TableIconActions,
@@ -46,7 +43,7 @@ import {
   TableSortHead,
   type TableSortDirection,
 } from "@/components/ui/table";
-import type { PageSizeOption } from "@/lib/crud-pagination";
+import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -212,19 +209,43 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   const tCol = useTranslations("col");
   const tComboboxEmpty = useTranslations("form.combobox");
 
-  const [rows, setRows] = useState<SystemGeoRow[]>([]);
-  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
-  const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("");
   const [filterCountry, setFilterCountry] = useState("");
   const [filterProvince, setFilterProvince] = useState("");
   const [filterDistrict, setFilterDistrict] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSizeOption>(10);
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
+  const filtersActive =
+    filterCountry !== "" || filterProvince !== "" || filterDistrict !== "";
+
+  const {
+    query,
+    statusFilter,
+    setPage,
+    pageSize,
+    sortKey,
+    sortDir,
+    listFiltered,
+    dragEnabled,
+    baseListParams,
+    safePage,
+    totalPages,
+    handleSortChange,
+    onSearchChange,
+    onStatusFilterChange,
+    onPageSizeChange,
+    clearSortAndPage,
+  } = useCrudListQuery({ extraFiltered: filtersActive });
+
+  const listFetchParams = useMemo((): SystemGeoListParams => {
+    return {
+      ...baseListParams,
+      systemCountryId: filterCountry ? Number(filterCountry) : undefined,
+      systemProvinceId: filterProvince ? Number(filterProvince) : undefined,
+      systemDistrictId: filterDistrict ? Number(filterDistrict) : undefined,
+    };
+  }, [baseListParams, filterCountry, filterProvince, filterDistrict]);
+
+  const [rows, setRows] = useState<SystemGeoRow[]>([]);
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
+  const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState<SystemGeoSheetState | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
@@ -232,49 +253,6 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   const [provinceOptions, setProvinceOptions] = useState<ParentOption[]>([]);
   const [districtOptions, setDistrictOptions] = useState<ParentOption[]>([]);
   const [parentOptions, setParentOptions] = useState<ParentOption[]>([]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  const filtersActive =
-    filterCountry !== "" || filterProvince !== "" || filterDistrict !== "";
-
-  const listFiltered =
-    debouncedQuery.trim() !== "" || statusFilter !== "" || filtersActive;
-
-  const listFetchParams = useMemo((): SystemGeoListParams => {
-    const isActive =
-      statusFilter === "active"
-        ? true
-        : statusFilter === "inactive"
-          ? false
-          : undefined;
-    const headerSortActive = sortKey != null && sortDir != null;
-    return {
-      page,
-      limit: pageSize,
-      search: debouncedQuery.trim() || undefined,
-      isActive,
-      systemCountryId: filterCountry ? Number(filterCountry) : undefined,
-      systemProvinceId: filterProvince ? Number(filterProvince) : undefined,
-      systemDistrictId: filterDistrict ? Number(filterDistrict) : undefined,
-      sort: !listFiltered && headerSortActive ? sortKey : undefined,
-      order: !listFiltered && headerSortActive ? sortDir ?? undefined : undefined,
-    };
-  }, [
-    page,
-    pageSize,
-    debouncedQuery,
-    statusFilter,
-    filterCountry,
-    filterProvince,
-    filterDistrict,
-    sortKey,
-    sortDir,
-    listFiltered,
-  ]);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -296,7 +274,9 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   }, [config.resource, locale, listFetchParams, tToast]);
 
   useEffect(() => {
-    void loadList();
+    queueMicrotask(() => {
+      void loadList();
+    });
   }, [loadList]);
 
   useEffect(() => {
@@ -349,21 +329,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   }, [config.createParentKey, locale]);
 
   const total = listMeta.total;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const paginationMeta = { total, totalPages };
-  const headerSortActive = sortKey != null && sortDir != null;
-  const dragEnabled = !listFiltered && !headerSortActive;
-
-  const handleSortChange = (
-    nextKey: string | null,
-    nextDir: TableSortDirection | null
-  ) => {
-    if (listFiltered) return;
-    setSortKey(nextKey);
-    setSortDir(nextDir);
-    setPage(1);
-  };
+  const paginationMeta = { total, totalPages: totalPages(total) };
 
   const handleToggleActive = (id: number, active: boolean) => {
     const prev = rows.find((r) => r.id === id);
@@ -541,23 +507,10 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <CrudSearchField
-          value={query}
-          onChange={(value) => {
-            setQuery(value);
-            setSortKey(null);
-            setSortDir(null);
-            setPage(1);
-          }}
-        />
+        <CrudSearchField value={query} onChange={onSearchChange} />
         <StatusFilterGroup
           value={statusFilter}
-          onChange={(value) => {
-            setStatusFilter(value);
-            setSortKey(null);
-            setSortDir(null);
-            setPage(1);
-          }}
+          onChange={onStatusFilterChange}
         />
         {config.filterLevels?.includes("country") ? (
           <GeoColumnFilterCombobox
@@ -571,7 +524,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
               setFilterCountry(value);
               setFilterProvince("");
               setFilterDistrict("");
-              setPage(1);
+              clearSortAndPage();
             }}
           />
         ) : null}
@@ -587,7 +540,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
             onChange={(value) => {
               setFilterProvince(value);
               setFilterDistrict("");
-              setPage(1);
+              clearSortAndPage();
             }}
           />
         ) : null}
@@ -602,7 +555,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
             disabled={!filterProvince}
             onChange={(value) => {
               setFilterDistrict(value);
-              setPage(1);
+              clearSortAndPage();
             }}
           />
         ) : null}
@@ -756,14 +709,11 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       </div>
 
       <CrudPaginationBar
-        page={safePage}
+        page={safePage(total)}
         pageSize={pageSize}
         meta={paginationMeta}
         onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={onPageSizeChange}
       />
 
       <SystemGeoEditSheet

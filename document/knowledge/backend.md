@@ -165,7 +165,7 @@ Migration `20260315100000_website_language_is_active.sql` adds `is_active` (appl
 
 ## System address geo (country → sub-district)
 
-Tables: `system_country`, `system_province`, `system_district`, `system_sub_district` + `*_language` companions (migration `20260316200000_system_address_geo.sql`). List APIs join `Accept-Language` for display `name`; create/patch accept `names: { th, en }`. Reorder is sibling-scoped by typed parent FK (`system_country_id`, `system_province_id`, `system_district_id`).
+Tables: `system_country`, `system_province`, `system_district`, `system_sub_district` + `*_language` companions (migration `20260316200000_system_address_geo.sql`). List APIs join `Accept-Language` for display `name`; create/patch accept `names: { th, en }`. Reorder is sibling-scoped by typed parent FK (`system_country_id`, `system_province_id`, `system_district_id`). **List SQL** (WHERE, default/order-by, parent label subqueries): [`address_geo_list_sql.go`](../../backend/internal/module/system/address_geo_list_sql.go); CRUD/reorder stay in [`address_geo_repository.go`](../../backend/internal/module/system/address_geo_repository.go). Integration list tests: `go test -tags=integration ./internal/module/system/…` with `DATABASE_URL` set.
 
 | Method | Path | Permission prefix |
 |--------|------|-------------------|

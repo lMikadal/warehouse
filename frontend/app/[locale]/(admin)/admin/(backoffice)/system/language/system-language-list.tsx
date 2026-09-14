@@ -4,23 +4,14 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  type ComponentProps,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { type ComponentProps, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
-import {
-  StatusFilterGroup,
-  type StatusFilterValue,
-} from "@/components/molecules/status-filter-group";
+import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
   TableIconActions,
@@ -39,7 +30,7 @@ import {
   TableSortHead,
   type TableSortDirection,
 } from "@/components/ui/table";
-import type { PageSizeOption } from "@/lib/crud-pagination";
+import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -50,7 +41,6 @@ import {
   patchSystemLanguage,
   reorderSystemLanguages,
   SystemLanguageApiError,
-  type SystemLanguageListParams,
   type SystemLanguageRow,
 } from "@/lib/system-language-api";
 import { cn } from "@/lib/utils";
@@ -248,53 +238,30 @@ export function SystemLanguageList() {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
 
-  const [rows, setRows] = useState<SystemLanguageRow[]>([]);
-  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
-  const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSizeOption>(10);
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
-  const [sheet, setSheet] = useState<SystemLanguageSheetState | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [sortableEpoch, setSortableEpoch] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  const listFiltered =
-    debouncedQuery.trim() !== "" || statusFilter !== "";
-
-  const listFetchParams = useMemo((): SystemLanguageListParams => {
-    const isActive =
-      statusFilter === "active"
-        ? true
-        : statusFilter === "inactive"
-          ? false
-          : undefined;
-    const headerSortActive = sortKey != null && sortDir != null;
-    return {
-      page,
-      limit: pageSize,
-      search: debouncedQuery.trim() || undefined,
-      isActive,
-      sort: !listFiltered && headerSortActive ? sortKey : undefined,
-      order: !listFiltered && headerSortActive ? sortDir ?? undefined : undefined,
-    };
-  }, [
-    page,
-    pageSize,
-    debouncedQuery,
+  const {
+    query,
     statusFilter,
+    setPage,
+    pageSize,
     sortKey,
     sortDir,
     listFiltered,
-  ]);
+    dragEnabled,
+    baseListParams: listFetchParams,
+    safePage,
+    totalPages,
+    handleSortChange,
+    onSearchChange,
+    onStatusFilterChange,
+    onPageSizeChange,
+  } = useCrudListQuery();
+
+  const [rows, setRows] = useState<SystemLanguageRow[]>([]);
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
+  const [loading, setLoading] = useState(true);
+  const [sheet, setSheet] = useState<SystemLanguageSheetState | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [sortableEpoch, setSortableEpoch] = useState(0);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -312,24 +279,12 @@ export function SystemLanguageList() {
   }, [locale, listFetchParams, tToast]);
 
   useEffect(() => {
-    void loadList();
+    queueMicrotask(() => {
+      void loadList();
+    });
   }, [loadList]);
 
   const total = listMeta.total;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const headerSortActive = sortKey != null && sortDir != null;
-  const dragEnabled = !listFiltered && !headerSortActive;
-
-  const handleSortChange = (
-    nextKey: string | null,
-    nextDir: TableSortDirection | null
-  ) => {
-    if (listFiltered) return;
-    setSortKey(nextKey);
-    setSortDir(nextDir);
-    setPage(1);
-  };
 
   const patchRowField = async (
     id: number,
@@ -490,23 +445,10 @@ export function SystemLanguageList() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <CrudSearchField
-          value={query}
-          onChange={(value) => {
-            setQuery(value);
-            setSortKey(null);
-            setSortDir(null);
-            setPage(1);
-          }}
-        />
+        <CrudSearchField value={query} onChange={onSearchChange} />
         <StatusFilterGroup
           value={statusFilter}
-          onChange={(value) => {
-            setStatusFilter(value);
-            setSortKey(null);
-            setSortDir(null);
-            setPage(1);
-          }}
+          onChange={onStatusFilterChange}
         />
       </div>
 
@@ -648,14 +590,11 @@ export function SystemLanguageList() {
       </div>
 
       <CrudPaginationBar
-        page={safePage}
+        page={safePage(total)}
         pageSize={pageSize}
-        meta={{ total, totalPages }}
+        meta={{ total, totalPages: totalPages(total) }}
         onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={onPageSizeChange}
       />
 
       <SystemLanguageEditSheet

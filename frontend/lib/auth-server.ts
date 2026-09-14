@@ -88,6 +88,7 @@ export async function applyTokenPairToCookies(pair: AuthTokenPair) {
   }
 }
 
+/** SSR refresh flow: backoffice layout → GET /api/v1/auth/refresh-redirect → Go POST /v1/auth/refresh (see document/knowledge/frontend.md Session). */
 async function refreshAccessTokenFromCookiesOnce(): Promise<string | null> {
   const jar = await cookies();
   const refresh = jar.get(REFRESH_TOKEN_COOKIE)?.value;

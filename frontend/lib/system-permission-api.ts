@@ -1,8 +1,13 @@
-import { authFetch } from "@/lib/auth-client";
+import {
+  BffApiError,
+  createBffCrudClient,
+  type AppendListQuery,
+  type BffStandardListParams,
+} from "@/lib/bff-crud-client";
 
 /** Under `/api/v1/auth/` so nginx dev gateway always hits Next BFF (see infrastructure.md). */
 const BFF_PERMISSIONS_BASE = "/api/v1/auth/proxy/system/permissions";
-const BFF_PERMISSIONS_FILTERS = `${BFF_PERMISSIONS_BASE}/filters`;
+const permissionClient = createBffCrudClient(BFF_PERMISSIONS_BASE);
 
 const PERMISSION_ACTION_KEYS = [
   "view",
@@ -42,21 +47,10 @@ export type SystemPermissionRow = {
   is_active: boolean;
 };
 
-type ListResponse = {
-  items: SystemPermissionApiItem[];
-  meta: { total: number; page: number; limit: number };
-};
-
-export type SystemPermissionListParams = {
-  page: number;
-  limit: number;
-  search?: string;
+export type SystemPermissionListParams = BffStandardListParams & {
   module?: string;
   type?: string;
   action?: string;
-  isActive?: boolean;
-  sort?: string | null;
-  order?: "asc" | "desc" | null;
 };
 
 export type SystemPermissionListResult = {
@@ -64,36 +58,7 @@ export type SystemPermissionListResult = {
   meta: { total: number; page: number; limit: number };
 };
 
-export class SystemPermissionApiError extends Error {
-  code?: string;
-  status: number;
-
-  constructor(message: string, status: number, code?: string) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
-
-async function parseError(res: Response): Promise<SystemPermissionApiError> {
-  try {
-    const body = (await res.json()) as { code?: string; message?: string };
-    return new SystemPermissionApiError(
-      body.message ?? res.statusText,
-      res.status,
-      body.code
-    );
-  } catch {
-    return new SystemPermissionApiError(res.statusText, res.status);
-  }
-}
-
-function bffHeaders(locale: string): HeadersInit {
-  return {
-    Accept: "application/json",
-    "Accept-Language": locale,
-  };
-}
+export { BffApiError as SystemPermissionApiError };
 
 export function mapApiPermissionToRow(
   item: SystemPermissionApiItem
@@ -108,27 +73,17 @@ export function mapApiPermissionToRow(
   };
 }
 
-function buildListQuery(params: SystemPermissionListParams): URLSearchParams {
-  const qs = new URLSearchParams({
-    page: String(params.page),
-    limit: String(params.limit),
-  });
-  const search = params.search?.trim();
-  if (search) qs.set("search", search);
-  const mod = params.module?.trim();
-  if (mod) qs.set("module", mod);
-  const type = params.type?.trim();
-  if (type) qs.set("type", type);
-  const action = params.action?.trim();
-  if (action) qs.set("action", action);
-  if (params.isActive !== undefined) {
-    qs.set("is_active", params.isActive ? "true" : "false");
-  }
-  if (params.sort && params.order) {
-    qs.set("sort", params.sort);
-    qs.set("order", params.order);
-  }
-  return qs;
+function permissionListAppendQuery(
+  params: SystemPermissionListParams
+): AppendListQuery {
+  return (qs) => {
+    const mod = params.module?.trim();
+    if (mod) qs.set("module", mod);
+    const type = params.type?.trim();
+    if (type) qs.set("type", type);
+    const action = params.action?.trim();
+    if (action) qs.set("action", action);
+  };
 }
 
 function isPermissionActionKey(action: string): action is PermissionActionKey {
@@ -151,11 +106,10 @@ export async function fetchSystemPermissionFilters(
   const mod = module?.trim();
   if (mod) qs.set("module", mod);
   const suffix = qs.toString() ? `?${qs}` : "";
-  const res = await authFetch(`${BFF_PERMISSIONS_FILTERS}${suffix}`, {
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
-  const body = (await res.json()) as SystemPermissionFilterFacets;
+  const body = await permissionClient.getJson<SystemPermissionFilterFacets>(
+    locale,
+    `/filters${suffix}`
+  );
   return {
     modules: body.modules ?? [],
     types: body.types ?? [],
@@ -167,15 +121,14 @@ export async function fetchSystemPermissions(
   locale: string,
   params: SystemPermissionListParams
 ): Promise<SystemPermissionListResult> {
-  const url = `${BFF_PERMISSIONS_BASE}?${buildListQuery(params)}`;
-  const res = await authFetch(url, {
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
-  const body = (await res.json()) as ListResponse;
+  const { items, meta } = await permissionClient.list<SystemPermissionApiItem>(
+    locale,
+    params,
+    permissionListAppendQuery(params)
+  );
   return {
-    rows: (body.items ?? []).map(mapApiPermissionToRow),
-    meta: body.meta ?? { total: 0, page: params.page, limit: params.limit },
+    rows: items.map(mapApiPermissionToRow),
+    meta,
   };
 }
 
@@ -184,12 +137,10 @@ export async function patchSystemPermission(
   body: { is_active: boolean },
   locale: string
 ): Promise<SystemPermissionRow> {
-  const res = await authFetch(`${BFF_PERMISSIONS_BASE}/${id}`, {
-    method: "PATCH",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await parseError(res);
-  const item = (await res.json()) as SystemPermissionApiItem;
+  const item = await permissionClient.patchJson<SystemPermissionApiItem>(
+    locale,
+    id,
+    body
+  );
   return mapApiPermissionToRow(item);
 }

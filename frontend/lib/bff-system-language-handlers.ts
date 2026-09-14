@@ -1,86 +1,38 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 
-import { proxyAuthedBackendJson } from "@/lib/bff-backend";
+import { createSystemCrudHandlers } from "@/lib/bff-system-crud";
 
-export async function handleSystemLanguagesListGet(
+const languageCrud = createSystemCrudHandlers("/v1/system/languages");
+
+export const handleSystemLanguagesListGet: (
   request: Request
-): Promise<NextResponse> {
-  const url = new URL(request.url);
-  const qs = url.searchParams.toString();
-  const path = qs ? `/v1/system/languages?${qs}` : "/v1/system/languages";
-  return proxyAuthedBackendJson(request, path);
-}
+) => Promise<NextResponse> = languageCrud.listGet;
 
-export async function handleSystemLanguageCreate(
+export const handleSystemLanguageCreate: (
   request: Request
-): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
-
-  return proxyAuthedBackendJson(request, "/v1/system/languages", {
-    method: "POST",
-    body,
-  });
-}
+) => Promise<NextResponse> = languageCrud.create;
 
 export async function handleSystemLanguageGet(
   request: Request,
   id: string
 ): Promise<NextResponse> {
-  return proxyAuthedBackendJson(request, `/v1/system/languages/${id}`);
+  return languageCrud.getById(request, id);
 }
 
 export async function handleSystemLanguagePatch(
   request: Request,
   id: string
 ): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
-
-  return proxyAuthedBackendJson(request, `/v1/system/languages/${id}`, {
-    method: "PATCH",
-    body,
-  });
+  return languageCrud.patchById(request, id);
 }
 
 export async function handleSystemLanguageDelete(
   request: Request,
   id: string
 ): Promise<NextResponse> {
-  return proxyAuthedBackendJson(request, `/v1/system/languages/${id}`, {
-    method: "DELETE",
-  });
+  return languageCrud.deleteById(request, id);
 }
 
-export async function handleSystemLanguageReorder(
+export const handleSystemLanguageReorder: (
   request: Request
-): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
-
-  return proxyAuthedBackendJson(request, "/v1/system/languages/reorder", {
-    method: "PATCH",
-    body,
-  });
-}
+) => Promise<NextResponse> = languageCrud.reorder;

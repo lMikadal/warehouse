@@ -1,7 +1,12 @@
-import { authFetch } from "@/lib/auth-client";
+import {
+  BffApiError,
+  createBffCrudClient,
+  type BffStandardListParams,
+} from "@/lib/bff-crud-client";
 
 /** Under `/api/v1/auth/` so nginx dev gateway always hits Next BFF (see infrastructure.md). */
 const BFF_LANGUAGES_BASE = "/api/v1/auth/proxy/system/languages";
+const languageClient = createBffCrudClient(BFF_LANGUAGES_BASE);
 
 export type SystemLanguageApiItem = {
   id: number;
@@ -23,55 +28,14 @@ export type SystemLanguageRow = {
   updated_at: string;
 };
 
-type ListResponse = {
-  items: SystemLanguageApiItem[];
-  meta: { total: number; page: number; limit: number };
-};
-
-export type SystemLanguageListParams = {
-  page: number;
-  limit: number;
-  search?: string;
-  isActive?: boolean;
-  sort?: string | null;
-  order?: "asc" | "desc" | null;
-};
+export type SystemLanguageListParams = BffStandardListParams;
 
 export type SystemLanguageListResult = {
   rows: SystemLanguageRow[];
   meta: { total: number; page: number; limit: number };
 };
 
-export class SystemLanguageApiError extends Error {
-  code?: string;
-  status: number;
-
-  constructor(message: string, status: number, code?: string) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
-
-async function parseError(res: Response): Promise<SystemLanguageApiError> {
-  try {
-    const body = (await res.json()) as { code?: string; message?: string };
-    return new SystemLanguageApiError(
-      body.message ?? res.statusText,
-      res.status,
-      body.code
-    );
-  } catch {
-    return new SystemLanguageApiError(res.statusText, res.status);
-  }
-}
-
-function bffHeaders(locale: string): HeadersInit {
-  return {
-    Accept: "application/json",
-    "Accept-Language": locale,
-  };
-}
+export { BffApiError as SystemLanguageApiError };
 
 export function mapApiLanguageToRow(
   item: SystemLanguageApiItem
@@ -87,36 +51,17 @@ export function mapApiLanguageToRow(
   };
 }
 
-function buildListQuery(params: SystemLanguageListParams): URLSearchParams {
-  const qs = new URLSearchParams({
-    page: String(params.page),
-    limit: String(params.limit),
-  });
-  const search = params.search?.trim();
-  if (search) qs.set("search", search);
-  if (params.isActive !== undefined) {
-    qs.set("is_active", params.isActive ? "true" : "false");
-  }
-  if (params.sort && params.order) {
-    qs.set("sort", params.sort);
-    qs.set("order", params.order);
-  }
-  return qs;
-}
-
 export async function fetchSystemLanguages(
   locale: string,
   params: SystemLanguageListParams
 ): Promise<SystemLanguageListResult> {
-  const url = `${BFF_LANGUAGES_BASE}?${buildListQuery(params)}`;
-  const res = await authFetch(url, {
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
-  const body = (await res.json()) as ListResponse;
+  const { items, meta } = await languageClient.list<SystemLanguageApiItem>(
+    locale,
+    params
+  );
   return {
-    rows: (body.items ?? []).map(mapApiLanguageToRow),
-    meta: body.meta ?? { total: 0, page: params.page, limit: params.limit },
+    rows: items.map(mapApiLanguageToRow),
+    meta,
   };
 }
 
@@ -138,13 +83,7 @@ export async function createSystemLanguage(
   body: SystemLanguageCreateBody,
   locale: string
 ): Promise<{ id: number }> {
-  const res = await authFetch(BFF_LANGUAGES_BASE, {
-    method: "POST",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await parseError(res);
-  return (await res.json()) as { id: number };
+  return languageClient.create(locale, body);
 }
 
 export async function patchSystemLanguage(
@@ -152,23 +91,14 @@ export async function patchSystemLanguage(
   body: SystemLanguagePatchBody,
   locale: string
 ): Promise<void> {
-  const res = await authFetch(`${BFF_LANGUAGES_BASE}/${id}`, {
-    method: "PATCH",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await parseError(res);
+  return languageClient.patchVoid(locale, id, body);
 }
 
 export async function deleteSystemLanguage(
   id: number,
   locale: string
 ): Promise<void> {
-  const res = await authFetch(`${BFF_LANGUAGES_BASE}/${id}`, {
-    method: "DELETE",
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
+  return languageClient.delete(locale, id);
 }
 
 export async function reorderSystemLanguages(
@@ -176,10 +106,5 @@ export async function reorderSystemLanguages(
   targetId: number,
   locale: string
 ): Promise<void> {
-  const res = await authFetch(`${BFF_LANGUAGES_BASE}/reorder`, {
-    method: "PATCH",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify({ drag_id: dragId, target_id: targetId }),
-  });
-  if (!res.ok) throw await parseError(res);
+  return languageClient.reorder(locale, dragId, targetId);
 }

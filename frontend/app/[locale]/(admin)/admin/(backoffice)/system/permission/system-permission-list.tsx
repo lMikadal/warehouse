@@ -7,10 +7,7 @@ import { toast } from "sonner";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
-import {
-  StatusFilterGroup,
-  type StatusFilterValue,
-} from "@/components/molecules/status-filter-group";
+import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
   Combobox,
@@ -29,7 +26,7 @@ import {
   TableSortHead,
   type TableSortDirection,
 } from "@/components/ui/table";
-import type { PageSizeOption } from "@/lib/crud-pagination";
+import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import {
   fetchSystemPermissionFilters,
   fetchSystemPermissions,
@@ -131,19 +128,42 @@ export function SystemPermissionList() {
   const tAction = useTranslations("action");
   const tComboboxEmpty = useTranslations("form.combobox");
 
-  const [rows, setRows] = useState<SystemPermissionRow[]>([]);
-  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
-  const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("");
   const [moduleFilter, setModuleFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSizeOption>(10);
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
+  const columnFiltersActive =
+    moduleFilter !== "" || typeFilter !== "" || actionFilter !== "";
+
+  const {
+    query,
+    statusFilter,
+    setPage,
+    pageSize,
+    sortKey,
+    sortDir,
+    listFiltered,
+    baseListParams,
+    safePage,
+    totalPages,
+    handleSortChange,
+    onSearchChange,
+    onStatusFilterChange,
+    onPageSizeChange,
+    clearSortAndPage,
+  } = useCrudListQuery({ extraFiltered: columnFiltersActive });
+
+  const listFetchParams = useMemo((): SystemPermissionListParams => {
+    return {
+      ...baseListParams,
+      module: moduleFilter || undefined,
+      type: typeFilter || undefined,
+      action: actionFilter || undefined,
+    };
+  }, [baseListParams, moduleFilter, typeFilter, actionFilter]);
+
+  const [rows, setRows] = useState<SystemPermissionRow[]>([]);
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
+  const [loading, setLoading] = useState(true);
   const [filterFacets, setFilterFacets] =
     useState<SystemPermissionFilterFacets>(EMPTY_FACETS);
 
@@ -171,50 +191,6 @@ export function SystemPermissionList() {
     };
   }, [locale, moduleFilter, tToast]);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  const listFiltered =
-    debouncedQuery.trim() !== "" ||
-    statusFilter !== "" ||
-    moduleFilter !== "" ||
-    typeFilter !== "" ||
-    actionFilter !== "";
-
-  const listFetchParams = useMemo((): SystemPermissionListParams => {
-    const isActive =
-      statusFilter === "active"
-        ? true
-        : statusFilter === "inactive"
-          ? false
-          : undefined;
-    const headerSortActive = sortKey != null && sortDir != null;
-    return {
-      page,
-      limit: pageSize,
-      search: debouncedQuery.trim() || undefined,
-      module: moduleFilter || undefined,
-      type: typeFilter || undefined,
-      action: actionFilter || undefined,
-      isActive,
-      sort: !listFiltered && headerSortActive ? sortKey : undefined,
-      order: !listFiltered && headerSortActive ? sortDir ?? undefined : undefined,
-    };
-  }, [
-    page,
-    pageSize,
-    debouncedQuery,
-    statusFilter,
-    moduleFilter,
-    typeFilter,
-    actionFilter,
-    sortKey,
-    sortDir,
-    listFiltered,
-  ]);
-
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
@@ -239,20 +215,6 @@ export function SystemPermissionList() {
   }, [loadList]);
 
   const total = listMeta.total;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(page, totalPages);
-
-  const handleSortChange = (
-    nextKey: string | null,
-    nextDir: TableSortDirection | null
-  ) => {
-    if (listFiltered) return;
-    setSortKey(nextKey);
-    setSortDir(nextDir);
-    setPage(1);
-  };
-
-  const resetFiltersPage = () => setPage(1);
 
   const moduleFilterOptions = useMemo(
     (): FilterOption[] =>
@@ -300,23 +262,10 @@ export function SystemPermissionList() {
       <CrudPageHeader title={tPage("title")} description={tPage("desc")} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <CrudSearchField
-          value={query}
-          onChange={(value) => {
-            setQuery(value);
-            setSortKey(null);
-            setSortDir(null);
-            resetFiltersPage();
-          }}
-        />
+        <CrudSearchField value={query} onChange={onSearchChange} />
         <StatusFilterGroup
           value={statusFilter}
-          onChange={(value) => {
-            setStatusFilter(value);
-            setSortKey(null);
-            setSortDir(null);
-            resetFiltersPage();
-          }}
+          onChange={onStatusFilterChange}
         />
         <PermissionColumnFilterCombobox
           label={tCol("module")}
@@ -328,9 +277,7 @@ export function SystemPermissionList() {
           onChange={(value) => {
             setModuleFilter(value);
             setTypeFilter("");
-            setSortKey(null);
-            setSortDir(null);
-            resetFiltersPage();
+            clearSortAndPage();
           }}
         />
         <PermissionColumnFilterCombobox
@@ -342,9 +289,7 @@ export function SystemPermissionList() {
           inputClassName="w-[min(100%,14rem)]"
           onChange={(value) => {
             setTypeFilter(value);
-            setSortKey(null);
-            setSortDir(null);
-            resetFiltersPage();
+            clearSortAndPage();
           }}
         />
         <PermissionColumnFilterCombobox
@@ -356,9 +301,7 @@ export function SystemPermissionList() {
           inputClassName="w-[min(100%,11rem)]"
           onChange={(value) => {
             setActionFilter(value);
-            setSortKey(null);
-            setSortDir(null);
-            resetFiltersPage();
+            clearSortAndPage();
           }}
         />
       </div>
@@ -490,14 +433,11 @@ export function SystemPermissionList() {
       </div>
 
       <CrudPaginationBar
-        page={safePage}
+        page={safePage(total)}
         pageSize={pageSize}
-        meta={{ total, totalPages }}
+        meta={{ total, totalPages: totalPages(total) }}
         onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={onPageSizeChange}
       />
     </div>
   );

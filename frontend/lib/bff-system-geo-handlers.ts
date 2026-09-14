@@ -1,42 +1,24 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 
-import { proxyAuthedBackendJson } from "@/lib/bff-backend";
+import { createSystemCrudHandlers } from "@/lib/bff-system-crud";
 import type { GeoResource } from "@/lib/system-geo-api";
 
-function backendPath(resource: GeoResource, suffix = ""): string {
-  return `/v1/system/${resource}${suffix}`;
+function geoCrud(resource: GeoResource) {
+  return createSystemCrudHandlers(`/v1/system/${resource}`);
 }
 
 export async function handleSystemGeoListGet(
   request: Request,
   resource: GeoResource
 ): Promise<NextResponse> {
-  const url = new URL(request.url);
-  const qs = url.searchParams.toString();
-  const path = qs
-    ? `${backendPath(resource)}?${qs}`
-    : backendPath(resource);
-  return proxyAuthedBackendJson(request, path);
+  return geoCrud(resource).listGet(request);
 }
 
 export async function handleSystemGeoCreate(
   request: Request,
   resource: GeoResource
 ): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
-
-  return proxyAuthedBackendJson(request, backendPath(resource), {
-    method: "POST",
-    body,
-  });
+  return geoCrud(resource).create(request);
 }
 
 export async function handleSystemGeoGet(
@@ -44,7 +26,7 @@ export async function handleSystemGeoGet(
   resource: GeoResource,
   id: string
 ): Promise<NextResponse> {
-  return proxyAuthedBackendJson(request, `${backendPath(resource)}/${id}`);
+  return geoCrud(resource).getById(request, id);
 }
 
 export async function handleSystemGeoPatch(
@@ -52,20 +34,7 @@ export async function handleSystemGeoPatch(
   resource: GeoResource,
   id: string
 ): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
-
-  return proxyAuthedBackendJson(request, `${backendPath(resource)}/${id}`, {
-    method: "PATCH",
-    body,
-  });
+  return geoCrud(resource).patchById(request, id);
 }
 
 export async function handleSystemGeoDelete(
@@ -73,27 +42,12 @@ export async function handleSystemGeoDelete(
   resource: GeoResource,
   id: string
 ): Promise<NextResponse> {
-  return proxyAuthedBackendJson(request, `${backendPath(resource)}/${id}`, {
-    method: "DELETE",
-  });
+  return geoCrud(resource).deleteById(request, id);
 }
 
 export async function handleSystemGeoReorder(
   request: Request,
   resource: GeoResource
 ): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
-
-  return proxyAuthedBackendJson(request, `${backendPath(resource)}/reorder`, {
-    method: "PATCH",
-    body,
-  });
+  return geoCrud(resource).reorder(request);
 }

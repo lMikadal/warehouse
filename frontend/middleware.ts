@@ -6,29 +6,13 @@ import {
   LANDING_PATH_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from "./lib/auth-cookies";
+import {
+  localePrefixForRequest,
+  stripLocalePrefix,
+} from "./lib/locale-path";
 import { routing } from "./i18n/routing";
 
 const handleI18nRouting = createMiddleware(routing);
-
-function stripLocalePrefix(pathname: string): string {
-  for (const locale of routing.locales) {
-    if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) {
-      return pathname.slice(locale.length + 1) || "/";
-    }
-  }
-  return pathname;
-}
-
-function localePrefixForRequest(pathname: string): string {
-  for (const locale of routing.locales) {
-    if (locale === routing.defaultLocale) continue;
-    if (pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)) {
-      return `/${locale}`;
-    }
-  }
-  return "";
-}
 
 function adminRedirectUrl(request: NextRequest, adminPath: string): URL {
   const prefix = localePrefixForRequest(request.nextUrl.pathname);

@@ -1,51 +1,35 @@
 import { NextResponse } from "next/server";
 
 import { proxyAuthedBackendJson } from "@/lib/bff-backend";
+import { proxyListGet, readJsonBody } from "@/lib/bff-system-crud";
 
 export async function handleSystemMenusListGet(
   request: Request
 ): Promise<NextResponse> {
-  const url = new URL(request.url);
-  const qs = url.searchParams.toString();
-  const path = qs ? `/v1/system/menus?${qs}` : "/v1/system/menus";
-  return proxyAuthedBackendJson(request, path);
+  return proxyListGet(request, "/v1/system/menus");
 }
 
 export async function handleSystemMenuPatch(
   request: Request,
   id: string
 ): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
 
   return proxyAuthedBackendJson(request, `/v1/system/menus/${id}`, {
     method: "PATCH",
-    body,
+    body: parsed.body,
   });
 }
 
 export async function handleSystemMenuMove(
   request: Request
 ): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
-  }
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
 
   return proxyAuthedBackendJson(request, "/v1/system/menus/move", {
     method: "PATCH",
-    body,
+    body: parsed.body,
   });
 }

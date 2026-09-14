@@ -1,4 +1,9 @@
-import { authFetch } from "@/lib/auth-client";
+import {
+  BffApiError,
+  createBffCrudClient,
+  type AppendListQuery,
+  type BffStandardListParams,
+} from "@/lib/bff-crud-client";
 
 /** BFF under `/api/v1/auth/proxy/system/…` */
 export type GeoResource =
@@ -9,6 +14,10 @@ export type GeoResource =
 
 function bffBase(resource: GeoResource): string {
   return `/api/v1/auth/proxy/system/${resource}`;
+}
+
+function geoClient(resource: GeoResource) {
+  return createBffCrudClient(bffBase(resource));
 }
 
 export type SystemGeoApiItem = {
@@ -40,53 +49,13 @@ export type SystemGeoRow = {
   parent_label: string;
 };
 
-type ListResponse = {
-  items: SystemGeoApiItem[];
-  meta: { total: number; page: number; limit: number };
-};
-
-export type SystemGeoListParams = {
-  page: number;
-  limit: number;
-  search?: string;
-  isActive?: boolean;
-  sort?: string | null;
-  order?: "asc" | "desc" | null;
+export type SystemGeoListParams = BffStandardListParams & {
   systemCountryId?: number;
   systemProvinceId?: number;
   systemDistrictId?: number;
 };
 
-export class SystemGeoApiError extends Error {
-  code?: string;
-  status: number;
-
-  constructor(message: string, status: number, code?: string) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
-
-async function parseError(res: Response): Promise<SystemGeoApiError> {
-  try {
-    const body = (await res.json()) as { code?: string; message?: string };
-    return new SystemGeoApiError(
-      body.message ?? res.statusText,
-      res.status,
-      body.code
-    );
-  } catch {
-    return new SystemGeoApiError(res.statusText, res.status);
-  }
-}
-
-function bffHeaders(locale: string): HeadersInit {
-  return {
-    Accept: "application/json",
-    "Accept-Language": locale,
-  };
-}
+export { BffApiError as SystemGeoApiError };
 
 export function mapApiGeoToRow(item: SystemGeoApiItem): SystemGeoRow {
   return {
@@ -104,46 +73,33 @@ export function mapApiGeoToRow(item: SystemGeoApiItem): SystemGeoRow {
   };
 }
 
-function buildListQuery(params: SystemGeoListParams): URLSearchParams {
-  const qs = new URLSearchParams({
-    page: String(params.page),
-    limit: String(params.limit),
-  });
-  const search = params.search?.trim();
-  if (search) qs.set("search", search);
-  if (params.isActive !== undefined) {
-    qs.set("is_active", params.isActive ? "true" : "false");
-  }
-  if (params.systemCountryId) {
-    qs.set("system_country_id", String(params.systemCountryId));
-  }
-  if (params.systemProvinceId) {
-    qs.set("system_province_id", String(params.systemProvinceId));
-  }
-  if (params.systemDistrictId) {
-    qs.set("system_district_id", String(params.systemDistrictId));
-  }
-  if (params.sort && params.order) {
-    qs.set("sort", params.sort);
-    qs.set("order", params.order);
-  }
-  return qs;
+function geoListAppendQuery(params: SystemGeoListParams): AppendListQuery {
+  return (qs) => {
+    if (params.systemCountryId) {
+      qs.set("system_country_id", String(params.systemCountryId));
+    }
+    if (params.systemProvinceId) {
+      qs.set("system_province_id", String(params.systemProvinceId));
+    }
+    if (params.systemDistrictId) {
+      qs.set("system_district_id", String(params.systemDistrictId));
+    }
+  };
 }
 
 export async function fetchSystemGeoList(
   resource: GeoResource,
   locale: string,
   params: SystemGeoListParams
-): Promise<{ rows: SystemGeoRow[]; meta: ListResponse["meta"] }> {
-  const url = `${bffBase(resource)}?${buildListQuery(params)}`;
-  const res = await authFetch(url, {
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
-  const body = (await res.json()) as ListResponse;
+): Promise<{ rows: SystemGeoRow[]; meta: { total: number; page: number; limit: number } }> {
+  const { items, meta } = await geoClient(resource).list<SystemGeoApiItem>(
+    locale,
+    params,
+    geoListAppendQuery(params)
+  );
   return {
-    rows: (body.items ?? []).map(mapApiGeoToRow),
-    meta: body.meta ?? { total: 0, page: params.page, limit: params.limit },
+    rows: items.map(mapApiGeoToRow),
+    meta,
   };
 }
 
@@ -152,11 +108,7 @@ export async function fetchSystemGeoById(
   id: number,
   locale: string
 ): Promise<SystemGeoApiItem> {
-  const res = await authFetch(`${bffBase(resource)}/${id}`, {
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
-  return (await res.json()) as SystemGeoApiItem;
+  return geoClient(resource).getById<SystemGeoApiItem>(locale, id);
 }
 
 export type SystemGeoCreateBody = {
@@ -184,13 +136,7 @@ export async function createSystemGeo(
   body: SystemGeoCreateBody,
   locale: string
 ): Promise<{ id: number }> {
-  const res = await authFetch(bffBase(resource), {
-    method: "POST",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await parseError(res);
-  return (await res.json()) as { id: number };
+  return geoClient(resource).create(locale, body);
 }
 
 export async function patchSystemGeo(
@@ -199,12 +145,7 @@ export async function patchSystemGeo(
   body: SystemGeoPatchBody,
   locale: string
 ): Promise<void> {
-  const res = await authFetch(`${bffBase(resource)}/${id}`, {
-    method: "PATCH",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await parseError(res);
+  return geoClient(resource).patchVoid(locale, id, body);
 }
 
 export async function deleteSystemGeo(
@@ -212,11 +153,7 @@ export async function deleteSystemGeo(
   id: number,
   locale: string
 ): Promise<void> {
-  const res = await authFetch(`${bffBase(resource)}/${id}`, {
-    method: "DELETE",
-    headers: bffHeaders(locale),
-  });
-  if (!res.ok) throw await parseError(res);
+  return geoClient(resource).delete(locale, id);
 }
 
 export async function reorderSystemGeo(
@@ -225,10 +162,5 @@ export async function reorderSystemGeo(
   targetId: number,
   locale: string
 ): Promise<void> {
-  const res = await authFetch(`${bffBase(resource)}/reorder`, {
-    method: "PATCH",
-    headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    body: JSON.stringify({ drag_id: dragId, target_id: targetId }),
-  });
-  if (!res.ok) throw await parseError(res);
+  return geoClient(resource).reorder(locale, dragId, targetId);
 }

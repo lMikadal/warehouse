@@ -1,4 +1,7 @@
-import { routing } from "@/i18n/routing";
+import {
+  loginPathWithCallback,
+  stripLocalePrefix,
+} from "@/lib/locale-path";
 
 const REFRESH_URL = "/api/v1/auth/refresh";
 const LOGOUT_URL = "/api/v1/auth/logout";
@@ -26,25 +29,6 @@ export async function refreshSessionClient(): Promise<boolean> {
     refreshInFlight = null;
   });
   return refreshInFlight;
-}
-
-function stripLocalePrefix(pathname: string): string {
-  for (const locale of routing.locales) {
-    if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) {
-      return pathname.slice(locale.length + 1) || "/";
-    }
-  }
-  return pathname;
-}
-
-function loginPathWithCallback(callbackPath?: string): string {
-  const base = "/admin/login";
-  if (!callbackPath || callbackPath === "/admin/login") {
-    return base;
-  }
-  const qs = new URLSearchParams({ callbackUrl: callbackPath });
-  return `${base}?${qs.toString()}`;
 }
 
 /** Client-only — redirects via full navigation so locale middleware applies. */
