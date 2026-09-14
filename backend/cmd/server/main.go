@@ -55,6 +55,7 @@ func main() {
 		e.Use(m)
 	}
 
+	api.InitV1Prefix(cfg.APIV1Prefix)
 	v1 := e.Group(api.V1Prefix)
 	health.RegisterRoutes(v1)
 

@@ -56,7 +56,7 @@ export async function fetchAuthMe(
   accessToken: string,
   locale: string
 ): Promise<AuthUser | null> {
-  const res = await backendFetch("/auth/me", { accessToken, locale });
+  const res = await backendFetch("/v1/auth/me", { accessToken, locale });
   if (!res.ok) return null;
   return (await res.json()) as AuthUser;
 }
@@ -65,7 +65,7 @@ export async function fetchAuthNav(
   accessToken: string,
   locale: string
 ): Promise<{ tree: AdminNavNode[]; landingPath: string } | null> {
-  const res = await backendFetch("/auth/nav", { accessToken, locale });
+  const res = await backendFetch("/v1/auth/nav", { accessToken, locale });
   if (!res.ok) return null;
   const body = (await res.json()) as ApiNavResponse;
   return {

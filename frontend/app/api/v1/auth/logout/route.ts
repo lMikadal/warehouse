@@ -14,7 +14,7 @@ export async function POST() {
   const refresh = jar.get(REFRESH_TOKEN_COOKIE)?.value;
 
   if (access || refresh) {
-    await backendFetch("/auth/logout", {
+    await backendFetch("/v1/auth/logout", {
       method: "POST",
       body: { refresh_token: refresh ?? "" },
       accessToken: access,

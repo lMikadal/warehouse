@@ -6,7 +6,7 @@ Production Warehouse UI under `frontend/` — Next.js App Router, bun, Tailwind 
 
 Scaffold + stack deps: Next.js 16.3.5, Tailwind v4, shadcn/ui, `lucide-react`, `next-themes`, **next-intl** (`th` + `en`, default **`th`**).
 
-Env sample: `frontend/env.example` → `NEXT_PUBLIC_API_URL=http://localhost:1323/api/v1`.
+Env sample: `frontend/env.example` → `NEXT_PUBLIC_API_URL=http://localhost:1323/api` (BFF calls append `/v1/…`).
 
 ## UI architecture (layer stack)
 
@@ -255,7 +255,7 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
 | Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
 | Nav | **`GET /api/v1/auth/nav`** (server layout) → [`lib/admin-nav-api.ts`](../../frontend/lib/admin-nav-api.ts) maps API tree to sidebar nodes; breadcrumbs from tree walk by pathname. [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) remains for system/menu CRUD mock + Storybook + seed generator. |
-| Session | httpOnly JWT cookies via BFF [`app/api/auth/*`](../../frontend/app/api/auth/); footer shows `/auth/me` user; logout calls `/api/auth/logout`. |
+| Session | httpOnly JWT cookies via BFF [`app/api/v1/auth/*`](../../frontend/app/api/v1/auth/); footer shows `/auth/me` user; logout calls `/api/v1/auth/logout`. |
 | Guard | [`middleware.ts`](../../frontend/middleware.ts) — unauthenticated `/admin/*` (except login) → `/admin/login`; authenticated login page → `warehouse_landing` cookie (from login) or fallback. |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
 
@@ -268,7 +268,7 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Files | [`(auth)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(auth)/layout.tsx) (split shell + brand aside), [`login/page.tsx`](../../frontend/app/[locale]/(admin)/admin/(auth)/login/page.tsx) + `login-form.tsx` |
 | Compose | `(auth)/layout`: toolbar, brand panel at `lg`; login page: `FormCard`, `FormField`, `InputGroup` + Lucide `User` / `Lock`; password visibility on shared `Input` |
 | Tokens | `max-w-form` in `app/globals.css`; mobile radial wash uses `--color-primary`; brand gradient uses `primary` token stops |
-| API | `POST /api/auth/login` → Go `POST /auth/login`; success `router.replace(landing_path)` from response |
+| API | `POST /api/v1/auth/login` (BFF) → Go `POST /api/v1/auth/login`; success `router.replace(landing_path)` from response |
 | Phase | Wired to backend JWT (see [`document/knowledge/backend.md`](../knowledge/backend.md) Auth + `/auth/nav`) |
 | Required empty submit | `toast.error` with `form.placeholder.input` copy (first invalid field); both fields may show invalid chrome; no under-field text |
 | Entry | Home stack page links via `home.adminLogin` → `/admin/login` |

@@ -20,7 +20,7 @@ Prefer `make` targets over raw `docker compose` from `infrastructure/`.
 | Config | [`nginx/nginx.conf`](../../infrastructure/nginx/nginx.conf) | [`nginx/nginx.prod.conf`](../../infrastructure/nginx/nginx.prod.conf) |
 | Published ports | apps + DB + admin tools | **only** gateway (`NGINX_PORT`, default `80`) |
 | Extra services | design, nginx-ui, pgAdmin, redis-commander (`--profile dev`) | none |
-| Frontend API URL | `http://localhost:1323/api/v1` | `/api/v1` (same-origin via nginx) |
+| Frontend → Go (BFF server-side) | `http://backend:1323/api` in compose (+ `/v1/…` in fetch path); host dev uses `http://localhost:1323/api` | `/api` (+ `/v1/…` paths; prod build may still set legacy `/api/v1` base — normalized in code) |
 | Image tags | `warehouse-frontend:dev`, `warehouse-backend:dev` (`Dockerfile.dev`) | `warehouse-frontend:prod`, `warehouse-backend:prod` (`Dockerfile.prod`) |
 
 TLS is out of scope for now (HTTP `:80` only).
@@ -48,8 +48,9 @@ Network: `warehouse_network`. Timezone: `Asia/Bangkok`.
 
 | Path | Upstream |
 |------|----------|
+| `/api/v1/auth/` | frontend:3000 (Next BFF — httpOnly session cookies) |
 | `/` | frontend:3000 (HMR WebSocket headers) |
-| `/api/` | backend:1323 (pass-through; backend owns `/api/v1/...`) |
+| `/api/v1/` | backend:1323 (Go REST API) |
 | `/design/` | design:80 |
 
 Seed config: [`infrastructure/nginx/nginx.conf`](../../infrastructure/nginx/nginx.conf). Edit further at `http://localhost:9000` and reload from the UI.
@@ -58,8 +59,9 @@ Seed config: [`infrastructure/nginx/nginx.conf`](../../infrastructure/nginx/ngin
 
 | Path | Upstream |
 |------|----------|
+| `/api/v1/auth/` | frontend:3000 (Next BFF) |
 | `/` | frontend:3000 |
-| `/api/` | backend:1323 |
+| `/api/v1/` | backend:1323 |
 
 Config: [`infrastructure/nginx/nginx.prod.conf`](../../infrastructure/nginx/nginx.prod.conf). No `/design/`, no nginx-ui admin port.
 
@@ -72,7 +74,8 @@ App, postgres, and redis ports are **not** published — containers talk on `war
 | Dev direct | `http://localhost:1323/api/v1/health` |
 | Dev / prod via gateway | `http://localhost/api/v1/health` |
 
-Dev `NEXT_PUBLIC_API_URL` defaults to `http://localhost:1323/api/v1`.
+Compose `frontend` defaults `NEXT_PUBLIC_API_URL` to `http://backend:1323/api`; BFF builds Go URLs as `{base}/v1/…`. Host `make frontend-dev` uses `http://localhost:1323/api` from `frontend/env.example`.
+
 Prod overlay hardcodes `NEXT_PUBLIC_API_URL=/api/v1` (build arg + runtime).
 
 ## Migrations

@@ -76,7 +76,7 @@ Seeds are **not** run on start — use `make backend-seed-init`. Manual migrate 
 
 ## API versioning
 
-Public routes: **`/api/v1`** (`internal/api.V1Prefix`).
+Public routes live under **`/api/v1`** by default (`internal/api.V1Prefix`, set at startup from env **`API_V1_PREFIX`** — default `/api/v1`, see `backend/env.example` and `infrastructure/env.example`).
 
 ## Health
 

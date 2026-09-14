@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { backendFetch, parseApiError } from "@/lib/api-server";
@@ -5,53 +6,41 @@ import {
   ACCESS_TOKEN_COOKIE,
   LANDING_PATH_COOKIE,
   REFRESH_TOKEN_COOKIE,
-  type LoginResponse,
 } from "@/lib/auth-cookies";
 import { authCookieOptions, landingCookieOptions } from "@/lib/auth-server";
 
-type TokenPair = LoginResponse & {
+type TokenPair = {
   access_token: string;
   refresh_token: string;
   expires_in: number;
+  landing_path?: string;
 };
 
-export async function POST(request: Request) {
-  let body: { username?: string; password?: string };
-  try {
-    body = (await request.json()) as { username?: string; password?: string };
-  } catch {
-    return NextResponse.json(
-      { code: "invalid_request", message: "invalid body" },
-      { status: 400 }
-    );
+export async function POST() {
+  const jar = await cookies();
+  const refresh = jar.get(REFRESH_TOKEN_COOKIE)?.value;
+  if (!refresh) {
+    return NextResponse.json({ code: "unauthorized" }, { status: 401 });
   }
 
-  const locale =
-    request.headers.get("accept-language")?.split(",")[0]?.slice(0, 2) ?? "th";
-
-  const res = await backendFetch("/auth/login", {
+  const res = await backendFetch("/v1/auth/refresh", {
     method: "POST",
-    body: {
-      username: body.username ?? "",
-      password: body.password ?? "",
-    },
-    locale,
+    body: { refresh_token: refresh },
   });
 
   if (!res.ok) {
     const err = await parseApiError(res);
-    return NextResponse.json(
-      { code: err.code ?? "login_failed", message: err.message },
-      { status: res.status }
-    );
+    const response = NextResponse.json(err, { status: res.status });
+    if (res.status === 401) {
+      response.cookies.delete(ACCESS_TOKEN_COOKIE);
+      response.cookies.delete(REFRESH_TOKEN_COOKIE);
+      response.cookies.delete(LANDING_PATH_COOKIE);
+    }
+    return response;
   }
 
   const pair = (await res.json()) as TokenPair;
-  const response = NextResponse.json({
-    landing_path: pair.landing_path,
-    user: pair.user,
-  } satisfies LoginResponse);
-
+  const response = NextResponse.json({ ok: true });
   const accessMax = Math.max(pair.expires_in, 60);
   response.cookies.set(
     ACCESS_TOKEN_COOKIE,
@@ -70,6 +59,5 @@ export async function POST(request: Request) {
       landingCookieOptions(60 * 60 * 24 * 7)
     );
   }
-
   return response;
 }

@@ -95,7 +95,7 @@ function AdminLogoutButton() {
   const router = useRouter();
 
   async function onLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/v1/auth/logout", { method: "POST" });
     router.replace("/admin/login");
   }
 

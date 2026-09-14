@@ -10,7 +10,7 @@ First production login screen from design; wired to backend JWT via BFF.
 - [x] Password visibility on shared `Input`
 - [x] Home page link to admin login
 - [x] `document/knowledge/frontend.md` — Login route subsection
-- [x] BFF `POST /api/auth/login` + httpOnly cookies + middleware guard
+- [x] BFF `POST /api/v1/auth/login` + httpOnly cookies + middleware guard
 - [x] Post-login redirect to backend `landing_path`
 
 ## Required checklist

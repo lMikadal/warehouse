@@ -1,7 +1,9 @@
-const DEFAULT_API = "http://localhost:1323/api/v1";
+const DEFAULT_API = "http://localhost:1323/api";
 
+/** Origin + `/api` (no version segment). */
 export function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API;
+  const raw = (process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API).replace(/\/$/, "");
+  return raw.replace(/\/v1$/, "");
 }
 
 type BackendFetchOptions = {
@@ -15,7 +17,8 @@ export async function backendFetch(
   path: string,
   { method = "GET", body, accessToken, locale = "th" }: BackendFetchOptions = {}
 ): Promise<Response> {
-  const url = `${apiBaseUrl().replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+  const segment = path.replace(/^\//, "").replace(/^v1\//, "");
+  const url = `${apiBaseUrl()}/v1/${segment}`;
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Accept-Language": locale,

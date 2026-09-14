@@ -61,6 +61,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-dev-jwt-secret-min-32-chars}
+      API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
     ports:
       - "1323:1323"
     volumes:
@@ -86,7 +87,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Asia/Bangkok}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:1323/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:1323/api}
       WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"

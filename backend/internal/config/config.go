@@ -19,6 +19,7 @@ type Config struct {
 	JWTSecret   string        `env:"JWT_SECRET,required"`
 	JWTAccessTTL  time.Duration `env:"JWT_ACCESS_TTL" envDefault:"15m"`
 	JWTRefreshTTL time.Duration `env:"JWT_REFRESH_TTL" envDefault:"168h"`
+	APIV1Prefix   string        `env:"API_V1_PREFIX" envDefault:"/api/v1"`
 }
 
 func Load() (Config, error) {
