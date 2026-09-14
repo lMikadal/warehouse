@@ -82,11 +82,11 @@ Reference implementation: `pages/login.html`.
 
 ## Permissions
 
-- Table `admin_permission`: code `{module}.{type}.{action}`; actions `view|create|update|delete|import|export`
+- Table `system_permission`: code `{module}.{type}.{action}`; actions `view|create|update|delete|import|export` (six rows per feature in seed)
 - `is_active` on each permission row — frontend hides/disables action when false even if role grants it
 - `permissions.can(code)`, `canAction(module, type, action)`, `listForPage()`, `applyActionButtons()`
-- Sidebar visibility: leaf menu requires intersection of role grants with `admin_menu_permission` for that menu (+ superadmin bypass); junction links all six actions per navigable leaf menu in seed
-- **Role permission matrix** (`admin_role` form): groups leaf menus by root sidebar section (38 menus / 10 groups); columns = `view|create|update|delete|import|export`; source rows from `admin_menu_permission`; save replaces `admin_role_permission` for the role; **super admin role id=1** locked read-only (all checked, disabled); other roles editable; **auto-view** — checking create/update/delete/import/export auto-checks view and blocks unchecking view while any sibling action remains checked; import/export assignable in matrix even when `admin_permission.is_active` is false (runtime UI still respects `is_active`)
+- Sidebar visibility: leaf menu requires intersection of role grants with `system_menu_permission` for that menu (+ superadmin bypass); junction links all six actions per navigable leaf menu in seed
+- **Role permission matrix** (`admin_role` form): groups leaf menus by root sidebar section (38 menus / 10 groups); columns = `view|create|update|delete|import|export`; source rows from `system_menu_permission`; save replaces `admin_role_permission` for the role; **super admin role id=1** locked read-only (all checked, disabled); other roles editable; **auto-view** — checking create/update/delete/import/export auto-checks view and blocks unchecking view while any sibling action remains checked; import/export assignable in matrix even when `system_permission.is_active` is false (runtime UI still respects `is_active`)
 - Page buttons: `data-perm-module`, `data-perm-type`, `data-perm-action`
 
 ## Admin shell
@@ -95,7 +95,7 @@ Stitch-modern flush-left shell — visual target documented in [`design/referenc
 
 - `js/nav.js` — `nav.resolve(path)`: menu `path` values in seed are relative to design root (e.g. `pages/admin-menu.html`); call before `location.replace` or sidebar `href` when the current page is under `pages/`
 - `js/components/layout.js` — sidebar + header + content area; flat header (lang + theme); user + red logout icon in sidebar footer
-- `js/components/sidebar.js` — tree from `admin_menu` + `admin_menu_language`, filtered by RBAC; **location module (map-pin, id 23):** after CMS children, inject active `location_location` rows as virtual sidebar links (`pages/location-location-view.html?id=`) — not stored in `admin_menu`; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring; groups auto-expand only along the active page’s ancestor chain (not merely because a child has nested submenus); sidebar search expands all groups in the filtered tree so nested hits stay visible
+- `js/components/sidebar.js` — tree from `system_menu` + `system_menu_language`, filtered by RBAC; **location module (map-pin, id 23):** after CMS children, inject active `location_location` rows as virtual sidebar links (`pages/location-location-view.html?id=`) — not stored in `system_menu`; `getBreadcrumb()` / `renderBreadcrumb()` plain-text trail; active leaf uses primary tint + inset ring; groups auto-expand only along the active page’s ancestor chain (not merely because a child has nested submenus); sidebar search expands all groups in the filtered tree so nested hits stay visible
 - Responsive: sidebar drawer &lt; 1024px; sticky sidebar on desktop; sidebar username hidden on mobile (&lt; 640px)
 
 ### Shell surfaces

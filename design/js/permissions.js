@@ -12,7 +12,7 @@
 
   function getPermissionByCode(code) {
     return global.store
-      .getAll("admin_permission")
+      .getAll("system_permission")
       .find(function (p) {
         return p.code === code && p.deleted_at == null;
       });
@@ -20,7 +20,7 @@
 
   function roleHasPermission(roleId, permId) {
     return global.store.getAll("admin_role_permission").some(function (rp) {
-      return rp.admin_role_id === roleId && rp.admin_permission_id === permId;
+      return rp.admin_role_id === roleId && rp.system_permission_id === permId;
     });
   }
 
@@ -53,7 +53,7 @@
     if (isSuperAdmin()) {
       return new Set(
         global.store
-          .getAll("admin_permission")
+          .getAll("system_permission")
           .filter(function (p) {
             return p.deleted_at == null && p.is_active;
           })
@@ -70,10 +70,10 @@
         return rp.admin_role_id === user.admin_role_id;
       })
       .map(function (rp) {
-        return rp.admin_permission_id;
+        return rp.system_permission_id;
       });
     var codes = global.store
-      .getAll("admin_permission")
+      .getAll("system_permission")
       .filter(function (p) {
         return (
           p.deleted_at == null &&

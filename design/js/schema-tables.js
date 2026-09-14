@@ -1,8 +1,8 @@
 window.SCHEMA_TABLES = [
-  "admin_menu",
-  "admin_menu_language",
-  "admin_menu_permission",
-  "admin_permission",
+  "system_menu",
+  "system_menu_language",
+  "system_menu_permission",
+  "system_permission",
   "admin_role",
   "admin_role_language",
   "admin_role_permission",

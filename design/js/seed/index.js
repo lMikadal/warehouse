@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "sales-order-family-split-1";
+  global.SEED_VERSION = "system-menu-rename-1";
 
   var tables = {};
 
@@ -24,10 +24,10 @@
   });
 
   var adminTables = [
-    "admin_menu",
-    "admin_menu_language",
-    "admin_permission",
-    "admin_menu_permission",
+    "system_menu",
+    "system_menu_language",
+    "system_permission",
+    "system_menu_permission",
     "admin_role",
     "admin_role_language",
     "admin_role_permission",

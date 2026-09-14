@@ -98,7 +98,7 @@ Avoid verb-base terminal states (`cancel`, `reject`) and inconsistent synonyms (
 
 **`tree_path` label convention (seeds + backend):** dot-joined `n{id}` segments from root to self — e.g. id 7 with chain 2→6→7 → `n2.n6.n7`. Do not use module names in paths. Design seeds: `ADMIN_SEED_SHARED.assignTreePaths(defs)` in [`design/js/seed/_admin_shared.js`](../../../design/js/seed/_admin_shared.js).
 
-Examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`.
+Examples: `system_menu`, `warehouse_list`, `product_attribute`, `member_tier`.
 
 **Typed geo chain** (`website_*`) — one table per level, **typed parent FK** + `sort_order` only (flat lists; no `tree_path`):
 

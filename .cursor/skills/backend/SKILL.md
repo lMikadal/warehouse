@@ -25,6 +25,7 @@ Warehouse app API in `backend/` (Go + Echo v5) and Docker in `infrastructure/`.
 | Docs + Postman | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |
 | Commands | [`.cursor/rules/makefile.mdc`](../../rules/makefile.mdc) |
 | Minimal diffs | [`.cursor/rules/ponytail.mdc`](../../rules/ponytail.mdc) |
+| Structured logging | [`.cursor/rules/logging.mdc`](../../rules/logging.mdc) |
 
 ## Read order
 
@@ -73,6 +74,7 @@ UI uses mobile / tablet / computer / computer-wide — backend does not implemen
 | DB | PostgreSQL + goose migrations |
 | Cache | Redis when needed |
 | Config | env via `caarlos0/env` |
+| Logging | stdlib `log/slog` via `internal/log` (text dev, JSON production) |
 | Dev reload | air (`.air.toml`) |
 | Port | `1323` |
 
@@ -80,16 +82,20 @@ UI uses mobile / tablet / computer / computer-wide — backend does not implemen
 
 ```
 backend/
-├── main.go
+├── cmd/server/main.go      # composition root
+├── cmd/seed/               # init | test SQL seeds
 ├── go.mod
 ├── Dockerfile.dev
 ├── Dockerfile.prod
 ├── .air.toml
 └── internal/
+    ├── api/                # V1Prefix, pagination, ListResponse
     ├── config/
-    ├── middleware/
-    ├── infra/postgres/
-    │   └── migrations/
+    ├── log/                # slog Setup, Echo middleware, HTTPError
+    ├── infra/              # deps, postgres/, redis/ stub
+    │   └── postgres/
+    │       ├── migrations/ # goose — schema only
+    │       └── seeds/init|test/
     └── module/<domain>/    # handler, service, repository
 ```
 
@@ -122,18 +128,20 @@ Reference sibling Warehouse `infrastructure/docker-compose.yml` for shape — ad
 2. Implement handler → service → repository
 3. Add goose SQL under `internal/infra/postgres/migrations/` from `design/schema/`
 4. Update `docker-compose.yml` when adding a service
-5. Smoke-test from repo root: `make run` (or `make docker-up`)
+5. Smoke-test from repo root: `make run` (or `make docker-up`) — dev backend auto-runs goose `up` on start when `APP_ENV=development`
 
 ### Dev / migrate commands (root Makefile)
 
 ```bash
 make run                      # full stack: docker compose up
 make backend-dev              # air hot reload
-make backend-run              # go run .
+make backend-run              # go run ./cmd/server
 make backend-test             # go test ./...
 make backend-migrate-up       # needs DATABASE_URL (from infrastructure/.env)
 make backend-migrate-down
 make backend-migrate-status
+make backend-seed-init
+make backend-seed-test
 ```
 
 Do not run raw `docker compose`, `air`, `go run`, or goose when a make target exists — use `make help`.
@@ -150,6 +158,7 @@ Naming, enums, trees, audit, and multilingual rules: **[`.cursor/skills/design/r
 - **List endpoints:** follow [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) — accept `page` + `limit`; tree lists: hierarchical order (sibling `sort_order` → `id` per `parent_id`, DFS pre-order); flat: `sort_order` → `created_at`; else `created_at` → `id`. `ORDER BY tree_path` alone does not match UI sibling order.
 - IDs: `BIGSERIAL` / `BIGINT` per design — do not copy UUID PKs from legacy v2; map to design FK names when porting
 - When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
+- Migrations: **DDL only**; data in `postgres/seeds/` — see [`.cursor/rules/migrations-seed.mdc`](../../rules/migrations-seed.mdc)
 
 ## Do not
 

@@ -33,7 +33,7 @@
     {
       id: 3,
       parent_id: 2,
-      module: "admin_menu",
+      module: "system_menu",
       path: "pages/admin-menu.html",
       sort_order: 100,
       is_superadmin_only: true,
@@ -42,7 +42,7 @@
     {
       id: 4,
       parent_id: 2,
-      module: "admin_permission",
+      module: "system_permission",
       path: "pages/admin-permission.html",
       sort_order: 200,
       is_superadmin_only: true,
@@ -424,8 +424,8 @@
   ];
 
   var withPaths = shared.assignTreePaths(MENU_DEFS);
-  global.ADMIN_MENU_DEFS = withPaths;
-  global.SEED_ADMIN_MENU = withPaths.map(function (d) {
+  global.SYSTEM_MENU_DEFS = withPaths;
+  global.SEED_SYSTEM_MENU = withPaths.map(function (d) {
     return menuRow({
       id: d.id,
       parent_id: d.parent_id || null,

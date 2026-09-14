@@ -47,23 +47,70 @@
             },
             "description": "Liveness probe — no auth. Versioned under /api/v1."
           },
-          "response": [
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Menus",
+          "item": [
             {
-              "name": "OK",
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
+              "name": "List menus",
+              "event": [
                 {
-                  "key": "Content-Type",
-                  "value": "application/json"
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('has items and meta', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.items).to.be.an('array');",
+                      "  pm.expect(json.meta).to.have.property('total');",
+                      "});"
+                    ]
+                  }
                 }
               ],
-              "body": "{\n  \"status\": \"ok\"\n}"
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "th"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/system/menus?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["system", "menus"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "10" }
+                  ]
+                },
+                "description": "Paginated system menu list (tree order). Requires migrated DB + optional test seed."
+              },
+              "response": []
             }
           ]
         }
       ]
+    },
+    {
+      "name": "Admin",
+      "description": "Users, roles, sessions — endpoints added as modules ship.",
+      "item": []
+    },
+    {
+      "name": "Auth",
+      "description": "Login and token refresh — endpoints added with auth module.",
+      "item": []
     }
   ]
 }

@@ -27,6 +27,7 @@ Notes:
 - **Forms** → follow [`.cursor/rules/forms.mdc`](forms.mdc)
 - **Date/datetime display** → follow [`.cursor/rules/dates.mdc`](dates.mdc)
 - **Warehouse layout / item placement** → follow [`.cursor/rules/warehouse.mdc`](warehouse.mdc) (bin-only `product_item_warehouse`)
+- **Goose migrations / Postgres seeds** → follow [`.cursor/rules/migrations-seed.mdc`](migrations-seed.mdc) (schema-only migrations; init vs test seeds)
 - **Frontend component reuse** → follow [`.cursor/rules/storybook.mdc`](storybook.mdc) (Storybook as baseline)
 - **Frontend route pages** (`frontend/app/**`) → follow [storybook.mdc](storybook.mdc) **Warehouse pages** workflow (match UI/Molecules stories; forms/tables rules stay authoritative)
 - **Frontend layer stack** → follow [`.cursor/rules/design-system.mdc`](design-system.mdc) (tokens → shadcn → atomic → pages)

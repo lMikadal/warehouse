@@ -3,10 +3,10 @@
   var ACTIONS = global.ADMIN_SEED_SHARED.ACTIONS;
   var rows = [];
 
-  global.ADMIN_MENU_DEFS.forEach(function (d) {
+  global.SYSTEM_MENU_DEFS.forEach(function (d) {
     if (!d.path || d.is_dialog) return;
     if (/dashboard\.html/i.test(d.path)) return;
-    var parent = global.ADMIN_MENU_DEFS.find(function (p) {
+    var parent = global.SYSTEM_MENU_DEFS.find(function (p) {
       return p.id === d.parent_id;
     });
     var permModule = parent ? parent.module : d.module;
@@ -26,12 +26,12 @@
       var permId = codeToId[code];
       if (permId) {
         rows.push({
-          admin_menu_id: d.id,
-          admin_permission_id: permId,
+          system_menu_id: d.id,
+          system_permission_id: permId,
         });
       }
     });
   });
 
-  global.SEED_ADMIN_MENU_PERMISSION = rows;
+  global.SEED_SYSTEM_MENU_PERMISSION = rows;
 })(window);

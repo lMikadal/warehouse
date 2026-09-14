@@ -149,10 +149,10 @@
   };
 
   var REGISTRY = {
-    admin_menu: {
+    system_menu: {
       permModule: "admin",
-      permType: "admin_menu",
-      storeTable: "admin_menu",
+      permType: "system_menu",
+      storeTable: "system_menu",
       pageTitleKey: "page.adminMenu",
       pageDescriptionKey: "page.adminMenu.desc",
       canExport: false,
@@ -184,14 +184,14 @@
       ],
       listRows: function () {
         return global.store
-          .getAll("admin_menu")
+          .getAll("system_menu")
           .filter(function (m) {
             return m.deleted_at == null;
           })
           .map(function (m) {
             return Object.assign({}, m, {
               _id: m.id,
-              label: langName("admin_menu_language", "admin_menu_id", m.id),
+              label: langName("system_menu_language", "system_menu_id", m.id),
               path: m.path || "—",
             });
           });
@@ -210,36 +210,36 @@
         { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
       ],
       getFormValues: function (id) {
-        var m = global.store.getById("admin_menu", id);
+        var m = global.store.getById("system_menu", id);
         return {
-          name_th: langName("admin_menu_language", "admin_menu_id", id, "th"),
-          name_en: langName("admin_menu_language", "admin_menu_id", id, "en"),
+          name_th: langName("system_menu_language", "system_menu_id", id, "th"),
+          name_en: langName("system_menu_language", "system_menu_id", id, "en"),
           path: m && m.path ? m.path : "",
           is_active: m ? m.is_active : true,
         };
       },
       validate: function (values) {
-        return requiredValidate(values, REGISTRY.admin_menu.formFields);
+        return requiredValidate(values, REGISTRY.system_menu.formFields);
       },
       save: function (values, id) {
-        var m = global.store.getById("admin_menu", id);
-        global.store.update("admin_menu", id, {
+        var m = global.store.getById("system_menu", id);
+        global.store.update("system_menu", id, {
           path: values.path || null,
           sort_order: m ? m.sort_order : 100,
           is_active: !!values.is_active,
           updated_at: now(),
         });
-        upsertLang("admin_menu_language", "admin_menu_id", id, "th", values.name_th);
-        upsertLang("admin_menu_language", "admin_menu_id", id, "en", values.name_en);
+        upsertLang("system_menu_language", "system_menu_id", id, "th", values.name_th);
+        upsertLang("system_menu_language", "system_menu_id", id, "en", values.name_en);
       },
       remove: function () {
         throw new Error(global.i18n.t("error.forbidden"));
       },
     },
 
-    admin_permission: {
+    system_permission: {
       permModule: "admin",
-      permType: "admin_permission",
+      permType: "system_permission",
       pageTitleKey: "page.adminPermission",
       pageDescriptionKey: "page.adminPermission.desc",
       canExport: false,
@@ -269,7 +269,7 @@
       ],
       listRows: function () {
         return global.store
-          .getAll("admin_permission")
+          .getAll("system_permission")
           .filter(function (p) {
             return p.deleted_at == null;
           })

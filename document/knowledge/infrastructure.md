@@ -77,8 +77,9 @@ Prod overlay hardcodes `NEXT_PUBLIC_API_URL=/api/v1` (build arg + runtime).
 
 ## Migrations
 
-- **Dev (ports published):** host-side goose with `DATABASE_URL` pointing at `localhost:5432` (see `infrastructure/.env`)
-- **Prod (ports hidden):** host `localhost:5432` will not reach postgres — run migrate via compose exec, e.g. `docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend …`, or temporarily use the dev stack
+- **Dev compose / `APP_ENV=development`:** backend runs goose `up` on start (see `AUTO_MIGRATE` in [`backend/env.example`](../../backend/env.example)) — no separate migrate step for local Docker dev in most cases
+- **Manual / CI:** `make backend-migrate-up` with `DATABASE_URL` (host `localhost:5432` from `infrastructure/.env`)
+- **Prod (ports hidden):** default **no** auto-migrate on start; run migrate before deploy (`make backend-migrate-up` via exec/job) or set `AUTO_MIGRATE=true` only for single-instance deploys
 
 In-compose backend always uses host `postgres` for `DATABASE_URL`.
 

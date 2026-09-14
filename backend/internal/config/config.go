@@ -1,10 +1,20 @@
 package config
 
-import "github.com/caarlos0/env/v11"
+import (
+	"strings"
+
+	"github.com/caarlos0/env/v11"
+)
 
 type Config struct {
-	Port   string `env:"PORT" envDefault:"1323"`
-	AppEnv string `env:"APP_ENV" envDefault:"development"`
+	Port          string `env:"PORT" envDefault:"1323"`
+	AppEnv        string `env:"APP_ENV" envDefault:"development"`
+	DatabaseURL   string `env:"DATABASE_URL,required"`
+	RedisURL      string `env:"REDIS_URL"`
+	DefaultLocale string `env:"DEFAULT_LOCALE" envDefault:"th"`
+	LogLevel      string `env:"LOG_LEVEL" envDefault:"info"`
+	// AutoMigrate: empty = derive from AppEnv; true/false overrides.
+	AutoMigrate string `env:"AUTO_MIGRATE"`
 }
 
 func Load() (Config, error) {
@@ -13,4 +23,15 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+func (c Config) ShouldAutoMigrate() bool {
+	switch strings.ToLower(strings.TrimSpace(c.AutoMigrate)) {
+	case "true", "1", "yes":
+		return true
+	case "false", "0", "no":
+		return false
+	default:
+		return c.AppEnv == "development"
+	}
 }

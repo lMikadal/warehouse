@@ -44,6 +44,8 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | [`dates.mdc`](rules/dates.mdc) | UI | yes | — | `design/`, `frontend/` display | Date and datetime display format for design mockups and frontend UI. |
 | [`icons.mdc`](rules/icons.mdc) | UI | yes | — | `design/`, `frontend/` | Use Lucide icons only — SVG files in design, lucide-react in frontend. |
 | [`warehouse.mdc`](rules/warehouse.mdc) | Domain | yes | — | placement, stock | Warehouse layout tree and product item stock placement — bin-only anchor. |
+| [`migrations-seed.mdc`](rules/migrations-seed.mdc) | Backend | no | `backend/**` | goose, Postgres seeds | Migrations schema-only; init seed vs repeatable test seed. |
+| [`logging.mdc`](rules/logging.mdc) | Backend | no | `backend/**` | handlers, cmd | Structured slog, Echo request logging, log before 5xx. |
 | [`storybook.mdc`](rules/storybook.mdc) | Frontend | no | `frontend/**` | components, `app/` | Co-located Storybook stories required in the same change as component work; Storybook is the reuse baseline. |
 | [`design-system.mdc`](rules/design-system.mdc) | Frontend | no | `frontend/**` | `frontend/components/` | Frontend UI layer stack — design tokens through warehouse pages (atomic composition). |
 
@@ -57,8 +59,10 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | Design → Next.js handoff | `skills/frontend/SKILL.md` + [`design-system.mdc`](rules/design-system.mdc) |
 | Route page under `frontend/app/` | `skills/frontend/SKILL.md` + [`storybook.mdc`](rules/storybook.mdc) Warehouse pages |
 | New shared component | `skills/frontend/SKILL.md` + [`design-system.mdc`](rules/design-system.mdc) (user approval) |
-| Goose migration from schema | `skills/backend/SKILL.md` + `skills/design/reference.md` |
+| Goose migration from schema | `skills/backend/SKILL.md` + `skills/design/reference.md` + [`migrations-seed.mdc`](rules/migrations-seed.mdc) |
+| Postgres init / test seed | [`migrations-seed.mdc`](rules/migrations-seed.mdc) + `skills/backend/SKILL.md` |
 | List API pagination / sort | `skills/backend/SKILL.md` + [`tables.mdc`](rules/tables.mdc) |
+| New handler / module | `skills/backend/SKILL.md` + [`logging.mdc`](rules/logging.mdc) |
 | Product bin placement | [`warehouse.mdc`](rules/warehouse.mdc) + area skill |
 | API change + Postman | `skills/tester/SKILL.md` + [`document.mdc`](rules/document.mdc) |
 | Run stack / migrate / Storybook build | [`makefile.mdc`](rules/makefile.mdc) → `make help` |

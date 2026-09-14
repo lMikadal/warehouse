@@ -21,7 +21,7 @@
   }
 
   function hasLegacyDashboardMenu() {
-    return (data.admin_menu || []).some(function (m) {
+    return (data.system_menu || []).some(function (m) {
       return m.path && /dashboard\.html/i.test(m.path);
     });
   }

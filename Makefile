@@ -23,6 +23,7 @@ endef
 	frontend-storybook frontend-storybook-build \
 	backend-dev backend-run backend-test \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
+	backend-seed-init backend-seed-test \
 	docker-up docker-up-d docker-down docker-build docker-logs docker-prod-up docker-prod-down
 
 ## help: Show this help
@@ -91,10 +92,10 @@ backend-dev:
 	$(call require_dir,$(BACKEND_DIR))
 	cd $(BACKEND_DIR) && air
 
-## backend-run: Run API once (go run .)
+## backend-run: Run API once (go run ./cmd/server)
 backend-run:
 	$(call require_dir,$(BACKEND_DIR))
-	cd $(BACKEND_DIR) && go run .
+	cd $(BACKEND_DIR) && go run ./cmd/server
 
 ## backend-test: Run Go tests (go test ./...)
 backend-test:
@@ -118,6 +119,18 @@ backend-migrate-status:
 	$(call require_dir,$(BACKEND_DIR))
 	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
 	cd $(BACKEND_DIR) && $(GOOSE) -dir $(MIGRATIONS_DIR) postgres "$(DATABASE_URL)" status
+
+## backend-seed-init: Run init SQL seeds (needs DATABASE_URL)
+backend-seed-init:
+	$(call require_dir,$(BACKEND_DIR))
+	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
+	cd $(BACKEND_DIR) && go run ./cmd/seed init
+
+## backend-seed-test: Run test SQL seeds (needs DATABASE_URL; idempotent when SQL uses upserts)
+backend-seed-test:
+	$(call require_dir,$(BACKEND_DIR))
+	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
+	cd $(BACKEND_DIR) && go run ./cmd/seed test
 
 ## docker-up: docker compose up --build (dev images; includes --profile dev admin tools)
 docker-up:

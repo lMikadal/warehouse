@@ -11,34 +11,34 @@
   }
 
   function menuLabel(menuId) {
-    var row = global.store.getAll("admin_menu_language").find(function (r) {
-      return r.admin_menu_id === menuId && r.locale === locale();
+    var row = global.store.getAll("system_menu_language").find(function (r) {
+      return r.system_menu_id === menuId && r.locale === locale();
     });
     return row ? row.name : "";
   }
 
   function rootMenuId(menuId) {
-    var m = global.store.getById("admin_menu", menuId);
+    var m = global.store.getById("system_menu", menuId);
     var seen = {};
     while (m && m.parent_id != null) {
       if (seen[m.id]) break;
       seen[m.id] = true;
-      m = global.store.getById("admin_menu", m.parent_id);
+      m = global.store.getById("system_menu", m.parent_id);
     }
     return m ? m.id : menuId;
   }
 
   function permissionsForMenu(menuId) {
     var permById = {};
-    global.store.getAll("admin_permission").forEach(function (p) {
+    global.store.getAll("system_permission").forEach(function (p) {
       if (p.deleted_at == null) permById[p.id] = p;
     });
-    var links = global.store.getAll("admin_menu_permission").filter(function (mp) {
-      return mp.admin_menu_id === menuId;
+    var links = global.store.getAll("system_menu_permission").filter(function (mp) {
+      return mp.system_menu_id === menuId;
     });
     var perms = links
       .map(function (mp) {
-        return permById[mp.admin_permission_id];
+        return permById[mp.system_permission_id];
       })
       .filter(Boolean);
     perms.sort(function (a, b) {
@@ -55,7 +55,7 @@
         return rp.admin_role_id === roleId;
       })
       .map(function (rp) {
-        return rp.admin_permission_id;
+        return rp.system_permission_id;
       });
   }
 
@@ -69,7 +69,7 @@
 
   function buildMenuGroups() {
     var menus = global.store
-      .getAll("admin_menu")
+      .getAll("system_menu")
       .filter(function (m) {
         return m.deleted_at == null && m.is_active;
       })
@@ -211,7 +211,7 @@
     var selected = new Set(selectedPermIds(roleId));
     if (locked) {
       global.store
-        .getAll("admin_permission")
+        .getAll("system_permission")
         .filter(function (p) {
           return p.deleted_at == null && p.is_active;
         })
@@ -356,7 +356,7 @@
     if (!root) return [];
     if (root.getAttribute("data-locked") === "true") {
       return global.store
-        .getAll("admin_permission")
+        .getAll("system_permission")
         .filter(function (p) {
           return p.deleted_at == null && p.is_active;
         })
@@ -385,7 +385,7 @@
       seen[permId] = true;
       global.store.create(table, {
         admin_role_id: roleId,
-        admin_permission_id: permId,
+        system_permission_id: permId,
         created_at: ts,
       });
     });

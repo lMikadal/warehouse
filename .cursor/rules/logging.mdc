@@ -1,0 +1,38 @@
+---
+description: Backend must use structured slog, HTTP middleware, and error logs on failure paths.
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Backend logging
+
+Applies to `backend/` — HTTP server, CLI entrypoints (`cmd/server`, `cmd/seed`), and domain modules.
+
+## Stack
+
+- **`log/slog` only** — no extra logging libraries.
+- Shared setup: [`backend/internal/log/`](../../backend/internal/log/) — `Setup`, `EchoMiddleware`, `HTTPError`.
+
+## Composition roots
+
+After successful `config.Load`, call **`log.Setup(cfg)`** so `LOG_LEVEL` and `APP_ENV` (JSON in production) apply.
+
+On the Echo instance (after `Recover()`), register **`log.EchoMiddleware()`** — do not add duplicate request loggers in `main`.
+
+## When to log
+
+| Situation | Action |
+|-----------|--------|
+| Startup / migrate / seed / infra init failure | `slog.Error` with `"error", err` |
+| Handler returns **5xx** | `log.HTTPError(c, msg, err, ...)` (or equivalent `slog.Error` with `request_id`) **before** the JSON response |
+| Successful HTTP request | Request logger middleware (skip health check path) |
+
+## Fields and safety
+
+- Include **`request_id`** on request-scoped errors (helper reads Echo request/response headers).
+- **Never log** passwords, JWTs, `Authorization` header values, or credentials embedded in `DATABASE_URL`.
+- Avoid logging full request bodies or query strings at info level; use debug sparingly and never for secrets in production.
+
+## New modules
+
+When adding handlers: on every error path that maps to `5xx`, log once with context (`request_id`, optional safe attrs like route name). Do not swallow repository/service errors silently.

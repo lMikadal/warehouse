@@ -1,0 +1,69 @@
+---
+description: Goose migrations are schema-only; Postgres seeds are split into init (project bootstrap) and test (repeatable).
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Migrations and Postgres seeds
+
+Applies to `backend/internal/infra/postgres/migrations/`, seed assets, and Makefile seed targets.
+
+**Design mock data** stays in `design/js/seed/` (localStorage prototype). **Backend seeds** load real PostgreSQL after goose migrations — align row shape with `design/schema/` and [`skills/design/reference.md`](../skills/design/reference.md), but do not put that data in goose migration files.
+
+## Goose migrations (schema only)
+
+- **Allowed:** `CREATE` / `ALTER` / `DROP` for extensions, types, tables, indexes, constraints; `CREATE INDEX`; comments optional
+- **Not allowed:** `INSERT`, `UPDATE`, `DELETE`, `COPY`, or seed/fixture data of any kind (including “default rows”) in `migrations/`
+- **Source of truth for table shape:** `design/schema/*.sql` → new goose file; never edit an already-applied migration
+- **Naming:** `YYYYMMDDHHMMSS_description.sql` with `-- +goose Up` / `-- +goose Down`
+- **Commands:** `make backend-migrate-up` / `down` / `status` (needs `DATABASE_URL`)
+
+If a row must exist for the app to function, ship it via **init seed**, not a migration.
+
+## Seed layout (backend)
+
+```
+backend/internal/infra/postgres/seeds/
+├── init/          # project bootstrap — minimal baseline on empty DB
+└── test/          # demo/fixture data for local dev, CI, integration tests
+```
+
+- **`init/`** — first-time project setup after migrate (e.g. default locales, required settings, bootstrap admin). Keep small and stable.
+- **`test/`** — richer dataset for development and automated tests. **Must be safe to run multiple times** (idempotent).
+
+Optional runner: `backend/cmd/seed/` (subcommands `init`, `test`) or ordered `.sql` files executed by Makefile — pick one approach per repo and document in `document/knowledge/backend.md`.
+
+## Idempotency (required for test; recommended for init)
+
+Test seed **must** be re-runnable without manual DB reset. Use one or more of:
+
+- `INSERT ... ON CONFLICT ... DO UPDATE` / `DO NOTHING` on primary or natural keys
+- Fixed surrogate IDs consistent with design seeds where parity matters (`BIGINT` literals)
+- Dedicated **test ID ranges** (document the range in seed README or knowledge) so deletes/upserts do not touch init rows
+- Transaction + deterministic upsert per table; avoid blind `TRUNCATE` unless scoped to test-only tables or test IDs
+
+Init seed should use upserts where practical so re-run after partial failure does not duplicate rows.
+
+## Secrets and demo credentials
+
+- No real passwords, JWT secrets, or production values in seed SQL/Go
+- Demo login passwords only in test seed (or env-injected); document in `backend/env.example` / knowledge, not in `document/` as live secrets
+
+## Makefile
+
+Prefer root Makefile targets (add when implementing):
+
+| Target | Purpose |
+|--------|---------|
+| `make backend-migrate-up` | Apply schema |
+| `make backend-seed-init` | Run init seed (after migrate) |
+| `make backend-seed-test` | Run test seed (repeatable) |
+
+Do not run raw `goose` or `psql` when a make target exists ([`makefile.mdc`](makefile.mdc)).
+
+## When schema changes
+
+1. Update `design/schema/` if needed
+2. Add a new goose migration (schema only)
+3. Update init/test seed in the **same change** if row shape or required baseline rows changed
+4. Sync `document/knowledge/backend.md` and backend checklist when behavior or commands change ([`document.mdc`](document.mdc))

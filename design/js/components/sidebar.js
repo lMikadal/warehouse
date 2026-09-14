@@ -1,8 +1,8 @@
 (function (global) {
   function menuLabel(menuId, locale) {
     var loc = locale || (global.i18n && global.i18n.getLocale()) || "th";
-    var row = global.store.getAll("admin_menu_language").find(function (r) {
-      return r.admin_menu_id === menuId && r.locale === loc;
+    var row = global.store.getAll("system_menu_language").find(function (r) {
+      return r.system_menu_id === menuId && r.locale === loc;
     });
     return row ? row.name : "";
   }
@@ -97,7 +97,7 @@
 
   function buildMenuTree() {
     var menus = global.store
-      .getAll("admin_menu")
+      .getAll("system_menu")
       .filter(function (m) {
         return m.deleted_at == null && m.is_active;
       })
@@ -133,7 +133,7 @@
 
   function parentModuleFor(node) {
     if (!node.parent_id) return node.module;
-    var parent = global.store.getById("admin_menu", node.parent_id);
+    var parent = global.store.getById("system_menu", node.parent_id);
     if (!parent) return node.module;
     if (parent.id === 37) return "order";
     if (parent.id === 33 || parent.parent_id === 33) return "member";
@@ -151,8 +151,8 @@
   }
 
   function permissionCode(node, parentMod) {
-    var pMod = parentMod || parentModuleFor(global.store.getById("admin_menu", node.id));
-    var type = permTypeFor(global.store.getById("admin_menu", node.id));
+    var pMod = parentMod || parentModuleFor(global.store.getById("system_menu", node.id));
+    var type = permTypeFor(global.store.getById("system_menu", node.id));
     return pMod + "." + type + ".view";
   }
 
@@ -162,7 +162,7 @@
     }
     return nodes
       .map(function (node) {
-        var storeNode = global.store.getById("admin_menu", node.id);
+        var storeNode = global.store.getById("system_menu", node.id);
         var pMod = parentMod || (storeNode.parent_id ? parentModuleFor(storeNode) : storeNode.module);
         var children = filterMenuTree(node.children, storeNode.module);
         if (node.is_superadmin_only) return null;
@@ -247,7 +247,7 @@
   function isNavigableLeaf(node, parentMod) {
     if (!node.path || node.path === "#" || node.is_dialog) return false;
     if (/dashboard\.html/i.test(node.path)) return false;
-    var storeNode = global.store.getById("admin_menu", node.id);
+    var storeNode = global.store.getById("system_menu", node.id);
     if (!storeNode) return false;
     var pMod = parentMod || (storeNode.parent_id ? parentModuleFor(storeNode) : storeNode.module);
     return global.permissions && global.permissions.can(permissionCode(storeNode, pMod));
@@ -257,7 +257,7 @@
   function firstNavigablePath(nodes, parentMod) {
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
-      var storeNode = global.store.getById("admin_menu", n.id);
+      var storeNode = global.store.getById("system_menu", n.id);
       var pMod =
         parentMod ||
         (storeNode && storeNode.parent_id ? parentModuleFor(storeNode) : storeNode ? storeNode.module : n.module);
@@ -585,7 +585,7 @@
     if (!current) return null;
     var lookup = menuListPathForCurrentPage(current) || current;
     return (
-      global.store.getAll("admin_menu").find(function (m) {
+      global.store.getAll("system_menu").find(function (m) {
         if (m.deleted_at != null || !m.is_active || !m.path || m.path === "#" || m.is_dialog) {
           return false;
         }
@@ -637,7 +637,7 @@
         label: menuLabel(node.id),
         path: node.path,
       });
-      node = node.parent_id ? global.store.getById("admin_menu", node.parent_id) : null;
+      node = node.parent_id ? global.store.getById("system_menu", node.parent_id) : null;
     }
     chain.reverse();
     return chain.map(function (item, i) {

@@ -5,10 +5,10 @@
   var METHOD = shared.METHOD;
   var GLOBAL_INACTIVE = shared.GLOBAL_INACTIVE;
 
-  /** Leaf pages needing permission sets: { permModule, type, resource } */
+  /** Leaf pages needing permission sets: { permModule, type, resource } — always 6 actions via ACTIONS */
   var PERM_PAGES = [
-    { permModule: "admin", type: "admin_menu", resource: "/api/v1/admin/menus" },
-    { permModule: "admin", type: "admin_permission", resource: "/api/v1/admin/permissions" },
+    { permModule: "system", type: "system_menu", resource: "/api/v1/system/menus" },
+    { permModule: "system", type: "system_permission", resource: "/api/v1/system/permissions" },
     { permModule: "admin", type: "admin_language", resource: "/api/v1/website/languages" },
     { permModule: "admin", type: "website_country", resource: "/api/v1/website/countries" },
     { permModule: "admin", type: "website_province", resource: "/api/v1/website/provinces" },
@@ -16,66 +16,16 @@
     { permModule: "admin", type: "website_sub_district", resource: "/api/v1/website/sub-districts" },
     { permModule: "admin", type: "admin_user", resource: "/api/v1/admin/users" },
     { permModule: "admin", type: "admin_role", resource: "/api/v1/admin/roles" },
-    {
-      permModule: "setting",
-      type: "setting_bank",
-      resource: "/api/v1/setting/banks",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "setting",
-      type: "setting_vat",
-      resource: "/api/v1/setting/vat",
-      actions: ["view", "update"],
-    },
-    {
-      permModule: "setting",
-      type: "setting_payment_method",
-      resource: "/api/v1/setting/payment-methods",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "setting",
-      type: "setting_sale_channel",
-      resource: "/api/v1/setting/sale-channels",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "setting",
-      type: "setting_code",
-      resource: "/api/v1/setting/codes",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "setting",
-      type: "setting_claim_reason",
-      resource: "/api/v1/setting/claim-reasons",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "setting",
-      type: "setting_prefix",
-      resource: "/api/v1/setting/prefixes",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "supplier",
-      type: "supplier_user",
-      resource: "/api/v1/supplier/users",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "location",
-      type: "location_location",
-      resource: "/api/v1/location/locations",
-      actions: ["view", "create", "update", "delete"],
-    },
-    {
-      permModule: "warehouse",
-      type: "warehouse_list",
-      resource: "/api/v1/warehouse/lists",
-      actions: ["view", "create", "update", "delete"],
-    },
+    { permModule: "setting", type: "setting_bank", resource: "/api/v1/setting/banks" },
+    { permModule: "setting", type: "setting_vat", resource: "/api/v1/setting/vat" },
+    { permModule: "setting", type: "setting_payment_method", resource: "/api/v1/setting/payment-methods" },
+    { permModule: "setting", type: "setting_sale_channel", resource: "/api/v1/setting/sale-channels" },
+    { permModule: "setting", type: "setting_code", resource: "/api/v1/setting/codes" },
+    { permModule: "setting", type: "setting_claim_reason", resource: "/api/v1/setting/claim-reasons" },
+    { permModule: "setting", type: "setting_prefix", resource: "/api/v1/setting/prefixes" },
+    { permModule: "supplier", type: "supplier_user", resource: "/api/v1/supplier/users" },
+    { permModule: "location", type: "location_location", resource: "/api/v1/location/locations" },
+    { permModule: "warehouse", type: "warehouse_list", resource: "/api/v1/warehouse/lists" },
     { permModule: "product", type: "product_list", resource: "/api/v1/product/lists" },
     { permModule: "product", type: "product_category", resource: "/api/v1/product/categories" },
     { permModule: "product", type: "product_brand", resource: "/api/v1/product/brands" },
@@ -102,7 +52,7 @@
   var nextPermId = 1;
 
   PERM_PAGES.forEach(function (page) {
-    (page.actions || ACTIONS).forEach(function (action) {
+    ACTIONS.forEach(function (action) {
       var code = page.permModule + "." + page.type + "." + action;
       var row = {
         id: nextPermId,
@@ -127,5 +77,5 @@
 
   global.ADMIN_PERM_PAGES = PERM_PAGES;
   global.ADMIN_PERM_CODE_TO_ID = codeToId;
-  global.SEED_ADMIN_PERMISSION = rows;
+  global.SEED_SYSTEM_PERMISSION = rows;
 })(window);
