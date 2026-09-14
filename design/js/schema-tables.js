@@ -91,14 +91,14 @@ window.SCHEMA_TABLES = [
   "warehouse_condition",
   "warehouse_list",
   "warehouse_list_language",
-  "website_country",
-  "website_country_language",
-  "website_district",
-  "website_district_language",
+  "system_country",
+  "system_country_language",
+  "system_district",
+  "system_district_language",
   "website_file",
   "system_language",
-  "website_province",
-  "website_province_language",
-  "website_sub_district",
-  "website_sub_district_language"
+  "system_province",
+  "system_province_language",
+  "system_sub_district",
+  "system_sub_district_language"
 ];

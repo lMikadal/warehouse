@@ -2,7 +2,7 @@ package system
 
 import "github.com/labstack/echo/v5"
 
-func RegisterRoutes(g *echo.Group, menuSvc *MenuService, permSvc *PermissionService, langHandler *LanguageHandler) {
+func RegisterRoutes(g *echo.Group, menuSvc *MenuService, permSvc *PermissionService, langHandler *LanguageHandler, geoRepo *AddressGeoRepository) {
 	mh := newMenuHandler(menuSvc)
 	ph := newPermissionHandler(permSvc)
 	sys := g.Group("/system")
@@ -20,4 +20,5 @@ func RegisterRoutes(g *echo.Group, menuSvc *MenuService, permSvc *PermissionServ
 	sys.PATCH("/languages/reorder", langHandler.reorder)
 	sys.PATCH("/languages/:id", langHandler.patch)
 	sys.DELETE("/languages/:id", langHandler.delete)
+	RegisterAddressGeoRoutes(sys, geoRepo)
 }

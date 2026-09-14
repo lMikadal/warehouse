@@ -9,6 +9,11 @@
     "module": "Module",
     "type": "Type",
     "name": "Name",
+    "country": "Country",
+    "province": "Province",
+    "district": "District",
+    "postcode": "Postcode",
+    "sku": "SKU",
     "path": "Path",
     "status": "Status",
     "updatedAt": "Last updated"

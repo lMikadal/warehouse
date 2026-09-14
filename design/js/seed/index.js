@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "system-menu-rename-1";
+  global.SEED_VERSION = "system-geo-rename-1";
 
   var tables = {};
 
@@ -9,14 +9,14 @@
   }
 
   var geoTables = [
-    "website_country",
-    "website_country_language",
-    "website_province",
-    "website_province_language",
-    "website_district",
-    "website_district_language",
-    "website_sub_district",
-    "website_sub_district_language",
+    "system_country",
+    "system_country_language",
+    "system_province",
+    "system_province_language",
+    "system_district",
+    "system_district_language",
+    "system_sub_district",
+    "system_sub_district_language",
   ];
   geoTables.forEach(function (name) {
     var key = "SEED_" + name.toUpperCase();

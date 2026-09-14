@@ -14,6 +14,30 @@
       "desc": "Manage supported locales and the default language",
       "editTitle": "Edit language",
       "title": "Languages"
+    },
+    "adminSystemCountry": {
+      "add": "Add country",
+      "desc": "Manage countries, reference codes, and multilingual names",
+      "editTitle": "Edit country",
+      "title": "Countries"
+    },
+    "adminSystemProvince": {
+      "add": "Add province",
+      "desc": "Manage provinces under each country",
+      "editTitle": "Edit province",
+      "title": "Provinces"
+    },
+    "adminSystemDistrict": {
+      "add": "Add district",
+      "desc": "Manage districts under each province",
+      "editTitle": "Edit district",
+      "title": "Districts"
+    },
+    "adminSystemSubDistrict": {
+      "add": "Add sub-district",
+      "desc": "Manage sub-districts, postcodes, and names",
+      "editTitle": "Edit sub-district",
+      "title": "Sub-districts"
     }
   }
 }

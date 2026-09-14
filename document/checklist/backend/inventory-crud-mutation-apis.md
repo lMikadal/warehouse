@@ -33,10 +33,10 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `setting_payment_method` | TBD | active, reorder | [ ] | Extra switches `is_sale` / `is_purchase` |
 | `setting_prefix` | TBD | active, reorder | [ ] | Reorder scoped by `type` |
 | `setting_sale_channel` | TBD | active, reorder | [ ] | |
-| `website_country` | TBD | active, reorder | [ ] | Geo root |
-| `website_province` | TBD | active, reorder | [ ] | Scope: `website_country_id` |
-| `website_district` | TBD | active, reorder | [ ] | Scope: `website_province_id` |
-| `website_sub_district` | TBD | active, reorder | [ ] | Scope: `website_district_id` |
+| `system_country` | TBD | active, reorder | [x] | Geo root |
+| `system_province` | TBD | active, reorder | [x] | Scope: `system_country_id` |
+| `system_district` | TBD | active, reorder | [x] | Scope: `system_province_id` |
+| `system_sub_district` | TBD | active, reorder | [x] | Scope: `system_district_id` |
 
 ## B — Top-level list `sort_order` (flat `/reorder`)
 
@@ -49,10 +49,10 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `setting_payment_method` | global | [ ] | |
 | `setting_prefix` | per `type` | [ ] | |
 | `setting_sale_channel` | global | [ ] | |
-| `website_country` | global | [ ] | |
-| `website_province` | `website_country_id` | [ ] | |
-| `website_district` | `website_province_id` | [ ] | |
-| `website_sub_district` | `website_district_id` | [ ] | |
+| `system_country` | global | [x] | |
+| `system_province` | `system_country_id` | [x] | |
+| `system_district` | `system_province_id` | [x] | |
+| `system_sub_district` | `system_district_id` | [x] | |
 | `system_language` | global | [x] | `is_active` + **`is_default`** exclusive + `/reorder` |
 | `system_menu` | tree | [x] | Use **`/move`**, not `/reorder` |
 | `warehouse_list` | tree | [ ] | Use **`/move`** |

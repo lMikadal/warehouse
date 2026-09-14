@@ -660,16 +660,16 @@
     var parentKey = opts.parentFk;
 
     function enrichGeoFilterFields(row, r) {
-      if (key === "website_district" && r.website_province_id) {
-        var prov = global.store.getById("website_province", r.website_province_id);
-        if (prov) row.website_country_id = prov.website_country_id;
+      if (key === "system_district" && r.system_province_id) {
+        var prov = global.store.getById("system_province", r.system_province_id);
+        if (prov) row.system_country_id = prov.system_country_id;
       }
-      if (key === "website_sub_district" && r.website_district_id) {
-        var dist = global.store.getById("website_district", r.website_district_id);
+      if (key === "system_sub_district" && r.system_district_id) {
+        var dist = global.store.getById("system_district", r.system_district_id);
         if (dist) {
-          row.website_province_id = dist.website_province_id;
-          var prov2 = global.store.getById("website_province", dist.website_province_id);
-          if (prov2) row.website_country_id = prov2.website_country_id;
+          row.system_province_id = dist.system_province_id;
+          var prov2 = global.store.getById("system_province", dist.system_province_id);
+          if (prov2) row.system_country_id = prov2.system_country_id;
         }
       }
     }
@@ -779,9 +779,9 @@
     };
   }
 
-  REGISTRY.website_country = geoConfig("website_country", {
-    pageTitleKey: "page.websiteCountry",
-    pageDescriptionKey: "page.websiteCountry.desc",
+  REGISTRY.system_country = geoConfig("system_country", {
+    pageTitleKey: "page.systemCountry",
+    pageDescriptionKey: "page.systemCountry.desc",
     parentFk: null,
     parentCol: null,
     formFields: [
@@ -795,16 +795,16 @@
     },
   });
 
-  REGISTRY.website_province = geoConfig("website_province", {
-    pageTitleKey: "page.websiteProvince",
-    pageDescriptionKey: "page.websiteProvince.desc",
-    parentFk: "website_country_id",
+  REGISTRY.system_province = geoConfig("system_province", {
+    pageTitleKey: "page.systemProvince",
+    pageDescriptionKey: "page.systemProvince.desc",
+    parentFk: "system_country_id",
     columnFilters: [
       {
-        key: "website_country_id",
+        key: "system_country_id",
         labelKey: "col.country",
         optionLabel: function (id) {
-          return langName("website_country_language", "website_country_id", Number(id));
+          return langName("system_country_language", "system_country_id", Number(id));
         },
       },
     ],
@@ -816,21 +816,21 @@
       },
     },
     parentLabel: function (countryId) {
-      return langName("website_country_language", "website_country_id", countryId);
+      return langName("system_country_language", "system_country_id", countryId);
     },
     parentOptions: function () {
       return global.store
-        .getAll("website_country")
+        .getAll("system_country")
         .filter(function (c) {
           return c.deleted_at == null && c.is_active;
         })
         .map(function (c) {
-          return { value: c.id, label: langName("website_country_language", "website_country_id", c.id) };
+          return { value: c.id, label: langName("system_country_language", "system_country_id", c.id) };
         });
     },
     formFields: [
       {
-        key: "website_country_id",
+        key: "system_country_id",
         labelKey: "col.country",
         type: "select",
         required: true,
@@ -843,23 +843,23 @@
     ],
   });
 
-  REGISTRY.website_district = geoConfig("website_district", {
-    pageTitleKey: "page.websiteDistrict",
-    pageDescriptionKey: "page.websiteDistrict.desc",
-    parentFk: "website_province_id",
+  REGISTRY.system_district = geoConfig("system_district", {
+    pageTitleKey: "page.systemDistrict",
+    pageDescriptionKey: "page.systemDistrict.desc",
+    parentFk: "system_province_id",
     columnFilters: [
       {
-        key: "website_country_id",
+        key: "system_country_id",
         labelKey: "col.country",
         optionLabel: function (id) {
-          return langName("website_country_language", "website_country_id", Number(id));
+          return langName("system_country_language", "system_country_id", Number(id));
         },
       },
       {
-        key: "website_province_id",
+        key: "system_province_id",
         labelKey: "col.province",
         optionLabel: function (id) {
-          return langName("website_province_language", "website_province_id", Number(id));
+          return langName("system_province_language", "system_province_id", Number(id));
         },
       },
     ],
@@ -871,21 +871,21 @@
       },
     },
     parentLabel: function (provinceId) {
-      return langName("website_province_language", "website_province_id", provinceId);
+      return langName("system_province_language", "system_province_id", provinceId);
     },
     parentOptions: function () {
       return global.store
-        .getAll("website_province")
+        .getAll("system_province")
         .filter(function (p) {
           return p.deleted_at == null && p.is_active;
         })
         .map(function (p) {
-          return { value: p.id, label: langName("website_province_language", "website_province_id", p.id) };
+          return { value: p.id, label: langName("system_province_language", "system_province_id", p.id) };
         });
     },
     formFields: [
       {
-        key: "website_province_id",
+        key: "system_province_id",
         labelKey: "col.province",
         type: "select",
         required: true,
@@ -1680,30 +1680,30 @@
     },
   };
 
-  REGISTRY.website_sub_district = geoConfig("website_sub_district", {
-    pageTitleKey: "page.websiteSubDistrict",
-    pageDescriptionKey: "page.websiteSubDistrict.desc",
-    parentFk: "website_district_id",
+  REGISTRY.system_sub_district = geoConfig("system_sub_district", {
+    pageTitleKey: "page.systemSubDistrict",
+    pageDescriptionKey: "page.systemSubDistrict.desc",
+    parentFk: "system_district_id",
     columnFilters: [
       {
-        key: "website_country_id",
+        key: "system_country_id",
         labelKey: "col.country",
         optionLabel: function (id) {
-          return langName("website_country_language", "website_country_id", Number(id));
+          return langName("system_country_language", "system_country_id", Number(id));
         },
       },
       {
-        key: "website_province_id",
+        key: "system_province_id",
         labelKey: "col.province",
         optionLabel: function (id) {
-          return langName("website_province_language", "website_province_id", Number(id));
+          return langName("system_province_language", "system_province_id", Number(id));
         },
       },
       {
-        key: "website_district_id",
+        key: "system_district_id",
         labelKey: "col.district",
         optionLabel: function (id) {
-          return langName("website_district_language", "website_district_id", Number(id));
+          return langName("system_district_language", "system_district_id", Number(id));
         },
       },
     ],
@@ -1728,21 +1728,21 @@
       base.postcode = values.postcode || null;
     },
     parentLabel: function (districtId) {
-      return langName("website_district_language", "website_district_id", districtId);
+      return langName("system_district_language", "system_district_id", districtId);
     },
     parentOptions: function () {
       return global.store
-        .getAll("website_district")
+        .getAll("system_district")
         .filter(function (d) {
           return d.deleted_at == null && d.is_active;
         })
         .map(function (d) {
-          return { value: d.id, label: langName("website_district_language", "website_district_id", d.id) };
+          return { value: d.id, label: langName("system_district_language", "system_district_id", d.id) };
         });
     },
     formFields: [
       {
-        key: "website_district_id",
+        key: "system_district_id",
         labelKey: "col.district",
         type: "select",
         required: true,

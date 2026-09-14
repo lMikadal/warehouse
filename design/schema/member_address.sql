@@ -18,9 +18,9 @@ CREATE TABLE member_address (
     branch                   entity_branch,                                     -- HQ vs branch
     branch_name              VARCHAR(255),                                    -- branch label
     address                  TEXT,                                            -- street address text
-    website_province_id      BIGINT                REFERENCES website_province(id) ON DELETE SET NULL, -- province FK
-    website_district_id      BIGINT                REFERENCES website_district(id) ON DELETE SET NULL, -- district FK
-    website_sub_district_id  BIGINT                REFERENCES website_sub_district(id) ON DELETE SET NULL, -- sub-district FK
+    website_province_id      BIGINT                REFERENCES system_province(id) ON DELETE SET NULL, -- province FK
+    website_district_id      BIGINT                REFERENCES system_district(id) ON DELETE SET NULL, -- district FK
+    website_sub_district_id  BIGINT                REFERENCES system_sub_district(id) ON DELETE SET NULL, -- sub-district FK
     postcode                 VARCHAR(20),                                     -- postal code
     tel                      VARCHAR(50),                                     -- phone on this address
     email                    VARCHAR(255),                                    -- email on this address

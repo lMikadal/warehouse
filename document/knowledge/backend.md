@@ -163,6 +163,17 @@ Setting `is_default: true` clears other defaults and forces `is_active: true`. D
 
 Migration `20260315100000_website_language_is_active.sql` adds `is_active` (applied before table rename).
 
+## System address geo (country → sub-district)
+
+Tables: `system_country`, `system_province`, `system_district`, `system_sub_district` + `*_language` companions (migration `20260316200000_system_address_geo.sql`). List APIs join `Accept-Language` for display `name`; create/patch accept `names: { th, en }`. Reorder is sibling-scoped by typed parent FK (`system_country_id`, `system_province_id`, `system_district_id`).
+
+| Method | Path | Permission prefix |
+|--------|------|-------------------|
+| CRUD + list | `/system/countries`, `/provinces`, `/districts`, `/sub-districts` | `admin.system_country.*`, `admin.system_province.*`, … |
+| Reorder | `PATCH …/reorder` | same module `.update` |
+
+List filters: `search`, `is_active`, `page`, `limit`, `sort`/`order`; provinces+ add `system_country_id`; districts+ add `system_province_id`; sub-districts add `system_district_id` (and optional country filter via join).
+
 ## List mutations
 
 Convention ([`.cursor/rules/crud-mutations.mdc`](../../.cursor/rules/crud-mutations.mdc)); per-table checklist: [`inventory-crud-mutation-apis.md`](../checklist/backend/inventory-crud-mutation-apis.md).
@@ -193,7 +204,9 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 
 Wave 1 schema: shared enums, locale registry (`system_language` after rename), `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
 
-Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction).
+Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction), `08_system_address_geo.sql` (TH/SG geo demo — same IDs as `design/js/seed/system_*`; idempotent upserts).
+
+Re-apply geo only on an existing DB (full `make backend-seed-init` fails if `06` already ran): `docker compose exec -T postgres psql -U warehouse -d warehouse -f - < backend/internal/infra/postgres/seeds/init/08_system_address_geo.sql` from repo root with stack up. Regenerate `08` after design seed changes: `node backend/scripts/gen-system-address-init-seed.mjs`.
 
 **Regenerate seeds** (from `frontend/`):
 
@@ -201,6 +214,7 @@ Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave
 |--------|--------|
 | `bun scripts/gen-system-permission-seed.ts` | `../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql` |
 | `bun scripts/gen-system-menu-seed.ts` | `../backend/internal/infra/postgres/seeds/init/07_system_menu.sql` |
+| `node backend/scripts/gen-system-address-init-seed.mjs` | `backend/internal/infra/postgres/seeds/init/08_system_address_geo.sql` |
 
 Menu→permission mapping for junction uses [`frontend/lib/menu-perm-resolve.ts`](../../frontend/lib/menu-perm-resolve.ts) (seed-only; same rules as former Go `ViewPermissionCode`).
 

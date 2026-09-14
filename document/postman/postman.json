@@ -384,6 +384,131 @@
               "request": { "method": "DELETE", "url": "{{baseUrl}}/system/languages/99" }
             }
           ]
+        },
+        {
+          "name": "Countries",
+          "item": [
+            {
+              "name": "List countries",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/system/countries?page=1&limit=10"
+              }
+            },
+            {
+              "name": "Get country",
+              "request": { "method": "GET", "url": "{{baseUrl}}/system/countries/1" }
+            },
+            {
+              "name": "Create country",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sku\": \"TH\",\n  \"is_active\": true,\n  \"names\": { \"th\": \"ประเทศไทย\", \"en\": \"Thailand\" }\n}"
+                },
+                "url": "{{baseUrl}}/system/countries"
+              }
+            },
+            {
+              "name": "Patch country",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_active\": false\n}" },
+                "url": "{{baseUrl}}/system/countries/1"
+              }
+            },
+            {
+              "name": "Reorder countries",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/system/countries/reorder"
+              }
+            },
+            {
+              "name": "Delete country",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/system/countries/99" }
+            }
+          ]
+        },
+        {
+          "name": "Provinces",
+          "item": [
+            {
+              "name": "List provinces",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/system/provinces?page=1&limit=10&system_country_id=1"
+              }
+            },
+            {
+              "name": "Create province",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"system_country_id\": 1,\n  \"sku\": \"10\",\n  \"is_active\": true,\n  \"names\": { \"th\": \"กรุงเทพมหานคร\", \"en\": \"Bangkok\" }\n}"
+                },
+                "url": "{{baseUrl}}/system/provinces"
+              }
+            },
+            {
+              "name": "Reorder provinces",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/system/provinces/reorder"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Districts",
+          "item": [
+            {
+              "name": "List districts",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/system/districts?page=1&limit=10&system_province_id=1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sub-districts",
+          "item": [
+            {
+              "name": "List sub-districts",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/system/sub-districts?page=1&limit=10&system_district_id=1"
+              }
+            },
+            {
+              "name": "Create sub-district",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"system_district_id\": 1,\n  \"postcode\": \"10110\",\n  \"is_active\": true,\n  \"names\": { \"th\": \"คลองตัน\", \"en\": \"Khlong Tan\" }\n}"
+                },
+                "url": "{{baseUrl}}/system/sub-districts"
+              }
+            }
+          ]
         }
       ]
     }

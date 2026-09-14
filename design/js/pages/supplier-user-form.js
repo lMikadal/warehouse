@@ -229,7 +229,7 @@
 
   function provinceOptions(selectedId) {
     return global.store
-      .getAll("website_province")
+      .getAll("system_province")
       .filter(function (r) {
         return r.deleted_at == null && r.is_active;
       })
@@ -241,7 +241,7 @@
           '"' +
           sel +
           ">" +
-          escapeHtml(langName("website_province_language", "website_province_id", r.id)) +
+          escapeHtml(langName("system_province_language", "system_province_id", r.id)) +
           "</option>"
         );
       })
@@ -251,9 +251,9 @@
   function districtOptions(provinceId, selectedId) {
     if (!provinceId) return "";
     return global.store
-      .getAll("website_district")
+      .getAll("system_district")
       .filter(function (r) {
-        return r.deleted_at == null && r.is_active && r.website_province_id === Number(provinceId);
+        return r.deleted_at == null && r.is_active && r.system_province_id === Number(provinceId);
       })
       .map(function (r) {
         var sel = String(selectedId) === String(r.id) ? " selected" : "";
@@ -263,7 +263,7 @@
           '"' +
           sel +
           ">" +
-          escapeHtml(langName("website_district_language", "website_district_id", r.id)) +
+          escapeHtml(langName("system_district_language", "system_district_id", r.id)) +
           "</option>"
         );
       })
@@ -273,9 +273,9 @@
   function subDistrictOptions(districtId, selectedId) {
     if (!districtId) return "";
     return global.store
-      .getAll("website_sub_district")
+      .getAll("system_sub_district")
       .filter(function (r) {
-        return r.deleted_at == null && r.is_active && r.website_district_id === Number(districtId);
+        return r.deleted_at == null && r.is_active && r.system_district_id === Number(districtId);
       })
       .map(function (r) {
         var sel = String(selectedId) === String(r.id) ? " selected" : "";
@@ -285,7 +285,7 @@
           '"' +
           sel +
           ">" +
-          escapeHtml(langName("website_sub_district_language", "website_sub_district_id", r.id)) +
+          escapeHtml(langName("system_sub_district_language", "website_sub_district_id", r.id)) +
           "</option>"
         );
       })
@@ -768,7 +768,7 @@
 
     sub.addEventListener("change", function () {
       if (!post || !sub.value) return;
-      var row = global.store.getById("website_sub_district", Number(sub.value));
+      var row = global.store.getById("system_sub_district", Number(sub.value));
       if (row && row.postcode) post.value = row.postcode;
     });
 

@@ -48,6 +48,17 @@ Applies to **every list page / every table** in `design/`, `frontend/`, and reor
 - **Backend:** no reorder endpoint that patches `sort_order` on tables that lack the column; when DnD applies, implement `PATCH /reorder` or `PATCH /move` per [`.cursor/rules/crud-mutations.mdc`](crud-mutations.mdc)
 - Column header sort (below) remains available on all data tables regardless of DnD
 
+## List toolbar column filters
+
+Applies to optional parent/column filters on list toolbars in `design/` mockups and `frontend/` production UI (not form `<select>` fields).
+
+- **Frontend:** use searchable **`Combobox`** ([`components/ui/combobox.tsx`](../../frontend/components/ui/combobox.tsx)), not `<Select>`, when the filter picks one value from a list (especially long or searchable option sets).
+- **Placeholder:** `crud.filter.select` with `{ label: t('col.<field>') }` — **not** `form.placeholder.select` (forms only).
+- **State:** empty string `""` means no filter (show placeholder); use input **clear** (`showClear`) when a value is set. Do not use a synthetic `"all"` select value that can appear as raw trigger text.
+- **Cascade:** disable dependent filters when a required parent filter is empty (`disabled` on `ComboboxInput`).
+- **Reference:** [`system-permission-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/permission/system-permission-list.tsx); geo [`geo-column-filter-combobox.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/address/_shared/geo-column-filter-combobox.tsx) + [`system-geo-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/address/_shared/system-geo-list.tsx).
+- **Design:** [`crud-list.js`](../../design/js/components/crud-list.js) `crud-filter-select` (searchable panel); selected value label via `crud.filterField` when non-empty.
+
 ## Column header sort
 
 Applies to `design/` mockups and `frontend/` production UI (when list tables ship).

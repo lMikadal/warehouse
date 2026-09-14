@@ -68,8 +68,8 @@
     {
       id: 7,
       parent_id: 6,
-      module: "website_country",
-      path: "pages/website-country.html",
+      module: "system_country",
+      path: "pages/system-address-country.html",
       sort_order: 100,
       is_superadmin_only: true,
       labels: { th: "ประเทศ", en: "Country" },
@@ -77,8 +77,8 @@
     {
       id: 8,
       parent_id: 6,
-      module: "website_province",
-      path: "pages/website-province.html",
+      module: "system_province",
+      path: "pages/system-address-province.html",
       sort_order: 200,
       is_superadmin_only: true,
       labels: { th: "จังหวัด", en: "Province" },
@@ -86,8 +86,8 @@
     {
       id: 9,
       parent_id: 6,
-      module: "website_district",
-      path: "pages/website-district.html",
+      module: "system_district",
+      path: "pages/system-address-district.html",
       sort_order: 300,
       is_superadmin_only: true,
       labels: { th: "เขต / อำเภอ", en: "District" },
@@ -95,8 +95,8 @@
     {
       id: 10,
       parent_id: 6,
-      module: "website_sub_district",
-      path: "pages/website-sub-district.html",
+      module: "system_sub_district",
+      path: "pages/system-address-sub-district.html",
       sort_order: 400,
       is_superadmin_only: true,
       labels: { th: "แขวง / ตำบล", en: "Sub District" },

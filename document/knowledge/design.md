@@ -178,8 +178,8 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - PK: `id BIGSERIAL`
 - **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`
 - **`tree_path` labels:** `n{id}` per segment from root to row (e.g. `n2.n6.n7`) — structural only; sibling display order uses `sort_order`. Seeds derive paths via `ADMIN_SEED_SHARED.assignTreePaths()` in [`design/js/seed/_admin_shared.js`](../../design/js/seed/_admin_shared.js)
-- **Geo chain** (`website_*`): `website_country` → `website_province` → `website_district` → `website_sub_district`; typed parent FK + `sort_order` only (not tree tables)
-- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`system_language`, `website_country`, `setting_bank`, `setting_claim_reason`, …)
+- **Geo chain** (`system_*`): `system_country` → `system_province` → `system_district` → `system_sub_district`; typed parent FK + `sort_order` only (not tree tables)
+- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`system_language`, `system_country`, `setting_bank`, `setting_claim_reason`, …)
 - Money: `NUMERIC(15,4)` · Rate/percent: `NUMERIC(5,2)` · Quantities: `NUMERIC(15,4)` or `INTEGER`
 - Root list tables use `{module}_list` or `{module}_user`: `product_list`, `warehouse_list`, `supplier_user`, `member_user`
   Children drop the repetition: `product_item` (not `product_list_item`), `member_address` (not `member_user_address`)
@@ -259,11 +259,11 @@ Checks per file:
 
 - Store key: `warehouse-design-store`
 - Seed version key: `warehouse-design-seed-version` (must match `window.SEED_VERSION` in `js/seed/index.js`, currently `member-user-1`)
-- `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `website_country` is empty in the store
-- **`pages/db.html`** must load the same geo seed scripts as module pages (`website_country.js` … `website_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
+- `store.init()` re-seeds from `window.SEED` when version mismatches, `admin_user` is missing, legacy `admin_menu` paths still point at deleted pages (e.g. `dashboard.html`), or geo seed is expected in `window.SEED` but `system_country` is empty in the store
+- **`pages/db.html`** must load the same geo seed scripts as module pages (`system_country.js` … `system_sub_district_language.js` after `_admin_shared.js`) so DB browser and reset store include geo tables
 - Manual reset: DevTools → delete both keys above, or run `store.reset()` in the console
 - Seed: `window.SEED` built from per-table files under `js/seed/` (`_admin_shared.js` first, then `website_*` + `admin_*.js`, `system_language.js`) merged by `index.js`
-- **Geo demo seed** (`website_country` → `website_sub_district`): 2 countries (TH, SG), 13 provinces, 15 districts, 30 sub-districts — each level has th/en `*_language` rows; Chiang Rai province is inactive for status-filter testing
+- **Geo demo seed** (`system_country` → `system_sub_district`): 2 countries (TH, SG), 13 provinces, 15 districts, 30 sub-districts — each level has th/en `*_language` rows; Chiang Rai province is inactive for status-filter testing
 - Channel name: `warehouse-design`
 - API: `store.init|getAll|getById|create|update|delete|reset`
 - **Same-tab sidebar refresh:** after every `store` mutation, `store:change` CustomEvent fires on `document` (in addition to `BroadcastChannel`) so the sidebar re-renders in the active tab without reload

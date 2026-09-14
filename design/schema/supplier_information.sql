@@ -14,9 +14,9 @@ CREATE TABLE supplier_information (
     branch_name              VARCHAR(255),                                         -- branch label
     tax_number               VARCHAR(50),                                          -- tax ID
     address                  TEXT,                                                 -- street address text
-    website_province_id      BIGINT                      REFERENCES website_province(id) ON DELETE SET NULL, -- province FK
-    website_district_id      BIGINT                      REFERENCES website_district(id) ON DELETE SET NULL, -- district FK
-    website_sub_district_id  BIGINT                      REFERENCES website_sub_district(id) ON DELETE SET NULL, -- sub-district FK
+    website_province_id      BIGINT                      REFERENCES system_province(id) ON DELETE SET NULL, -- province FK
+    website_district_id      BIGINT                      REFERENCES system_district(id) ON DELETE SET NULL, -- district FK
+    website_sub_district_id  BIGINT                      REFERENCES system_sub_district(id) ON DELETE SET NULL, -- sub-district FK
     postcode                 VARCHAR(20),                                          -- postal code
     tel                      VARCHAR(50),                                           -- phone
     email                    VARCHAR(255),                                         -- email

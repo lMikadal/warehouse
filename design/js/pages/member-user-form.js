@@ -410,7 +410,7 @@
       searchSelectHtml(
         prefix + "_province_id",
         "col.province",
-        geoOptionsList("website_province", "website_province_language", "website_province_id", null, null),
+        geoOptionsList("system_province", "system_province_language", "system_province_id", null, null),
         prov,
         false
       ) +
@@ -418,10 +418,10 @@
         prefix + "_district_id",
         "col.district",
         geoOptionsList(
-          "website_district",
-          "website_district_language",
-          "website_district_id",
-          "website_province_id",
+          "system_district",
+          "system_district_language",
+          "system_district_id",
+          "system_province_id",
           prov
         ),
         dist,
@@ -431,10 +431,10 @@
         prefix + "_sub_district_id",
         "col.subDistrict",
         geoOptionsList(
-          "website_sub_district",
-          "website_sub_district_language",
-          "website_sub_district_id",
-          "website_district_id",
+          "system_sub_district",
+          "system_sub_district_language",
+          "system_sub_district_id",
+          "system_district_id",
           dist
         ),
         sub,
@@ -2728,7 +2728,7 @@
       var prefixS = hiddenId.replace(/_sub_district_id$/, "");
       var tS = draftGeoTarget(prefixS);
       if (tS && tS.website_sub_district_id) {
-        var row = global.store.getById("website_sub_district", Number(tS.website_sub_district_id));
+        var row = global.store.getById("system_sub_district", Number(tS.website_sub_district_id));
         if (row && row.postcode) tS.postcode = row.postcode;
       }
       render();

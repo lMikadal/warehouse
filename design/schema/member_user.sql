@@ -22,9 +22,9 @@ CREATE TABLE member_user (
     tel                     VARCHAR(50),                                    -- contact phone
     email                   VARCHAR(255),                                   -- contact email
     address                 TEXT,                                           -- primary street address
-    website_province_id     BIGINT               REFERENCES website_province(id) ON DELETE SET NULL, -- province FK
-    website_district_id     BIGINT               REFERENCES website_district(id) ON DELETE SET NULL, -- district FK
-    website_sub_district_id BIGINT               REFERENCES website_sub_district(id) ON DELETE SET NULL, -- sub-district FK
+    website_province_id     BIGINT               REFERENCES system_province(id) ON DELETE SET NULL, -- province FK
+    website_district_id     BIGINT               REFERENCES system_district(id) ON DELETE SET NULL, -- district FK
+    website_sub_district_id BIGINT               REFERENCES system_sub_district(id) ON DELETE SET NULL, -- sub-district FK
     postcode                VARCHAR(20),                                    -- primary postal code
     website_file_id         BIGINT               REFERENCES website_file(id) ON DELETE RESTRICT, -- profile or avatar (purpose: member_avatar)
     note                    TEXT,                                           -- free-form admin notes

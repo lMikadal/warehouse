@@ -27,9 +27,9 @@
   }
 
   function hasMissingGeoSeed() {
-    var seed = global.SEED && global.SEED.website_country;
+    var seed = global.SEED && global.SEED.system_country;
     if (!Array.isArray(seed) || seed.length === 0) return false;
-    var stored = data.website_country;
+    var stored = data.system_country;
     return !Array.isArray(stored) || stored.length === 0;
   }
 

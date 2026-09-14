@@ -84,7 +84,8 @@ func main() {
 	rbacProtected := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac), pkgauth.RequirePermission(rbac))
 	langRepo := system.NewLanguageRepository(deps.DB)
 	langHandler := system.NewLanguageHandler(langRepo)
-	system.RegisterRoutes(rbacProtected, menuSvc, permSvc, langHandler)
+	geoRepo := system.NewAddressGeoRepository(deps.DB)
+	system.RegisterRoutes(rbacProtected, menuSvc, permSvc, langHandler, geoRepo)
 	admin.RegisterRoutes(rbacProtected.Group("/admin"), roleHandler, userHandler)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
