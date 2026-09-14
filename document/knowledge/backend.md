@@ -123,7 +123,7 @@ Permission codes: `{module}.{type}.{action}` — API route catalog in [`internal
 | `PATCH` | `/system/menus/:id` | `system.system_menu.update` |
 | `DELETE` | `/system/menus/:id` | `system.system_menu.delete` |
 
-Query: `page`, `limit`, `search`, `is_active`. List items include `names: { th, en }`, `tree_path`. Tree order: DFS sibling `sort_order` → `id`.
+Query: `page`, `limit`, optional `search`, optional `is_active` (`true`|`false`), optional `sort` + `order` (`asc`|`desc`; columns: `label`, `module`, `path`, `is_active`, `updated_at`). Search/status filters keep matching rows plus ancestors, then default tree order; when `sort`/`order` are set, flat sort on the filtered set before pagination. List items include `names: { th, en }`, `tree_path`. Default order: DFS sibling `sort_order` → `id`.
 
 ## System permissions
 

@@ -54,11 +54,9 @@ import {
   moveSystemMenu,
   patchSystemMenu,
   SystemMenuApiError,
+  type SystemMenuListParams,
 } from "@/lib/system-menu-api";
 import {
-  applyHeaderSort,
-  defaultSortRows,
-  filterTreeRowsPreservingAncestors,
   isTreePathDescendant,
   resolveTreeDropZone,
   treeDepth,
@@ -199,27 +197,6 @@ function sortFieldLabel(
   return sortDir === "desc"
     ? tCrud("sort.desc", { field })
     : tCrud("sort.asc", { field });
-}
-
-function filterMenuRows(
-  rows: AdminMenuRow[],
-  query: string,
-  status: StatusFilterValue,
-  locale: DisplayLocale
-): AdminMenuRow[] {
-  const q = query.trim().toLowerCase();
-  return filterTreeRowsPreservingAncestors(rows, (row) => {
-    if (status === "active" && !row.is_active) return false;
-    if (status === "inactive" && row.is_active) return false;
-    if (!q) return true;
-    const label = adminMenuLabel(row, locale).toLowerCase();
-    const pathDisplay = (row.path || "—").toLowerCase();
-    return (
-      label.includes(q) ||
-      row.module.toLowerCase().includes(q) ||
-      pathDisplay.includes(q)
-    );
-  });
 }
 
 function toRowView(row: AdminMenuRow, locale: DisplayLocale): MenuRowView {
@@ -392,8 +369,11 @@ export function SystemMenuList() {
   const tCol = useTranslations("col");
 
   const [rows, setRows] = useState<AdminMenuRow[]>([]);
+  const [pickerRows, setPickerRows] = useState<AdminMenuRow[]>([]);
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
@@ -405,57 +385,81 @@ export function SystemMenuList() {
   const [dragIntent, setDragIntent] = useState<MenuDragIntent | null>(null);
   const dragIntentRef = useRef<MenuDragIntent | null>(null);
 
-  const reloadRows = useCallback(async () => {
-    const next = await fetchSystemMenus(locale);
-    setRows(next);
-  }, [locale]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const listFiltered =
+    debouncedQuery.trim() !== "" || statusFilter !== "";
+
+  const listFetchParams = useMemo((): SystemMenuListParams => {
+    const isActive =
+      statusFilter === "active"
+        ? true
+        : statusFilter === "inactive"
+          ? false
+          : undefined;
+    const headerSortActive = sortKey != null && sortDir != null;
+    return {
+      page,
+      limit: pageSize,
+      search: debouncedQuery.trim() || undefined,
+      isActive,
+      sort: !listFiltered && headerSortActive ? sortKey : undefined,
+      order: !listFiltered && headerSortActive ? sortDir ?? undefined : undefined,
+    };
+  }, [
+    page,
+    pageSize,
+    debouncedQuery,
+    statusFilter,
+    sortKey,
+    sortDir,
+    listFiltered,
+  ]);
+
+  const loadList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await fetchSystemMenus(locale, listFetchParams);
+      setRows(result.rows);
+      setListMeta(result.meta);
+    } catch (err: unknown) {
+      const message =
+        err instanceof SystemMenuApiError ? err.message : tToast("demoError");
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [locale, listFetchParams, tToast]);
+
+  useEffect(() => {
+    void loadList();
+  }, [loadList]);
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      try {
-        const next = await fetchSystemMenus(locale);
-        if (!cancelled) setRows(next);
-      } catch (err: unknown) {
-        if (cancelled) return;
-        const message =
-          err instanceof SystemMenuApiError
-            ? err.message
-            : tToast("demoError");
-        toast.error(message);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    void fetchSystemMenus(locale, { page: 1, limit: 100 })
+      .then((result) => {
+        if (!cancelled) setPickerRows(result.rows);
+      })
+      .catch(() => {
+        if (!cancelled) setPickerRows([]);
+      });
     return () => {
       cancelled = true;
     };
-  }, [locale, tToast]);
+  }, [locale]);
 
-  const searchActive = query.trim() !== "";
-  const listFiltered = searchActive || statusFilter !== "";
+  const pageRowViews = useMemo(
+    () => rows.map((r) => toRowView(r, locale)),
+    [rows, locale]
+  );
 
-  const fullSorted = useMemo(() => {
-    const filtered = filterMenuRows(rows, query, statusFilter, locale);
-    const withLabel = filtered.map((r) => toRowView(r, locale));
-    if (!listFiltered && sortKey && sortDir) {
-      return applyHeaderSort(withLabel, sortKey, sortDir, (row) => ({
-        label: row.label,
-        module: row.module,
-        path: row.path ?? "",
-        is_active: row.is_active,
-        updated_at: row.updated_at,
-      }));
-    }
-    return defaultSortRows(withLabel).map((r) => toRowView(r, locale));
-  }, [rows, query, statusFilter, locale, sortKey, sortDir, listFiltered]);
-
-  const total = fullSorted.length;
+  const total = listMeta.total;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
-  const pageStart = (safePage - 1) * pageSize;
-  const pageRows = fullSorted.slice(pageStart, pageStart + pageSize);
   const headerSortActive = sortKey != null && sortDir != null;
   const dragEnabled = !listFiltered && !headerSortActive;
 
@@ -476,10 +480,8 @@ export function SystemMenuList() {
       current.map((r) => (r.id === id ? { ...r, is_active: active } : r))
     );
     try {
-      const updated = await patchSystemMenu(id, { is_active: active }, locale);
-      setRows((current) =>
-        current.map((r) => (r.id === id ? updated : r))
-      );
+      await patchSystemMenu(id, { is_active: active }, locale);
+      await loadList();
       toast.success(tCrud("toast.saved"));
     } catch (err) {
       setRows((current) =>
@@ -501,7 +503,7 @@ export function SystemMenuList() {
       return;
     }
     try {
-      const updated = await patchSystemMenu(
+      await patchSystemMenu(
         id,
         {
           names: { th: payload.nameTh, en: payload.nameEn },
@@ -510,9 +512,7 @@ export function SystemMenuList() {
         },
         locale
       );
-      setRows((current) =>
-        current.map((r) => (r.id === id ? updated : r))
-      );
+      await loadList();
       toast.success(tCrud("toast.saved"));
       setMenuSheet(null);
     } catch (err) {
@@ -546,7 +546,7 @@ export function SystemMenuList() {
       setDragIntent(null);
       return;
     }
-    const next = resolveMenuDragIntent(operation, fullSorted);
+    const next = resolveMenuDragIntent(operation, pageRowViews);
     dragIntentRef.current = next;
     setDragIntent(next);
   };
@@ -565,7 +565,7 @@ export function SystemMenuList() {
       dragIntentRef.current ??
       resolveMenuDragIntent(
         event.operation as DndOperation | undefined,
-        fullSorted
+        pageRowViews
       );
     dragIntentRef.current = null;
     setDragIntent(null);
@@ -609,7 +609,7 @@ export function SystemMenuList() {
       intent.zone,
       locale
     )
-      .then(() => reloadRows())
+      .then(() => loadList())
       .then(() => toast.success(tCrud("toast.reordered")))
       .catch((err: unknown) => {
         scheduleRejectDrag(
@@ -761,8 +761,8 @@ export function SystemMenuList() {
                     …
                   </TableCell>
                 </TableRow>
-              ) : pageRows.length ? (
-                pageRows.map((row, index) =>
+              ) : pageRowViews.length ? (
+                pageRowViews.map((row, index) =>
                   dragEnabled ? (
                     <SortableMenuTableRow
                       key={row.id}
@@ -810,7 +810,7 @@ export function SystemMenuList() {
 
       <SystemMenuEditSheet
         state={menuSheet}
-        menuRows={rows}
+        menuRows={pickerRows}
         onOpenChange={(open) => {
           if (!open) setMenuSheet(null);
         }}

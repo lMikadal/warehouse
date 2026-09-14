@@ -133,12 +133,32 @@
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": {
-                  "raw": "{{baseUrl}}/system/menus?page=1&limit=10",
+                  "raw": "{{baseUrl}}/system/menus?page=1&limit=10&search=&is_active=&sort=&order=",
                   "host": ["{{baseUrl}}"],
                   "path": ["system", "menus"],
                   "query": [
-                    { "key": "page", "value": "1" },
-                    { "key": "limit", "value": "10" }
+                    { "key": "page", "value": "1", "description": "1-based page" },
+                    { "key": "limit", "value": "10", "description": "10|25|50|100" },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "Optional; matches name (th/en), module, path; tree keeps ancestors"
+                    },
+                    {
+                      "key": "is_active",
+                      "value": "",
+                      "description": "Optional true|false; tree keeps ancestors"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "",
+                      "description": "Optional with order: label|module|path|is_active|updated_at"
+                    },
+                    {
+                      "key": "order",
+                      "value": "",
+                      "description": "asc|desc when sort is set"
+                    }
                   ]
                 }
               }

@@ -34,6 +34,12 @@ func (h *MenuHandler) list(c *echo.Context) error {
 		active := v == "true" || v == "1"
 		filter.IsActive = &active
 	}
+	sortCol := strings.TrimSpace(c.QueryParam("sort"))
+	order := strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
+	if sortCol != "" && (order == "asc" || order == "desc") {
+		filter.Sort = sortCol
+		filter.Order = order
+	}
 	items, total, err := h.svc.List(c.Request().Context(), filter)
 	if err != nil {
 		applog.HTTPError(c, "list system menus", err)

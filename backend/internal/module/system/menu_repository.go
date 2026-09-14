@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
 
 type MenuRepository struct {
@@ -22,6 +23,8 @@ type MenuListFilter struct {
 	Locale   string
 	Search   string
 	IsActive *bool
+	Sort     string
+	Order    string
 }
 
 func (r *MenuRepository) List(ctx context.Context, f MenuListFilter) ([]MenuRow, int64, error) {
@@ -30,11 +33,13 @@ func (r *MenuRepository) List(ctx context.Context, f MenuListFilter) ([]MenuRow,
 		return nil, 0, err
 	}
 	sorted := sortMenuTree(all)
-	if f.IsActive != nil {
-		sorted = filterMenuActive(sorted, *f.IsActive)
+	if f.Search != "" || f.IsActive != nil {
+		sorted = filterMenuTreePreservingAncestors(sorted, func(row MenuRow) bool {
+			return rowMatchesListFilter(row, f)
+		})
 	}
-	if f.Search != "" {
-		sorted = filterMenuSearch(sorted, f.Search)
+	if f.Sort != "" && (f.Order == "asc" || f.Order == "desc") {
+		sorted = sortMenuRowsByColumn(sorted, f.Sort, f.Order, f.Locale)
 	}
 	total := int64(len(sorted))
 	start := (f.Page - 1) * f.Limit
@@ -115,28 +120,130 @@ SELECT system_menu_id, locale, name FROM system_menu_language`)
 	return langRows.Err()
 }
 
-func filterMenuActive(rows []MenuRow, active bool) []MenuRow {
-	out := make([]MenuRow, 0, len(rows))
+func rowMatchesListFilter(row MenuRow, f MenuListFilter) bool {
+	if f.IsActive != nil && row.IsActive != *f.IsActive {
+		return false
+	}
+	if f.Search != "" && !menuRowMatchesSearch(row, f.Search) {
+		return false
+	}
+	return true
+}
+
+func menuRowMatchesSearch(row MenuRow, q string) bool {
+	q = strings.ToLower(strings.TrimSpace(q))
+	if q == "" {
+		return true
+	}
+	return strings.Contains(strings.ToLower(rowName(row, "th")), q) ||
+		strings.Contains(strings.ToLower(rowName(row, "en")), q) ||
+		strings.Contains(strings.ToLower(row.Module), q) ||
+		strings.Contains(strings.ToLower(ptrStr(row.Path)), q)
+}
+
+func filterMenuTreePreservingAncestors(rows []MenuRow, matches func(MenuRow) bool) []MenuRow {
+	byID := make(map[int64]MenuRow, len(rows))
 	for _, row := range rows {
-		if row.IsActive == active {
+		byID[row.ID] = row
+	}
+	include := make(map[int64]struct{})
+	for _, row := range rows {
+		if !matches(row) {
+			continue
+		}
+		cur := row
+		for {
+			include[cur.ID] = struct{}{}
+			if cur.ParentID == nil {
+				break
+			}
+			parent, ok := byID[*cur.ParentID]
+			if !ok {
+				break
+			}
+			cur = parent
+		}
+	}
+	out := make([]MenuRow, 0, len(include))
+	for _, row := range rows {
+		if _, ok := include[row.ID]; ok {
 			out = append(out, row)
 		}
 	}
 	return out
 }
 
-func filterMenuSearch(rows []MenuRow, q string) []MenuRow {
-	q = strings.ToLower(q)
-	out := make([]MenuRow, 0, len(rows))
-	for _, row := range rows {
-		if strings.Contains(strings.ToLower(rowName(row, "th")), q) ||
-			strings.Contains(strings.ToLower(rowName(row, "en")), q) ||
-			strings.Contains(strings.ToLower(row.Module), q) ||
-			strings.Contains(strings.ToLower(ptrStr(row.Path)), q) {
-			out = append(out, row)
-		}
+var allowedMenuListSort = map[string]struct{}{
+	"label": {}, "module": {}, "path": {}, "is_active": {}, "updated_at": {},
+}
+
+func sortMenuRowsByColumn(rows []MenuRow, sortCol, order, locale string) []MenuRow {
+	if _, ok := allowedMenuListSort[sortCol]; !ok {
+		return rows
 	}
+	if locale == "" {
+		locale = "th"
+	}
+	dir := 1
+	if order == "desc" {
+		dir = -1
+	}
+	out := append([]MenuRow(nil), rows...)
+	sort.SliceStable(out, func(i, j int) bool {
+		cmp := compareMenuListColumn(out[i], out[j], sortCol, locale)
+		if cmp != 0 {
+			return cmp*dir < 0
+		}
+		return compareMenuRowsCreatedAt(out[i], out[j]) < 0
+	})
 	return out
+}
+
+func compareMenuListColumn(a, b MenuRow, sortCol, locale string) int {
+	switch sortCol {
+	case "label":
+		return strings.Compare(strings.ToLower(rowName(a, locale)), strings.ToLower(rowName(b, locale)))
+	case "module":
+		return strings.Compare(strings.ToLower(a.Module), strings.ToLower(b.Module))
+	case "path":
+		return strings.Compare(strings.ToLower(ptrStr(a.Path)), strings.ToLower(ptrStr(b.Path)))
+	case "is_active":
+		av, bv := 0, 0
+		if a.IsActive {
+			av = 1
+		}
+		if b.IsActive {
+			bv = 1
+		}
+		return av - bv
+	case "updated_at":
+		return compareMenuTimes(a.UpdatedAt, b.UpdatedAt)
+	default:
+		return 0
+	}
+}
+
+func compareMenuTimes(a, b time.Time) int {
+	if a.Equal(b) {
+		return 0
+	}
+	if a.Before(b) {
+		return -1
+	}
+	return 1
+}
+
+func compareMenuRowsCreatedAt(a, b MenuRow) int {
+	if cmp := compareMenuTimes(a.CreatedAt, b.CreatedAt); cmp != 0 {
+		return cmp
+	}
+	if a.ID < b.ID {
+		return -1
+	}
+	if a.ID > b.ID {
+		return 1
+	}
+	return 0
 }
 
 func rowName(row MenuRow, locale string) string {

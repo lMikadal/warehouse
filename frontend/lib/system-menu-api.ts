@@ -21,6 +21,20 @@ type ListResponse = {
   meta: { total: number; page: number; limit: number };
 };
 
+export type SystemMenuListParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  isActive?: boolean;
+  sort?: string | null;
+  order?: "asc" | "desc" | null;
+};
+
+export type SystemMenuListResult = {
+  rows: AdminMenuRow[];
+  meta: { total: number; page: number; limit: number };
+};
+
 export class SystemMenuApiError extends Error {
   code?: string;
   status: number;
@@ -68,18 +82,38 @@ export function mapApiMenuToRow(item: SystemMenuApiItem): AdminMenuRow {
   };
 }
 
+function buildListQuery(params: SystemMenuListParams): URLSearchParams {
+  const qs = new URLSearchParams({
+    page: String(params.page),
+    limit: String(params.limit),
+  });
+  const search = params.search?.trim();
+  if (search) qs.set("search", search);
+  if (params.isActive !== undefined) {
+    qs.set("is_active", params.isActive ? "true" : "false");
+  }
+  if (params.sort && params.order) {
+    qs.set("sort", params.sort);
+    qs.set("order", params.order);
+  }
+  return qs;
+}
+
 export async function fetchSystemMenus(
-  locale: string
-): Promise<AdminMenuRow[]> {
-  const params = new URLSearchParams({ page: "1", limit: "100" });
-  const url = `${BFF_MENUS_BASE}?${params}`;
+  locale: string,
+  params: SystemMenuListParams
+): Promise<SystemMenuListResult> {
+  const url = `${BFF_MENUS_BASE}?${buildListQuery(params)}`;
   const res = await fetch(url, {
     headers: bffHeaders(locale),
     credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   const body = (await res.json()) as ListResponse;
-  return (body.items ?? []).map(mapApiMenuToRow);
+  return {
+    rows: (body.items ?? []).map(mapApiMenuToRow),
+    meta: body.meta ?? { total: 0, page: params.page, limit: params.limit },
+  };
 }
 
 export type SystemMenuPatchBody = {
