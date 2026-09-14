@@ -8,10 +8,13 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 	"github.com/lMikadal/warehouse/backend/internal/config"
 	"github.com/lMikadal/warehouse/backend/internal/infra"
 	"github.com/lMikadal/warehouse/backend/internal/infra/postgres"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/lMikadal/warehouse/backend/internal/module/admin"
+	authmod "github.com/lMikadal/warehouse/backend/internal/module/auth"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	"github.com/lMikadal/warehouse/backend/internal/server"
@@ -39,6 +42,13 @@ func main() {
 		}
 	}
 
+	issuer, err := pkgauth.NewTokenIssuer(cfg.JWTSecret, cfg.JWTAccessTTL)
+	if err != nil {
+		slog.Error("jwt config", "error", err)
+		os.Exit(1)
+	}
+	rbac := pkgauth.NewRBAC(deps.DB)
+
 	e := echo.New()
 	e.Use(middleware.Recover())
 	for _, m := range applog.EchoMiddleware() {
@@ -47,7 +57,27 @@ func main() {
 
 	v1 := e.Group(api.V1Prefix)
 	health.RegisterRoutes(v1)
-	system.RegisterRoutes(v1, system.NewMenuService(system.NewMenuRepository(deps.DB)))
+
+	authUsers := authmod.NewUserRepository(deps.DB)
+	authSessions := authmod.NewSessionRepository(deps.DB)
+	authSvc := authmod.NewService(authUsers, authSessions, issuer, cfg.JWTRefreshTTL)
+	authHandler := authmod.NewHandler(authSvc)
+	authmod.RegisterRoutes(v1, authHandler)
+
+	menuRepo := system.NewMenuRepository(deps.DB)
+	menuSvc := system.NewMenuService(menuRepo)
+	permRepo := system.NewPermissionRepository(deps.DB)
+	permSvc := system.NewPermissionService(permRepo)
+
+	roleRepo := admin.NewRoleRepository(deps.DB)
+	userRepo := admin.NewUserRepository(deps.DB)
+	roleHandler := admin.NewRoleHandler(roleRepo)
+	userHandler := admin.NewUserHandler(userRepo)
+
+	protected := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac), pkgauth.RequirePermission(rbac))
+	authmod.RegisterProtectedRoutes(protected, authHandler)
+	system.RegisterRoutes(protected, menuSvc, permSvc)
+	admin.RegisterRoutes(protected.Group("/admin"), roleHandler, userHandler)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

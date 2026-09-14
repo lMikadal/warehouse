@@ -1,6 +1,10 @@
 package system
 
-import "github.com/lMikadal/warehouse/backend/internal/api"
+import (
+	"time"
+
+	"github.com/lMikadal/warehouse/backend/internal/api"
+)
 
 type MenuRow struct {
 	ID               int64
@@ -14,23 +18,45 @@ type MenuRow struct {
 	IsSuperadminOnly bool
 	IsDialog         bool
 	api.Audit
-	Name string
+	Name  string
+	Names map[string]string
+}
+
+type MenuNames struct {
+	Th string `json:"th"`
+	En string `json:"en"`
 }
 
 type MenuListItemResponse struct {
-	ID               int64   `json:"id"`
-	Icon             *string `json:"icon,omitempty"`
-	Module           string  `json:"module"`
-	Path             *string `json:"path,omitempty"`
-	ParentID         *int64  `json:"parent_id"`
-	SortOrder        int     `json:"sort_order"`
-	IsActive         bool    `json:"is_active"`
-	IsSuperadminOnly bool    `json:"is_superadmin_only"`
-	IsDialog         bool    `json:"is_dialog"`
-	Name             string  `json:"name"`
+	ID               int64     `json:"id"`
+	Icon             *string   `json:"icon,omitempty"`
+	Module           string    `json:"module"`
+	Path             *string   `json:"path,omitempty"`
+	ParentID         *int64    `json:"parent_id"`
+	SortOrder        int       `json:"sort_order"`
+	IsActive         bool      `json:"is_active"`
+	IsSuperadminOnly bool      `json:"is_superadmin_only,omitempty"`
+	IsDialog         bool      `json:"is_dialog,omitempty"`
+	TreePath         string    `json:"tree_path"`
+	Names            MenuNames `json:"names"`
+	Name             string    `json:"name,omitempty"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
-func toMenuListItem(r MenuRow) MenuListItemResponse {
+func toMenuListItem(r MenuRow, locale string) MenuListItemResponse {
+	names := MenuNames{}
+	if r.Names != nil {
+		names.Th = r.Names["th"]
+		names.En = r.Names["en"]
+	}
+	name := r.Name
+	if name == "" {
+		if locale == "en" {
+			name = names.En
+		} else {
+			name = names.Th
+		}
+	}
 	return MenuListItemResponse{
 		ID:               r.ID,
 		Icon:             r.Icon,
@@ -41,6 +67,9 @@ func toMenuListItem(r MenuRow) MenuListItemResponse {
 		IsActive:         r.IsActive,
 		IsSuperadminOnly: r.IsSuperadminOnly,
 		IsDialog:         r.IsDialog,
-		Name:             r.Name,
+		TreePath:         r.TreePath,
+		Names:            names,
+		Name:             name,
+		UpdatedAt:        r.UpdatedAt,
 	}
 }

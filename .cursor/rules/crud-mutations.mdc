@@ -1,0 +1,55 @@
+---
+description: Backend list mutations — is_active patch, flat reorder, tree move.
+globs: backend/**
+---
+
+# CRUD list mutations (backend)
+
+When a module exposes a **paginated list API** for a table, ship the mutation endpoints below so design/frontend inline switches and drag-and-drop can call the API. List sort and pagination rules stay in [`.cursor/rules/tables.mdc`](tables.mdc).
+
+## `is_active`
+
+Applies when `design/schema/<table>.sql` defines column `is_active`.
+
+- **List:** accept query `is_active=true` or `is_active=false` (with `page`, `limit`, search as needed).
+- **Write:** `PATCH /{resource}/:id` with partial body `{ "is_active": true|false }`. Other fields on the same handler may be optional (partial update).
+- **Read-only catalog** (no full edit form): same `PATCH /:id` but handler accepts **only** `is_active` (see `system_permission`).
+
+Aligns with design `statusSwitch` / frontend `StatusSwitchField`.
+
+## Flat `sort_order` (list drag-and-drop)
+
+Applies when the **module list table** has `sort_order` and DnD is enabled per [tables.mdc](tables.mdc) — not junction/child rows (`*_file`, `supplier_contact`, etc.).
+
+- **Route:** `PATCH /{resource}/reorder` → **`204 No Content`**
+- **Body:** `{ "drag_id": number, "target_id": number }` — sibling reorder within scope (same `parent_id` for trees without `tree_path`; same typed parent FK for geo chains, e.g. provinces under one `website_country_id`).
+- **Effect:** renumber `sort_order` contiguously for affected siblings (shared helper: [`internal/tree.ReorderSiblings`](../../backend/internal/tree/reorder.go)).
+- **RBAC:** same `{module}.{type}.update` as other writes; path prefix matches resource (`perm_catalog` maps `PATCH` → `update`).
+
+## Self-FK + `tree_path` (LTREE)
+
+Applies when the table has **`parent_id` + `tree_path`** (e.g. `system_menu`, `warehouse_list`, `product_attribute`, `member_tier`).
+
+- **Route:** `PATCH /{resource}/move` → **`204 No Content`**
+- **Body:** `{ "drag_id", "target_id", "zone": "before"|"after"|"child" }`
+- **Effect:** update `parent_id`, sibling `sort_order`, rebuild `tree_path` for moved node and descendants ([`internal/tree.ApplyDrop`](../../backend/internal/tree/move.go)).
+- **Reference:** [`system/menus/move`](../../backend/internal/module/system/menu_handler.go)
+
+## Exceptions
+
+| Case | Rule |
+|------|------|
+| `admin_user` | Use `status` enum — list `?status=` and `PATCH { "status" }`, not `is_active`. |
+| `admin_user_session`, auth internals | No public list toggle API. |
+| Nested / parent-scoped rows | Reorder via parent update or sub-resource — not top-level `/reorder`. |
+| `website_language` | Exclusive `is_default` toggle (at most one true) — partial `PATCH`, not `is_active`. |
+| Table has `is_active` but no list module yet | Omit endpoints until the list API exists (YAGNI). |
+
+## Inventory
+
+Track per-table status in [`document/checklist/backend/inventory-crud-mutation-apis.md`](../../document/checklist/backend/inventory-crud-mutation-apis.md).
+
+## Related
+
+- Handlers: [`.cursor/skills/backend/SKILL.md`](../skills/backend/SKILL.md), [`.cursor/rules/logging.mdc`](logging.mdc)
+- Postman: [`.cursor/skills/tester/SKILL.md`](../skills/tester/SKILL.md) when routes change

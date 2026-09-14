@@ -5,49 +5,98 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:1323/api/v1"
-    },
-    {
-      "key": "accessToken",
-      "value": ""
-    }
+    { "key": "baseUrl", "value": "http://localhost:1323/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
   "item": [
     {
       "name": "Health",
       "item": [
         {
           "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('body status is ok', function () {",
-                  "  var json = pm.response.json();",
-                  "  pm.expect(json.status).to.eql('ok');",
-                  "});"
-                ]
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
               }
             }
-          ],
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health"]
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
             },
-            "description": "Liveness probe — no auth. Versioned under /api/v1."
+            "url": "{{baseUrl}}/auth/login"
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "if (j.access_token) pm.collectionVariables.set('accessToken', j.access_token);",
+                  "if (j.refresh_token) pm.collectionVariables.set('refreshToken', j.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh"
+          }
+        },
+        {
+          "name": "Me",
+          "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/logout"
+          }
         }
       ]
     },
@@ -59,32 +108,9 @@
           "item": [
             {
               "name": "List menus",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "pm.test('status is 200', function () {",
-                      "  pm.response.to.have.status(200);",
-                      "});",
-                      "pm.test('has items and meta', function () {",
-                      "  var json = pm.response.json();",
-                      "  pm.expect(json.items).to.be.an('array');",
-                      "  pm.expect(json.meta).to.have.property('total');",
-                      "});"
-                    ]
-                  }
-                }
-              ],
               "request": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept-Language",
-                    "value": "th"
-                  }
-                ],
+                "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": {
                   "raw": "{{baseUrl}}/system/menus?page=1&limit=10",
                   "host": ["{{baseUrl}}"],
@@ -93,10 +119,65 @@
                     { "key": "page", "value": "1" },
                     { "key": "limit", "value": "10" }
                   ]
+                }
+              }
+            },
+            {
+              "name": "Create menu",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"module\": \"demo\",\n  \"path\": \"pages/demo.html\",\n  \"is_active\": true,\n  \"names\": { \"th\": \"ทดสอบ\", \"en\": \"Demo\" }\n}"
                 },
-                "description": "Paginated system menu list (tree order). Requires migrated DB + optional test seed."
-              },
-              "response": []
+                "url": "{{baseUrl}}/system/menus"
+              }
+            },
+            {
+              "name": "Patch menu",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"names\": { \"th\": \"ทดสอบ\", \"en\": \"Demo\" }\n}"
+                },
+                "url": "{{baseUrl}}/system/menus/1"
+              }
+            },
+            {
+              "name": "Move menu",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1,\n  \"zone\": \"after\"\n}"
+                },
+                "url": "{{baseUrl}}/system/menus/move"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Permissions",
+          "item": [
+            {
+              "name": "List permissions",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/system/permissions?page=1&limit=25"
+              }
+            },
+            {
+              "name": "Patch permission active",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_active\": true\n}" },
+                "url": "{{baseUrl}}/system/permissions/1"
+              }
             }
           ]
         }
@@ -104,13 +185,70 @@
     },
     {
       "name": "Admin",
-      "description": "Users, roles, sessions — endpoints added as modules ship.",
-      "item": []
-    },
-    {
-      "name": "Auth",
-      "description": "Login and token refresh — endpoints added with auth module.",
-      "item": []
+      "item": [
+        {
+          "name": "Roles",
+          "item": [
+            {
+              "name": "List roles",
+              "request": { "method": "GET", "url": "{{baseUrl}}/admin/roles?page=1&limit=10" }
+            },
+            {
+              "name": "Get role",
+              "request": { "method": "GET", "url": "{{baseUrl}}/admin/roles/1" }
+            },
+            {
+              "name": "Create role",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"names\": { \"th\": \"บทบาทใหม่\", \"en\": \"New role\" },\n  \"permission_ids\": [1, 2, 3]\n}"
+                },
+                "url": "{{baseUrl}}/admin/roles"
+              }
+            },
+            {
+              "name": "Patch role is_active",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": false\n}"
+                },
+                "url": "{{baseUrl}}/admin/roles/2"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "List users",
+              "request": { "method": "GET", "url": "{{baseUrl}}/admin/users?page=1&limit=10" }
+            },
+            {
+              "name": "Get user",
+              "request": { "method": "GET", "url": "{{baseUrl}}/admin/users/1" }
+            },
+            {
+              "name": "Create user",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"demo_user\",\n  \"password\": \"ChangeMe123\",\n  \"admin_role_id\": 2,\n  \"type\": \"staff\",\n  \"status\": \"active\"\n}"
+                },
+                "url": "{{baseUrl}}/admin/users"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -156,6 +156,7 @@ Naming, enums, trees, audit, and multilingual rules: **[`.cursor/skills/design/r
 
 - Goose `CREATE TABLE` must match design table names — do not rename when migrating
 - **List endpoints:** follow [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) — accept `page` + `limit`; tree lists: hierarchical order (sibling `sort_order` → `id` per `parent_id`, DFS pre-order); flat: `sort_order` → `created_at`; else `created_at` → `id`. `ORDER BY tree_path` alone does not match UI sibling order.
+- **List mutations** (`is_active`, flat `/reorder`, tree `/move`): [`.cursor/rules/crud-mutations.mdc`](../../rules/crud-mutations.mdc); shared tree helpers in `internal/tree/`.
 - IDs: `BIGSERIAL` / `BIGINT` per design — do not copy UUID PKs from legacy v2; map to design FK names when porting
 - When schema drifts, update `design/schema/` and add a new migration — do not edit old applied migrations.
 - Migrations: **DDL only**; data in `postgres/seeds/` — see [`.cursor/rules/migrations-seed.mdc`](../../rules/migrations-seed.mdc)

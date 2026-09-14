@@ -45,7 +45,7 @@ Applies to **every list page / every table** in `design/`, `frontend/`, and reor
 - **No `sort_order` column:** no grip column, no drag-and-drop, do not write `sort_order` on reorder — use a normal table; default sort is `created_at → id` (see table above)
 - **Design:** [`module-registry.js`](../../design/js/pages/module-registry.js) — set `sortable: true` only when `design/schema/<table>.sql` includes `sort_order`; otherwise `sortable: false` (example: `setting_vat`)
 - **Frontend:** same rule when implementing list reorder UI
-- **Backend:** no reorder endpoint that patches `sort_order` on tables that lack the column
+- **Backend:** no reorder endpoint that patches `sort_order` on tables that lack the column; when DnD applies, implement `PATCH /reorder` or `PATCH /move` per [`.cursor/rules/crud-mutations.mdc`](crud-mutations.mdc)
 - Column header sort (below) remains available on all data tables regardless of DnD
 
 ## Column header sort

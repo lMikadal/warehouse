@@ -2,6 +2,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 )
@@ -15,6 +16,9 @@ type Config struct {
 	LogLevel      string `env:"LOG_LEVEL" envDefault:"info"`
 	// AutoMigrate: empty = derive from AppEnv; true/false overrides.
 	AutoMigrate string `env:"AUTO_MIGRATE"`
+	JWTSecret   string        `env:"JWT_SECRET,required"`
+	JWTAccessTTL  time.Duration `env:"JWT_ACCESS_TTL" envDefault:"15m"`
+	JWTRefreshTTL time.Duration `env:"JWT_REFRESH_TTL" envDefault:"168h"`
 }
 
 func Load() (Config, error) {

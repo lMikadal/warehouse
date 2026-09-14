@@ -11,6 +11,8 @@ backend/
 │   └── seed/main.go       # init | test SQL seeds
 ├── internal/
 │   ├── api/               # V1Prefix, pagination, ListResponse, Audit embed
+│   ├── auth/              # JWT, Bearer + RBAC middleware
+│   ├── rbac/              # perm_catalog (wave permission rows)
 │   ├── config/
 │   ├── log/               # slog Setup, Echo middleware, HTTPError
 │   ├── infra/
@@ -18,9 +20,10 @@ backend/
 │   │   ├── postgres/      # pool, migrations/, seeds/
 │   │   └── redis/         # stub until Redis phase
 │   ├── module/
+│   │   ├── auth/          # login, refresh, logout, me
 │   │   ├── health/
 │   │   ├── system/        # system_menu, system_permission
-│   │   └── admin/         # users, roles (later)
+│   │   └── admin/         # users, roles
 │   └── server/
 ├── env.example
 └── go.mod
@@ -39,6 +42,13 @@ Module path: `github.com/lMikadal/warehouse/backend`.
 | `DEFAULT_LOCALE` | Default `th` |
 | `LOG_LEVEL` | `debug` / `info` / `warn` / `error` (default `info`) |
 | `AUTO_MIGRATE` | Optional `true`/`false` — if unset: run goose `up` on server start when `APP_ENV=development` only |
+| `JWT_SECRET` | **Required** — min 32 chars; HS256 access tokens |
+| `JWT_ACCESS_TTL` | Access token lifetime (default `15m`) |
+| `JWT_REFRESH_TTL` | Refresh token lifetime (default `168h`) |
+
+## Demo login (test seed only)
+
+After `make backend-seed-test`: username `admin` / password `admin` (superadmin), `staff` / `staff`. Do not use in production.
 
 ## Logging
 
@@ -72,15 +82,75 @@ Public routes: **`/api/v1`** (`internal/api.V1Prefix`).
 |--------|------|------|----------|
 | `GET` | `/api/v1/health` | none | `200` `{"status":"ok"}` |
 
-## System menus (pilot)
+## Auth
 
-| Method | Path | Auth | Response |
-|--------|------|------|----------|
-| `GET` | `/api/v1/system/menus` | none (auth later) | `200` `{ "items": [...], "meta": { total, page, limit } }` |
+Public:
 
-Query: `page`, `limit` (default 10, max 100), optional `search`. Locale: `Accept-Language` or `locale` query.
+| Method | Path | Body |
+|--------|------|------|
+| `POST` | `/api/v1/auth/login` | `{ "username", "password" }` → tokens + `user` |
+| `POST` | `/api/v1/auth/refresh` | `{ "refresh_token" }` |
+| `POST` | `/api/v1/auth/logout` | optional `{ "refresh_token" }` → `204` |
 
-List order: tree DFS — siblings `sort_order ASC`, `id ASC` per [tables rule](../../.cursor/rules/tables.mdc).
+Protected (Bearer):
+
+| Method | Path |
+|--------|------|
+| `GET` | `/api/v1/auth/me` |
+
+Sessions stored in `admin_user_session` (hashed refresh token + access `jti`). Refresh rotates session row.
+
+## Protected routes
+
+All `/api/v1/system/*` and `/api/v1/admin/*` require `Authorization: Bearer <access_token>` and RBAC permission code unless user `type` is `superadmin`.
+
+Permission codes: `{module}.{type}.{action}` — wave catalog in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go) and init seeds `02`–`05_system_permission_*.sql`.
+
+## System menus
+
+| Method | Path | Permission (non-superadmin) |
+|--------|------|-----------------------------|
+| `GET` | `/system/menus` | `system.system_menu.view` |
+| `POST` | `/system/menus` | `system.system_menu.create` |
+| `PATCH` | `/system/menus/move` | `system.system_menu.update` |
+| `PATCH` | `/system/menus/:id` | `system.system_menu.update` |
+| `DELETE` | `/system/menus/:id` | `system.system_menu.delete` |
+
+Query: `page`, `limit`, `search`, `is_active`. List items include `names: { th, en }`, `tree_path`. Tree order: DFS sibling `sort_order` → `id`.
+
+## System permissions
+
+| Method | Path | Permission |
+|--------|------|------------|
+| `GET` | `/system/permissions` | `system.system_permission.view` |
+| `PATCH` | `/system/permissions/:id` | `system.system_permission.update` (body: `{ "is_active" }` only) |
+
+## Admin roles / users
+
+| Resource | Paths | Prefix codes |
+|----------|-------|--------------|
+| Roles | `GET/POST /admin/roles`, `GET/PATCH/DELETE /admin/roles/:id` | `admin.admin_role.*` |
+| Users | `GET/POST /admin/users`, `GET/PATCH/DELETE /admin/users/:id` | `admin.admin_user.*` |
+
+Role write payloads include `names: { th, en }`, `permission_ids[]`. User passwords bcrypt-hashed; never returned in JSON.
+
+Roles list accepts `?is_active=`. Inline status switch: partial `PATCH /admin/roles/:id` with `{ "is_active": false }` only (other fields optional).
+
+Users list accepts `?status=` (not `is_active`). Partial `PATCH` may set `{ "status": "inactive" }` among other fields.
+
+## List mutations
+
+Convention ([`.cursor/rules/crud-mutations.mdc`](../../.cursor/rules/crud-mutations.mdc)); per-table checklist: [`inventory-crud-mutation-apis.md`](../checklist/backend/inventory-crud-mutation-apis.md).
+
+| Pattern | When | Endpoint |
+|---------|------|----------|
+| Active toggle | Column `is_active` on list table | `GET ?is_active=` + `PATCH /:id` `{ "is_active" }` |
+| Flat drag sort | List table has `sort_order` (no tree) | `PATCH /reorder` `{ "drag_id", "target_id" }` → `204` |
+| Tree drag sort | `parent_id` + `tree_path` | `PATCH /move` `{ "drag_id", "target_id", "zone" }` → `204` |
+
+Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderSiblings`, `RecomputePaths`). RBAC: `PATCH` on subpaths `/move` and `/reorder` maps to `{module}.{type}.update` via resource prefix match.
+
+**Exceptions:** `admin_user` uses `status`; `system_permission` list is read-only but uses the same active patch shape; nested rows and `*_file` galleries reorder on the parent API.
 
 ## Migrations and seeds
 
@@ -97,6 +167,8 @@ List order: tree DFS — siblings `sort_order ASC`, `id ASC` per [tables rule](.
 | `make backend-test` | `go test ./...` |
 
 Wave 1 schema: shared enums, `website_language`, `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
+
+Init seeds: `01_website_language.sql`, then `02`–`05` split `system_permission` rows (24 codes). Test: `01_admin_bootstrap.sql` (demo users/roles).
 
 ## Struct conventions
 
