@@ -212,6 +212,13 @@
               }
             },
             {
+              "name": "Permission list filters",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/system/permissions/filters?module=system"
+              }
+            },
+            {
               "name": "Patch permission active",
               "request": {
                 "method": "PATCH",

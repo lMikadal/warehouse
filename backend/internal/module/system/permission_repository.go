@@ -109,6 +109,49 @@ FROM system_permission WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`, wclause, orde
 	return out, total, rows.Err()
 }
 
+func queryDistinctStrings(ctx context.Context, db *sql.DB, q string, args ...any) ([]string, error) {
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+func (r *PermissionRepository) FilterFacets(ctx context.Context, module string) (PermissionFilterFacets, error) {
+	base := "FROM system_permission WHERE deleted_at IS NULL"
+	modules, err := queryDistinctStrings(ctx, r.db,
+		"SELECT DISTINCT module "+base+" ORDER BY module")
+	if err != nil {
+		return PermissionFilterFacets{}, err
+	}
+	typeQ := "SELECT DISTINCT type " + base
+	typeArgs := []any{}
+	if module != "" {
+		typeQ += " AND module = $1"
+		typeArgs = append(typeArgs, module)
+	}
+	typeQ += " ORDER BY type"
+	types, err := queryDistinctStrings(ctx, r.db, typeQ, typeArgs...)
+	if err != nil {
+		return PermissionFilterFacets{}, err
+	}
+	actions, err := queryDistinctStrings(ctx, r.db,
+		"SELECT DISTINCT action::text "+base+" ORDER BY action")
+	if err != nil {
+		return PermissionFilterFacets{}, err
+	}
+	return PermissionFilterFacets{Modules: modules, Types: types, Actions: actions}, nil
+}
+
 func (r *PermissionRepository) SetActive(ctx context.Context, id int64, active bool, actorID int64) (PermissionRow, error) {
 	res, err := r.db.ExecContext(ctx, `
 UPDATE system_permission SET is_active = $2, updated_at = NOW(), updated_by = $3

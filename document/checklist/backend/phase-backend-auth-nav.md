@@ -15,4 +15,4 @@ Bearer-only `/auth/nav` + `landing_path` on login for admin middleware and sideb
 - [x] `go test ./internal/module/system/...` (nav filter + junction rules)
 - [x] Postman Auth folder includes **Nav**
 - [x] `document/knowledge/backend.md` updated
-- [x] Seed generators: `frontend/lib/perm-catalog.ts`, `menu-perm-resolve.ts`, `gen-system-*-seed.ts`
+- [x] Seed generators: `frontend/scripts/lib/perm-catalog-seed.ts`, `menu-perm-resolve.ts`, `gen-system-*-seed.ts`

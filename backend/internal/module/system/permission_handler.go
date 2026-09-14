@@ -20,6 +20,16 @@ func newPermissionHandler(svc *PermissionService) *PermissionHandler {
 	return &PermissionHandler{svc: svc}
 }
 
+func (h *PermissionHandler) listFilters(c *echo.Context) error {
+	module := strings.TrimSpace(c.QueryParam("module"))
+	facets, err := h.svc.FilterFacets(c.Request().Context(), module)
+	if err != nil {
+		applog.HTTPError(c, "list permission filters", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to list permission filters"})
+	}
+	return c.JSON(http.StatusOK, facets)
+}
+
 func (h *PermissionHandler) list(c *echo.Context) error {
 	q := api.ParsePageQuery(c)
 	f := PermissionListFilter{Page: q.Page, Limit: q.Limit, Search: strings.TrimSpace(c.QueryParam("search")),

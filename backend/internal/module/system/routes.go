@@ -12,5 +12,6 @@ func RegisterRoutes(g *echo.Group, menuSvc *MenuService, permSvc *PermissionServ
 	sys.PATCH("/menus/:id", mh.patch)
 	sys.DELETE("/menus/:id", mh.delete)
 	sys.GET("/permissions", ph.list)
+	sys.GET("/permissions/filters", ph.listFilters)
 	sys.PATCH("/permissions/:id", ph.patch)
 }

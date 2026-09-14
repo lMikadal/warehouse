@@ -1,5 +1,23 @@
 /** Under `/api/v1/auth/` so nginx dev gateway always hits Next BFF (see infrastructure.md). */
 const BFF_PERMISSIONS_BASE = "/api/v1/auth/proxy/system/permissions";
+const BFF_PERMISSIONS_FILTERS = `${BFF_PERMISSIONS_BASE}/filters`;
+
+const PERMISSION_ACTION_KEYS = [
+  "view",
+  "create",
+  "update",
+  "delete",
+  "import",
+  "export",
+] as const;
+
+export type PermissionActionKey = (typeof PERMISSION_ACTION_KEYS)[number];
+
+export type SystemPermissionFilterFacets = {
+  modules: string[];
+  types: string[];
+  actions: string[];
+};
 
 export type SystemPermissionApiItem = {
   id: number;
@@ -109,6 +127,39 @@ function buildListQuery(params: SystemPermissionListParams): URLSearchParams {
     qs.set("order", params.order);
   }
   return qs;
+}
+
+function isPermissionActionKey(action: string): action is PermissionActionKey {
+  return (PERMISSION_ACTION_KEYS as readonly string[]).includes(action);
+}
+
+/** i18n label for permission action enum values from API (no perm-catalog). */
+export function permissionActionLabel(
+  action: string,
+  tAction: (key: PermissionActionKey) => string
+): string {
+  return isPermissionActionKey(action) ? tAction(action) : action;
+}
+
+export async function fetchSystemPermissionFilters(
+  locale: string,
+  module?: string
+): Promise<SystemPermissionFilterFacets> {
+  const qs = new URLSearchParams();
+  const mod = module?.trim();
+  if (mod) qs.set("module", mod);
+  const suffix = qs.toString() ? `?${qs}` : "";
+  const res = await fetch(`${BFF_PERMISSIONS_FILTERS}${suffix}`, {
+    headers: bffHeaders(locale),
+    credentials: "same-origin",
+  });
+  if (!res.ok) throw await parseError(res);
+  const body = (await res.json()) as SystemPermissionFilterFacets;
+  return {
+    modules: body.modules ?? [],
+    types: body.types ?? [],
+    actions: body.actions ?? [],
+  };
 }
 
 export async function fetchSystemPermissions(

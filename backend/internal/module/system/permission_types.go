@@ -25,3 +25,9 @@ type PermissionListItem struct {
 	IsActive bool   `json:"is_active"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type PermissionFilterFacets struct {
+	Modules []string `json:"modules"`
+	Types   []string `json:"types"`
+	Actions []string `json:"actions"`
+}

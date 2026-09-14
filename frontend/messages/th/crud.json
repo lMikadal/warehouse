@@ -11,6 +11,7 @@
     "deleteConfirm": "ต้องการลบรายการนี้หรือไม่?",
     "filter": {
       "all": "ทั้งหมด",
+      "select": "เลือกกรอง{label}",
       "status": "กรองสถานะ"
     },
     "pagination": {

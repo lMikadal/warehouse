@@ -9,7 +9,7 @@ import {
   resolveMenuPermKeys,
   shouldLinkMenuPermissions,
 } from "../lib/menu-perm-resolve";
-import { buildPermissionCatalog, PERM_ACTIONS } from "../lib/perm-catalog";
+import { buildPermissionCatalog, PERM_ACTIONS } from "./lib/perm-catalog-seed";
 
 const SEED_TS = "2026-01-01T00:00:00Z";
 

@@ -112,7 +112,7 @@ Sessions stored in `admin_user_session` (hashed refresh token + access `jti`). R
 
 Protected API groups require `Authorization: Bearer <access_token>` and RBAC permission code unless user `type` is `superadmin` (includes `/api/v1/system/*`, `/api/v1/admin/*`, `/api/v1/website/*`, …).
 
-Permission codes: `{module}.{type}.{action}` — route → code mapping in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go): **wave 1** four resources (`WavePermPages`) plus **catalog** resources as they ship (`CatalogPermPages`, e.g. `admin_language`). Full nav catalog (~37 pages × 6 actions) lives in `system_permission` init seeds `02`–`05` (ids 1–24) + [`06_system_permission_catalog.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql) (ids ≥ 25). Source: [`frontend/lib/perm-catalog.ts`](../../frontend/lib/perm-catalog.ts) (mirrors design `PERM_PAGES`).
+Permission codes: `{module}.{type}.{action}` — route → code mapping in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go): **wave 1** four resources (`WavePermPages`) plus **catalog** resources as they ship (`CatalogPermPages`, e.g. `admin_language`). Full nav catalog (~37 pages × 6 actions) lives in `system_permission` init seeds `02`–`05` (ids 1–24) + [`06_system_permission_catalog.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql) (ids ≥ 25). Regenerate SQL via [`frontend/scripts/lib/perm-catalog-seed.ts`](../../frontend/scripts/lib/perm-catalog-seed.ts) + `gen-system-*-seed.ts` (mirrors design `PERM_PAGES`).
 
 ## System menus
 
@@ -131,6 +131,7 @@ Query: `page`, `limit`, optional `search`, optional `is_active` (`true`|`false`)
 | Method | Path | Permission |
 |--------|------|------------|
 | `GET` | `/system/permissions` | `system.system_permission.view` — query: `page`, `limit`, `search`, `module`, `type`, `action`, `is_active`, optional `sort`/`order` (whitelist: `code`, `module`, `type`, `action`, `is_active`, `created_at`, `updated_at`; default order `created_at ASC, id ASC`) |
+| `GET` | `/system/permissions/filters` | `system.system_permission.view` — optional query `module`; response `{ "modules", "types", "actions" }` (distinct values from `system_permission`, non-deleted; `types` scoped when `module` set) |
 | `PATCH` | `/system/permissions/:id` | `system.system_permission.update` (body: `{ "is_active" }` only) |
 
 ## Admin roles / users

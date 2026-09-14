@@ -8,6 +8,27 @@ import {
   proxyJsonResponse,
 } from "@/lib/bff-backend";
 
+export async function handleSystemPermissionFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  const auth = await accessTokenOrUnauthorized();
+  if (auth instanceof NextResponse) return auth;
+
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = qs
+    ? `/v1/system/permissions/filters?${qs}`
+    : "/v1/system/permissions/filters";
+
+  const res = await authedBackendFetch(path, {
+    locale: localeFromRequest(request),
+    token: auth.token,
+  });
+
+  if (!res.ok) return proxyErrorJson(res);
+  return proxyJsonResponse(res);
+}
+
 export async function handleSystemPermissionsListGet(
   request: Request
 ): Promise<NextResponse> {

@@ -22,6 +22,10 @@ func (s *PermissionService) List(ctx context.Context, f PermissionListFilter) ([
 	return out, total, nil
 }
 
+func (s *PermissionService) FilterFacets(ctx context.Context, module string) (PermissionFilterFacets, error) {
+	return s.repo.FilterFacets(ctx, module)
+}
+
 func (s *PermissionService) SetActive(ctx context.Context, id int64, active bool, actorID int64) (PermissionListItem, error) {
 	row, err := s.repo.SetActive(ctx, id, active, actorID)
 	if err != nil {

@@ -13,12 +13,13 @@ import {
 } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -29,18 +30,24 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import type { PageSizeOption } from "@/lib/crud-pagination";
-import { PERM_ACTIONS, PERM_PAGES } from "@/lib/perm-catalog";
 import {
+  fetchSystemPermissionFilters,
   fetchSystemPermissions,
   patchSystemPermission,
+  permissionActionLabel,
   SystemPermissionApiError,
+  type SystemPermissionFilterFacets,
   type SystemPermissionListParams,
   type SystemPermissionRow,
 } from "@/lib/system-permission-api";
 
 const COLUMN_COUNT = 5;
 
-const PERM_MODULES = [...new Set(PERM_PAGES.map((p) => p.permModule))].sort();
+const EMPTY_FACETS: SystemPermissionFilterFacets = {
+  modules: [],
+  types: [],
+  actions: [],
+};
 
 type ColSortKey = "code" | "module" | "type" | "action" | "status";
 
@@ -64,11 +71,54 @@ function sortFieldLabel(
     : tCrud("sort.asc", { field });
 }
 
-function typesForModule(module: string): string[] {
-  const pages = module
-    ? PERM_PAGES.filter((p) => p.permModule === module)
-    : PERM_PAGES;
-  return [...new Set(pages.map((p) => p.type))].sort();
+type FilterOption = { value: string; label: string };
+
+function PermissionColumnFilterCombobox({
+  label,
+  value,
+  onChange,
+  options,
+  inputClassName,
+  emptyLabel,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: FilterOption[];
+  inputClassName: string;
+  emptyLabel: string;
+  placeholder: string;
+}) {
+  const comboboxValue = value === "" ? null : value;
+
+  return (
+    <Combobox
+      items={options}
+      value={comboboxValue}
+      itemToStringLabel={(itemValue) =>
+        options.find((o) => o.value === itemValue)?.label ?? ""
+      }
+      onValueChange={(next) => onChange(next ?? "")}
+    >
+      <ComboboxInput
+        className={inputClassName}
+        placeholder={placeholder}
+        aria-label={label}
+        showClear={value !== ""}
+      />
+      <ComboboxContent>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item.value} value={item.value}>
+              {item.label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+        <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
+      </ComboboxContent>
+    </Combobox>
+  );
 }
 
 export function SystemPermissionList() {
@@ -79,7 +129,7 @@ export function SystemPermissionList() {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
   const tAction = useTranslations("action");
-  const tForm = useTranslations("form.placeholder");
+  const tComboboxEmpty = useTranslations("form.combobox");
 
   const [rows, setRows] = useState<SystemPermissionRow[]>([]);
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
@@ -94,11 +144,32 @@ export function SystemPermissionList() {
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
+  const [filterFacets, setFilterFacets] =
+    useState<SystemPermissionFilterFacets>(EMPTY_FACETS);
 
-  const typeOptions = useMemo(
-    () => typesForModule(moduleFilter),
-    [moduleFilter]
-  );
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const facets = await fetchSystemPermissionFilters(
+          locale,
+          moduleFilter || undefined
+        );
+        if (!cancelled) setFilterFacets(facets);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const message =
+          err instanceof SystemPermissionApiError
+            ? err.message
+            : tToast("demoError");
+        toast.error(message);
+        setFilterFacets(EMPTY_FACETS);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, moduleFilter, tToast]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -183,6 +254,25 @@ export function SystemPermissionList() {
 
   const resetFiltersPage = () => setPage(1);
 
+  const moduleFilterOptions = useMemo(
+    (): FilterOption[] =>
+      filterFacets.modules.map((mod) => ({ value: mod, label: mod })),
+    [filterFacets.modules]
+  );
+  const typeFilterOptions = useMemo(
+    (): FilterOption[] =>
+      filterFacets.types.map((typ) => ({ value: typ, label: typ })),
+    [filterFacets.types]
+  );
+  const actionFilterOptions = useMemo(
+    (): FilterOption[] =>
+      filterFacets.actions.map((act) => ({
+        value: act,
+        label: permissionActionLabel(act, tAction),
+      })),
+    [filterFacets.actions, tAction]
+  );
+
   const handleToggleActive = async (id: number, active: boolean) => {
     const prev = rows.find((r) => r.id === id);
     if (!prev) return;
@@ -203,13 +293,6 @@ export function SystemPermissionList() {
         err instanceof SystemPermissionApiError ? err.message : tToast("demoError")
       );
     }
-  };
-
-  const actionLabel = (action: string) => {
-    if (PERM_ACTIONS.includes(action as (typeof PERM_ACTIONS)[number])) {
-      return tAction(action as (typeof PERM_ACTIONS)[number]);
-    }
-    return action;
   };
 
   return (
@@ -235,76 +318,49 @@ export function SystemPermissionList() {
             resetFiltersPage();
           }}
         />
-        <Select
-          value={moduleFilter || "__all__"}
-          onValueChange={(value) => {
-            setModuleFilter(value === "__all__" ? "" : value);
+        <PermissionColumnFilterCombobox
+          label={tCol("module")}
+          placeholder={tCrud("filter.select", { label: tCol("module") })}
+          emptyLabel={tComboboxEmpty("noResults")}
+          value={moduleFilter}
+          options={moduleFilterOptions}
+          inputClassName="w-[min(100%,12rem)]"
+          onChange={(value) => {
+            setModuleFilter(value);
             setTypeFilter("");
             setSortKey(null);
             setSortDir(null);
             resetFiltersPage();
           }}
-        >
-          <SelectTrigger className="w-[min(100%,12rem)]">
-            <SelectValue
-              placeholder={tForm("select", { label: tCol("module") })}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{tCrud("filter.all")}</SelectItem>
-            {PERM_MODULES.map((mod) => (
-              <SelectItem key={mod} value={mod}>
-                {mod}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={typeFilter || "__all__"}
-          onValueChange={(value) => {
-            setTypeFilter(value === "__all__" ? "" : value);
+        />
+        <PermissionColumnFilterCombobox
+          label={tCol("type")}
+          placeholder={tCrud("filter.select", { label: tCol("type") })}
+          emptyLabel={tComboboxEmpty("noResults")}
+          value={typeFilter}
+          options={typeFilterOptions}
+          inputClassName="w-[min(100%,14rem)]"
+          onChange={(value) => {
+            setTypeFilter(value);
             setSortKey(null);
             setSortDir(null);
             resetFiltersPage();
           }}
-        >
-          <SelectTrigger className="w-[min(100%,14rem)]">
-            <SelectValue
-              placeholder={tForm("select", { label: tCol("type") })}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{tCrud("filter.all")}</SelectItem>
-            {typeOptions.map((typ) => (
-              <SelectItem key={typ} value={typ}>
-                {typ}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={actionFilter || "__all__"}
-          onValueChange={(value) => {
-            setActionFilter(value === "__all__" ? "" : value);
+        />
+        <PermissionColumnFilterCombobox
+          label={tCol("action")}
+          placeholder={tCrud("filter.select", { label: tCol("action") })}
+          emptyLabel={tComboboxEmpty("noResults")}
+          value={actionFilter}
+          options={actionFilterOptions}
+          inputClassName="w-[min(100%,11rem)]"
+          onChange={(value) => {
+            setActionFilter(value);
             setSortKey(null);
             setSortDir(null);
             resetFiltersPage();
           }}
-        >
-          <SelectTrigger className="w-[min(100%,11rem)]">
-            <SelectValue
-              placeholder={tForm("select", { label: tCol("action") })}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">{tCrud("filter.all")}</SelectItem>
-            {PERM_ACTIONS.map((act) => (
-              <SelectItem key={act} value={act}>
-                {tAction(act)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </div>
 
       <div className="surface-table-wrap">
@@ -407,7 +463,9 @@ export function SystemPermissionList() {
                   <TableCell>{row.code}</TableCell>
                   <TableCell>{row.module}</TableCell>
                   <TableCell>{row.type}</TableCell>
-                  <TableCell>{actionLabel(row.action)}</TableCell>
+                  <TableCell>
+                    {permissionActionLabel(row.action, tAction)}
+                  </TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center">
                       <StatusSwitchField

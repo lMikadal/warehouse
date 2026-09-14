@@ -11,6 +11,7 @@
     "deleteConfirm": "Delete this record?",
     "filter": {
       "all": "All",
+      "select": "Filter {label}",
       "status": "Status filter"
     },
     "pagination": {

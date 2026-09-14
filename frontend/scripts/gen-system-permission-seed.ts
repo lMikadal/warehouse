@@ -2,7 +2,7 @@
  * Init seed for system_permission ids >= 25 (wave 1 stays in 02–05).
  * From frontend/: bun scripts/gen-system-permission-seed.ts > ../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql
  */
-import { catalogRowsFromId } from "../lib/perm-catalog";
+import { catalogRowsFromId } from "./lib/perm-catalog-seed";
 
 const MIN_ID = 25;
 const rows = catalogRowsFromId(MIN_ID);
