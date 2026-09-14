@@ -5,6 +5,7 @@ CREATE TABLE website_language (
     locale      VARCHAR(10)  NOT NULL,                -- BCP-47-style code; FK target for *_language
     name        VARCHAR(255) NOT NULL,                -- display name e.g. "ไทย", "English"
     sort_order  INTEGER      NOT NULL DEFAULT 100,    -- UI picker order
+    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,   -- selectable in locale pickers
     is_default  BOOLEAN      NOT NULL DEFAULT FALSE,  -- at most one active default
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,8 +19,11 @@ CREATE TABLE website_language (
 -- at most one active default locale
 CREATE UNIQUE INDEX uq_website_language_one_default
     ON website_language ((TRUE))
-    WHERE is_default = TRUE AND deleted_at IS NULL;
+    WHERE is_default = TRUE AND deleted_at IS NULL AND is_active = TRUE;
 
+CREATE INDEX idx_website_language_active_sort
+    ON website_language (sort_order)
+    WHERE deleted_at IS NULL AND is_active = TRUE;
 CREATE INDEX idx_website_language_sort       ON website_language (sort_order) WHERE deleted_at IS NULL;
 CREATE INDEX idx_website_language_created_by ON website_language (created_by)  WHERE created_by IS NOT NULL;
 CREATE INDEX idx_website_language_updated_by ON website_language (updated_by)  WHERE updated_by IS NOT NULL;

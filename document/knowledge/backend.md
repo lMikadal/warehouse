@@ -12,7 +12,7 @@ backend/
 ├── internal/
 │   ├── api/               # V1Prefix, pagination, ListResponse, Audit embed
 │   ├── auth/              # JWT, Bearer + RBAC middleware
-│   ├── rbac/              # perm_catalog (wave permission rows)
+│   ├── rbac/              # perm_catalog (wave + catalog route → permission code)
 │   ├── config/
 │   ├── log/               # slog Setup, Echo middleware, HTTPError
 │   ├── infra/
@@ -23,7 +23,8 @@ backend/
 │   │   ├── auth/          # login, refresh, logout, me
 │   │   ├── health/
 │   │   ├── system/        # system_menu, system_permission
-│   │   └── admin/         # users, roles
+│   │   ├── admin/         # users, roles
+│   │   └── website/       # website_language (locales)
 │   └── server/
 ├── env.example
 └── go.mod
@@ -109,9 +110,9 @@ Sessions stored in `admin_user_session` (hashed refresh token + access `jti`). R
 
 ## Protected routes (RBAC)
 
-All `/api/v1/system/*` and `/api/v1/admin/*` require `Authorization: Bearer <access_token>` and RBAC permission code unless user `type` is `superadmin`.
+Protected API groups require `Authorization: Bearer <access_token>` and RBAC permission code unless user `type` is `superadmin` (includes `/api/v1/system/*`, `/api/v1/admin/*`, `/api/v1/website/*`, …).
 
-Permission codes: `{module}.{type}.{action}` — API route catalog in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go) (wave 1 CRUD routes). Full nav catalog (~37 pages × 6 actions) lives in `system_permission` init seeds `02`–`05` (ids 1–24) + [`06_system_permission_catalog.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql) (ids ≥ 25). Source: [`frontend/lib/perm-catalog.ts`](../../frontend/lib/perm-catalog.ts) (mirrors design `PERM_PAGES`).
+Permission codes: `{module}.{type}.{action}` — route → code mapping in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go): **wave 1** four resources (`WavePermPages`) plus **catalog** resources as they ship (`CatalogPermPages`, e.g. `admin_language`). Full nav catalog (~37 pages × 6 actions) lives in `system_permission` init seeds `02`–`05` (ids 1–24) + [`06_system_permission_catalog.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql) (ids ≥ 25). Source: [`frontend/lib/perm-catalog.ts`](../../frontend/lib/perm-catalog.ts) (mirrors design `PERM_PAGES`).
 
 ## System menus
 
@@ -129,7 +130,7 @@ Query: `page`, `limit`, optional `search`, optional `is_active` (`true`|`false`)
 
 | Method | Path | Permission |
 |--------|------|------------|
-| `GET` | `/system/permissions` | `system.system_permission.view` |
+| `GET` | `/system/permissions` | `system.system_permission.view` — query: `page`, `limit`, `search`, `module`, `type`, `action`, `is_active`, optional `sort`/`order` (whitelist: `code`, `module`, `type`, `action`, `is_active`, `created_at`, `updated_at`; default order `created_at ASC, id ASC`) |
 | `PATCH` | `/system/permissions/:id` | `system.system_permission.update` (body: `{ "is_active" }` only) |
 
 ## Admin roles / users
@@ -145,6 +146,23 @@ Roles list accepts `?is_active=`. Inline status switch: partial `PATCH /admin/ro
 
 Users list accepts `?status=` (not `is_active`). Partial `PATCH` may set `{ "status": "inactive" }` among other fields.
 
+## Website languages
+
+Table `website_language`: locale registry for `*_language` FKs; columns include `sort_order`, `is_active`, exclusive `is_default` (partial unique index requires active default).
+
+| Method | Path | Permission |
+|--------|------|------------|
+| `GET` | `/website/languages` | `admin.admin_language.view` — `page`, `limit`, `search`, optional `is_active` |
+| `GET` | `/website/languages/:id` | `admin.admin_language.view` |
+| `POST` | `/website/languages` | `admin.admin_language.create` — `{ "locale", "name", "is_active"?, "is_default"? }` |
+| `PATCH` | `/website/languages/reorder` | `admin.admin_language.update` — `{ "drag_id", "target_id" }` → `204` |
+| `PATCH` | `/website/languages/:id` | `admin.admin_language.update` — partial `locale`, `name`, `is_active`, `is_default` |
+| `DELETE` | `/website/languages/:id` | `admin.admin_language.delete` — soft delete |
+
+Setting `is_default: true` clears other defaults and forces `is_active: true`. Deactivating the current default returns `409`. Module: [`internal/module/website/`](../../backend/internal/module/website/).
+
+Migration `20260315100000_website_language_is_active.sql` adds `is_active`.
+
 ## List mutations
 
 Convention ([`.cursor/rules/crud-mutations.mdc`](../../.cursor/rules/crud-mutations.mdc)); per-table checklist: [`inventory-crud-mutation-apis.md`](../checklist/backend/inventory-crud-mutation-apis.md).
@@ -157,7 +175,7 @@ Convention ([`.cursor/rules/crud-mutations.mdc`](../../.cursor/rules/crud-mutati
 
 Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderSiblings`, `RecomputePaths`). RBAC: `PATCH` on subpaths `/move` and `/reorder` maps to `{module}.{type}.update` via resource prefix match.
 
-**Exceptions:** `admin_user` uses `status`; `system_permission` list is read-only but uses the same active patch shape; nested rows and `*_file` galleries reorder on the parent API.
+**Exceptions:** `admin_user` uses `status`; `system_permission` list is read-only but uses the same active patch shape; `website_language` also has exclusive `is_default`; nested rows and `*_file` galleries reorder on the parent API.
 
 ## Migrations and seeds
 
@@ -198,7 +216,7 @@ Test: `01_admin_bootstrap.sql` (demo users/roles).
 
 ## Postman
 
-`document/postman/postman.json` — folders: Health, System, Admin, Auth. `baseUrl` = `http://localhost:1323/api/v1`.
+`document/postman/postman.json` — folders: Health, Auth, System, Admin, Website. `baseUrl` = `http://localhost:1323/api/v1`.
 
 ## Docs
 

@@ -1,3 +1,11 @@
+import { routing } from "@/i18n/routing";
+
+import { SystemPermissionList } from "./system-permission-list";
+
 export default function SystemPermissionPage() {
-  return <div>SystemPermissionPage</div>;
+  return <SystemPermissionList />;
+}
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
 }

@@ -23,6 +23,33 @@ type PermissionListFilter struct {
 	Type     string
 	Action   string
 	IsActive *bool
+	Sort     string
+	Order    string
+}
+
+var allowedPermissionListSort = map[string]string{
+	"code":       "code",
+	"module":     "module",
+	"type":       "type",
+	"action":     "action",
+	"is_active":  "is_active",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+}
+
+func permissionListOrderBy(sortCol, order string) string {
+	col, ok := allowedPermissionListSort[sortCol]
+	if !ok {
+		return "created_at ASC, id ASC"
+	}
+	dir := "ASC"
+	if order == "desc" {
+		dir = "DESC"
+	}
+	if col == "action" {
+		return fmt.Sprintf("action::text %s, id ASC", dir)
+	}
+	return fmt.Sprintf("%s %s, id ASC", col, dir)
 }
 
 func (r *PermissionRepository) List(ctx context.Context, f PermissionListFilter) ([]PermissionRow, int64, error) {
@@ -61,9 +88,10 @@ func (r *PermissionRepository) List(ctx context.Context, f PermissionListFilter)
 		return nil, 0, err
 	}
 
+	orderBy := permissionListOrderBy(f.Sort, f.Order)
 	q := fmt.Sprintf(`
 SELECT id, code, module, type, action::text, resource, method::text, is_active, updated_at
-FROM system_permission WHERE %s ORDER BY id ASC LIMIT $%d OFFSET $%d`, wclause, n, n+1)
+FROM system_permission WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`, wclause, orderBy, n, n+1)
 	args = append(args, f.Limit, (f.Page-1)*f.Limit)
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {

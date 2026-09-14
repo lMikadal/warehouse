@@ -208,7 +208,7 @@
               "name": "List permissions",
               "request": {
                 "method": "GET",
-                "url": "{{baseUrl}}/system/permissions?page=1&limit=25"
+                "url": "{{baseUrl}}/system/permissions?page=1&limit=25&module=system&type=system_menu&action=view&is_active=true&sort=code&order=asc"
               }
             },
             {
@@ -286,6 +286,95 @@
                 },
                 "url": "{{baseUrl}}/admin/users"
               }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Website",
+      "item": [
+        {
+          "name": "Languages",
+          "item": [
+            {
+              "name": "List languages",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/website/languages?page=1&limit=10&is_active=true"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get language",
+              "request": { "method": "GET", "url": "{{baseUrl}}/website/languages/1" }
+            },
+            {
+              "name": "Create language",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"locale\": \"ja\",\n  \"name\": \"日本語\",\n  \"is_active\": true,\n  \"is_default\": false\n}"
+                },
+                "url": "{{baseUrl}}/website/languages"
+              }
+            },
+            {
+              "name": "Patch language is_active",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_active\": false\n}" },
+                "url": "{{baseUrl}}/website/languages/2"
+              }
+            },
+            {
+              "name": "Patch language is_default",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_default\": true\n}" },
+                "url": "{{baseUrl}}/website/languages/2"
+              }
+            },
+            {
+              "name": "Reorder languages",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/website/languages/reorder"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('status 204', () => pm.response.to.have.status(204));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Delete language",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/website/languages/99" }
             }
           ]
         }

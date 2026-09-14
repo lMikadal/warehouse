@@ -1,8 +1,11 @@
 {
   "col": {
+    "action": "Action",
     "active": "Active",
+    "code": "Permission code",
     "inactive": "Inactive",
     "module": "Module",
+    "type": "Type",
     "name": "Name",
     "path": "Path",
     "status": "Status",

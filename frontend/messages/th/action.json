@@ -1,5 +1,10 @@
 {
   "action": {
+    "create": "สร้าง",
+    "delete": "ลบ",
+    "export": "ส่งออก",
+    "import": "นำเข้า",
+    "update": "แก้ไข",
     "view": "ดู"
   }
 }

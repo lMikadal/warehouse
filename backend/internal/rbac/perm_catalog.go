@@ -16,6 +16,15 @@ var WavePermPages = []PermPage{
 	{Module: "admin", Type: "admin_role", Resource: "/api/v1/admin/roles", StartID: 19},
 }
 
+// CatalogPermPages are seeded in 06_system_permission_catalog.sql (routing only; no StartID).
+var CatalogPermPages = []PermPage{
+	{Module: "admin", Type: "admin_language", Resource: "/api/v1/website/languages"},
+}
+
+func routePermPages() []PermPage {
+	return append(append([]PermPage{}, WavePermPages...), CatalogPermPages...)
+}
+
 var actions = []struct {
 	Action string
 	Method string
@@ -65,7 +74,7 @@ func WavePermissions() []PermissionRow {
 
 // CodeForRoute returns the permission code for an HTTP method on a wave resource path.
 func CodeForRoute(method, path string) (string, bool) {
-	for _, page := range WavePermPages {
+	for _, page := range routePermPages() {
 		if !matchResource(path, page.Resource) {
 			continue
 		}

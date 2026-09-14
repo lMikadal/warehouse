@@ -4,6 +4,10 @@
       "add": "Add menu",
       "desc": "Manage menu items, routes, and active status in the system",
       "title": "Menu"
+    },
+    "adminPermission": {
+      "desc": "View and toggle permissions by module and type",
+      "title": "Permissions"
     }
   }
 }

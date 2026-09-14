@@ -1,5 +1,10 @@
 {
   "action": {
+    "create": "Create",
+    "delete": "Delete",
+    "export": "Export",
+    "import": "Import",
+    "update": "Update",
     "view": "View"
   }
 }
