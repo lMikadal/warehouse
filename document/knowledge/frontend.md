@@ -254,7 +254,7 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
 | Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
-| Nav | [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) — `ADMIN_NAV_TREE`, breadcrumb map, sidebar search filter |
+| Nav | [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) — `ADMIN_NAV_TREE`, breadcrumb map, sidebar search filter. Init seed [`06_system_menu.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_menu.sql) mirrors the mock with hierarchical `path` (`/admin/{main}/{sub}/...`); when wiring the menus API, prefer `row.path` over `FRONTEND_HREF_BY_MODULE` where they match. |
 | Session | Placeholder user `admin` + logout → `/admin/login` until auth API |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
 

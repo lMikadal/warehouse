@@ -274,7 +274,7 @@ const MENU_DEFS: MenuDef[] = [
     id: 33,
     module: "member",
     icon: "users",
-    sort_order: 750,
+    sort_order: 800,
     labels: { th: "สมาชิก", en: "Members" },
   },
   {
@@ -328,7 +328,7 @@ const MENU_DEFS: MenuDef[] = [
     id: 37,
     module: "order",
     icon: "coins",
-    sort_order: 800,
+    sort_order: 900,
     labels: { th: "ฝ่ายขาย", en: "Sales" },
   },
   {
@@ -375,7 +375,7 @@ const MENU_DEFS: MenuDef[] = [
     id: 45,
     module: "order",
     icon: "shopping-bag",
-    sort_order: 900,
+    sort_order: 1000,
     labels: { th: "ออเดอร์", en: "Order" },
   },
   {

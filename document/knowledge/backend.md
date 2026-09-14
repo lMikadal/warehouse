@@ -168,7 +168,11 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 
 Wave 1 schema: shared enums, `website_language`, `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
 
-Init seeds: `01_website_language.sql`, then `02`–`05` split `system_permission` rows (24 codes). Test: `01_admin_bootstrap.sql` (demo users/roles).
+Init seeds: `01_website_language.sql`, then `02`–`05` split `system_permission` rows (24 codes), then `06_system_menu.sql` (full nav tree from [`frontend/lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts)).
+
+**Menu init (`06`):** 50 rows (ids 2–57), `system_menu_language` th/en, and `system_menu_permission` links for wave permissions only (menus 3, 4, 12, 13 → 24 junction rows). Stored `path` values are hierarchical **`/admin/{main}/{sub}/...`** derived from the menu tree (e.g. `/admin/system/menu`, `/admin/setting/bank`, `/admin/system/address/country`). Rows **with children** (roots and nested groups) keep **`path` NULL**; leaf rows without a design `pages/*.html` URL (mock `#`) still get a generated path in the seed (e.g. `/admin/sales/ticket`, `/admin/order/purchase`). All `sort_order` values are multiples of **100** (roots include member 800, sales 900, order 1000). Regenerate after mock changes: from `frontend/`, `bun scripts/gen-system-menu-seed.ts > ../backend/internal/infra/postgres/seeds/init/06_system_menu.sql`.
+
+Test: `01_admin_bootstrap.sql` (demo users/roles).
 
 ## Struct conventions
 
