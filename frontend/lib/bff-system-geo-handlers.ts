@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  accessTokenOrUnauthorized,
-  authedBackendFetch,
-  localeFromRequest,
-  proxyErrorJson,
-  proxyJsonResponse,
-} from "@/lib/bff-backend";
+import { proxyAuthedBackendJson } from "@/lib/bff-backend";
 import type { GeoResource } from "@/lib/system-geo-api";
 
 function backendPath(resource: GeoResource, suffix = ""): string {
@@ -17,31 +11,18 @@ export async function handleSystemGeoListGet(
   request: Request,
   resource: GeoResource
 ): Promise<NextResponse> {
-  const auth = await accessTokenOrUnauthorized();
-  if (auth instanceof NextResponse) return auth;
-
   const url = new URL(request.url);
   const qs = url.searchParams.toString();
   const path = qs
     ? `${backendPath(resource)}?${qs}`
     : backendPath(resource);
-
-  const res = await authedBackendFetch(path, {
-    locale: localeFromRequest(request),
-    token: auth.token,
-  });
-
-  if (!res.ok) return proxyErrorJson(res);
-  return proxyJsonResponse(res);
+  return proxyAuthedBackendJson(request, path);
 }
 
 export async function handleSystemGeoCreate(
   request: Request,
   resource: GeoResource
 ): Promise<NextResponse> {
-  const auth = await accessTokenOrUnauthorized();
-  if (auth instanceof NextResponse) return auth;
-
   let body: unknown;
   try {
     body = await request.json();
@@ -52,15 +33,10 @@ export async function handleSystemGeoCreate(
     );
   }
 
-  const res = await authedBackendFetch(backendPath(resource), {
+  return proxyAuthedBackendJson(request, backendPath(resource), {
     method: "POST",
     body,
-    locale: localeFromRequest(request),
-    token: auth.token,
   });
-
-  if (!res.ok) return proxyErrorJson(res);
-  return proxyJsonResponse(res);
 }
 
 export async function handleSystemGeoGet(
@@ -68,16 +44,7 @@ export async function handleSystemGeoGet(
   resource: GeoResource,
   id: string
 ): Promise<NextResponse> {
-  const auth = await accessTokenOrUnauthorized();
-  if (auth instanceof NextResponse) return auth;
-
-  const res = await authedBackendFetch(`${backendPath(resource)}/${id}`, {
-    locale: localeFromRequest(request),
-    token: auth.token,
-  });
-
-  if (!res.ok) return proxyErrorJson(res);
-  return proxyJsonResponse(res);
+  return proxyAuthedBackendJson(request, `${backendPath(resource)}/${id}`);
 }
 
 export async function handleSystemGeoPatch(
@@ -85,9 +52,6 @@ export async function handleSystemGeoPatch(
   resource: GeoResource,
   id: string
 ): Promise<NextResponse> {
-  const auth = await accessTokenOrUnauthorized();
-  if (auth instanceof NextResponse) return auth;
-
   let body: unknown;
   try {
     body = await request.json();
@@ -98,15 +62,10 @@ export async function handleSystemGeoPatch(
     );
   }
 
-  const res = await authedBackendFetch(`${backendPath(resource)}/${id}`, {
+  return proxyAuthedBackendJson(request, `${backendPath(resource)}/${id}`, {
     method: "PATCH",
     body,
-    locale: localeFromRequest(request),
-    token: auth.token,
   });
-
-  if (!res.ok) return proxyErrorJson(res);
-  return proxyJsonResponse(res);
 }
 
 export async function handleSystemGeoDelete(
@@ -114,26 +73,15 @@ export async function handleSystemGeoDelete(
   resource: GeoResource,
   id: string
 ): Promise<NextResponse> {
-  const auth = await accessTokenOrUnauthorized();
-  if (auth instanceof NextResponse) return auth;
-
-  const res = await authedBackendFetch(`${backendPath(resource)}/${id}`, {
+  return proxyAuthedBackendJson(request, `${backendPath(resource)}/${id}`, {
     method: "DELETE",
-    locale: localeFromRequest(request),
-    token: auth.token,
   });
-
-  if (!res.ok) return proxyErrorJson(res);
-  return proxyJsonResponse(res);
 }
 
 export async function handleSystemGeoReorder(
   request: Request,
   resource: GeoResource
 ): Promise<NextResponse> {
-  const auth = await accessTokenOrUnauthorized();
-  if (auth instanceof NextResponse) return auth;
-
   let body: unknown;
   try {
     body = await request.json();
@@ -144,13 +92,8 @@ export async function handleSystemGeoReorder(
     );
   }
 
-  const res = await authedBackendFetch(`${backendPath(resource)}/reorder`, {
+  return proxyAuthedBackendJson(request, `${backendPath(resource)}/reorder`, {
     method: "PATCH",
     body,
-    locale: localeFromRequest(request),
-    token: auth.token,
   });
-
-  if (!res.ok) return proxyErrorJson(res);
-  return proxyJsonResponse(res);
 }

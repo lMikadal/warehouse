@@ -1,4 +1,5 @@
 import type { AdminMenuRow } from "@/lib/admin-menu-mock";
+import { authFetch } from "@/lib/auth-client";
 import type { TreeDropZone } from "@/lib/crud-list-rows";
 
 /** Under `/api/v1/auth/` so nginx dev gateway always hits Next BFF (see infrastructure.md). */
@@ -104,9 +105,8 @@ export async function fetchSystemMenus(
   params: SystemMenuListParams
 ): Promise<SystemMenuListResult> {
   const url = `${BFF_MENUS_BASE}?${buildListQuery(params)}`;
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   const body = (await res.json()) as ListResponse;
@@ -127,10 +127,9 @@ export async function patchSystemMenu(
   body: SystemMenuPatchBody,
   locale: string
 ): Promise<AdminMenuRow> {
-  const res = await fetch(`${BFF_MENUS_BASE}/${id}`, {
+  const res = await authFetch(`${BFF_MENUS_BASE}/${id}`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res);
@@ -144,10 +143,9 @@ export async function moveSystemMenu(
   zone: TreeDropZone,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${BFF_MENUS_BASE}/move`, {
+  const res = await authFetch(`${BFF_MENUS_BASE}/move`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify({
       drag_id: dragId,
       target_id: targetId,

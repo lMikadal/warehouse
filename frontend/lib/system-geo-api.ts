@@ -1,3 +1,5 @@
+import { authFetch } from "@/lib/auth-client";
+
 /** BFF under `/api/v1/auth/proxy/system/…` */
 export type GeoResource =
   | "countries"
@@ -134,9 +136,8 @@ export async function fetchSystemGeoList(
   params: SystemGeoListParams
 ): Promise<{ rows: SystemGeoRow[]; meta: ListResponse["meta"] }> {
   const url = `${bffBase(resource)}?${buildListQuery(params)}`;
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   const body = (await res.json()) as ListResponse;
@@ -151,9 +152,8 @@ export async function fetchSystemGeoById(
   id: number,
   locale: string
 ): Promise<SystemGeoApiItem> {
-  const res = await fetch(`${bffBase(resource)}/${id}`, {
+  const res = await authFetch(`${bffBase(resource)}/${id}`, {
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as SystemGeoApiItem;
@@ -184,10 +184,9 @@ export async function createSystemGeo(
   body: SystemGeoCreateBody,
   locale: string
 ): Promise<{ id: number }> {
-  const res = await fetch(bffBase(resource), {
+  const res = await authFetch(bffBase(resource), {
     method: "POST",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res);
@@ -200,10 +199,9 @@ export async function patchSystemGeo(
   body: SystemGeoPatchBody,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${bffBase(resource)}/${id}`, {
+  const res = await authFetch(`${bffBase(resource)}/${id}`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res);
@@ -214,10 +212,9 @@ export async function deleteSystemGeo(
   id: number,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${bffBase(resource)}/${id}`, {
+  const res = await authFetch(`${bffBase(resource)}/${id}`, {
     method: "DELETE",
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
 }
@@ -228,10 +225,9 @@ export async function reorderSystemGeo(
   targetId: number,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${bffBase(resource)}/reorder`, {
+  const res = await authFetch(`${bffBase(resource)}/reorder`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify({ drag_id: dragId, target_id: targetId }),
   });
   if (!res.ok) throw await parseError(res);

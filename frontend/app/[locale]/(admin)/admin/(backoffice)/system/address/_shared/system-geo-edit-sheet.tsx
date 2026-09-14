@@ -2,7 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 
+import { GeoColumnFilterCombobox } from "./geo-column-filter-combobox";
 import type { SystemGeoListConfig } from "./system-geo-config";
 import {
   CrudFormSheet,
@@ -12,13 +14,7 @@ import {
 } from "@/components/molecules/crud-form-sheet";
 import { FormField } from "@/components/molecules/form-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Field, FieldLabel } from "@/components/ui/field";
 import type { SystemGeoRow } from "@/lib/system-geo-api";
 
 export type SystemGeoEditPayload = {
@@ -77,6 +73,7 @@ function SystemGeoEditForm({
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
   const tForm = useTranslations("form");
+  const t = useTranslations();
 
   const [sku, setSku] = useState(initial.sku);
   const [postcode, setPostcode] = useState(initial.postcode);
@@ -93,14 +90,33 @@ function SystemGeoEditForm({
     setFieldInvalid((prev) => (prev[key] ? { ...prev, [key]: false } : prev));
   };
 
+  const parentLabel = tCol(parentLabelKey);
+  const nameThLabel = t("form.field.nameTh");
+  const nameEnLabel = t("form.field.nameEn");
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const nextInvalid = emptyInvalid(config);
-    if (!nameTh.trim()) nextInvalid.nameTh = true;
-    if (!nameEn.trim()) nextInvalid.nameEn = true;
-    if (needsParent && !parentId.trim()) nextInvalid.parentId = true;
+    const parentEmpty = needsParent && !parentId.trim();
+    const nameThEmpty = !nameTh.trim();
+    const nameEnEmpty = !nameEn.trim();
+    if (parentEmpty) nextInvalid.parentId = true;
+    if (nameThEmpty) nextInvalid.nameTh = true;
+    if (nameEnEmpty) nextInvalid.nameEn = true;
     setFieldInvalid(nextInvalid);
-    if (nextInvalid.nameTh || nextInvalid.nameEn || nextInvalid.parentId) return;
+    if (parentEmpty || nameThEmpty || nameEnEmpty) {
+      if (parentEmpty) {
+        toast.error(tForm("placeholder.select", { label: parentLabel }));
+        document.getElementById("geo-edit-parent")?.focus();
+      } else if (nameThEmpty) {
+        toast.error(tForm("placeholder.input", { label: nameThLabel }));
+        document.getElementById("geo-edit-name-th")?.focus();
+      } else {
+        toast.error(tForm("placeholder.input", { label: nameEnLabel }));
+        document.getElementById("geo-edit-name-en")?.focus();
+      }
+      return;
+    }
 
     await onSave(editId, {
       sku: sku.trim(),
@@ -113,46 +129,41 @@ function SystemGeoEditForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+    <form
+      onSubmit={handleSubmit}
+      className="flex min-h-0 flex-1 flex-col"
+      noValidate
+    >
       <CrudFormSheetBody>
         {needsParent ? (
-          <div className="form-field space-y-2">
-            <label htmlFor="geo-edit-parent">
-              <span>{tCol(parentLabelKey)}</span>
-              <span className="text-destructive" aria-hidden="true">
+          <Field
+            data-invalid={fieldInvalid.parentId ? true : undefined}
+            className="gap-1.5"
+          >
+            <FieldLabel htmlFor="geo-edit-parent">
+              {tCol(parentLabelKey)}
+              <span className="text-[#dc2626]" aria-hidden>
+                {" "}
                 *
               </span>
-            </label>
-            <Select
-              value={parentId || undefined}
-              onValueChange={(v) => {
+            </FieldLabel>
+            <GeoColumnFilterCombobox
+              id="geo-edit-parent"
+              label={tCol(parentLabelKey)}
+              value={parentId}
+              options={parentOptions}
+              inputClassName="w-full"
+              invalid={fieldInvalid.parentId}
+              emptyLabel={tForm("combobox.noResults")}
+              placeholder={tForm("placeholder.select", {
+                label: tCol(parentLabelKey),
+              })}
+              onChange={(v) => {
                 setParentId(v);
                 clearInvalid("parentId");
               }}
-            >
-              <SelectTrigger id="geo-edit-parent" aria-invalid={fieldInvalid.parentId}>
-                <SelectValue
-                  placeholder={tForm("placeholder.select", {
-                    label: tCol(parentLabelKey),
-                  })}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {parentOptions.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="min-h-5">
-              {fieldInvalid.parentId ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {tCrud("error.required")}
-                </p>
-              ) : null}
-            </div>
-          </div>
+            />
+          </Field>
         ) : null}
 
         <FormField
@@ -191,7 +202,10 @@ function SystemGeoEditForm({
           onClearInvalid={() => clearInvalid("nameEn")}
         />
 
-        <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
+        <div className="flex items-center justify-between gap-4 pt-1">
+          <span className="text-sm font-medium">{tCol("status")}</span>
+          <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
+        </div>
       </CrudFormSheetBody>
       <CrudFormSheetFooter
         dismissLabel={

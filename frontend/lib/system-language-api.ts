@@ -1,3 +1,5 @@
+import { authFetch } from "@/lib/auth-client";
+
 /** Under `/api/v1/auth/` so nginx dev gateway always hits Next BFF (see infrastructure.md). */
 const BFF_LANGUAGES_BASE = "/api/v1/auth/proxy/system/languages";
 
@@ -107,9 +109,8 @@ export async function fetchSystemLanguages(
   params: SystemLanguageListParams
 ): Promise<SystemLanguageListResult> {
   const url = `${BFF_LANGUAGES_BASE}?${buildListQuery(params)}`;
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   const body = (await res.json()) as ListResponse;
@@ -137,10 +138,9 @@ export async function createSystemLanguage(
   body: SystemLanguageCreateBody,
   locale: string
 ): Promise<{ id: number }> {
-  const res = await fetch(BFF_LANGUAGES_BASE, {
+  const res = await authFetch(BFF_LANGUAGES_BASE, {
     method: "POST",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res);
@@ -152,10 +152,9 @@ export async function patchSystemLanguage(
   body: SystemLanguagePatchBody,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${BFF_LANGUAGES_BASE}/${id}`, {
+  const res = await authFetch(`${BFF_LANGUAGES_BASE}/${id}`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res);
@@ -165,10 +164,9 @@ export async function deleteSystemLanguage(
   id: number,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${BFF_LANGUAGES_BASE}/${id}`, {
+  const res = await authFetch(`${BFF_LANGUAGES_BASE}/${id}`, {
     method: "DELETE",
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
 }
@@ -178,10 +176,9 @@ export async function reorderSystemLanguages(
   targetId: number,
   locale: string
 ): Promise<void> {
-  const res = await fetch(`${BFF_LANGUAGES_BASE}/reorder`, {
+  const res = await authFetch(`${BFF_LANGUAGES_BASE}/reorder`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify({ drag_id: dragId, target_id: targetId }),
   });
   if (!res.ok) throw await parseError(res);

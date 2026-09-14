@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { BreadcrumbNav, type BreadcrumbSegment } from "@/components/molecules/breadcrumb-nav";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -50,7 +50,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
+import { logoutAndRedirectToLogin } from "@/lib/auth-client";
 import {
   adminNavLabel,
   breadcrumbFromNavTree,
@@ -92,11 +93,9 @@ export type AdminBackofficeShellProps = {
 
 function AdminLogoutButton() {
   const t = useTranslations();
-  const router = useRouter();
 
   async function onLogout() {
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    router.replace("/admin/login");
+    await logoutAndRedirectToLogin({ callbackUrl: null });
   }
 
   return (
@@ -128,12 +127,36 @@ type NavRenderContext = {
   pathname: string;
   locale: string;
   depth: number;
-  /** Sidebar search active — remount collapsibles so defaultOpen is not updated in-place. */
   navSearchActive: boolean;
 };
 
-function navCollapsibleMountKey(nodeId: string, ctx: NavRenderContext): string {
-  return `${nodeId}-${ctx.navSearchActive ? "search" : "idle"}`;
+function AdminNavCollapsible({
+  node,
+  ctx,
+  className,
+  children,
+}: {
+  node: AdminNavNode;
+  ctx: NavRenderContext;
+  className?: string;
+  children: ReactNode;
+}) {
+  const branchOpen = navCollapsibleDefaultOpen(node, ctx);
+  const [open, setOpen] = useState(branchOpen);
+
+  useEffect(() => {
+    if (ctx.navSearchActive) {
+      setOpen(true);
+      return;
+    }
+    setOpen(branchOpen);
+  }, [ctx.navSearchActive, branchOpen]);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className={className}>
+      {children}
+    </Collapsible>
+  );
 }
 
 function navBranchContainsActivePath(
@@ -189,11 +212,7 @@ function AdminNavNodeView({
 
   if (hasChildren && ctx.depth === 0) {
     return (
-      <Collapsible
-        key={navCollapsibleMountKey(node.id, ctx)}
-        defaultOpen={navCollapsibleDefaultOpen(node, ctx)}
-        className="group/collapsible"
-      >
+      <AdminNavCollapsible node={node} ctx={ctx} className="group/collapsible">
         <SidebarMenuItem>
           <CollapsibleTrigger
             nativeButton
@@ -214,17 +233,13 @@ function AdminNavNodeView({
             </SidebarMenuSub>
           </CollapsibleContent>
         </SidebarMenuItem>
-      </Collapsible>
+      </AdminNavCollapsible>
     );
   }
 
   if (hasChildren) {
     return (
-      <Collapsible
-        key={navCollapsibleMountKey(node.id, ctx)}
-        defaultOpen={navCollapsibleDefaultOpen(node, ctx)}
-        className="group/collapsible"
-      >
+      <AdminNavCollapsible node={node} ctx={ctx} className="group/collapsible">
         <SidebarMenuSubItem>
           <CollapsibleTrigger
             nativeButton={false}
@@ -244,7 +259,7 @@ function AdminNavNodeView({
             </SidebarMenuSub>
           </CollapsibleContent>
         </SidebarMenuSubItem>
-      </Collapsible>
+      </AdminNavCollapsible>
     );
   }
 

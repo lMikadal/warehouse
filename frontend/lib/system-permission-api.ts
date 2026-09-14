@@ -1,3 +1,5 @@
+import { authFetch } from "@/lib/auth-client";
+
 /** Under `/api/v1/auth/` so nginx dev gateway always hits Next BFF (see infrastructure.md). */
 const BFF_PERMISSIONS_BASE = "/api/v1/auth/proxy/system/permissions";
 const BFF_PERMISSIONS_FILTERS = `${BFF_PERMISSIONS_BASE}/filters`;
@@ -149,9 +151,8 @@ export async function fetchSystemPermissionFilters(
   const mod = module?.trim();
   if (mod) qs.set("module", mod);
   const suffix = qs.toString() ? `?${qs}` : "";
-  const res = await fetch(`${BFF_PERMISSIONS_FILTERS}${suffix}`, {
+  const res = await authFetch(`${BFF_PERMISSIONS_FILTERS}${suffix}`, {
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   const body = (await res.json()) as SystemPermissionFilterFacets;
@@ -167,9 +168,8 @@ export async function fetchSystemPermissions(
   params: SystemPermissionListParams
 ): Promise<SystemPermissionListResult> {
   const url = `${BFF_PERMISSIONS_BASE}?${buildListQuery(params)}`;
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     headers: bffHeaders(locale),
-    credentials: "same-origin",
   });
   if (!res.ok) throw await parseError(res);
   const body = (await res.json()) as ListResponse;
@@ -184,10 +184,9 @@ export async function patchSystemPermission(
   body: { is_active: boolean },
   locale: string
 ): Promise<SystemPermissionRow> {
-  const res = await fetch(`${BFF_PERMISSIONS_BASE}/${id}`, {
+  const res = await authFetch(`${BFF_PERMISSIONS_BASE}/${id}`, {
     method: "PATCH",
     headers: { ...bffHeaders(locale), "Content-Type": "application/json" },
-    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await parseError(res);

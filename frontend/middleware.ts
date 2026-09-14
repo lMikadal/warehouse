@@ -1,9 +1,10 @@
 import createMiddleware from "next-intl/middleware";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import {
   ACCESS_TOKEN_COOKIE,
   LANDING_PATH_COOKIE,
+  REFRESH_TOKEN_COOKIE,
 } from "./lib/auth-cookies";
 import { routing } from "./i18n/routing";
 
@@ -38,24 +39,35 @@ export default function middleware(request: NextRequest) {
   const adminPath = stripLocalePrefix(request.nextUrl.pathname);
   const isAdminLogin = adminPath === "/admin/login";
   const isAdminArea = adminPath === "/admin" || adminPath.startsWith("/admin/");
+
+  const requestHeaders = new Headers(request.headers);
+  if (isAdminArea && !isAdminLogin) {
+    requestHeaders.set("x-warehouse-admin-path", adminPath);
+  }
+  const intlRequest = new NextRequest(request.url, {
+    headers: requestHeaders,
+    method: request.method,
+  });
   const access = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const refresh = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  const hasSession = Boolean(access || refresh);
   const landing =
     request.cookies.get(LANDING_PATH_COOKIE)?.value || "/admin/system/menu";
 
   if (isAdminArea) {
-    if (!access && !isAdminLogin) {
+    if (!hasSession && !isAdminLogin) {
       const loginUrl = adminRedirectUrl(request, "/admin/login");
       if (adminPath !== "/admin/login") {
         loginUrl.searchParams.set("callbackUrl", adminPath);
       }
       return NextResponse.redirect(loginUrl);
     }
-    if (access && isAdminLogin) {
+    if (hasSession && isAdminLogin) {
       return NextResponse.redirect(adminRedirectUrl(request, landing));
     }
   }
 
-  return handleI18nRouting(request);
+  return handleI18nRouting(intlRequest);
 }
 
 export const config = {

@@ -1,8 +1,10 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { backendFetch, parseApiError } from "@/lib/api-server";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth-cookies";
+import {
+  getValidAccessToken,
+  refreshAccessTokenFromCookies,
+} from "@/lib/auth-server";
 
 export function localeFromRequest(request: Request): string {
   return (
@@ -10,15 +12,8 @@ export function localeFromRequest(request: Request): string {
   );
 }
 
-export async function accessTokenOrUnauthorized(): Promise<
-  { token: string } | NextResponse
-> {
-  const jar = await cookies();
-  const token = jar.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) {
-    return NextResponse.json({ code: "unauthorized" }, { status: 401 });
-  }
-  return { token };
+function unauthorizedJson(): NextResponse {
+  return NextResponse.json({ code: "unauthorized" }, { status: 401 });
 }
 
 type AuthedFetchOptions = {
@@ -57,4 +52,46 @@ export async function proxyErrorJson(res: Response): Promise<NextResponse> {
     { code: err.code ?? "request_failed", message: err.message },
     { status: res.status }
   );
+}
+
+type ProxyAuthedInit = {
+  method?: string;
+  body?: unknown;
+};
+
+export async function proxyAuthedBackendJson(
+  request: Request,
+  path: string,
+  init: ProxyAuthedInit = {}
+): Promise<NextResponse> {
+  const locale = localeFromRequest(request);
+  let token = await getValidAccessToken();
+  if (!token) {
+    return unauthorizedJson();
+  }
+
+  let res = await authedBackendFetch(path, {
+    method: init.method,
+    body: init.body,
+    locale,
+    token,
+  });
+
+  if (res.status === 401) {
+    token = await refreshAccessTokenFromCookies();
+    if (!token) {
+      return unauthorizedJson();
+    }
+    res = await authedBackendFetch(path, {
+      method: init.method,
+      body: init.body,
+      locale,
+      token,
+    });
+  }
+
+  if (!res.ok) {
+    return proxyErrorJson(res);
+  }
+  return proxyJsonResponse(res);
 }

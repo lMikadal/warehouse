@@ -178,6 +178,17 @@ function SortableGeoRow(props: {
   );
 }
 
+type GeoReorderScopeKey = NonNullable<SystemGeoListConfig["createParentKey"]>;
+
+function geoRowsSameReorderScope(
+  scopeKey: GeoReorderScopeKey | undefined,
+  drag: SystemGeoRow,
+  target: SystemGeoRow
+): boolean {
+  if (!scopeKey) return true;
+  return drag[scopeKey] === target[scopeKey];
+}
+
 async function loadOptions(
   resource: GeoResource,
   locale: string,
@@ -481,6 +492,12 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       queueMicrotask(() => setSortableEpoch((e) => e + 1));
       return;
     }
+    const scopeKey = config.createParentKey;
+    if (!geoRowsSameReorderScope(scopeKey, dragRow, targetRow)) {
+      queueMicrotask(() => setSortableEpoch((e) => e + 1));
+      toast.warning(tCrud("reorder.siblingOnly"));
+      return;
+    }
     void reorderSystemGeo(
       config.resource,
       dragRow.id,
@@ -491,8 +508,16 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       .then(() => toast.success(tCrud("toast.reordered")))
       .catch((err: unknown) => {
         queueMicrotask(() => setSortableEpoch((e) => e + 1));
+        if (
+          err instanceof SystemGeoApiError &&
+          err.status === 400 &&
+          err.code === "validation_error"
+        ) {
+          toast.warning(tCrud("reorder.siblingOnly"));
+          return;
+        }
         toast.error(
-          err instanceof SystemGeoApiError ? err.message : undefined
+          err instanceof SystemGeoApiError ? err.message : tToast("demoError")
         );
       });
   };

@@ -1,6 +1,7 @@
 {
   "error": {
     "invalidParent": "Cannot set parent to this menu or its sub-menu",
-    "noData": "No data"
+    "noData": "No data",
+    "required": "This field is required."
   }
 }

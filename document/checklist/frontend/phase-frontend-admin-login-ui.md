@@ -18,3 +18,4 @@ First production login screen from design; wired to backend JWT via BFF.
 - [x] Required-field validation uses `toast.error` with placeholder copy (first invalid field); invalid chrome on fields, no under-field text
 - [x] `make frontend-storybook-build` passes (Input change)
 - [x] ESLint clean on login route + `Input` (repo-wide lint may fail on unrelated stories)
+- [x] Session auto-refresh on 401 (BFF + client `authFetch`); logout + login redirect when refresh fails

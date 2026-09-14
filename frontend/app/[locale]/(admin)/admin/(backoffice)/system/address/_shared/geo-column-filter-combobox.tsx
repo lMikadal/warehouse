@@ -12,6 +12,7 @@ import {
 export type GeoFilterOption = { value: string; label: string };
 
 export function GeoColumnFilterCombobox({
+  id,
   label,
   value,
   onChange,
@@ -20,7 +21,9 @@ export function GeoColumnFilterCombobox({
   emptyLabel,
   placeholder,
   disabled = false,
+  invalid = false,
 }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -29,6 +32,7 @@ export function GeoColumnFilterCombobox({
   emptyLabel: string;
   placeholder: string;
   disabled?: boolean;
+  invalid?: boolean;
 }) {
   const comboboxValue = value === "" ? null : value;
 
@@ -42,9 +46,11 @@ export function GeoColumnFilterCombobox({
       onValueChange={(next) => onChange(next ?? "")}
     >
       <ComboboxInput
+        id={id}
         className={inputClassName}
         placeholder={placeholder}
         aria-label={label}
+        aria-invalid={invalid ? true : undefined}
         showClear={value !== ""}
         disabled={disabled}
       />

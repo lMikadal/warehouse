@@ -151,16 +151,16 @@ func (r *AddressGeoRepository) List(ctx context.Context, level GeoLevel, f GeoLi
 	}
 	offset := (page - 1) * limit
 
-	extraCols := ""
+	postcodeCol := ""
 	if spec.hasPostcode {
-		extraCols = ", t.postcode"
+		postcodeCol = ", t.postcode"
 	}
 	parentCols := geoListParentSelect(level, 1)
-	q := fmt.Sprintf(`SELECT t.id, t.sku%s, COALESCE(l.name, ''), t.sort_order, t.is_active, t.updated_at%s%s
+	q := fmt.Sprintf(`SELECT t.id, t.sku, COALESCE(l.name, ''), t.sort_order, t.is_active, t.updated_at%s%s%s
 FROM %s t
 LEFT JOIN %s l ON l.%s = t.id AND l.locale = $1
 WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`,
-		extraCols, parentCols.selectSQL, parentCols.labelSQL, spec.table, spec.langTable, spec.langFK, w, orderBy, n, n+1)
+		postcodeCol, parentCols.selectSQL, parentCols.labelSQL, spec.table, spec.langTable, spec.langFK, w, orderBy, n, n+1)
 	args = append(args, limit, offset)
 
 	rows, err := r.db.QueryContext(ctx, q, args...)
@@ -185,15 +185,15 @@ func (r *AddressGeoRepository) Get(ctx context.Context, level GeoLevel, id int64
 	if locale == "" {
 		locale = "th"
 	}
-	extraCols := ""
+	postcodeCol := ""
 	if spec.hasPostcode {
-		extraCols = ", t.postcode"
+		postcodeCol = ", t.postcode"
 	}
 	parentCols := geoListParentSelect(level, 2)
-	q := fmt.Sprintf(`SELECT t.id, t.sku%s, COALESCE(l.name, ''), t.sort_order, t.is_active, t.updated_at%s%s
+	q := fmt.Sprintf(`SELECT t.id, t.sku, COALESCE(l.name, ''), t.sort_order, t.is_active, t.updated_at%s%s%s
 FROM %s t
 LEFT JOIN %s l ON l.%s = t.id AND l.locale = $2
-WHERE t.id = $1 AND t.deleted_at IS NULL`, extraCols, parentCols.selectSQL, parentCols.labelSQL, spec.table, spec.langTable, spec.langFK)
+WHERE t.id = $1 AND t.deleted_at IS NULL`, postcodeCol, parentCols.selectSQL, parentCols.labelSQL, spec.table, spec.langTable, spec.langFK)
 	row, err := scanGeoListRowSingle(r.db.QueryRowContext(ctx, q, id, locale), level, spec.hasPostcode, parentCols.scanExtra)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
