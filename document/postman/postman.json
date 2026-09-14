@@ -176,6 +176,14 @@
               }
             },
             {
+              "name": "Get menu by id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/system/menus/1"
+              }
+            },
+            {
               "name": "Patch menu",
               "request": {
                 "method": "PATCH",

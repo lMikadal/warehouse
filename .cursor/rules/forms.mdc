@@ -84,3 +84,7 @@ Template keys: `form.placeholder.input`, `form.placeholder.select` (with `{label
 ```
 
 Password fields wrap the input in `.password-field` with a `.password-field__toggle` button.
+
+## FK / parent pickers (Combobox)
+
+When a form field picks one row from a **paginated list API**, use [`RemoteComboboxField`](../../frontend/components/molecules/remote-combobox-field.tsx) with debounced server `search` — see [combobox.mdc](combobox.mdc). Placeholder: `form.placeholder.select` with `{ label }`. Resolve the selected id’s label via get-by-id or pinned options when it is not in the current result page.

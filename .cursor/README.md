@@ -41,6 +41,7 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | [`makefile.mdc`](rules/makefile.mdc) | Global | yes | — | all areas | Prefer root Makefile targets over raw bun, go, docker compose, and design-serve. |
 | [`forms.mdc`](rules/forms.mdc) | UI | yes | — | `design/`, `frontend/` | Form UX — placeholders, password visibility, required asterisk, under-field errors. |
 | [`tables.mdc`](rules/tables.mdc) | UI | yes | — | `design/`, `frontend/`, `backend/` lists | Data tables — required pagination and default list sort order (tree, sort_order, created_at). |
+| [`combobox.mdc`](rules/combobox.mdc) | UI | no | `frontend/**`, `design/**` | API-backed Combobox | Remote search options; `RemoteComboboxField`; no silent 100-row preload. |
 | [`dates.mdc`](rules/dates.mdc) | UI | yes | — | `design/`, `frontend/` display | Date and datetime display format for design mockups and frontend UI. |
 | [`icons.mdc`](rules/icons.mdc) | UI | yes | — | `design/`, `frontend/` | Use Lucide icons only — SVG files in design, lucide-react in frontend. |
 | [`warehouse.mdc`](rules/warehouse.mdc) | Domain | yes | — | placement, stock | Warehouse layout tree and product item stock placement — bin-only anchor. |

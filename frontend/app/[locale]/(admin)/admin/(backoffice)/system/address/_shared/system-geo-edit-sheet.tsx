@@ -1,10 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { type FormEvent, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { type FormEvent, useCallback, useState } from "react";
 import { toast } from "sonner";
 
-import { GeoColumnFilterCombobox } from "./geo-column-filter-combobox";
 import type { SystemGeoListConfig } from "./system-geo-config";
 import {
   CrudFormSheet,
@@ -13,9 +12,16 @@ import {
   CrudFormSheetHeader,
 } from "@/components/molecules/crud-form-sheet";
 import { FormField } from "@/components/molecules/form-field";
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Field, FieldLabel } from "@/components/ui/field";
+import type { DisplayLocale } from "@/lib/format-datetime";
 import type { SystemGeoRow } from "@/lib/system-geo-api";
+import {
+  geoResourceForParentKey,
+  loadGeoComboboxOptions,
+  resolveGeoComboboxLabel,
+} from "@/lib/system-geo-combobox";
 
 export type SystemGeoEditPayload = {
   sku: string;
@@ -30,12 +36,9 @@ export type SystemGeoSheetState =
   | { mode: "edit"; row: SystemGeoRow; names: { th: string; en: string } }
   | { mode: "create" };
 
-export type ParentOption = { value: string; label: string };
-
 export type SystemGeoEditSheetProps = {
   config: SystemGeoListConfig;
   state: SystemGeoSheetState | null;
-  parentOptions: ParentOption[];
   onOpenChange: (open: boolean) => void;
   onSave: (
     id: number | null,
@@ -58,7 +61,6 @@ function SystemGeoEditForm({
   mode,
   initial,
   editId,
-  parentOptions,
   onSave,
   onClose,
 }: {
@@ -66,10 +68,10 @@ function SystemGeoEditForm({
   mode: "edit" | "create";
   initial: SystemGeoEditPayload;
   editId: number | null;
-  parentOptions: ParentOption[];
   onSave: SystemGeoEditSheetProps["onSave"];
   onClose: () => void;
 }) {
+  const locale = useLocale() as DisplayLocale;
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
   const tForm = useTranslations("form");
@@ -85,6 +87,29 @@ function SystemGeoEditForm({
 
   const needsParent = Boolean(config.createParentKey);
   const parentLabelKey = config.parentSelectLabel ?? "country";
+  const parentResource = config.createParentKey
+    ? geoResourceForParentKey(config.createParentKey)
+    : null;
+
+  const loadParentOptions = useCallback(
+    (ctx: { search: string; signal: AbortSignal }) => {
+      if (!parentResource) return Promise.resolve([]);
+      return loadGeoComboboxOptions(parentResource, locale, {
+        search: ctx.search,
+        signal: ctx.signal,
+        isActive: true,
+      });
+    },
+    [locale, parentResource]
+  );
+
+  const resolveParentLabel = useCallback(
+    (value: string) => {
+      if (!parentResource) return Promise.resolve(null);
+      return resolveGeoComboboxLabel(parentResource, locale, value);
+    },
+    [locale, parentResource]
+  );
 
   const clearInvalid = (key: RequiredKey) => {
     setFieldInvalid((prev) => (prev[key] ? { ...prev, [key]: false } : prev));
@@ -135,7 +160,7 @@ function SystemGeoEditForm({
       noValidate
     >
       <CrudFormSheetBody>
-        {needsParent ? (
+        {needsParent && parentResource ? (
           <Field
             data-invalid={fieldInvalid.parentId ? true : undefined}
             className="gap-1.5"
@@ -147,18 +172,19 @@ function SystemGeoEditForm({
                 *
               </span>
             </FieldLabel>
-            <GeoColumnFilterCombobox
+            <RemoteComboboxField
               id="geo-edit-parent"
               label={tCol(parentLabelKey)}
               value={parentId}
-              options={parentOptions}
               inputClassName="w-full"
               invalid={fieldInvalid.parentId}
               emptyLabel={tForm("combobox.noResults")}
               placeholder={tForm("placeholder.select", {
                 label: tCol(parentLabelKey),
               })}
-              onChange={(v) => {
+              onLoadOptions={loadParentOptions}
+              resolveSelectedLabel={resolveParentLabel}
+              onValueChange={(v) => {
                 setParentId(v);
                 clearInvalid("parentId");
               }}
@@ -187,8 +213,8 @@ function SystemGeoEditForm({
           labelKey="form.field.nameTh"
           required
           value={nameTh}
-          invalid={fieldInvalid.nameTh}
           onChange={setNameTh}
+          invalid={fieldInvalid.nameTh}
           onClearInvalid={() => clearInvalid("nameTh")}
         />
 
@@ -197,20 +223,23 @@ function SystemGeoEditForm({
           labelKey="form.field.nameEn"
           required
           value={nameEn}
-          invalid={fieldInvalid.nameEn}
           onChange={setNameEn}
+          invalid={fieldInvalid.nameEn}
           onClearInvalid={() => clearInvalid("nameEn")}
         />
 
-        <div className="flex items-center justify-between gap-4 pt-1">
-          <span className="text-sm font-medium">{tCol("status")}</span>
-          <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
-        </div>
+        <Field className="gap-1.5">
+          <FieldLabel htmlFor="geo-edit-active">{tCol("status")}</FieldLabel>
+          <StatusSwitchField
+            id="geo-edit-active"
+            checked={isActive}
+            onCheckedChange={setIsActive}
+          />
+        </Field>
       </CrudFormSheetBody>
+
       <CrudFormSheetFooter
-        dismissLabel={
-          editId != null ? tCrud("btn.cancel") : tCrud("btn.back")
-        }
+        dismissLabel={mode === "create" ? tCrud("btn.back") : tCrud("btn.cancel")}
       />
     </form>
   );
@@ -219,7 +248,6 @@ function SystemGeoEditForm({
 export function SystemGeoEditSheet({
   config,
   state,
-  parentOptions,
   onOpenChange,
   onSave,
 }: SystemGeoEditSheetProps) {
@@ -249,7 +277,7 @@ export function SystemGeoEditSheet({
           nameTh: "",
           nameEn: "",
           isActive: true,
-          parentId: parentOptions[0]?.value ?? "",
+          parentId: "",
         };
 
   const title = mode === "edit" ? tPage("editTitle") : tPage("add");
@@ -264,7 +292,6 @@ export function SystemGeoEditSheet({
           mode={mode}
           initial={initial}
           editId={editId}
-          parentOptions={parentOptions}
           onSave={async (id, payload) => {
             await onSave(id, payload);
           }}

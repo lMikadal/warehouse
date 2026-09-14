@@ -25,6 +25,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 | Storybook / route pages | [`.cursor/rules/storybook.mdc`](../../rules/storybook.mdc) |
 | Forms | [`.cursor/rules/forms.mdc`](../../rules/forms.mdc) |
 | Tables | [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) |
+| Combobox / remote options | [`.cursor/rules/combobox.mdc`](../../rules/combobox.mdc) |
 | Date display | [`.cursor/rules/dates.mdc`](../../rules/dates.mdc) |
 | Icons | [`.cursor/rules/icons.mdc`](../../rules/icons.mdc) |
 | Docs sync | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |

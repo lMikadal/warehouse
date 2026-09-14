@@ -23,3 +23,5 @@ Must pass before this phase is done:
 - [x] Storybook includes warehouse-list section; references `warehouse-list.html`
 - [x] `make frontend-build` passes
 - [x] `make frontend-lint` passes
+- [x] `RemoteComboboxField` molecule + `useRemoteComboboxOptions` ([combobox.mdc](../../../.cursor/rules/combobox.mdc))
+- [x] Geo / menu / permission comboboxes migrated to remote search (no single-page-100 preload)

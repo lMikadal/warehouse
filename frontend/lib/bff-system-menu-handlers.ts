@@ -9,6 +9,15 @@ export async function handleSystemMenusListGet(
   return proxyListGet(request, "/v1/system/menus");
 }
 
+export async function handleSystemMenuGet(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  return proxyAuthedBackendJson(request, `/v1/system/menus/${id}`, {
+    method: "GET",
+  });
+}
+
 export async function handleSystemMenuPatch(
   request: Request,
   id: string

@@ -7,6 +7,7 @@ func RegisterRoutes(g *echo.Group, menuSvc *MenuService, permSvc *PermissionServ
 	ph := newPermissionHandler(permSvc)
 	sys := g.Group("/system")
 	sys.GET("/menus", mh.list)
+	sys.GET("/menus/:id", mh.get)
 	sys.POST("/menus", mh.create)
 	sys.PATCH("/menus/move", mh.move)
 	sys.PATCH("/menus/:id", mh.patch)

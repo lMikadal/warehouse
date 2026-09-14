@@ -52,11 +52,11 @@ Applies to **every list page / every table** in `design/`, `frontend/`, and reor
 
 Applies to optional parent/column filters on list toolbars in `design/` mockups and `frontend/` production UI (not form `<select>` fields).
 
-- **Frontend:** use searchable **`Combobox`** ([`components/ui/combobox.tsx`](../../frontend/components/ui/combobox.tsx)), not `<Select>`, when the filter picks one value from a list (especially long or searchable option sets).
+- **Frontend:** use searchable **`RemoteComboboxField`** ([`components/molecules/remote-combobox-field.tsx`](../../frontend/components/molecules/remote-combobox-field.tsx)) for API-backed filters — see [combobox.mdc](combobox.mdc). Do not preload a single list page as the full option set. Use [`components/ui/combobox.tsx`](../../frontend/components/ui/combobox.tsx) directly only for bounded static options in Storybook or demos.
 - **Placeholder:** `crud.filter.select` with `{ label: t('col.<field>') }` — **not** `form.placeholder.select` (forms only).
 - **State:** empty string `""` means no filter (show placeholder); use input **clear** (`showClear`) when a value is set. Do not use a synthetic `"all"` select value that can appear as raw trigger text.
 - **Cascade:** disable dependent filters when a required parent filter is empty (`disabled` on `ComboboxInput`).
-- **Reference:** [`system-permission-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/permission/system-permission-list.tsx); geo [`geo-column-filter-combobox.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/address/_shared/geo-column-filter-combobox.tsx) + [`system-geo-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/address/_shared/system-geo-list.tsx).
+- **Reference:** [`system-permission-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/permission/system-permission-list.tsx); geo [`system-geo-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/address/_shared/system-geo-list.tsx).
 - **Design:** [`crud-list.js`](../../design/js/components/crud-list.js) `crud-filter-select` (searchable panel); selected value label via `crud.filterField` when non-empty.
 
 ## Column header sort

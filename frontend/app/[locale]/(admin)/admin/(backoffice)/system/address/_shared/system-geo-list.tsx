@@ -17,9 +17,8 @@ import {
   SystemGeoEditSheet,
   type SystemGeoEditPayload,
   type SystemGeoSheetState,
-  type ParentOption,
 } from "./system-geo-edit-sheet";
-import { GeoColumnFilterCombobox } from "./geo-column-filter-combobox";
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import type { SystemGeoListConfig } from "./system-geo-config";
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
@@ -55,10 +54,14 @@ import {
   patchSystemGeo,
   reorderSystemGeo,
   SystemGeoApiError,
-  type GeoResource,
   type SystemGeoListParams,
   type SystemGeoRow,
 } from "@/lib/system-geo-api";
+import {
+  loadGeoComboboxOptions,
+  resolveGeoComboboxLabel,
+} from "@/lib/system-geo-combobox";
+import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import { cn } from "@/lib/utils";
 
 type ColSortKey = "sku" | "name" | "status" | "updatedAt" | "postcode";
@@ -186,20 +189,6 @@ function geoRowsSameReorderScope(
   return drag[scopeKey] === target[scopeKey];
 }
 
-async function loadOptions(
-  resource: GeoResource,
-  locale: string,
-  params: SystemGeoListParams
-): Promise<ParentOption[]> {
-  const { rows } = await fetchSystemGeoList(resource, locale, {
-    ...params,
-    page: 1,
-    limit: 100,
-    isActive: true,
-  });
-  return rows.map((r) => ({ value: String(r.id), label: r.name }));
-}
-
 export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   const locale = useLocale() as DisplayLocale;
   const tToast = useTranslations("toast");
@@ -249,10 +238,53 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   const [sheet, setSheet] = useState<SystemGeoSheetState | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
-  const [countryOptions, setCountryOptions] = useState<ParentOption[]>([]);
-  const [provinceOptions, setProvinceOptions] = useState<ParentOption[]>([]);
-  const [districtOptions, setDistrictOptions] = useState<ParentOption[]>([]);
-  const [parentOptions, setParentOptions] = useState<ParentOption[]>([]);
+
+  const loadCountryFilterOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) =>
+      loadGeoComboboxOptions("countries", locale, {
+        search: ctx.search,
+        signal: ctx.signal,
+        isActive: true,
+      }),
+    [locale]
+  );
+
+  const loadProvinceFilterOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) =>
+      loadGeoComboboxOptions("provinces", locale, {
+        search: ctx.search,
+        signal: ctx.signal,
+        isActive: true,
+        systemCountryId: filterCountry ? Number(filterCountry) : undefined,
+      }),
+    [locale, filterCountry]
+  );
+
+  const loadDistrictFilterOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) =>
+      loadGeoComboboxOptions("districts", locale, {
+        search: ctx.search,
+        signal: ctx.signal,
+        isActive: true,
+        systemProvinceId: filterProvince ? Number(filterProvince) : undefined,
+      }),
+    [locale, filterProvince]
+  );
+
+  const resolveCountryLabel = useCallback(
+    (value: string) => resolveGeoComboboxLabel("countries", locale, value),
+    [locale]
+  );
+
+  const resolveProvinceLabel = useCallback(
+    (value: string) => resolveGeoComboboxLabel("provinces", locale, value),
+    [locale]
+  );
+
+  const resolveDistrictLabel = useCallback(
+    (value: string) => resolveGeoComboboxLabel("districts", locale, value),
+    [locale]
+  );
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -278,55 +310,6 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       void loadList();
     });
   }, [loadList]);
-
-  useEffect(() => {
-    if (!config.filterLevels?.includes("country")) return;
-    void loadOptions("countries", locale, { page: 1, limit: 100 }).then(
-      setCountryOptions
-    );
-  }, [config.filterLevels, locale]);
-
-  useEffect(() => {
-    if (!filterCountry && config.filterLevels?.includes("province")) {
-      setProvinceOptions([]);
-      return;
-    }
-    if (!config.filterLevels?.includes("province")) return;
-    void loadOptions("provinces", locale, {
-      page: 1,
-      limit: 100,
-      systemCountryId: filterCountry ? Number(filterCountry) : undefined,
-    }).then(setProvinceOptions);
-  }, [filterCountry, config.filterLevels, locale]);
-
-  useEffect(() => {
-    if (!filterProvince && config.filterLevels?.includes("district")) {
-      setDistrictOptions([]);
-      return;
-    }
-    if (!config.filterLevels?.includes("district")) return;
-    void loadOptions("districts", locale, {
-      page: 1,
-      limit: 100,
-      systemProvinceId: filterProvince ? Number(filterProvince) : undefined,
-    }).then(setDistrictOptions);
-  }, [filterProvince, config.filterLevels, locale]);
-
-  useEffect(() => {
-    if (!config.createParentKey) {
-      setParentOptions([]);
-      return;
-    }
-    const resource: GeoResource =
-      config.createParentKey === "system_country_id"
-        ? "countries"
-        : config.createParentKey === "system_province_id"
-          ? "provinces"
-          : "districts";
-    void loadOptions(resource, locale, { page: 1, limit: 100 }).then(
-      setParentOptions
-    );
-  }, [config.createParentKey, locale]);
 
   const total = listMeta.total;
   const paginationMeta = { total, totalPages: totalPages(total) };
@@ -513,14 +496,15 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
           onChange={onStatusFilterChange}
         />
         {config.filterLevels?.includes("country") ? (
-          <GeoColumnFilterCombobox
+          <RemoteComboboxField
             label={tCol("country")}
             placeholder={tCrud("filter.select", { label: tCol("country") })}
             emptyLabel={tComboboxEmpty("noResults")}
             value={filterCountry}
-            options={countryOptions}
             inputClassName="w-[min(100%,12rem)]"
-            onChange={(value) => {
+            onLoadOptions={loadCountryFilterOptions}
+            resolveSelectedLabel={resolveCountryLabel}
+            onValueChange={(value) => {
               setFilterCountry(value);
               setFilterProvince("");
               setFilterDistrict("");
@@ -529,15 +513,16 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
           />
         ) : null}
         {config.filterLevels?.includes("province") ? (
-          <GeoColumnFilterCombobox
+          <RemoteComboboxField
             label={tCol("province")}
             placeholder={tCrud("filter.select", { label: tCol("province") })}
             emptyLabel={tComboboxEmpty("noResults")}
             value={filterProvince}
-            options={provinceOptions}
             inputClassName="w-[min(100%,12rem)]"
             disabled={!filterCountry}
-            onChange={(value) => {
+            onLoadOptions={loadProvinceFilterOptions}
+            resolveSelectedLabel={resolveProvinceLabel}
+            onValueChange={(value) => {
               setFilterProvince(value);
               setFilterDistrict("");
               clearSortAndPage();
@@ -545,15 +530,16 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
           />
         ) : null}
         {config.filterLevels?.includes("district") ? (
-          <GeoColumnFilterCombobox
+          <RemoteComboboxField
             label={tCol("district")}
             placeholder={tCrud("filter.select", { label: tCol("district") })}
             emptyLabel={tComboboxEmpty("noResults")}
             value={filterDistrict}
-            options={districtOptions}
             inputClassName="w-[min(100%,12rem)]"
             disabled={!filterProvince}
-            onChange={(value) => {
+            onLoadOptions={loadDistrictFilterOptions}
+            resolveSelectedLabel={resolveDistrictLabel}
+            onValueChange={(value) => {
               setFilterDistrict(value);
               clearSortAndPage();
             }}
@@ -719,7 +705,6 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       <SystemGeoEditSheet
         config={config}
         state={sheet}
-        parentOptions={parentOptions}
         onOpenChange={(open) => {
           if (!open) setSheet(null);
         }}

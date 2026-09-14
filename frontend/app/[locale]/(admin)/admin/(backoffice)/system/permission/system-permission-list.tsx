@@ -9,14 +9,8 @@ import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
 import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox";
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
+import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import {
   Table,
   TableBody,
@@ -70,51 +64,15 @@ function sortFieldLabel(
 
 type FilterOption = { value: string; label: string };
 
-function PermissionColumnFilterCombobox({
-  label,
-  value,
-  onChange,
-  options,
-  inputClassName,
-  emptyLabel,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: FilterOption[];
-  inputClassName: string;
-  emptyLabel: string;
-  placeholder: string;
-}) {
-  const comboboxValue = value === "" ? null : value;
-
-  return (
-    <Combobox
-      items={options}
-      value={comboboxValue}
-      itemToStringLabel={(itemValue) =>
-        options.find((o) => o.value === itemValue)?.label ?? ""
-      }
-      onValueChange={(next) => onChange(next ?? "")}
-    >
-      <ComboboxInput
-        className={inputClassName}
-        placeholder={placeholder}
-        aria-label={label}
-        showClear={value !== ""}
-      />
-      <ComboboxContent>
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem key={item.value} value={item.value}>
-              {item.label}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-        <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
-      </ComboboxContent>
-    </Combobox>
+function filterFacetOptions(
+  options: FilterOption[],
+  search: string
+): FilterOption[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return options;
+  return options.filter(
+    (o) =>
+      o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)
   );
 }
 
@@ -235,6 +193,44 @@ export function SystemPermissionList() {
     [filterFacets.actions, tAction]
   );
 
+  const loadModuleFilterOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) =>
+      Promise.resolve(filterFacetOptions(moduleFilterOptions, ctx.search)),
+    [moduleFilterOptions]
+  );
+  const loadTypeFilterOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) =>
+      Promise.resolve(filterFacetOptions(typeFilterOptions, ctx.search)),
+    [typeFilterOptions]
+  );
+  const loadActionFilterOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) =>
+      Promise.resolve(filterFacetOptions(actionFilterOptions, ctx.search)),
+    [actionFilterOptions]
+  );
+
+  const resolveModuleFilterLabel = useCallback(
+    (value: string) =>
+      Promise.resolve(
+        moduleFilterOptions.find((o) => o.value === value)?.label ?? null
+      ),
+    [moduleFilterOptions]
+  );
+  const resolveTypeFilterLabel = useCallback(
+    (value: string) =>
+      Promise.resolve(
+        typeFilterOptions.find((o) => o.value === value)?.label ?? null
+      ),
+    [typeFilterOptions]
+  );
+  const resolveActionFilterLabel = useCallback(
+    (value: string) =>
+      Promise.resolve(
+        actionFilterOptions.find((o) => o.value === value)?.label ?? null
+      ),
+    [actionFilterOptions]
+  );
+
   const handleToggleActive = async (id: number, active: boolean) => {
     const prev = rows.find((r) => r.id === id);
     if (!prev) return;
@@ -267,39 +263,42 @@ export function SystemPermissionList() {
           value={statusFilter}
           onChange={onStatusFilterChange}
         />
-        <PermissionColumnFilterCombobox
+        <RemoteComboboxField
           label={tCol("module")}
           placeholder={tCrud("filter.select", { label: tCol("module") })}
           emptyLabel={tComboboxEmpty("noResults")}
           value={moduleFilter}
-          options={moduleFilterOptions}
           inputClassName="w-[min(100%,12rem)]"
-          onChange={(value) => {
+          onLoadOptions={loadModuleFilterOptions}
+          resolveSelectedLabel={resolveModuleFilterLabel}
+          onValueChange={(value) => {
             setModuleFilter(value);
             setTypeFilter("");
             clearSortAndPage();
           }}
         />
-        <PermissionColumnFilterCombobox
+        <RemoteComboboxField
           label={tCol("type")}
           placeholder={tCrud("filter.select", { label: tCol("type") })}
           emptyLabel={tComboboxEmpty("noResults")}
           value={typeFilter}
-          options={typeFilterOptions}
           inputClassName="w-[min(100%,14rem)]"
-          onChange={(value) => {
+          onLoadOptions={loadTypeFilterOptions}
+          resolveSelectedLabel={resolveTypeFilterLabel}
+          onValueChange={(value) => {
             setTypeFilter(value);
             clearSortAndPage();
           }}
         />
-        <PermissionColumnFilterCombobox
+        <RemoteComboboxField
           label={tCol("action")}
           placeholder={tCrud("filter.select", { label: tCol("action") })}
           emptyLabel={tComboboxEmpty("noResults")}
           value={actionFilter}
-          options={actionFilterOptions}
           inputClassName="w-[min(100%,11rem)]"
-          onChange={(value) => {
+          onLoadOptions={loadActionFilterOptions}
+          resolveSelectedLabel={resolveActionFilterLabel}
+          onValueChange={(value) => {
             setActionFilter(value);
             clearSortAndPage();
           }}

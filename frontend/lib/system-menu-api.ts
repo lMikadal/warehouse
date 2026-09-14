@@ -100,6 +100,18 @@ function buildListQuery(params: SystemMenuListParams): URLSearchParams {
   return qs;
 }
 
+export async function fetchSystemMenuById(
+  id: number,
+  locale: string
+): Promise<AdminMenuRow> {
+  const res = await authFetch(`${BFF_MENUS_BASE}/${id}`, {
+    headers: bffHeaders(locale),
+  });
+  if (!res.ok) throw await parseError(res);
+  const item = (await res.json()) as SystemMenuApiItem;
+  return mapApiMenuToRow(item);
+}
+
 export async function fetchSystemMenus(
   locale: string,
   params: SystemMenuListParams

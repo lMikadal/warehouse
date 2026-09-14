@@ -24,6 +24,7 @@ Notes:
 - Phase checklists live under `document/checklist/<area>/` where `<area>` is `design`, `frontend`, `backend`, or `infrastructure`
 - Cross-cutting work → read every related skill
 - **Tables / lists** → follow [`.cursor/rules/tables.mdc`](tables.mdc) (pagination + sort order)
+- **Combobox / API-backed pickers** → follow [`.cursor/rules/combobox.mdc`](combobox.mdc) (`RemoteComboboxField`)
 - **Forms** → follow [`.cursor/rules/forms.mdc`](forms.mdc)
 - **Date/datetime display** → follow [`.cursor/rules/dates.mdc`](dates.mdc)
 - **Warehouse layout / item placement** → follow [`.cursor/rules/warehouse.mdc`](warehouse.mdc) (bin-only `product_item_warehouse`)

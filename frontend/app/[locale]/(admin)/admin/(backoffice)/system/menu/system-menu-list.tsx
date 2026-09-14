@@ -369,7 +369,6 @@ export function SystemMenuList() {
   const tCol = useTranslations("col");
 
   const [rows, setRows] = useState<AdminMenuRow[]>([]);
-  const [pickerRows, setPickerRows] = useState<AdminMenuRow[]>([]);
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -437,20 +436,6 @@ export function SystemMenuList() {
   useEffect(() => {
     void loadList();
   }, [loadList]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchSystemMenus(locale, { page: 1, limit: 100 })
-      .then((result) => {
-        if (!cancelled) setPickerRows(result.rows);
-      })
-      .catch(() => {
-        if (!cancelled) setPickerRows([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [locale]);
 
   const pageRowViews = useMemo(
     () => rows.map((r) => toRowView(r, locale)),
@@ -810,7 +795,6 @@ export function SystemMenuList() {
 
       <SystemMenuEditSheet
         state={menuSheet}
-        menuRows={pickerRows}
         onOpenChange={(open) => {
           if (!open) setMenuSheet(null);
         }}

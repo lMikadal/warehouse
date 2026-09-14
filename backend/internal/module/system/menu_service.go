@@ -1,6 +1,10 @@
 package system
 
-import "context"
+import (
+	"context"
+	"database/sql"
+	"errors"
+)
 
 type MenuService struct {
 	repo *MenuRepository
@@ -24,6 +28,20 @@ func (s *MenuService) List(ctx context.Context, f MenuListFilter) ([]MenuListIte
 		out[i] = toMenuListItem(row, locale)
 	}
 	return out, total, nil
+}
+
+func (s *MenuService) Get(ctx context.Context, id int64, locale string) (MenuListItemResponse, error) {
+	row, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return MenuListItemResponse{}, sql.ErrNoRows
+		}
+		return MenuListItemResponse{}, err
+	}
+	if locale == "" {
+		locale = "th"
+	}
+	return toMenuListItem(row, locale), nil
 }
 
 func (s *MenuService) Create(ctx context.Context, in MenuCreateInput) (MenuListItemResponse, error) {

@@ -48,6 +48,23 @@ func (h *MenuHandler) list(c *echo.Context) error {
 	return c.JSON(http.StatusOK, api.NewListResponse(items, total, q))
 }
 
+func (h *MenuHandler) get(c *echo.Context) error {
+	id, err := pathID(c)
+	if err != nil {
+		return err
+	}
+	locale := api.LocaleFromRequest(c)
+	item, err := h.svc.Get(c.Request().Context(), id, locale)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "menu not found"})
+		}
+		applog.HTTPError(c, "get system menu", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load menu"})
+	}
+	return c.JSON(http.StatusOK, item)
+}
+
 type menuNamesBody struct {
 	Th string `json:"th"`
 	En string `json:"en"`

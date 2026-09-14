@@ -1,0 +1,38 @@
+---
+description: Remote-backed Combobox — no silent 100-row cap on API-driven option lists.
+globs: frontend/**, design/**
+---
+
+# Combobox (API-backed options)
+
+Applies when a Combobox (or design `crud-filter-select`) loads options from a paginated list API or query that can exceed one page.
+
+## Required behavior
+
+- Do **not** load options with a single `page=1&limit=100` (or any one page) and assume the set is complete. Backend list APIs use `MaxLimit` 100 (`backend/internal/api/pagination.go`).
+- Use **server-side search**: debounced input → list request with `search` (and parent FK / `is_active` filters as needed). Dropdown page size typically **25–50** (≤ `MaxLimit`).
+- **Selected value:** if the current value is not in the loaded items, resolve label via get-by-id or a pinned `{ value, label }` so the trigger never shows a blank label while a value is set.
+- Client-side filtering in the Combobox is only for the **current result set** when using a dedicated facet/static source — not a substitute for server search when `meta.total` can exceed `limit`.
+
+## Production component
+
+- **Frontend:** [`RemoteComboboxField`](../../frontend/components/molecules/remote-combobox-field.tsx) + [`useRemoteComboboxOptions`](../../frontend/hooks/use-remote-combobox-options.ts).
+- Toolbar filters: placeholder `crud.filter.select` ([`tables.mdc`](tables.mdc)).
+- Form FK / parent pickers: `form.placeholder.select` ([`forms.mdc`](forms.mdc)).
+- Empty state: `form.combobox.noResults`.
+
+## Allowed exceptions
+
+- Dedicated **facet/options** endpoints designed to return a complete dimension (e.g. `GET /system/permissions/filters`) — filter in memory inside `RemoteComboboxField`’s `onLoadOptions`; document if a facet can grow unbounded.
+- **Bounded static** option lists (enums, product-documented max) — no API.
+- **`fetchAllListPages`** only for catalogs with an explicit **max row ceiling** in code (`ponytail:` comment + upgrade path).
+
+## Design mockups
+
+- `design/js/components/crud-list.js` `crud-filter-select` may filter the full in-memory seed; production UI under `frontend/` must follow this rule.
+
+## References
+
+- UI primitive: [`components/ui/combobox.tsx`](../../frontend/components/ui/combobox.tsx)
+- Geo loaders: [`lib/system-geo-combobox.ts`](../../frontend/lib/system-geo-combobox.ts)
+- Examples: geo list/edit, menu parent picker, permission column filters
