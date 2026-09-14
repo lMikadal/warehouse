@@ -46,6 +46,8 @@ Module path: `github.com/lMikadal/warehouse/backend`.
 | `JWT_ACCESS_TTL` | Access token lifetime (default `15m`) |
 | `JWT_REFRESH_TTL` | Refresh token lifetime (default `168h`) |
 
+Copy `backend/env.example` → `backend/.env` for local `make backend-dev` / `go run`. On startup, `config.Load` reads `backend/.env` and sets any keys not already present in the process environment (Docker Compose injects vars directly).
+
 ## Demo login (test seed only)
 
 After `make backend-seed-test`: username `admin` / password `admin` (superadmin), `staff` / `staff`. Do not use in production.
@@ -92,19 +94,24 @@ Public:
 | `POST` | `/api/v1/auth/refresh` | `{ "refresh_token" }` |
 | `POST` | `/api/v1/auth/logout` | optional `{ "refresh_token" }` → `204` |
 
-Protected (Bearer):
+Bearer-only (session present; **no** route permission catalog):
 
-| Method | Path |
-|--------|------|
-| `GET` | `/api/v1/auth/me` |
+| Method | Path | Notes |
+|--------|------|--------|
+| `GET` | `/api/v1/auth/me` | Current user profile |
+| `GET` | `/api/v1/auth/nav` | Role-filtered sidebar tree + `landing_path` (first permitted leaf in DFS menu order) |
+
+Nav visibility (non-superadmin): leaf menus with a real `path` must have a **`system_menu_permission`** row to the menu’s **`system_permission`** row with `action = 'view'`; role must hold that code via `admin_role_permission`. Implemented in [`MenuPermissionRepository.LoadMenuViewCodes`](../../backend/internal/module/system/menu_permission_repository.go) + [`NavService`](../../backend/internal/module/system/nav_service.go). No runtime `ViewPermissionCode` computation.
+
+Login / refresh responses include `landing_path` (same resolver as `/auth/nav`).
 
 Sessions stored in `admin_user_session` (hashed refresh token + access `jti`). Refresh rotates session row.
 
-## Protected routes
+## Protected routes (RBAC)
 
 All `/api/v1/system/*` and `/api/v1/admin/*` require `Authorization: Bearer <access_token>` and RBAC permission code unless user `type` is `superadmin`.
 
-Permission codes: `{module}.{type}.{action}` — wave catalog in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go) and init seeds `02`–`05_system_permission_*.sql`.
+Permission codes: `{module}.{type}.{action}` — API route catalog in [`internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go) (wave 1 CRUD routes). Full nav catalog (~37 pages × 6 actions) lives in `system_permission` init seeds `02`–`05` (ids 1–24) + [`06_system_permission_catalog.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql) (ids ≥ 25). Source: [`frontend/lib/perm-catalog.ts`](../../frontend/lib/perm-catalog.ts) (mirrors design `PERM_PAGES`).
 
 ## System menus
 
@@ -168,9 +175,18 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 
 Wave 1 schema: shared enums, `website_language`, `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
 
-Init seeds: `01_website_language.sql`, then `02`–`05` split `system_permission` rows (24 codes), then `06_system_menu.sql` (full nav tree from [`frontend/lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts)).
+Init seeds: `01_website_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction).
 
-**Menu init (`06`):** 50 rows (ids 2–57), `system_menu_language` th/en, and `system_menu_permission` links for wave permissions only (menus 3, 4, 12, 13 → 24 junction rows). Stored `path` values are hierarchical **`/admin/{main}/{sub}/...`** derived from the menu tree (e.g. `/admin/system/menu`, `/admin/setting/bank`, `/admin/system/address/country`). Rows **with children** (roots and nested groups) keep **`path` NULL**; leaf rows without a design `pages/*.html` URL (mock `#`) still get a generated path in the seed (e.g. `/admin/sales/ticket`, `/admin/order/purchase`). All `sort_order` values are multiples of **100** (roots include member 800, sales 900, order 1000). Regenerate after mock changes: from `frontend/`, `bun scripts/gen-system-menu-seed.ts > ../backend/internal/infra/postgres/seeds/init/06_system_menu.sql`.
+**Regenerate seeds** (from `frontend/`):
+
+| Script | Output |
+|--------|--------|
+| `bun scripts/gen-system-permission-seed.ts` | `../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql` |
+| `bun scripts/gen-system-menu-seed.ts` | `../backend/internal/infra/postgres/seeds/init/07_system_menu.sql` |
+
+Menu→permission mapping for junction uses [`frontend/lib/menu-perm-resolve.ts`](../../frontend/lib/menu-perm-resolve.ts) (seed-only; same rules as former Go `ViewPermissionCode`).
+
+**Menu init (`06`):** 50 menu rows (ids 2–57), th/en names, **`system_menu_permission`** for every navigable leaf where a catalog code exists (~192 junction rows). Paths: hierarchical `/admin/{main}/{sub}/...`. Group rows keep `path` NULL. After catalog/menu mock changes, re-run both scripts then `make backend-seed-init`.
 
 Test: `01_admin_bootstrap.sql` (demo users/roles).
 

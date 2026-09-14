@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 
+import { useRouter } from "@/i18n/navigation";
 import { FormField } from "@/components/molecules/form-field";
 import {
   FormCard,
@@ -23,9 +24,11 @@ import {
 export function LoginForm() {
   const t = useTranslations();
   const tPage = useTranslations("page.login");
+  const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [usernameInvalid, setUsernameInvalid] = useState(false);
   const [passwordInvalid, setPasswordInvalid] = useState(false);
 
@@ -38,7 +41,7 @@ export function LoginForm() {
     label: passwordLabel,
   });
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const usernameEmpty = !username.trim();
@@ -63,9 +66,37 @@ export function LoginForm() {
     setUsernameInvalid(false);
     setPasswordInvalid(false);
 
-    toast.success(tPage("success"));
-
-    // ponytail: API auth not wired — hook POST /auth/login here when backend ships
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+      const data = (await res.json()) as {
+        code?: string;
+        landing_path?: string;
+      };
+      if (!res.ok) {
+        const msg =
+          data.code === "invalid_credentials"
+            ? tPage("errorInvalid")
+            : data.code === "account_inactive"
+              ? tPage("errorInactive")
+              : data.code === "account_locked"
+                ? tPage("errorLocked")
+                : tPage("errorGeneric");
+        toast.error(msg);
+        return;
+      }
+      toast.success(tPage("success"));
+      const target = data.landing_path?.trim() || "/admin/system/menu";
+      router.replace(target);
+    } catch {
+      toast.error(tPage("errorGeneric"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -137,7 +168,11 @@ export function LoginForm() {
             </InputGroup>
           </FormField>
 
-          <Button type="submit" className="mt-3 h-11 w-full font-semibold">
+          <Button
+            type="submit"
+            className="mt-3 h-11 w-full font-semibold"
+            disabled={submitting}
+          >
             {tPage("submit")}
           </Button>
         </form>

@@ -15,7 +15,14 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const stubArgs = {
+  open: false,
+  onOpenChange: () => {},
+  onConfirm: () => {},
+};
+
 export const Default: Story = {
+  args: stubArgs,
   render: function Render() {
     const [open, setOpen] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
@@ -43,6 +50,7 @@ export const Default: Story = {
 
 export const CustomCopy: Story = {
   name: "Custom title and description",
+  args: stubArgs,
   render: function Render() {
     const [open, setOpen] = useState(true);
 

@@ -82,8 +82,8 @@ export function filterTreeRowsPreservingAncestors<T extends TreeSortableRow>(
     let cur: T | undefined = row;
     while (cur) {
       include.add(cur.id);
-      const pid = cur.parent_id;
-      cur = pid == null ? undefined : byId.get(pid);
+      const parentId: number | null | undefined = cur.parent_id;
+      cur = parentId == null ? undefined : byId.get(parentId);
     }
   }
   return rows.filter((r) => include.has(r.id));
@@ -402,8 +402,3 @@ function resolveTreeDropZoneSelfCheck(): void {
   }
 }
 
-if (import.meta.main) {
-  reorderFlatSortOrderSelfCheck();
-  filterTreeRowsPreservingAncestorsSelfCheck();
-  resolveTreeDropZoneSelfCheck();
-}

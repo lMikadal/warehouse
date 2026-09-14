@@ -50,11 +50,11 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { breadcrumbFromNavTree } from "@/lib/admin-nav-api";
+import type { AuthUser } from "@/lib/auth-cookies";
 import {
-  ADMIN_NAV_TREE,
   adminNavLabel,
-  breadcrumbDefsForPath,
   filterAdminNavTree,
   type AdminNavIcon,
   type AdminNavNode,
@@ -77,8 +77,6 @@ const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
   "clipboard-list": ClipboardList,
 };
 
-const PLACEHOLDER_USER = { username: "admin" };
-
 /** Design: `.sidebar-nav__sub` — left guide line for nested nav (design/css/style.css) */
 const SIDEBAR_SUB_LIST_CLASS = cn(
   "mx-0 flex min-w-0 flex-col gap-0.5 border-l-2 border-primary/15 py-0.5 pl-2.5",
@@ -87,8 +85,32 @@ const SIDEBAR_SUB_LIST_CLASS = cn(
 
 export type AdminBackofficeShellProps = {
   children: ReactNode;
+  navTree: AdminNavNode[];
+  user: Pick<AuthUser, "username">;
   breadcrumbSegments?: BreadcrumbSegment[];
 };
+
+function AdminLogoutButton() {
+  const t = useTranslations();
+  const router = useRouter();
+
+  async function onLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/admin/login");
+  }
+
+  return (
+    <ButtonIcon
+      type="button"
+      variant="outline"
+      className="shrink-0 text-destructive"
+      aria-label={t("nav.logout")}
+      onClick={() => void onLogout()}
+    >
+      <LogOut className="text-current" />
+    </ButtonIcon>
+  );
+}
 
 function userInitial(username: string): string {
   const s = username.trim();
@@ -232,6 +254,8 @@ function AdminNavNodeView({
 
 export function AdminBackofficeShell({
   children,
+  navTree,
+  user,
   breadcrumbSegments,
 }: AdminBackofficeShellProps) {
   const t = useTranslations();
@@ -240,17 +264,17 @@ export function AdminBackofficeShell({
   const [navQuery, setNavQuery] = useState("");
 
   const filteredTree = useMemo(
-    () => filterAdminNavTree(ADMIN_NAV_TREE, navQuery, locale),
-    [navQuery, locale],
+    () => filterAdminNavTree(navTree, navQuery, locale),
+    [navTree, navQuery, locale],
   );
 
   const segments = useMemo((): BreadcrumbSegment[] => {
     if (breadcrumbSegments) return breadcrumbSegments;
-    return breadcrumbDefsForPath(pathname).map((seg) => ({
+    return breadcrumbFromNavTree(pathname, navTree).map((seg) => ({
       label: adminNavLabel(seg.labels, locale),
       href: seg.href,
     }));
-  }, [breadcrumbSegments, pathname, locale]);
+  }, [breadcrumbSegments, pathname, locale, navTree]);
 
   const navCtx: NavRenderContext = {
     pathname,
@@ -258,7 +282,7 @@ export function AdminBackofficeShell({
     depth: 0,
   };
 
-  const initial = userInitial(PLACEHOLDER_USER.username);
+  const initial = userInitial(user.username);
 
   return (
     <SidebarProvider>
@@ -313,18 +337,9 @@ export function AdminBackofficeShell({
               </AvatarFallback>
             </Avatar>
             <span className="min-w-0 flex-1 truncate text-sm font-medium">
-              {PLACEHOLDER_USER.username}
+              {user.username}
             </span>
-            <ButtonIcon
-              asChild
-              variant="outline"
-              className="shrink-0"
-              aria-label={t("nav.logout")}
-            >
-              <Link href="/admin/login" className="text-destructive">
-                <LogOut className="text-current" />
-              </Link>
-            </ButtonIcon>
+            <AdminLogoutButton />
           </div>
         </SidebarFooter>
       </Sidebar>

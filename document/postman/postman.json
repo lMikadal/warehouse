@@ -86,6 +86,27 @@
           "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
         },
         {
+          "name": "Nav (sidebar + landing)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept-Language", "value": "th" }],
+            "url": "{{baseUrl}}/auth/nav"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "var j = pm.response.json();",
+                  "pm.test('has tree', () => pm.expect(j.tree).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
           "name": "Logout",
           "request": {
             "auth": { "type": "noauth" },

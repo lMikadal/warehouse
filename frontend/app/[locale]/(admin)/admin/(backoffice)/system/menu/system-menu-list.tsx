@@ -86,7 +86,7 @@ function pointerClientCoords(
     Number.isFinite(current.x) &&
     Number.isFinite(current.y)
   ) {
-    return { x: current.x, y: current.y };
+    return { x: Number(current.x), y: Number(current.y) };
   }
   if (operation?.activatorEvent instanceof PointerEvent) {
     return {
@@ -714,6 +714,7 @@ export function SystemMenuList() {
                       key={row.id}
                       row={row}
                       locale={locale}
+                      dropIntent={null}
                       dragEnabled={false}
                       onToggleActive={handleToggleActive}
                       onAction={handleRowAction}

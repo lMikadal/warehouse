@@ -9,6 +9,7 @@ func RegisterRoutes(g *echo.Group, h *Handler) {
 	a.POST("/logout", h.logout)
 }
 
-func RegisterProtectedRoutes(g *echo.Group, h *Handler) {
+func RegisterAuthedRoutes(g *echo.Group, h *Handler) {
 	g.GET("/auth/me", h.me)
+	g.GET("/auth/nav", h.nav)
 }

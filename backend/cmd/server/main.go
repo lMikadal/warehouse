@@ -58,13 +58,16 @@ func main() {
 	v1 := e.Group(api.V1Prefix)
 	health.RegisterRoutes(v1)
 
+	menuRepo := system.NewMenuRepository(deps.DB)
+	menuPermRepo := system.NewMenuPermissionRepository(deps.DB)
+	navSvc := system.NewNavService(menuRepo, menuPermRepo, rbac)
+
 	authUsers := authmod.NewUserRepository(deps.DB)
 	authSessions := authmod.NewSessionRepository(deps.DB)
-	authSvc := authmod.NewService(authUsers, authSessions, issuer, cfg.JWTRefreshTTL)
-	authHandler := authmod.NewHandler(authSvc)
+	authSvc := authmod.NewService(authUsers, authSessions, issuer, cfg.JWTRefreshTTL, navSvc)
+	authHandler := authmod.NewHandler(authSvc, navSvc)
 	authmod.RegisterRoutes(v1, authHandler)
 
-	menuRepo := system.NewMenuRepository(deps.DB)
 	menuSvc := system.NewMenuService(menuRepo)
 	permRepo := system.NewPermissionRepository(deps.DB)
 	permSvc := system.NewPermissionService(permRepo)
@@ -74,10 +77,12 @@ func main() {
 	roleHandler := admin.NewRoleHandler(roleRepo)
 	userHandler := admin.NewUserHandler(userRepo)
 
-	protected := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac), pkgauth.RequirePermission(rbac))
-	authmod.RegisterProtectedRoutes(protected, authHandler)
-	system.RegisterRoutes(protected, menuSvc, permSvc)
-	admin.RegisterRoutes(protected.Group("/admin"), roleHandler, userHandler)
+	authed := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac))
+	authmod.RegisterAuthedRoutes(authed, authHandler)
+
+	rbacProtected := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac), pkgauth.RequirePermission(rbac))
+	system.RegisterRoutes(rbacProtected, menuSvc, permSvc)
+	admin.RegisterRoutes(rbacProtected.Group("/admin"), roleHandler, userHandler)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

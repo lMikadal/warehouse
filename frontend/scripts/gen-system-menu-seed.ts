@@ -1,29 +1,19 @@
 /**
  * Regenerate backend init menu seed from admin-menu-mock.
- * From frontend/: bun scripts/gen-system-menu-seed.ts > ../backend/internal/infra/postgres/seeds/init/06_system_menu.sql
+ * From frontend/: bun scripts/gen-system-menu-seed.ts > ../backend/internal/infra/postgres/seeds/init/07_system_menu.sql
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInitialAdminMenuRows } from "../lib/admin-menu-mock";
+import {
+  resolveMenuPermKeys,
+  shouldLinkMenuPermissions,
+} from "../lib/menu-perm-resolve";
+import { buildPermissionCatalog, PERM_ACTIONS } from "../lib/perm-catalog";
 
 const SEED_TS = "2026-01-01T00:00:00Z";
-const ACTIONS = ["view", "create", "update", "delete", "import", "export"] as const;
 
-const WAVE_PERM_PAGES = [
-  { module: "system", type: "system_menu", startId: 1 },
-  { module: "system", type: "system_permission", startId: 7 },
-  { module: "admin", type: "admin_user", startId: 13 },
-  { module: "admin", type: "admin_role", startId: 19 },
-] as const;
-
-const codeToId = new Map<string, number>();
-for (const page of WAVE_PERM_PAGES) {
-  let id = page.startId;
-  for (const action of ACTIONS) {
-    codeToId.set(`${page.module}.${page.type}.${action}`, id);
-    id++;
-  }
-}
+const { codeToId } = buildPermissionCatalog();
 
 const ROOT_SLUG: Record<number, string> = {
   2: "system",
@@ -159,44 +149,17 @@ function permLinks(
   const out: { menuId: number; permId: number }[] = [];
 
   for (const d of rows) {
-    const rawPath = d.path;
     const flags = flagMap.get(d.id);
-    if (!rawPath || rawPath === "#" || flags?.is_dialog) continue;
-    if (/dashboard\.html/i.test(rawPath)) continue;
+    if (
+      !shouldLinkMenuPermissions(d, { isDialog: flags?.is_dialog })
+    ) {
+      continue;
+    }
 
     const parent = d.parent_id != null ? byId.get(d.parent_id) : undefined;
-    let permModule = parent ? parent.module : d.module;
-    if (
-      d.parent_id === 2 ||
-      (parent && parent.parent_id === 2 && parent.id === 6)
-    ) {
-      permModule = "admin";
-    }
-    if (d.parent_id === 11) permModule = "admin";
-    if (d.parent_id === 37) permModule = "order";
-    if (parent && (parent.id === 33 || parent.parent_id === 33)) {
-      permModule = "member";
-    }
-    if (d.id === 22) permModule = "supplier";
+    const { permModule, permType } = resolveMenuPermKeys(d, parent);
 
-    let permType = d.module;
-    if (d.id === 22) permType = "supplier_user";
-
-    if (d.module === "admin_menu") {
-      permModule = "system";
-      permType = "system_menu";
-    } else if (d.module === "admin_permission") {
-      permModule = "system";
-      permType = "system_permission";
-    } else if (d.module === "admin_user") {
-      permModule = "admin";
-      permType = "admin_user";
-    } else if (d.module === "admin_role") {
-      permModule = "admin";
-      permType = "admin_role";
-    }
-
-    for (const action of ACTIONS) {
+    for (const action of PERM_ACTIONS) {
       const code = `${permModule}.${permType}.${action}`;
       const permId = codeToId.get(code);
       if (permId != null) out.push({ menuId: d.id, permId });

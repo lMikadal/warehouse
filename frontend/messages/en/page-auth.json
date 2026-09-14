@@ -7,6 +7,10 @@
       },
       "submit": "Sign in",
       "success": "Login successful",
+      "errorInvalid": "Invalid username or password",
+      "errorInactive": "Account is not active",
+      "errorLocked": "Account is temporarily locked",
+      "errorGeneric": "Sign-in failed. Please try again.",
       "title": "Sign in",
       "username": "Username"
     }

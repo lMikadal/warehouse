@@ -1,6 +1,6 @@
 # Phase: Admin login UI (shell)
 
-First production login screen from design; API auth deferred.
+First production login screen from design; wired to backend JWT via BFF.
 
 ## Phase checklist
 
@@ -10,6 +10,8 @@ First production login screen from design; API auth deferred.
 - [x] Password visibility on shared `Input`
 - [x] Home page link to admin login
 - [x] `document/knowledge/frontend.md` — Login route subsection
+- [x] BFF `POST /api/auth/login` + httpOnly cookies + middleware guard
+- [x] Post-login redirect to backend `landing_path`
 
 ## Required checklist
 

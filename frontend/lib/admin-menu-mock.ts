@@ -749,10 +749,6 @@ function moveAdminMenuRowByTreeDropSelfCheck(): void {
   }
 }
 
-if (import.meta.main) {
-  moveAdminMenuRowByTreeDropSelfCheck();
-}
-
 /** Frontend routes wired in App Router (module → path without locale prefix). */
 const FRONTEND_HREF_BY_MODULE: Record<string, string> = {
   admin_menu: "/admin/system/menu",

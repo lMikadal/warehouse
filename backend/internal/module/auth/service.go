@@ -18,22 +18,28 @@ var (
 	ErrAccountLocked      = errors.New("account locked")
 )
 
-type Service struct {
-	users    *UserRepository
-	sessions *SessionRepository
-	issuer   *pkgauth.TokenIssuer
-	refreshTTL time.Duration
+type NavLanding interface {
+	LandingPathForUser(ctx context.Context, userType string, roleID *int64) (string, error)
 }
 
-func NewService(users *UserRepository, sessions *SessionRepository, issuer *pkgauth.TokenIssuer, refreshTTL time.Duration) *Service {
-	return &Service{users: users, sessions: sessions, issuer: issuer, refreshTTL: refreshTTL}
+type Service struct {
+	users      *UserRepository
+	sessions   *SessionRepository
+	issuer     *pkgauth.TokenIssuer
+	refreshTTL time.Duration
+	navLanding NavLanding
+}
+
+func NewService(users *UserRepository, sessions *SessionRepository, issuer *pkgauth.TokenIssuer, refreshTTL time.Duration, navLanding NavLanding) *Service {
+	return &Service{users: users, sessions: sessions, issuer: issuer, refreshTTL: refreshTTL, navLanding: navLanding}
 }
 
 type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int64  `json:"expires_in"`
+	AccessToken  string      `json:"access_token"`
+	RefreshToken string      `json:"refresh_token"`
+	TokenType    string      `json:"token_type"`
+	ExpiresIn    int64       `json:"expires_in"`
+	LandingPath  string      `json:"landing_path"`
 	User         UserProfile `json:"user"`
 }
 
@@ -131,11 +137,16 @@ func (s *Service) issueTokens(ctx context.Context, u *LoginUser, ip, userAgent s
 	if err != nil {
 		return nil, err
 	}
+	landing := ""
+	if s.navLanding != nil {
+		landing, _ = s.navLanding.LandingPathForUser(ctx, u.Type, roleID)
+	}
 	return &TokenPair{
 		AccessToken:  access,
 		RefreshToken: refreshPlain,
 		TokenType:    "Bearer",
 		ExpiresIn:    int64(time.Until(exp).Seconds()),
+		LandingPath:  landing,
 		User:         *profile,
 	}, nil
 }

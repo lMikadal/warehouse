@@ -8,14 +8,16 @@ import (
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/lMikadal/warehouse/backend/internal/module/system"
 )
 
 type Handler struct {
-	svc *Service
+	svc    *Service
+	navSvc *system.NavService
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, navSvc *system.NavService) *Handler {
+	return &Handler{svc: svc, navSvc: navSvc}
 }
 
 type loginRequest struct {
@@ -92,6 +94,22 @@ func (h *Handler) logout(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "logout failed"})
 	}
 	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *Handler) nav(c *echo.Context) error {
+	p, ok := pkgauth.PrincipalFrom(c)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, api.ErrorBody{Code: "unauthorized", Message: "not authenticated"})
+	}
+	if h.navSvc == nil {
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "nav unavailable"})
+	}
+	out, err := h.navSvc.NavForPrincipal(c.Request().Context(), p)
+	if err != nil {
+		applog.HTTPError(c, "auth nav", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load nav"})
+	}
+	return c.JSON(http.StatusOK, out)
 }
 
 func (h *Handler) me(c *echo.Context) error {

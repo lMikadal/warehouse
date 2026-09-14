@@ -1,14 +1,26 @@
 import { Warehouse } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { LocaleThemeToolbar } from "@/components/molecules/locale-theme-toolbar";
+import { redirect } from "@/i18n/navigation";
+import {
+  getAccessToken,
+  getLandingPathCookie,
+} from "@/lib/auth-server";
 
 type Props = {
   children: ReactNode;
 };
 
 export default async function AdminAuthLayout({ children }: Props) {
+  const access = await getAccessToken();
+  if (access) {
+    const locale = await getLocale();
+    const landing = (await getLandingPathCookie()) || "/admin/system/menu";
+    redirect({ href: landing, locale });
+  }
+
   const tApp = await getTranslations("app");
   const tPageLogin = await getTranslations("page.login");
 

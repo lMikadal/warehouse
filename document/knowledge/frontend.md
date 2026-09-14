@@ -254,8 +254,9 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
 | Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
-| Nav | [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) — `ADMIN_NAV_TREE`, breadcrumb map, sidebar search filter. Init seed [`06_system_menu.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_menu.sql) mirrors the mock with hierarchical `path` (`/admin/{main}/{sub}/...`); when wiring the menus API, prefer `row.path` over `FRONTEND_HREF_BY_MODULE` where they match. |
-| Session | Placeholder user `admin` + logout → `/admin/login` until auth API |
+| Nav | **`GET /api/v1/auth/nav`** (server layout) → [`lib/admin-nav-api.ts`](../../frontend/lib/admin-nav-api.ts) maps API tree to sidebar nodes; breadcrumbs from tree walk by pathname. [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) remains for system/menu CRUD mock + Storybook + seed generator. |
+| Session | httpOnly JWT cookies via BFF [`app/api/auth/*`](../../frontend/app/api/auth/); footer shows `/auth/me` user; logout calls `/api/auth/logout`. |
+| Guard | [`middleware.ts`](../../frontend/middleware.ts) — unauthenticated `/admin/*` (except login) → `/admin/login`; authenticated login page → `warehouse_landing` cookie (from login) or fallback. |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
 
 ### Login route (admin)
@@ -267,7 +268,8 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Files | [`(auth)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(auth)/layout.tsx) (split shell + brand aside), [`login/page.tsx`](../../frontend/app/[locale]/(admin)/admin/(auth)/login/page.tsx) + `login-form.tsx` |
 | Compose | `(auth)/layout`: toolbar, brand panel at `lg`; login page: `FormCard`, `FormField`, `InputGroup` + Lucide `User` / `Lock`; password visibility on shared `Input` |
 | Tokens | `max-w-form` in `app/globals.css`; mobile radial wash uses `--color-primary`; brand gradient uses `primary` token stops |
-| Phase | **UI + client validation only** — submit does not call the API yet (no backend login endpoint) |
+| API | `POST /api/auth/login` → Go `POST /auth/login`; success `router.replace(landing_path)` from response |
+| Phase | Wired to backend JWT (see [`document/knowledge/backend.md`](../knowledge/backend.md) Auth + `/auth/nav`) |
 | Required empty submit | `toast.error` with `form.placeholder.input` copy (first invalid field); both fields may show invalid chrome; no under-field text |
 | Entry | Home stack page links via `home.adminLogin` → `/admin/login` |
 

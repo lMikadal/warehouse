@@ -60,6 +60,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-dev-jwt-secret-min-32-chars}
     ports:
       - "1323:1323"
     volumes:
