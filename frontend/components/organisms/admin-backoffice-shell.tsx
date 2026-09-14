@@ -128,7 +128,20 @@ type NavRenderContext = {
   pathname: string;
   locale: string;
   depth: number;
+  /** Sidebar search active — remount collapsibles so defaultOpen is not updated in-place. */
+  navSearchActive: boolean;
 };
+
+function navCollapsibleMountKey(nodeId: string, ctx: NavRenderContext): string {
+  return `${nodeId}-${ctx.navSearchActive ? "search" : "idle"}`;
+}
+
+function navCollapsibleDefaultOpen(
+  node: AdminNavNode,
+  ctx: NavRenderContext
+): boolean {
+  return ctx.navSearchActive ? true : (node.defaultOpen ?? false);
+}
 
 function isPathActive(pathname: string, href: string | undefined): boolean {
   if (!href) return false;
@@ -165,7 +178,8 @@ function AdminNavNodeView({
   if (hasChildren && ctx.depth === 0) {
     return (
       <Collapsible
-        defaultOpen={node.defaultOpen ?? false}
+        key={navCollapsibleMountKey(node.id, ctx)}
+        defaultOpen={navCollapsibleDefaultOpen(node, ctx)}
         className="group/collapsible"
       >
         <SidebarMenuItem>
@@ -195,7 +209,8 @@ function AdminNavNodeView({
   if (hasChildren) {
     return (
       <Collapsible
-        defaultOpen={node.defaultOpen ?? false}
+        key={navCollapsibleMountKey(node.id, ctx)}
+        defaultOpen={navCollapsibleDefaultOpen(node, ctx)}
         className="group/collapsible"
       >
         <SidebarMenuSubItem>
@@ -276,10 +291,13 @@ export function AdminBackofficeShell({
     }));
   }, [breadcrumbSegments, pathname, locale, navTree]);
 
+  const navSearchActive = navQuery.trim().length > 0;
+
   const navCtx: NavRenderContext = {
     pathname,
     locale,
     depth: 0,
+    navSearchActive,
   };
 
   const initial = userInitial(user.username);
