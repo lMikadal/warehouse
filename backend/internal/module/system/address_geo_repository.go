@@ -472,11 +472,27 @@ func geoListParentSelect(level GeoLevel, localeParam int) geoParentSelect {
 	}
 }
 
+func geoDefaultListOrder(level GeoLevel) string {
+	const tail = "t.sort_order ASC, t.created_at ASC, t.id ASC"
+	switch level {
+	case GeoCountry:
+		return tail
+	case GeoProvince:
+		return "COALESCE((SELECT c.sort_order FROM system_country c WHERE c.id = t.system_country_id AND c.deleted_at IS NULL), 0) ASC, t.system_country_id ASC, " + tail
+	case GeoDistrict:
+		return "COALESCE((SELECT p.sort_order FROM system_province p WHERE p.id = t.system_province_id AND p.deleted_at IS NULL), 0) ASC, t.system_province_id ASC, " + tail
+	case GeoSubDistrict:
+		return "COALESCE((SELECT d.sort_order FROM system_district d WHERE d.id = t.system_district_id AND d.deleted_at IS NULL), 0) ASC, t.system_district_id ASC, " + tail
+	default:
+		return tail
+	}
+}
+
 func geoOrderBy(sort, order string, level GeoLevel) string {
 	col := strings.TrimSpace(sort)
 	ord := strings.ToLower(strings.TrimSpace(order))
 	if col == "" || (ord != "asc" && ord != "desc") {
-		return "t.sort_order ASC, t.created_at ASC, t.id ASC"
+		return geoDefaultListOrder(level)
 	}
 	switch col {
 	case "sku":
@@ -492,7 +508,7 @@ func geoOrderBy(sort, order string, level GeoLevel) string {
 			return fmt.Sprintf("t.postcode %s NULLS LAST, t.id ASC", strings.ToUpper(ord))
 		}
 	}
-	return "t.sort_order ASC, t.created_at ASC, t.id ASC"
+	return geoDefaultListOrder(level)
 }
 
 func validateGeoNames(names map[string]string) error {

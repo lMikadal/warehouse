@@ -172,7 +172,7 @@ Tables: `system_country`, `system_province`, `system_district`, `system_sub_dist
 | CRUD + list | `/system/countries`, `/provinces`, `/districts`, `/sub-districts` | `admin.system_country.*`, `admin.system_province.*`, … |
 | Reorder | `PATCH …/reorder` | same module `.update` |
 
-List filters: `search`, `is_active`, `page`, `limit`, `sort`/`order`; provinces+ add `system_country_id`; districts+ add `system_province_id`; sub-districts add `system_district_id` (and optional country filter via join). Sub-district list/get SELECT puts `t.postcode` after `t.updated_at` so `scanGeoListRow` column order matches (id, sku, name, sort, active, updated, postcode, parent…).
+List filters: `search`, `is_active`, `page`, `limit`, `sort`/`order`; provinces+ add `system_country_id`; districts+ add `system_province_id`; sub-districts add `system_district_id` (and optional country filter via join). **Default list order** (no `sort`/`order`): countries by row `sort_order`; provinces/districts/sub-districts by immediate parent’s `sort_order`, then parent FK, then row `sort_order` → `created_at` → `id` (matches sibling-scoped reorder). Sub-district list/get SELECT puts `t.postcode` after `t.updated_at` so `scanGeoListRow` column order matches (id, sku, name, sort, active, updated, postcode, parent…).
 
 ## List mutations
 
