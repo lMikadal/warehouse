@@ -49,6 +49,7 @@ Network: `warehouse_network`. Timezone: `Asia/Bangkok`.
 | Path | Upstream |
 |------|----------|
 | `/api/v1/auth/` | frontend:3000 (Next BFF — httpOnly session cookies) |
+| `/api/v1/system/` | frontend:3000 (Next BFF — authenticated proxy to Go, e.g. system menus CRUD) |
 | `/` | frontend:3000 (HMR WebSocket headers) |
 | `/api/v1/` | backend:1323 (Go REST API) |
 | `/design/` | design:80 |
@@ -60,6 +61,7 @@ Seed config: [`infrastructure/nginx/nginx.conf`](../../infrastructure/nginx/ngin
 | Path | Upstream |
 |------|----------|
 | `/api/v1/auth/` | frontend:3000 (Next BFF) |
+| `/api/v1/system/` | frontend:3000 (Next BFF) |
 | `/` | frontend:3000 |
 | `/api/v1/` | backend:1323 |
 

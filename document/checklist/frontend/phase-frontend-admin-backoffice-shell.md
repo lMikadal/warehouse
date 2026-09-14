@@ -24,4 +24,4 @@ Admin chrome for `(backoffice)` routes — sidebar, header, main frame. Design s
 - [x] CRUD list UI for `system/menu` (molecules + mock — [`system-menu-list.tsx`](../../../frontend/app/[locale]/(admin)/admin/(backoffice)/system/menu/system-menu-list.tsx), [`lib/admin-menu-mock.ts`](../../../frontend/lib/admin-menu-mock.ts))
 - [ ] CRUD list UI for `system/permission` (molecules + mock/API)
 - [x] Dynamic sidebar from `GET /auth/nav`; real auth user in footer
-- [ ] Menu edit form / `admin_menu` API wiring
+- [x] Menu edit form / `admin_menu` API wiring ([`lib/system-menu-api.ts`](../../../frontend/lib/system-menu-api.ts), BFF [`app/api/v1/system/menus/`](../../../frontend/app/api/v1/system/menus/); create/delete UI commented out on menu list)

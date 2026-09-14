@@ -59,7 +59,10 @@ export type SystemMenuEditSheetProps = {
   state: SystemMenuSheetState | null;
   menuRows: AdminMenuRow[];
   onOpenChange: (open: boolean) => void;
-  onSave: (id: number | null, payload: SystemMenuEditPayload) => void;
+  onSave: (
+    id: number | null,
+    payload: SystemMenuEditPayload
+  ) => void | Promise<void>;
 };
 
 type SystemMenuEditFormProps = {
@@ -74,7 +77,10 @@ type SystemMenuEditFormProps = {
     parentValue: string;
   };
   editId: number | null;
-  onSave: (id: number | null, payload: SystemMenuEditPayload) => void;
+  onSave: (
+    id: number | null,
+    payload: SystemMenuEditPayload
+  ) => void | Promise<void>;
   onClose: () => void;
 };
 
@@ -189,7 +195,7 @@ function SystemMenuEditForm({
     return Number.isFinite(n) ? n : null;
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const trimmed = {
@@ -228,7 +234,7 @@ function SystemMenuEditForm({
       return;
     }
 
-    onSave(editId, {
+    await onSave(editId, {
       nameTh: trimmed.nameTh,
       nameEn: trimmed.nameEn,
       path: locked ? initial.path : path.trim(),

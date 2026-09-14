@@ -253,8 +253,9 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Route group | `app/[locale]/(admin)/admin/(backoffice)/` |
 | Layout | [`(backoffice)/layout.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/layout.tsx) → `AdminBackofficeShell` |
 | Design source | [`design/js/components/layout.js`](../../design/js/components/layout.js) |
-| Wired routes | `/admin/system/menu` (CRUD list + mock data), `/admin/system/permission` (placeholder) |
-| Nav | **`GET /api/v1/auth/nav`** (server layout) → [`lib/admin-nav-api.ts`](../../frontend/lib/admin-nav-api.ts) maps API tree to sidebar nodes; breadcrumbs from tree walk by pathname. [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) remains for system/menu CRUD mock + Storybook + seed generator. |
+| Wired routes | `/admin/system/menu` (CRUD list + Go menus API via BFF), `/admin/system/permission` (placeholder) |
+| Nav | **`GET /api/v1/auth/nav`** (server layout) → [`lib/admin-nav-api.ts`](../../frontend/lib/admin-nav-api.ts) maps API tree to sidebar nodes; breadcrumbs from tree walk by pathname. [`lib/admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) remains for Storybook, seed generator, and tree helpers — not runtime menu list data. |
+| System menus API | Browser → [`app/api/v1/auth/proxy/system/menus/*`](../../frontend/app/api/v1/auth/proxy/system/menus/) (BFF under auth prefix so gateway always hits Next) → Go `GET/PATCH /api/v1/system/menus`; client helpers in [`lib/system-menu-api.ts`](../../frontend/lib/system-menu-api.ts). Alternate path [`app/api/v1/system/menus/*`](../../frontend/app/api/v1/system/menus/) when nginx routes `/api/v1/system/` to frontend. Create/delete UI commented out on menu page; edit, status toggle, and drag-move are wired. |
 | Session | httpOnly JWT cookies via BFF [`app/api/v1/auth/*`](../../frontend/app/api/v1/auth/); footer shows `/auth/me` user; logout calls `/api/v1/auth/logout`. |
 | Guard | [`middleware.ts`](../../frontend/middleware.ts) — unauthenticated `/admin/*` (except login) → `/admin/login`; authenticated login page → `warehouse_landing` cookie (from login) or fallback. |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |

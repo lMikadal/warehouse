@@ -2,18 +2,25 @@
 
 import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ComponentProps, useMemo, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
-import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+// import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
 import {
   SystemMenuEditSheet,
   type SystemMenuEditPayload,
   type SystemMenuSheetState,
 } from "./system-menu-edit-sheet";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -39,13 +46,15 @@ import {
 } from "@/components/ui/table";
 import {
   adminMenuLabel,
-  appendAdminMenuRow,
-  createInitialAdminMenuRows,
   isInvalidMenuParent,
-  moveAdminMenuRowByTreeDrop,
-  updateAdminMenuRow,
   type AdminMenuRow,
 } from "@/lib/admin-menu-mock";
+import {
+  fetchSystemMenus,
+  moveSystemMenu,
+  patchSystemMenu,
+  SystemMenuApiError,
+} from "@/lib/system-menu-api";
 import {
   applyHeaderSort,
   defaultSortRows,
@@ -217,15 +226,6 @@ function toRowView(row: AdminMenuRow, locale: DisplayLocale): MenuRowView {
   return { ...row, label: adminMenuLabel(row, locale) };
 }
 
-function removeMenuSubtree(rows: AdminMenuRow[], id: number): AdminMenuRow[] {
-  const target = rows.find((row) => row.id === id);
-  if (!target) return rows;
-  const prefix = `${target.tree_path}.`;
-  return rows.filter(
-    (row) => row.id !== id && !row.tree_path.startsWith(prefix)
-  );
-}
-
 type MenuTableRowProps = {
   row: MenuRowView;
   index: number;
@@ -375,7 +375,7 @@ function MenuTableCells({
       <TableCell className="text-center">{formatDateTime(row.updated_at, locale)}</TableCell>
       <TableCell className="text-center">
         <TableIconActions
-          actions={["edit", "delete"]}
+          actions={["edit" /* , "delete" */]}
           onAction={(action) => onAction(row.id, action)}
         />
       </TableCell>
@@ -386,24 +386,52 @@ function MenuTableCells({
 export function SystemMenuList() {
   const locale = useLocale() as DisplayLocale;
   const tError = useTranslations("error");
+  const tToast = useTranslations("toast");
   const tPageMenu = useTranslations("page.adminMenu");
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
 
-  const [rows, setRows] = useState<AdminMenuRow[]>(() =>
-    createInitialAdminMenuRows()
-  );
+  const [rows, setRows] = useState<AdminMenuRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  // const [deleteId, setDeleteId] = useState<number | null>(null);
   const [menuSheet, setMenuSheet] = useState<SystemMenuSheetState | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
   const [dragIntent, setDragIntent] = useState<MenuDragIntent | null>(null);
   const dragIntentRef = useRef<MenuDragIntent | null>(null);
+
+  const reloadRows = useCallback(async () => {
+    const next = await fetchSystemMenus(locale);
+    setRows(next);
+  }, [locale]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      try {
+        const next = await fetchSystemMenus(locale);
+        if (!cancelled) setRows(next);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const message =
+          err instanceof SystemMenuApiError
+            ? err.message
+            : tToast("demoError");
+        toast.error(message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, tToast]);
 
   const searchActive = query.trim() !== "";
   const listFiltered = searchActive || statusFilter !== "";
@@ -441,53 +469,76 @@ export function SystemMenuList() {
     setPage(1);
   };
 
-  const handleToggleActive = (id: number, active: boolean) => {
-    const now = new Date().toISOString();
-    setRows((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, is_active: active, updated_at: now } : r
-      )
+  const handleToggleActive = async (id: number, active: boolean) => {
+    const prev = rows.find((r) => r.id === id);
+    if (!prev) return;
+    setRows((current) =>
+      current.map((r) => (r.id === id ? { ...r, is_active: active } : r))
     );
-    toast.success(tCrud("toast.saved"));
+    try {
+      const updated = await patchSystemMenu(id, { is_active: active }, locale);
+      setRows((current) =>
+        current.map((r) => (r.id === id ? updated : r))
+      );
+      toast.success(tCrud("toast.saved"));
+    } catch (err) {
+      setRows((current) =>
+        current.map((r) =>
+          r.id === id ? { ...r, is_active: prev.is_active } : r
+        )
+      );
+      toast.error(
+        err instanceof SystemMenuApiError ? err.message : tError("invalidParent")
+      );
+    }
   };
 
-  const handleSaveMenu = (
+  const handleSaveMenu = async (
     id: number | null,
     payload: SystemMenuEditPayload
   ) => {
     if (id == null) {
-      setRows((prev) => appendAdminMenuRow(prev, payload));
+      return;
+    }
+    try {
+      const updated = await patchSystemMenu(
+        id,
+        {
+          names: { th: payload.nameTh, en: payload.nameEn },
+          is_active: payload.isActive,
+          parent_id: payload.parentId,
+        },
+        locale
+      );
+      setRows((current) =>
+        current.map((r) => (r.id === id ? updated : r))
+      );
+      toast.success(tCrud("toast.saved"));
       setMenuSheet(null);
-      toast.success(tCrud("toast.created"));
-      return;
+    } catch (err) {
+      const message =
+        err instanceof SystemMenuApiError ? err.message : tError("invalidParent");
+      toast.error(message);
     }
-    const next = updateAdminMenuRow(rows, id, payload);
-    if (next == null) {
-      toast.error(tError("invalidParent"));
-      return;
-    }
-    setRows(next);
-    setMenuSheet(null);
-    toast.success(tCrud("toast.saved"));
   };
 
   const handleRowAction = (id: number, action: TableIconActionKey) => {
-    if (action === "delete") {
-      setDeleteId(id);
-      return;
-    }
+    // if (action === "delete") {
+    //   setDeleteId(id);
+    //   return;
+    // }
     if (action === "edit") {
       const row = rows.find((r) => r.id === id);
       if (row) setMenuSheet({ mode: "edit", row });
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteId == null) return;
-    setRows((prev) => removeMenuSubtree(prev, deleteId));
-    setDeleteId(null);
-    toast.success(tCrud("toast.deleted"));
-  };
+  // const handleConfirmDelete = () => {
+  //   if (deleteId == null) return;
+  //   setRows((prev) => removeMenuSubtree(prev, deleteId));
+  //   setDeleteId(null);
+  //   toast.success(tCrud("toast.deleted"));
+  // };
 
   const syncDragIntent = (operation: DndOperation | undefined) => {
     if (!dragEnabled) {
@@ -525,40 +576,46 @@ export function SystemMenuList() {
       return;
     }
 
-    const next = moveAdminMenuRowByTreeDrop(
-      rows,
-      intent.dragId,
-      intent.targetId,
-      intent.zone
-    );
-    if (next == null) {
-      const dragRow = rows.find((r) => r.id === intent.dragId);
-      const targetRow = rows.find((r) => r.id === intent.targetId);
-      let errorKey: string | undefined;
-      if (
-        dragRow?.tree_path &&
-        targetRow?.tree_path &&
-        isTreePathDescendant(dragRow.tree_path, targetRow.tree_path)
-      ) {
-        errorKey = "reorder.intoSubtree";
-      } else if (
-        intent.zone === "child" &&
-        isInvalidMenuParent(rows, intent.dragId, intent.targetId)
-      ) {
-        errorKey = "reorder.intoSubtree";
-      } else if (
-        intent.zone !== "child" &&
-        targetRow != null &&
-        targetRow.parent_id != null &&
-        isInvalidMenuParent(rows, intent.dragId, targetRow.parent_id)
-      ) {
-        errorKey = "reorder.intoSubtree";
-      }
-      scheduleRejectDrag(errorKey ? tCrud(errorKey) : undefined);
+    const dragRow = rows.find((r) => r.id === intent.dragId);
+    const targetRow = rows.find((r) => r.id === intent.targetId);
+    let errorKey: string | undefined;
+    if (
+      dragRow?.tree_path &&
+      targetRow?.tree_path &&
+      isTreePathDescendant(dragRow.tree_path, targetRow.tree_path)
+    ) {
+      errorKey = "reorder.intoSubtree";
+    } else if (
+      intent.zone === "child" &&
+      isInvalidMenuParent(rows, intent.dragId, intent.targetId)
+    ) {
+      errorKey = "reorder.intoSubtree";
+    } else if (
+      intent.zone !== "child" &&
+      targetRow != null &&
+      targetRow.parent_id != null &&
+      isInvalidMenuParent(rows, intent.dragId, targetRow.parent_id)
+    ) {
+      errorKey = "reorder.intoSubtree";
+    }
+    if (errorKey) {
+      scheduleRejectDrag(tCrud(errorKey));
       return;
     }
-    setRows(next);
-    toast.success(tCrud("toast.reordered"));
+
+    void moveSystemMenu(
+      intent.dragId,
+      intent.targetId,
+      intent.zone,
+      locale
+    )
+      .then(() => reloadRows())
+      .then(() => toast.success(tCrud("toast.reordered")))
+      .catch((err: unknown) => {
+        scheduleRejectDrag(
+          err instanceof SystemMenuApiError ? err.message : undefined
+        );
+      });
   };
 
   return (
@@ -567,14 +624,15 @@ export function SystemMenuList() {
         title={tPageMenu("title")}
         description={tPageMenu("desc")}
         actions={
-          <Button
-            type="button"
-            size="lg"
-            onClick={() => setMenuSheet({ mode: "create" })}
-          >
-            <Plus className="text-current" />
-            {tPageMenu("add")}
-          </Button>
+          undefined
+          // <Button
+          //   type="button"
+          //   size="lg"
+          //   onClick={() => setMenuSheet({ mode: "create" })}
+          // >
+          //   <Plus className="text-current" />
+          //   {tPageMenu("add")}
+          // </Button>
         }
       />
 
@@ -697,7 +755,13 @@ export function SystemMenuList() {
               </TableRow>
             </TableHeader>
             <TableBody key={dragEnabled ? sortableEpoch : "header-sort"}>
-              {pageRows.length ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMN_COUNT} className="text-center">
+                    …
+                  </TableCell>
+                </TableRow>
+              ) : pageRows.length ? (
                 pageRows.map((row, index) =>
                   dragEnabled ? (
                     <SortableMenuTableRow
@@ -753,13 +817,13 @@ export function SystemMenuList() {
         onSave={handleSaveMenu}
       />
 
-      <CrudDeleteConfirmDialog
+      {/* <CrudDeleteConfirmDialog
         open={deleteId != null}
         onOpenChange={(open) => {
           if (!open) setDeleteId(null);
         }}
         onConfirm={handleConfirmDelete}
-      />
+      /> */}
     </div>
   );
 }
