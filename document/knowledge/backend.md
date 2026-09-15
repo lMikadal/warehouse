@@ -222,6 +222,10 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 
 Wave 1 schema: shared enums, locale registry (`system_language` after rename), `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
 
+**Object storage (dev):** Compose runs MinIO; backend receives `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_USE_SSL` (see [`infrastructure/env.example`](../../infrastructure/env.example)). Upload APIs are not wired yet — `system_file` rows store `bucket` + `object_key` for future S3 writes.
+
+**Setting module schema:** goose migrations add `system_file` then `setting_*` tables (12 tables + enums); CRUD handlers are a follow-up wave.
+
 Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction), `08_system_address_geo.sql` (TH/SG geo demo — same IDs as `design/js/seed/system_*`; idempotent upserts).
 
 Re-apply geo only on an existing DB (full `make backend-seed-init` fails if `06` already ran): `docker compose exec -T postgres psql -U warehouse -d warehouse -f - < backend/internal/infra/postgres/seeds/init/08_system_address_geo.sql` from repo root with stack up. Regenerate `08` after design seed changes: `node backend/scripts/gen-system-address-init-seed.mjs`.

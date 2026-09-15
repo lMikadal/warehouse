@@ -1,6 +1,6 @@
 -- source: v1 order_tickets (renamed: order_ticket → purchase_request for clarity)
 --   - purchase_request = ใบขอซื้อ / internal requisition before a PO is raised
---   - image_url[] replaced by junction to website_file (see order_ticket_item_file concept)
+--   - image_url[] replaced by junction to system_file (see order_ticket_item_file concept)
 --   - setting_sale_channel_id replaces setting_sale_platform_id (renamed)
 --   - total_qty: count of non-deleted line items (maintained by application)
 --   - customer snapshot → purchase_request_customer (1:1)

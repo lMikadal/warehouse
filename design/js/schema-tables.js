@@ -95,7 +95,7 @@ window.SCHEMA_TABLES = [
   "system_country_language",
   "system_district",
   "system_district_language",
-  "website_file",
+  "system_file",
   "system_language",
   "system_province",
   "system_province_language",

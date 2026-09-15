@@ -36,6 +36,7 @@ TLS is out of scope for now (HTTP `:80` only).
 | frontend | `3000` | Next.js + bun hot reload |
 | design | `8080` | Static prototype (`nginx:alpine`) |
 | postgres | `5432` | Persistent volume `postgres_data` |
+| minio | `9002` API, `9003` console | S3-compatible storage for `system_file` (`minio_data` volume); bucket `warehouse-files` via one-shot `minio-init` |
 | redis | `6379` | Present for future cache wiring |
 | pgAdmin | `5050` | Dev profile only |
 | redis-commander | `8081` | Dev profile only |

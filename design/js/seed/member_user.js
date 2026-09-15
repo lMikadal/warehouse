@@ -27,7 +27,7 @@
         website_district_id: null,
         website_sub_district_id: null,
         postcode: null,
-        website_file_id: null,
+        system_file_id: null,
         note: null,
         is_active: true,
       },

@@ -1,6 +1,6 @@
 (function (global) {
   var audit = global.ADMIN_SEED_SHARED.audit;
-  global.SEED_WEBSITE_FILE = [
+  global.SEED_SYSTEM_FILE = [
     Object.assign(
       {
         id: 1,
@@ -31,7 +31,7 @@
       {
         id: 1,
         member_user_id: 1,
-        website_file_id: 1,
+        system_file_id: 1,
         sort_order: 100,
       },
       audit(1)
@@ -40,7 +40,7 @@
       {
         id: 2,
         member_user_id: 2,
-        website_file_id: 2,
+        system_file_id: 2,
         sort_order: 100,
       },
       audit(1)

@@ -83,7 +83,7 @@
     if (global[key]) tables[name] = global[key];
   });
 
-  if (global.SEED_WEBSITE_FILE) tables.website_file = global.SEED_WEBSITE_FILE;
+  if (global.SEED_SYSTEM_FILE) tables.system_file = global.SEED_SYSTEM_FILE;
 
   var memberUserTables = [
     "member_user",

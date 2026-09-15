@@ -3,7 +3,7 @@
 --   - type_car discriminates car-attribute level: brand | model | engine (only when type='car')
 --   - tree_path LTREE for hierarchy within each type
 --   - is_stopped (car fitment): replaces v1 product_list_car fitment stop-sell (was product_product_car_categories.is_stoped; spelling fixed)
---   - image_url → website_file_id (purpose: product_attribute_logo)
+--   - image_url → system_file_id (purpose: product_attribute_logo)
 --   - type: brand (product-level, not car tree) | category | car
 --   - type_car: car sub-level when type='car' — brand/model/engine (brand here ≠ product brand above)
 CREATE TYPE product_attribute_type     AS ENUM ('brand', 'category', 'car');
@@ -13,7 +13,7 @@ CREATE TABLE product_attribute (
     id          BIGSERIAL                   PRIMARY KEY,              -- surrogate PK
     type        product_attribute_type      NOT NULL,                 -- attribute kind: brand | category | car
     type_car    product_attribute_car_type,                           -- car sub-level when type='car': brand | model | engine
-    website_file_id BIGINT                      REFERENCES website_file(id) ON DELETE RESTRICT, -- logo or icon (purpose: product_attribute_logo)
+    system_file_id BIGINT                      REFERENCES system_file(id) ON DELETE RESTRICT, -- logo or icon (purpose: product_attribute_logo)
     parent_id   BIGINT                      REFERENCES product_attribute(id) ON DELETE RESTRICT, -- parent node in hierarchy
     tree_path   LTREE                       NOT NULL,                 -- materialized path for tree queries
     sort_order  INTEGER                     NOT NULL DEFAULT 0,       -- sibling display order
@@ -38,6 +38,6 @@ CREATE INDEX idx_product_attribute_parent_sort
 CREATE INDEX idx_product_attribute_type_active
     ON product_attribute (type, sort_order)
     WHERE deleted_at IS NULL AND is_active = TRUE;
-CREATE INDEX idx_product_attribute_file       ON product_attribute (website_file_id) WHERE website_file_id IS NOT NULL;
+CREATE INDEX idx_product_attribute_file       ON product_attribute (system_file_id) WHERE system_file_id IS NOT NULL;
 CREATE INDEX idx_product_attribute_created_by ON product_attribute (created_by) WHERE created_by IS NOT NULL;
 CREATE INDEX idx_product_attribute_updated_by ON product_attribute (updated_by) WHERE updated_by IS NOT NULL;

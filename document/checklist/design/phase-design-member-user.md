@@ -5,7 +5,7 @@ CRUD mockup for sidebar **สมาชิก → รายชื่อ** (`membe
 ## Phase checklist
 
 - [x] Wire menu id 36 to `pages/member-user.html`
-- [x] Add seeds: `member_user`, `member_address`, `member_user_setting`, `member_user_owner`, `member_file` (+ `website_file`), `member_discount`, `member_history`, `member_history_language`
+- [x] Add seeds: `member_user`, `member_address`, `member_user_setting`, `member_user_owner`, `member_file` (+ `system_file`), `member_discount`, `member_history`, `member_history_language`
 - [x] Merge tables in `seed/index.js`; bump `SEED_VERSION` to `member-user-1`
 - [x] Add member-user seed script tags on pages that load member tier seeds
 - [x] List page: filters, stat cards, paginated table, copy SKU, status switch, delete confirm

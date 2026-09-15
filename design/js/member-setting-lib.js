@@ -150,7 +150,7 @@
 
   function createSaleChannelForRelation(relation) {
     var created = global.store.create("setting_sale_channel", {
-      website_file_id: null,
+      system_file_id: null,
       is_active: true,
       is_default: true,
       member_setting_relation_id: relation.id,

@@ -8,6 +8,7 @@ volumes:
   postgres_data:
   pgadmin_data:
   frontend_node_modules:
+  minio_data:
 
 services:
   postgres:
@@ -47,6 +48,43 @@ services:
     networks:
       - warehouse_network
 
+  minio:
+    image: minio/minio:latest
+    container_name: warehouse-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      TZ: ${TZ:-Asia/Bangkok}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - warehouse_network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: warehouse-minio-init
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do sleep 1; done;
+      mc mb --ignore-existing local/$${S3_BUCKET:-warehouse-files};
+      mc anonymous set download local/$${S3_BUCKET:-warehouse-files};
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-warehouse-files}
+    networks:
+      - warehouse_network
+
   backend:
     image: warehouse-backend:dev
     build:
@@ -62,6 +100,12 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-dev-jwt-secret-min-32-chars}
       API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-warehouse-files}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_USE_SSL: ${S3_USE_SSL:-false}
     ports:
       - "1323:1323"
     volumes:
@@ -69,6 +113,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1323/api/v1/health"]
       interval: 10s

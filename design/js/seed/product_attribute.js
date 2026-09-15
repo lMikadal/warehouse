@@ -33,7 +33,7 @@
   global.SEED_PRODUCT_ATTRIBUTE = shared.assignTreePaths(defs).map(function (d) {
     return Object.assign(
       {
-        website_file_id: null,
+        system_file_id: null,
         is_stopped: false,
       },
       d,

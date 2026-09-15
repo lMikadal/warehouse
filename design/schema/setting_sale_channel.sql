@@ -2,13 +2,13 @@
 --   - renamed: sale_platform → sale_channel (v2 naming)
 --   - member_setting_relation_id: links sale channel to member profile combo
 --   - indexes added (v2 had none at all)
---   - image_url → website_file_id (purpose: setting_sale_channel_logo)
+--   - image_url → system_file_id (purpose: setting_sale_channel_logo)
 CREATE TABLE setting_sale_channel (
     id                         BIGSERIAL    PRIMARY KEY,              -- surrogate PK
-    website_file_id            BIGINT       REFERENCES website_file(id) ON DELETE RESTRICT, -- channel logo (purpose: setting_sale_channel_logo)
+    system_file_id            BIGINT       REFERENCES system_file(id) ON DELETE RESTRICT, -- channel logo (purpose: setting_sale_channel_logo)
     is_active                  BOOLEAN      NOT NULL DEFAULT TRUE,    -- available for orders
     is_default                 BOOLEAN      NOT NULL DEFAULT FALSE,   -- default channel for new orders
-    member_setting_relation_id BIGINT       REFERENCES member_setting_relation(id) ON DELETE SET NULL, -- linked member profile combo
+    member_setting_relation_id BIGINT, -- linked member profile combo; FK to member_setting_relation added in member migration wave
     sort_order                 INTEGER      NOT NULL DEFAULT 100,     -- UI list order
     deleted_at                 TIMESTAMPTZ,
     created_at                 TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,7 +18,7 @@ CREATE TABLE setting_sale_channel (
 );
 
 CREATE INDEX idx_setting_sale_channel_file
-    ON setting_sale_channel (website_file_id) WHERE website_file_id IS NOT NULL;
+    ON setting_sale_channel (system_file_id) WHERE system_file_id IS NOT NULL;
 CREATE INDEX idx_setting_sale_channel_active
     ON setting_sale_channel (sort_order)
     WHERE deleted_at IS NULL AND is_active = TRUE;

@@ -382,9 +382,9 @@
   }
 
   function createTierBadgeWebsiteFile(file, dataUrl) {
-    var id = global.store.nextId("website_file");
+    var id = global.store.nextId("system_file");
     var safeName = (file && file.name ? String(file.name) : "badge").replace(/[^\w.\-]+/g, "_");
-    var row = global.store.create("website_file", {
+    var row = global.store.create("system_file", {
       id: id,
       bucket: "warehouse-design-mock",
       object_key: "design/member_tier_badge/" + id + "/" + safeName,
@@ -442,7 +442,7 @@
       '<span class="member-tier-badge-upload__label" data-i18n="memberTier.uploadBadge"></span>' +
       "</label>" +
       '<input type="file" id="mt-f-badge-file" class="visually-hidden" accept="image/png,image/jpeg,image/webp,image/gif" />' +
-      '<input type="hidden" id="mt-f-website_file_id" value="' +
+      '<input type="hidden" id="mt-f-system_file_id" value="' +
       lib.escapeHtml(fileId) +
       '" />' +
       (fileId
@@ -453,7 +453,7 @@
   }
 
   function parseTierBadgeFileId(form) {
-    var el = form.querySelector("#mt-f-website_file_id");
+    var el = form.querySelector("#mt-f-system_file_id");
     if (!el || el.value === "") return null;
     var n = Number(el.value);
     return Number.isNaN(n) ? null : n;
@@ -463,7 +463,7 @@
     var preview = form.querySelector("#mt-tier-badge-preview");
     if (!preview) return;
     preview.innerHTML = tierBadgeImgMarkup(fileId, 72, 72, "member-tier-badge-upload__icon");
-    var hidden = form.querySelector("#mt-f-website_file_id");
+    var hidden = form.querySelector("#mt-f-system_file_id");
     if (hidden) hidden.value = fileId != null ? String(fileId) : "";
     var clearBtn = form.querySelector("#mt-tier-badge-clear");
     if (clearBtn) clearBtn.hidden = fileId == null;
@@ -729,7 +729,7 @@
     var submitLabel = state.editingTierId ? t("crud.edit") : t("crud.create");
     return (
       '<div class="member-tier-split__form">' +
-      tierBadgeUploadHtml(row ? row.website_file_id : null) +
+      tierBadgeUploadHtml(row ? row.system_file_id : null) +
       '<h2 class="member-tier-split__section-title" data-i18n="memberTier.formTitle"></h2>' +
       '<form id="mt-tier-form" class="crud-form" novalidate>' +
       '<div class="crud-form__row">' +
@@ -842,7 +842,7 @@
       'rem">' +
       '<div class="member-tier-card__head">' +
       '<div class="member-tier-card__avatar">' +
-      tierBadgeImgMarkup(row.website_file_id, 22, 22) +
+      tierBadgeImgMarkup(row.system_file_id, 22, 22) +
       "</div>" +
       '<div class="member-tier-card__title">' +
       lib.escapeHtml(tierName(row.id) || "—") +
@@ -914,7 +914,7 @@
 
   function bindTierFormInputs(form) {
     form.querySelectorAll("input").forEach(function (el) {
-      if (el.id === "mt-f-badge-file" || el.id === "mt-f-website_file_id") return;
+      if (el.id === "mt-f-badge-file" || el.id === "mt-f-system_file_id") return;
       el.addEventListener("input", function () {
         clearFieldError(el.closest(".form-field"));
       });
@@ -976,7 +976,7 @@
       if (!can("update")) return;
       var id = state.editingTierId;
       global.store.update("member_tier", id, {
-        website_file_id: badgeFileId,
+        system_file_id: badgeFileId,
         is_active: isActive,
         updated_at: lib.now(),
       });
@@ -991,7 +991,7 @@
         "member_tier",
         {
           id: newId,
-          website_file_id: badgeFileId,
+          system_file_id: badgeFileId,
           parent_id: parentId,
           tree_path: treePathFor(newId, parentId),
           sort_order: nextSortOrder(parentId),

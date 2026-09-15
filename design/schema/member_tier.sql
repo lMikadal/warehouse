@@ -1,11 +1,11 @@
 -- source: v1 member_tiers + v2 v2_member_tiers (UUID→BIGSERIAL)
 --   - tree: parent_id + tree_path + sort_order (hierarchical tiers)
 --   - is_default: partial unique ensures at most one default tier (v2 addition — kept)
---   - image_url → website_file_id (purpose: member_tier_badge)
+--   - image_url → system_file_id (purpose: member_tier_badge)
 --   - purchase/discount/type/is_promotion: tier defaults when no member_tier_relation row matches
 CREATE TABLE member_tier (
     id              BIGSERIAL    PRIMARY KEY,              -- surrogate PK
-    website_file_id BIGINT       REFERENCES website_file(id) ON DELETE RESTRICT, -- tier badge or thumbnail (purpose: member_tier_badge)
+    system_file_id BIGINT       REFERENCES system_file(id) ON DELETE RESTRICT, -- tier badge or thumbnail (purpose: member_tier_badge)
     parent_id       BIGINT       REFERENCES member_tier(id) ON DELETE RESTRICT, -- parent tier in hierarchy
     tree_path       LTREE        NOT NULL,                 -- LTREE path for subtree queries
     sort_order      INTEGER      NOT NULL DEFAULT 0,       -- sibling display order
@@ -35,6 +35,6 @@ CREATE INDEX idx_member_tier_parent_sort
     ON member_tier (parent_id, sort_order)
     WHERE deleted_at IS NULL;
 CREATE INDEX idx_member_tier_active_sort ON member_tier (sort_order) WHERE deleted_at IS NULL AND is_active = TRUE;
-CREATE INDEX idx_member_tier_file        ON member_tier (website_file_id) WHERE website_file_id IS NOT NULL;
+CREATE INDEX idx_member_tier_file        ON member_tier (system_file_id) WHERE system_file_id IS NOT NULL;
 CREATE INDEX idx_member_tier_created_by  ON member_tier (created_by) WHERE created_by IS NOT NULL;
 CREATE INDEX idx_member_tier_updated_by  ON member_tier (updated_by) WHERE updated_by IS NOT NULL;

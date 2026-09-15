@@ -29,5 +29,5 @@ Split-pane CRUD mockups for sidebar **สินค้า** → หมวดห�
 ## Out of scope (this phase)
 
 - Full product form CRUD (see product-list stub only)
-- `website_file_id` logo upload on attributes
+- `system_file_id` logo upload on attributes
 - `module-registry` / `crud-list` conversion for attribute pages

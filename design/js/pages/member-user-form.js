@@ -125,7 +125,7 @@
 
   function blankDraft() {
     return {
-      website_file_id: null,
+      system_file_id: null,
       business_id: "",
       credit_ids: [],
       group_ids: [],
@@ -628,7 +628,7 @@
   }
 
   function avatarHtml() {
-    var fileId = draft.website_file_id;
+    var fileId = draft.system_file_id;
     var preview = filePreview(fileId);
     var img = preview
       ? '<img src="' + escapeHtml(preview) + '" alt="" width="72" height="72" />'
@@ -641,7 +641,7 @@
       "</span>" +
       '<span class="member-tier-badge-upload__label" data-i18n="memberUser.uploadImage"></span></label>' +
       '<input type="file" id="mu-avatar-file" class="visually-hidden" accept="image/png,image/jpeg,image/webp,image/gif" />' +
-      '<input type="hidden" id="mu-website_file_id" value="' +
+      '<input type="hidden" id="mu-system_file_id" value="' +
       escapeHtml(fileId != null ? String(fileId) : "") +
       '" />' +
       '<button type="button" class="btn btn--sm" id="mu-avatar-clear" data-i18n="memberUser.removeImage"' +
@@ -870,7 +870,7 @@
 
   function editHeaderHtml() {
     var row = memberRow() || {};
-    var preview = filePreview(draft.website_file_id);
+    var preview = filePreview(draft.system_file_id);
     var img = preview
       ? '<img src="' + escapeHtml(preview) + '" alt="" width="96" height="96" />'
       : '<img src="../assets/icons/user-round.svg" alt="" width="96" height="96" />';
@@ -886,8 +886,8 @@
       img +
       "</span></label>" +
       '<input type="file" id="mu-avatar-file" class="visually-hidden" accept="image/png,image/jpeg,image/webp,image/gif" />' +
-      '<input type="hidden" id="mu-website_file_id" value="' +
-      escapeHtml(draft.website_file_id != null ? String(draft.website_file_id) : "") +
+      '<input type="hidden" id="mu-system_file_id" value="' +
+      escapeHtml(draft.system_file_id != null ? String(draft.system_file_id) : "") +
       '" /></div>' +
       "<div>" +
       '<button type="button" class="member-user-status-btn" id="mu-status-badge">' +
@@ -1488,7 +1488,7 @@
     var cards = top
       .map(function (row) {
         var item = global.store.getById("product_item", row.productItemId) || {};
-        var preview = item.website_file_id ? filePreview(item.website_file_id) : null;
+        var preview = item.system_file_id ? filePreview(item.system_file_id) : null;
         var img = preview
           ? '<img src="' + escapeAttr(preview) + '" alt="" />'
           : '<img src="../assets/icons/package.svg" alt="" width="32" height="32" />';
@@ -2017,7 +2017,7 @@
         : '<div class="member-user-files">' +
           rows
             .map(function (r) {
-              var f = global.store.getById("website_file", r.website_file_id) || {};
+              var f = global.store.getById("system_file", r.system_file_id) || {};
               var admin = global.store.getById("admin_user", f.created_by);
               var ext = (f.original_name || "").split(".").pop() || "FILE";
               var iconClass = /pdf/i.test(f.content_type || "") ? " member-user-file__icon--pdf" : "";
@@ -2262,8 +2262,8 @@
   }
 
   function collectDraft() {
-    var fileEl = document.getElementById("mu-website_file_id");
-    if (fileEl) draft.website_file_id = fileEl.value ? Number(fileEl.value) : null;
+    var fileEl = document.getElementById("mu-system_file_id");
+    if (fileEl) draft.system_file_id = fileEl.value ? Number(fileEl.value) : null;
     if (document.getElementById("mu-business")) draft.business_id = val("mu-business");
     if (document.getElementById("mu-credits") && global.chipMultiSelect) {
       draft.credit_ids = global.chipMultiSelect.getSelectedIds(document.getElementById("mu-credits"), "mu-credits");
@@ -2536,7 +2536,7 @@
       website_district_id: n(draft.info.website_district_id),
       website_sub_district_id: n(draft.info.website_sub_district_id),
       postcode: draft.info.postcode || null,
-      website_file_id: draft.website_file_id,
+      system_file_id: draft.system_file_id,
       note: draft.note || null,
       is_active: !!draft.is_active,
       updated_at: now(),
@@ -2614,7 +2614,7 @@
     var fin = addressByType("financial") || {};
     var doc = addressByType("doc") || {};
     draft = {
-      website_file_id: row.website_file_id,
+      system_file_id: row.system_file_id,
       business_id: biz,
       credit_ids: credits,
       group_ids: groups,
@@ -2840,9 +2840,9 @@
       }
       var reader = new FileReader();
       reader.onload = function () {
-        var id = global.store.nextId("website_file");
+        var id = global.store.nextId("system_file");
         var safe = String(file.name || "avatar").replace(/[^\w.\-]+/g, "_");
-        var row = global.store.create("website_file", {
+        var row = global.store.create("system_file", {
           id: id,
           bucket: "warehouse-design-mock",
           object_key: "design/member_avatar/" + id + "/" + safe,
@@ -2857,7 +2857,7 @@
           updated_by: actorId(),
         });
         setFilePreview(row.id, reader.result);
-        draft.website_file_id = row.id;
+        draft.system_file_id = row.id;
         render();
       };
       reader.readAsDataURL(file);
@@ -2865,7 +2865,7 @@
     var clear = document.getElementById("mu-avatar-clear");
     if (clear) {
       clear.addEventListener("click", function () {
-        draft.website_file_id = null;
+        draft.system_file_id = null;
         render();
       });
     }
@@ -3685,9 +3685,9 @@
         }
         var reader = new FileReader();
         reader.onload = function () {
-          var fid = global.store.nextId("website_file");
+          var fid = global.store.nextId("system_file");
           var safe = String(file.name || "file").replace(/[^\w.\-]+/g, "_");
-          var wf = global.store.create("website_file", {
+          var wf = global.store.create("system_file", {
             id: fid,
             bucket: "warehouse-design-mock",
             object_key: "design/member_document/" + fid + "/" + safe,
@@ -3708,7 +3708,7 @@
             }, 0) + 100;
           global.store.create("member_file", {
             member_user_id: memberId,
-            website_file_id: wf.id,
+            system_file_id: wf.id,
             sort_order: sort,
             created_at: now(),
             updated_at: now(),

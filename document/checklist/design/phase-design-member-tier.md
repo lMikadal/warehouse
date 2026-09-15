@@ -26,7 +26,7 @@ CRUD mockup for sidebar **สมาชิก → ระดับ** (`member_tier
 
 ## Out of scope
 
-- `website_file` upload for tier badge
+- `system_file` upload for tier badge
 - `member_user` list / member counts from seeded members — see [`phase-design-member-user.md`](phase-design-member-user.md)
 - Drag-and-drop tier reorder UI
 - Real API / backend integration

@@ -58,6 +58,6 @@
   ];
 
   global.SEED_MEMBER_TIER = shared.assignTreePaths(defs).map(function (d) {
-    return Object.assign({ website_file_id: null }, d, audit(1));
+    return Object.assign({ system_file_id: null }, d, audit(1));
   });
 })(window);
