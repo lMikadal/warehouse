@@ -76,7 +76,7 @@ func main() {
 	roleRepo := admin.NewRoleRepository(deps.DB)
 	userRepo := admin.NewUserRepository(deps.DB)
 	roleHandler := admin.NewRoleHandler(roleRepo)
-	userHandler := admin.NewUserHandler(userRepo)
+	userHandler := admin.NewUserHandler(userRepo, roleRepo)
 
 	authed := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac))
 	authmod.RegisterAuthedRoutes(authed, authHandler)

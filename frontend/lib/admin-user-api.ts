@@ -2,6 +2,7 @@ import {
   BffApiError,
   createBffCrudClient,
   type AppendListQuery,
+  type BffListMeta,
   type BffStandardListParams,
 } from "@/lib/bff-crud-client";
 
@@ -88,6 +89,38 @@ function userListAppendQuery(params: AdminUserListParams): AppendListQuery {
     if (params.type?.trim()) qs.set("type", params.type.trim());
     if (params.status?.trim()) qs.set("status", params.status.trim());
   };
+}
+
+export type AdminUserRoleFilterItem = { id: number; name: string };
+
+export type AdminUserRoleFiltersParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  adminRoleId?: number;
+  isActive?: boolean;
+};
+
+export async function fetchAdminUserRoleFilters(
+  locale: string,
+  params: AdminUserRoleFiltersParams = {}
+): Promise<{ roles: AdminUserRoleFilterItem[]; meta?: BffListMeta }> {
+  const qs = new URLSearchParams({
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 100),
+  });
+  const search = params.search?.trim();
+  if (search) qs.set("search", search);
+  if (params.adminRoleId != null && params.adminRoleId > 0) {
+    qs.set("admin_role_id", String(params.adminRoleId));
+  }
+  if (params.isActive !== undefined) {
+    qs.set("is_active", params.isActive ? "true" : "false");
+  }
+  return userClient.getJson<{ roles: AdminUserRoleFilterItem[]; meta?: BffListMeta }>(
+    locale,
+    `/filters?${qs}`
+  );
 }
 
 export async function fetchAdminUsers(

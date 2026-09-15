@@ -89,3 +89,47 @@ type UserProfile struct {
 	Type        string `json:"type"`
 	AdminRoleID *int64 `json:"admin_role_id,omitempty"`
 }
+
+func (r *UserRepository) ActivePermissionCodes(ctx context.Context) ([]string, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT code FROM system_permission
+WHERE deleted_at IS NULL AND is_active = TRUE
+ORDER BY code`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var codes []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		codes = append(codes, code)
+	}
+	return codes, rows.Err()
+}
+
+func (r *UserRepository) RolePermissionCodes(ctx context.Context, roleID int64) ([]string, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT sp.code
+FROM admin_role_permission arp
+JOIN system_permission sp ON sp.id = arp.system_permission_id
+WHERE arp.admin_role_id = $1
+  AND sp.deleted_at IS NULL
+  AND sp.is_active = TRUE
+ORDER BY sp.code`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var codes []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		codes = append(codes, code)
+	}
+	return codes, rows.Err()
+}

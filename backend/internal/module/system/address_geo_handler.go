@@ -67,6 +67,69 @@ func rowToGeoItem(r GeoRow, includeNames bool) geoItem {
 	return item
 }
 
+type geoFilterItem struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+type geoFiltersResponse struct {
+	Items []geoFilterItem `json:"items"`
+	Meta  api.ListMeta    `json:"meta"`
+}
+
+func (h *AddressGeoHandler) listFilters(c *echo.Context) error {
+	facet := strings.TrimSpace(c.QueryParam("facet"))
+	queryLevel, ok := geoFilterFacetLevel(h.level, facet)
+	if !ok {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid or missing facet"})
+	}
+	q := api.ParsePageQuery(c)
+	active := true
+	f := GeoListFilter{
+		Page: q.Page, Limit: q.Limit, Locale: api.LocaleFromRequest(c),
+		Search: strings.TrimSpace(c.QueryParam("search")), IsActive: &active,
+		Sort: "name", Order: "asc",
+	}
+	if id, ok := queryInt64(c, "system_country_id"); ok {
+		f.SystemCountryID = &id
+	}
+	if id, ok := queryInt64(c, "system_province_id"); ok {
+		f.SystemProvinceID = &id
+	}
+	if id, ok := queryInt64(c, "system_district_id"); ok {
+		f.SystemDistrictID = &id
+	}
+	if id, ok := queryInt64(c, "id"); ok {
+		f.Search = ""
+		_ = id
+		row, err := h.repo.Get(c.Request().Context(), queryLevel, id, f.Locale)
+		if err != nil {
+			applog.HTTPError(c, "geo filters by id", err)
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+		}
+		if row == nil {
+			return c.JSON(http.StatusOK, geoFiltersResponse{Items: []geoFilterItem{}, Meta: api.ListMeta{Total: 0, Page: 1, Limit: q.Limit}})
+		}
+		return c.JSON(http.StatusOK, geoFiltersResponse{
+			Items: []geoFilterItem{{ID: row.ID, Name: row.Name}},
+			Meta:  api.ListMeta{Total: 1, Page: 1, Limit: q.Limit},
+		})
+	}
+	rows, total, err := h.repo.List(c.Request().Context(), queryLevel, f)
+	if err != nil {
+		applog.HTTPError(c, "geo filters list", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+	}
+	items := make([]geoFilterItem, len(rows))
+	for i, r := range rows {
+		items[i] = geoFilterItem{ID: r.ID, Name: r.Name}
+	}
+	return c.JSON(http.StatusOK, geoFiltersResponse{
+		Items: items,
+		Meta:  api.ListMeta{Total: int64(total), Page: q.Page, Limit: q.Limit},
+	})
+}
+
 func (h *AddressGeoHandler) list(c *echo.Context) error {
 	q := api.ParsePageQuery(c)
 	f := GeoListFilter{Page: q.Page, Limit: q.Limit, Locale: api.LocaleFromRequest(c), Search: strings.TrimSpace(c.QueryParam("search"))}
@@ -256,6 +319,7 @@ func queryInt64(c *echo.Context, key string) (int64, bool) {
 func RegisterAddressGeoRoutes(g *echo.Group, repo *AddressGeoRepository) {
 	country := NewAddressGeoHandler(GeoCountry, repo)
 	g.GET("/countries", country.list)
+	g.GET("/countries/filters", country.listFilters)
 	g.GET("/countries/:id", country.get)
 	g.POST("/countries", country.create)
 	g.PATCH("/countries/reorder", country.reorder)
@@ -264,6 +328,7 @@ func RegisterAddressGeoRoutes(g *echo.Group, repo *AddressGeoRepository) {
 
 	province := NewAddressGeoHandler(GeoProvince, repo)
 	g.GET("/provinces", province.list)
+	g.GET("/provinces/filters", province.listFilters)
 	g.GET("/provinces/:id", province.get)
 	g.POST("/provinces", province.create)
 	g.PATCH("/provinces/reorder", province.reorder)
@@ -272,6 +337,7 @@ func RegisterAddressGeoRoutes(g *echo.Group, repo *AddressGeoRepository) {
 
 	district := NewAddressGeoHandler(GeoDistrict, repo)
 	g.GET("/districts", district.list)
+	g.GET("/districts/filters", district.listFilters)
 	g.GET("/districts/:id", district.get)
 	g.POST("/districts", district.create)
 	g.PATCH("/districts/reorder", district.reorder)
@@ -280,6 +346,7 @@ func RegisterAddressGeoRoutes(g *echo.Group, repo *AddressGeoRepository) {
 
 	sub := NewAddressGeoHandler(GeoSubDistrict, repo)
 	g.GET("/sub-districts", sub.list)
+	g.GET("/sub-districts/filters", sub.listFilters)
 	g.GET("/sub-districts/:id", sub.get)
 	g.POST("/sub-districts", sub.create)
 	g.PATCH("/sub-districts/reorder", sub.reorder)

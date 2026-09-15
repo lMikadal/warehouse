@@ -56,14 +56,14 @@ After `make backend-seed-init`, `make backend-seed-bootstrap`, and (local dev on
 |------|----------|------|--------|
 | `admin` | `admin` | Super Admin (bootstrap) | `type=superadmin`; full nav |
 | `staff` | `staff` | Staff (dev) | Design `staffAllowedCodes`; limited product/member/order/warehouse nav |
-| `user_view` | `user_view` | Users viewer (dev) | `admin.admin_user.view` only — list/users nav; no create/update/delete API |
+| `user_view` | `user_view` | Users viewer (dev) | `admin.admin_user.view` + address geo **view** only (country → sub-district); no geo create/update/delete. Re-apply dev seed after changing this row. |
 | `user_edit` | `user_edit` | Users editor (dev) | view + create + update on admin users; no delete |
 | `role_view` | `role_view` | Roles viewer (dev) | `admin.admin_role.view` only — roles nav; no role mutations |
 | `menu_view` | `menu_view` | System menu viewer (dev) | `system.system_menu.view` — System → Menu nav; read-only API |
 | `menu_edit` | `menu_edit` | System menu editor (dev) | menu view + create + update; no delete |
 | `perm_view` | `perm_view` | System permission viewer (dev) | `system.system_permission.view` — System → Permission nav |
 
-`backend-seed-dev` is refused when `APP_ENV=production` (`cmd/seed`).
+`backend-seed-dev` is refused when `APP_ENV=production` (`cmd/seed`). Dev SQL runs in order: `00_fix_geo_permission_codes.sql` (legacy `admin.website_*` → `admin.system_*` on ids 31–54) then `01_rbac_dev_fixtures.sql`. In Docker: `docker compose exec backend sh -c 'cd /app && go run ./cmd/seed dev'`.
 
 ## Logging
 
@@ -113,8 +113,9 @@ Bearer-only (session present; **no** route permission catalog):
 |--------|------|--------|
 | `GET` | `/api/v1/auth/me` | Current user profile |
 | `GET` | `/api/v1/auth/nav` | Role-filtered sidebar tree + `landing_path` (first permitted leaf in DFS menu order) |
+| `GET` | `/api/v1/auth/permissions` | Active permission codes for UI gating: `{ "codes": ["module.type.action", …] }` — superadmin gets all active codes; others from `admin_role_permission` |
 
-Nav visibility (non-superadmin): leaf menus with a real `path` must have a **`system_menu_permission`** row to the menu’s **`system_permission`** row with `action = 'view'`; role must hold that code via `admin_role_permission`. Implemented in [`MenuPermissionRepository.LoadMenuViewCodes`](../../backend/internal/module/system/menu_permission_repository.go) + [`NavService`](../../backend/internal/module/system/nav_service.go). No runtime `ViewPermissionCode` computation.
+Nav visibility (non-superadmin): leaf menus with a real `path` must have a **`system_menu_permission`** row to the menu’s **`system_permission`** row with `action = 'view'`; role must hold that code via `admin_role_permission`. Group rows (`path` empty) and leaves under **`is_superadmin_only`** still appear when the user has view on permitted descendants (e.g. `system.system_menu.view` → “เมนู” under “ผู้ดูแลระบบสูงสุด”). Implemented in [`MenuPermissionRepository.LoadMenuViewCodes`](../../backend/internal/module/system/menu_permission_repository.go) + [`NavService`](../../backend/internal/module/system/nav_service.go). No runtime `ViewPermissionCode` computation.
 
 Login / refresh responses include `landing_path` (same resolver as `/auth/nav`).
 
@@ -153,6 +154,7 @@ Query: `page`, `limit`, optional `search`, optional `is_active` (`true`|`false`)
 |----------|-------|--------------|
 | Roles | `GET/POST /admin/roles`, `GET/PATCH/DELETE /admin/roles/:id` | `admin.admin_role.*` |
 | Users | `GET/POST /admin/users`, `GET/PATCH/DELETE /admin/users/:id` | `admin.admin_user.*` |
+| Users filters | `GET /admin/users/filters` | `admin.admin_user.view` — query: `search`, `page`, `limit`, optional `is_active`, optional `admin_role_id` (single-role label resolve); response `{ "roles": [{ "id", "name" }], "meta" }` for role combobox on user list/form without `admin.admin_role.view` |
 
 Role write payloads include `names: { th, en }`, `permission_ids[]`. User passwords bcrypt-hashed; never returned in JSON.
 
@@ -184,6 +186,7 @@ Tables: `system_country`, `system_province`, `system_district`, `system_sub_dist
 | Method | Path | Permission prefix |
 |--------|------|-------------------|
 | CRUD + list | `/system/countries`, `/provinces`, `/districts`, `/sub-districts` | `admin.system_country.*`, `admin.system_province.*`, … |
+| Filters (parent lookup) | `GET /system/{resource}/filters?facet=countries\|provinces\|districts` | **Same** as list on `{resource}` (e.g. `GET /system/districts/filters` → `admin.system_district.view`) — query: `search`, `page`, `limit`, cascade `system_country_id` / `system_province_id` / `system_district_id`, optional `id` for label resolve; response `{ "items": [{ "id", "name" }], "meta" }` |
 | Reorder | `PATCH …/reorder` | same module `.update` |
 
 List filters: `search`, `is_active`, `page`, `limit`, `sort`/`order`; provinces+ add `system_country_id`; districts+ add `system_province_id`; sub-districts add `system_district_id` (and optional country filter via join). **Default list order** (no `sort`/`order`): countries by row `sort_order`; provinces/districts/sub-districts by immediate parent’s `sort_order`, then parent FK, then row `sort_order` → `created_at` → `id` (matches sibling-scoped reorder). Sub-district list/get SELECT puts `t.postcode` after `t.updated_at` so `scanGeoListRow` column order matches (id, sku, name, sort, active, updated, postcode, parent…).

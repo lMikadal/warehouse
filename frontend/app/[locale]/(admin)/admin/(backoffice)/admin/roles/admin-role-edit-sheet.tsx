@@ -47,6 +47,7 @@ export type AdminRoleEditSheetProps = {
     permission_ids: number[];
     is_active: boolean;
   } | null;
+  canSave?: boolean;
 };
 
 type RequiredKey = "nameTh" | "nameEn";
@@ -63,6 +64,7 @@ function AdminRoleEditForm({
   matrixGroups,
   onSave,
   onClose,
+  canSave = true,
 }: {
   mode: "edit" | "create";
   editId: number | null;
@@ -71,6 +73,7 @@ function AdminRoleEditForm({
   matrixGroups: PermissionMatrixGroup[];
   onSave: AdminRoleEditSheetProps["onSave"];
   onClose: () => void;
+  canSave?: boolean;
 }) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
@@ -130,7 +133,7 @@ function AdminRoleEditForm({
           required
           value={nameTh}
           invalid={fieldInvalid.nameTh}
-          readOnly={locked}
+          readOnly={locked || !canSave}
           onChange={setNameTh}
           onClearInvalid={() =>
             setFieldInvalid((p) => (p.nameTh ? { ...p, nameTh: false } : p))
@@ -142,7 +145,7 @@ function AdminRoleEditForm({
           required
           value={nameEn}
           invalid={fieldInvalid.nameEn}
-          readOnly={locked}
+          readOnly={locked || !canSave}
           onChange={setNameEn}
           onClearInvalid={() =>
             setFieldInvalid((p) => (p.nameEn ? { ...p, nameEn: false } : p))
@@ -152,7 +155,7 @@ function AdminRoleEditForm({
           <FieldLabel>{tCol("active")}</FieldLabel>
           <StatusSwitchField
             checked={isActive}
-            disabled={locked}
+            disabled={locked || !canSave}
             onCheckedChange={setIsActive}
           />
         </Field>
@@ -160,10 +163,10 @@ function AdminRoleEditForm({
           groups={matrixGroups}
           value={permissionIds}
           onChange={setPermissionIds}
-          locked={locked}
+          locked={locked || !canSave}
         />
       </CrudFormSheetBody>
-      <CrudFormSheetFooter dismissLabel={dismissLabel} />
+      <CrudFormSheetFooter dismissLabel={dismissLabel} showSave={canSave} />
     </form>
   );
 }
@@ -174,6 +177,7 @@ export function AdminRoleEditSheet({
   onOpenChange,
   onSave,
   initialDetail,
+  canSave = true,
 }: AdminRoleEditSheetProps) {
   const open = state != null;
   const editId = state?.mode === "edit" ? state.row.id : null;
@@ -236,6 +240,7 @@ export function AdminRoleEditSheet({
           matrixGroups={matrixGroups}
           onSave={onSave}
           onClose={() => onOpenChange(false)}
+          canSave={canSave}
         />
       ) : null}
     </CrudFormSheet>

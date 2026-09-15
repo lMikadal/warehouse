@@ -69,7 +69,13 @@ SELECT 3, sp.id
 FROM system_permission sp
 WHERE sp.deleted_at IS NULL
   AND sp.is_active = TRUE
-  AND sp.code = 'admin.admin_user.view';
+  AND sp.code IN (
+    'admin.admin_user.view',
+    'admin.system_country.view',
+    'admin.system_province.view',
+    'admin.system_district.view',
+    'admin.system_sub_district.view'
+  );
 
 INSERT INTO admin_role_permission (admin_role_id, system_permission_id)
 SELECT 4, sp.id

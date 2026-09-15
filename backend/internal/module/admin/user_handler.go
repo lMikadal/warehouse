@@ -15,11 +15,73 @@ import (
 )
 
 type UserHandler struct {
-	repo *UserRepository
+	repo  *UserRepository
+	roles *RoleRepository
 }
 
-func NewUserHandler(repo *UserRepository) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(repo *UserRepository, roles *RoleRepository) *UserHandler {
+	return &UserHandler{repo: repo, roles: roles}
+}
+
+type userFilterRoleItem struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+type userFiltersResponse struct {
+	Roles []userFilterRoleItem `json:"roles"`
+	Meta  *api.ListMeta        `json:"meta,omitempty"`
+}
+
+func (h *UserHandler) listFilters(c *echo.Context) error {
+	ctx := c.Request().Context()
+	locale := api.LocaleFromRequest(c)
+	if rid := strings.TrimSpace(c.QueryParam("admin_role_id")); rid != "" {
+		id, err := strconv.ParseInt(rid, 10, 64)
+		if err != nil || id <= 0 {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid admin_role_id"})
+		}
+		names, _, ok, err := h.roles.Get(ctx, id)
+		if err != nil {
+			applog.HTTPError(c, "user filters role", err)
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+		}
+		if !ok {
+			return c.JSON(http.StatusOK, userFiltersResponse{Roles: []userFilterRoleItem{}})
+		}
+		return c.JSON(http.StatusOK, userFiltersResponse{
+			Roles: []userFilterRoleItem{{ID: id, Name: roleDisplayName(names, locale)}},
+		})
+	}
+	q := api.ParsePageQuery(c)
+	f := RoleListFilter{Page: q.Page, Limit: q.Limit, Locale: locale, Search: strings.TrimSpace(c.QueryParam("search")), Sort: "name", Order: "asc"}
+	if v := strings.TrimSpace(c.QueryParam("is_active")); v != "" {
+		active := v == "true" || v == "1"
+		f.IsActive = &active
+	}
+	rows, total, err := h.roles.List(ctx, f)
+	if err != nil {
+		applog.HTTPError(c, "user filters roles", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+	}
+	items := make([]userFilterRoleItem, len(rows))
+	for i, r := range rows {
+		items[i] = userFilterRoleItem{ID: r.ID, Name: r.Name}
+	}
+	meta := api.ListMeta{Total: total, Page: q.Page, Limit: q.Limit}
+	return c.JSON(http.StatusOK, userFiltersResponse{Roles: items, Meta: &meta})
+}
+
+func roleDisplayName(names map[string]string, locale string) string {
+	if locale == "en" {
+		if s := strings.TrimSpace(names["en"]); s != "" {
+			return s
+		}
+	}
+	if s := strings.TrimSpace(names["th"]); s != "" {
+		return s
+	}
+	return strings.TrimSpace(names["en"])
 }
 
 type userListItem struct {

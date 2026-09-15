@@ -19,8 +19,9 @@ import type { DisplayLocale } from "@/lib/format-datetime";
 import type { SystemGeoRow } from "@/lib/system-geo-api";
 import {
   geoResourceForParentKey,
-  loadGeoComboboxOptions,
-  resolveGeoComboboxLabel,
+  geoResourceToFilterFacet,
+  loadGeoFilterComboboxOptions,
+  resolveGeoFilterComboboxLabel,
 } from "@/lib/system-geo-combobox";
 
 export type SystemGeoEditPayload = {
@@ -39,6 +40,7 @@ export type SystemGeoSheetState =
 export type SystemGeoEditSheetProps = {
   config: SystemGeoListConfig;
   state: SystemGeoSheetState | null;
+  canSave?: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (
     id: number | null,
@@ -63,6 +65,7 @@ function SystemGeoEditForm({
   editId,
   onSave,
   onClose,
+  canSave = true,
 }: {
   config: SystemGeoListConfig;
   mode: "edit" | "create";
@@ -70,6 +73,7 @@ function SystemGeoEditForm({
   editId: number | null;
   onSave: SystemGeoEditSheetProps["onSave"];
   onClose: () => void;
+  canSave?: boolean;
 }) {
   const locale = useLocale() as DisplayLocale;
   const tCrud = useTranslations("crud");
@@ -91,24 +95,33 @@ function SystemGeoEditForm({
     ? geoResourceForParentKey(config.createParentKey)
     : null;
 
+  const parentFacet = parentResource
+    ? geoResourceToFilterFacet(parentResource)
+    : null;
+
   const loadParentOptions = useCallback(
     (ctx: { search: string; signal: AbortSignal }) => {
-      if (!parentResource) return Promise.resolve([]);
-      return loadGeoComboboxOptions(parentResource, locale, {
+      if (!parentFacet) return Promise.resolve([]);
+      return loadGeoFilterComboboxOptions(config.resource, parentFacet, locale, {
         search: ctx.search,
         signal: ctx.signal,
         isActive: true,
       });
     },
-    [locale, parentResource]
+    [config.resource, locale, parentFacet]
   );
 
   const resolveParentLabel = useCallback(
     (value: string) => {
-      if (!parentResource) return Promise.resolve(null);
-      return resolveGeoComboboxLabel(parentResource, locale, value);
+      if (!parentFacet) return Promise.resolve(null);
+      return resolveGeoFilterComboboxLabel(
+        config.resource,
+        parentFacet,
+        locale,
+        value
+      );
     },
-    [locale, parentResource]
+    [config.resource, locale, parentFacet]
   );
 
   const clearInvalid = (key: RequiredKey) => {
@@ -232,6 +245,7 @@ function SystemGeoEditForm({
           <span className="text-sm font-medium">{tCol("status")}</span>
           <StatusSwitchField
             checked={isActive}
+            disabled={!canSave}
             onCheckedChange={setIsActive}
           />
         </div>
@@ -239,6 +253,7 @@ function SystemGeoEditForm({
 
       <CrudFormSheetFooter
         dismissLabel={mode === "create" ? tCrud("btn.back") : tCrud("btn.cancel")}
+        showSave={canSave}
       />
     </form>
   );
@@ -247,6 +262,7 @@ function SystemGeoEditForm({
 export function SystemGeoEditSheet({
   config,
   state,
+  canSave = true,
   onOpenChange,
   onSave,
 }: SystemGeoEditSheetProps) {
@@ -295,6 +311,7 @@ export function SystemGeoEditSheet({
             await onSave(id, payload);
           }}
           onClose={() => onOpenChange(false)}
+          canSave={canSave}
         />
       ) : null}
     </CrudFormSheet>

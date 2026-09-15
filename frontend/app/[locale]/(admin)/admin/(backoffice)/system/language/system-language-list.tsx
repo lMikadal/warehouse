@@ -31,6 +31,11 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
+import {
+  tableIconActionsFromResource,
+  tableRowDetailAction,
+} from "@/lib/admin-permissions";
 import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -111,6 +116,7 @@ function LanguageTableCells({
 }) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
+  const perm = useResourcePermissions("admin", "admin_language");
 
   return (
     <>
@@ -136,7 +142,7 @@ function LanguageTableCells({
         <div className="flex justify-center">
           <StatusSwitchField
             checked={row.is_active}
-            disabled={row.is_default}
+            disabled={row.is_default || !perm.update}
             onCheckedChange={(checked) => onToggleActive(row.id, checked)}
           />
         </div>
@@ -145,6 +151,7 @@ function LanguageTableCells({
         <div className="flex justify-center">
           <Switch
             checked={row.is_default}
+            disabled={!perm.update}
             onCheckedChange={(checked) =>
               onToggleDefault(row.id, checked === true)
             }
@@ -157,7 +164,7 @@ function LanguageTableCells({
       </TableCell>
       <TableCell className="text-center">
         <TableIconActions
-          actions={["edit", "delete"]}
+          actions={tableIconActionsFromResource(perm)}
           onAction={(action) => onAction(row.id, action)}
         />
       </TableCell>
@@ -237,6 +244,7 @@ export function SystemLanguageList() {
   const tPage = useTranslations("page.adminLanguage");
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
+  const perm = useResourcePermissions("admin", "admin_language");
 
   const {
     query,
@@ -246,7 +254,7 @@ export function SystemLanguageList() {
     sortKey,
     sortDir,
     listFiltered,
-    dragEnabled,
+    dragEnabled: listDragEnabled,
     baseListParams: listFetchParams,
     safePage,
     totalPages,
@@ -255,6 +263,7 @@ export function SystemLanguageList() {
     onStatusFilterChange,
     onPageSizeChange,
   } = useCrudListQuery();
+  const dragEnabled = listDragEnabled && perm.update;
 
   const [rows, setRows] = useState<SystemLanguageRow[]>([]);
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
@@ -381,7 +390,7 @@ export function SystemLanguageList() {
       setDeleteId(id);
       return;
     }
-    if (action === "edit") {
+    if (tableRowDetailAction(action)) {
       const row = rows.find((r) => r.id === id);
       if (row) setSheet({ mode: "edit", row });
     }
@@ -433,14 +442,16 @@ export function SystemLanguageList() {
         title={tPage("title")}
         description={tPage("desc")}
         actions={
-          <Button
-            type="button"
-            size="lg"
-            onClick={() => setSheet({ mode: "create" })}
-          >
-            <Plus className="text-current" />
-            {tPage("add")}
-          </Button>
+          perm.create ? (
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => setSheet({ mode: "create" })}
+            >
+              <Plus className="text-current" />
+              {tPage("add")}
+            </Button>
+          ) : null
         }
       />
 
@@ -599,6 +610,9 @@ export function SystemLanguageList() {
 
       <SystemLanguageEditSheet
         state={sheet}
+        canSave={
+          sheet?.mode === "create" ? perm.create : sheet != null && perm.update
+        }
         onOpenChange={(open) => {
           if (!open) setSheet(null);
         }}

@@ -10,6 +10,7 @@ func RegisterRoutes(g *echo.Group, roles *RoleHandler, users *UserHandler) {
 	g.DELETE("/roles/:id", roles.delete)
 
 	g.GET("/users", users.list)
+	g.GET("/users/filters", users.listFilters)
 	g.GET("/users/:id", users.get)
 	g.POST("/users", users.create)
 	g.PATCH("/users/:id", users.patch)

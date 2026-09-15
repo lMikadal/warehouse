@@ -94,17 +94,32 @@ func sortMenuSiblings(rows []MenuRow) []MenuRow {
 	return sorted
 }
 
-func filterNavNodes(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Principal, nodes []navTreeNode, viewCodes map[int64]string) []navTreeNode {
+type permissionChecker interface {
+	HasPermission(ctx context.Context, roleID int64, code string) (bool, error)
+}
+
+func filterNavNodes(ctx context.Context, rbac permissionChecker, p pkgauth.Principal, nodes []navTreeNode, viewCodes map[int64]string) []navTreeNode {
 	if p.UserType == "superadmin" {
 		return nodes
 	}
 	var out []navTreeNode
 	for _, n := range nodes {
+		children := filterNavNodes(ctx, rbac, p, n.children, viewCodes)
+		leafNav := isNavigablePath(n.row.Path) && !n.row.IsDialog
+
 		if n.row.IsSuperadminOnly {
+			if leafNav {
+				if !menuViewAllowed(ctx, rbac, p, n.row.ID, viewCodes) {
+					continue
+				}
+			} else if len(children) == 0 {
+				continue
+			}
+			out = append(out, navTreeNode{row: n.row, children: children})
 			continue
 		}
-		children := filterNavNodes(ctx, rbac, p, n.children, viewCodes)
-		if isNavigablePath(n.row.Path) && !n.row.IsDialog {
+
+		if leafNav {
 			if !menuViewAllowed(ctx, rbac, p, n.row.ID, viewCodes) {
 				continue
 			}
@@ -116,7 +131,7 @@ func filterNavNodes(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Principal
 	return out
 }
 
-func firstNavigablePath(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Principal, nodes []navTreeNode, viewCodes map[int64]string) string {
+func firstNavigablePath(ctx context.Context, rbac permissionChecker, p pkgauth.Principal, nodes []navTreeNode, viewCodes map[int64]string) string {
 	for _, n := range nodes {
 		if isNavigableLeaf(ctx, rbac, p, n, viewCodes) {
 			return strings.TrimSpace(*n.row.Path)
@@ -128,7 +143,7 @@ func firstNavigablePath(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Princ
 	return ""
 }
 
-func isNavigableLeaf(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Principal, n navTreeNode, viewCodes map[int64]string) bool {
+func isNavigableLeaf(ctx context.Context, rbac permissionChecker, p pkgauth.Principal, n navTreeNode, viewCodes map[int64]string) bool {
 	if !isNavigablePath(n.row.Path) || n.row.IsDialog {
 		return false
 	}
@@ -141,7 +156,10 @@ func isNavigableLeaf(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Principa
 	return menuViewAllowed(ctx, rbac, p, n.row.ID, viewCodes)
 }
 
-func menuViewAllowed(ctx context.Context, rbac *pkgauth.RBAC, p pkgauth.Principal, menuID int64, viewCodes map[int64]string) bool {
+func menuViewAllowed(ctx context.Context, rbac permissionChecker, p pkgauth.Principal, menuID int64, viewCodes map[int64]string) bool {
+	if rbac == nil {
+		return false
+	}
 	code, ok := viewCodes[menuID]
 	if !ok || code == "" {
 		return false

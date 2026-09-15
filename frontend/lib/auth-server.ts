@@ -139,6 +139,19 @@ export async function fetchAuthMe(
   return (await res.json()) as AuthUser;
 }
 
+export async function fetchAuthPermissions(
+  accessToken: string,
+  locale: string
+): Promise<string[]> {
+  const res = await backendFetch("/v1/auth/permissions", {
+    accessToken,
+    locale,
+  });
+  if (!res.ok) return [];
+  const body = (await res.json()) as { codes?: string[] };
+  return body.codes ?? [];
+}
+
 export async function fetchAuthNav(
   accessToken: string,
   locale: string

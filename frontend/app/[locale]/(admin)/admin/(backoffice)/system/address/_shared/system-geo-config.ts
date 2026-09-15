@@ -8,6 +8,12 @@ export type SystemGeoPageKey =
 
 export type SystemGeoListConfig = {
   resource: GeoResource;
+  permModule: "admin";
+  permType:
+    | "system_country"
+    | "system_province"
+    | "system_district"
+    | "system_sub_district";
   pageKey: SystemGeoPageKey;
   parentColumnLabel?: "country" | "province" | "district";
   showPostcode?: boolean;
@@ -21,11 +27,15 @@ export type SystemGeoListConfig = {
 
 export const GEO_COUNTRY_CONFIG: SystemGeoListConfig = {
   resource: "countries",
+  permModule: "admin",
+  permType: "system_country",
   pageKey: "adminSystemCountry",
 };
 
 export const GEO_PROVINCE_CONFIG: SystemGeoListConfig = {
   resource: "provinces",
+  permModule: "admin",
+  permType: "system_province",
   pageKey: "adminSystemProvince",
   parentColumnLabel: "country",
   filterLevels: ["country"],
@@ -35,6 +45,8 @@ export const GEO_PROVINCE_CONFIG: SystemGeoListConfig = {
 
 export const GEO_DISTRICT_CONFIG: SystemGeoListConfig = {
   resource: "districts",
+  permModule: "admin",
+  permType: "system_district",
   pageKey: "adminSystemDistrict",
   parentColumnLabel: "province",
   filterLevels: ["country", "province"],
@@ -44,6 +56,8 @@ export const GEO_DISTRICT_CONFIG: SystemGeoListConfig = {
 
 export const GEO_SUB_DISTRICT_CONFIG: SystemGeoListConfig = {
   resource: "sub-districts",
+  permModule: "admin",
+  permType: "system_sub_district",
   pageKey: "adminSystemSubDistrict",
   parentColumnLabel: "district",
   showPostcode: true,

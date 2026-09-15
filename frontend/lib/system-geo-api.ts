@@ -87,6 +87,53 @@ function geoListAppendQuery(params: SystemGeoListParams): AppendListQuery {
   };
 }
 
+export type GeoFilterFacet = "countries" | "provinces" | "districts";
+
+export type SystemGeoFiltersParams = {
+  facet: GeoFilterFacet;
+  page?: number;
+  limit?: number;
+  search?: string;
+  systemCountryId?: number;
+  systemProvinceId?: number;
+  systemDistrictId?: number;
+  id?: number;
+};
+
+export type SystemGeoFilterItem = { id: number; name: string };
+
+export async function fetchSystemGeoFilters(
+  pageResource: GeoResource,
+  locale: string,
+  params: SystemGeoFiltersParams
+): Promise<{ items: SystemGeoFilterItem[]; meta: { total: number; page: number; limit: number } }> {
+  const qs = new URLSearchParams({
+    facet: params.facet,
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 100),
+  });
+  const search = params.search?.trim();
+  if (search) qs.set("search", search);
+  if (params.id != null && params.id > 0) qs.set("id", String(params.id));
+  if (params.systemCountryId) {
+    qs.set("system_country_id", String(params.systemCountryId));
+  }
+  if (params.systemProvinceId) {
+    qs.set("system_province_id", String(params.systemProvinceId));
+  }
+  if (params.systemDistrictId) {
+    qs.set("system_district_id", String(params.systemDistrictId));
+  }
+  const body = await geoClient(pageResource).getJson<{
+    items: SystemGeoFilterItem[];
+    meta: { total: number; page: number; limit: number };
+  }>(locale, `/filters?${qs}`);
+  return {
+    items: body.items ?? [],
+    meta: body.meta ?? { total: 0, page: params.page ?? 1, limit: params.limit ?? 100 },
+  };
+}
+
 export async function fetchSystemGeoList(
   resource: GeoResource,
   locale: string,

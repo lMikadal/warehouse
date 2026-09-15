@@ -53,6 +53,7 @@ export type SystemMenuSheetState =
 
 export type SystemMenuEditSheetProps = {
   state: SystemMenuSheetState | null;
+  canSave?: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (
     id: number | null,
@@ -77,6 +78,7 @@ type SystemMenuEditFormProps = {
     payload: SystemMenuEditPayload
   ) => void | Promise<void>;
   onClose: () => void;
+  canSave?: boolean;
 };
 
 function SystemMenuEditForm({
@@ -86,6 +88,7 @@ function SystemMenuEditForm({
   editTreePath,
   onSave,
   onClose,
+  canSave = true,
 }: SystemMenuEditFormProps) {
   const locale = useLocale() as DisplayLocale;
   const t = useTranslations();
@@ -275,17 +278,22 @@ function SystemMenuEditForm({
 
         <div className="flex items-center justify-between gap-4 pt-1">
           <span className="text-sm font-medium">{tForm("field.active")}</span>
-          <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
+          <StatusSwitchField
+            checked={isActive}
+            disabled={!canSave}
+            onCheckedChange={setIsActive}
+          />
         </div>
       </CrudFormSheetBody>
 
-      <CrudFormSheetFooter dismissLabel={dismissLabel} />
+      <CrudFormSheetFooter dismissLabel={dismissLabel} showSave={canSave} />
     </form>
   );
 }
 
 export function SystemMenuEditSheet({
   state,
+  canSave = true,
   onOpenChange,
   onSave,
 }: SystemMenuEditSheetProps) {
@@ -346,6 +354,7 @@ export function SystemMenuEditSheet({
           {...formProps}
           onSave={onSave}
           onClose={handleClose}
+          canSave={canSave}
         />
       ) : null}
     </CrudFormSheet>

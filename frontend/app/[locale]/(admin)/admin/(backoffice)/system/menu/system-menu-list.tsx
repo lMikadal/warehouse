@@ -63,6 +63,12 @@ import {
   type TreeDropZone,
 } from "@/lib/crud-list-rows";
 import type { PageSizeOption } from "@/lib/crud-pagination";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
+import {
+  tableIconActionsFromResource,
+  tableRowDetailAction,
+  type ResourceActions,
+} from "@/lib/admin-permissions";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
 import { cn } from "@/lib/utils";
@@ -208,6 +214,7 @@ type MenuTableRowProps = {
   index: number;
   locale: DisplayLocale;
   dragEnabled: boolean;
+  perm: ResourceActions;
   dropIntent: MenuDragIntent | null;
   onToggleActive: (id: number, active: boolean) => void;
   onAction: (id: number, action: TableIconActionKey) => void;
@@ -240,12 +247,14 @@ function SortableMenuTableRow({
   index,
   locale,
   dropIntent,
+  perm,
   onToggleActive,
   onAction,
 }: Omit<MenuTableRowProps, "dragEnabled">) {
   const { ref, handleRef, isDragging } = useSortable({
     id: row.id,
     index,
+    disabled: !perm.update,
   });
 
   return (
@@ -261,7 +270,8 @@ function SortableMenuTableRow({
       <MenuTableCells
         row={row}
         locale={locale}
-        dragEnabled
+        dragEnabled={perm.update}
+        perm={perm}
         dropIntent={dropIntent}
         handleRef={handleRef}
         onToggleActive={onToggleActive}
@@ -275,15 +285,17 @@ function StaticMenuTableRow({
   row,
   locale,
   dragEnabled,
+  perm,
   onToggleActive,
   onAction,
-}: Omit<MenuTableRowProps, "index">) {
+}: Omit<MenuTableRowProps, "index" | "dropIntent">) {
   return (
     <TableRow>
       <MenuTableCells
         row={row}
         locale={locale}
-        dragEnabled={dragEnabled}
+        dragEnabled={dragEnabled && perm.update}
+        perm={perm}
         onToggleActive={onToggleActive}
         onAction={onAction}
       />
@@ -299,10 +311,12 @@ function MenuTableCells({
   handleRef,
   onToggleActive,
   onAction,
+  perm,
 }: {
   row: MenuRowView;
   locale: DisplayLocale;
   dragEnabled: boolean;
+  perm: ResourceActions;
   dropIntent?: MenuDragIntent | null;
   handleRef?: (element: Element | null) => void;
   onToggleActive: (id: number, active: boolean) => void;
@@ -310,6 +324,7 @@ function MenuTableCells({
 }) {
   const tCrud = useTranslations("crud");
   const depth = treeDepth(row.tree_path);
+  const rowActions = tableIconActionsFromResource(perm);
 
   return (
     <>
@@ -345,6 +360,7 @@ function MenuTableCells({
         <div className="flex justify-center">
           <StatusSwitchField
             checked={row.is_active}
+            disabled={!perm.update}
             onCheckedChange={(checked) => onToggleActive(row.id, checked)}
           />
         </div>
@@ -352,7 +368,7 @@ function MenuTableCells({
       <TableCell className="text-center">{formatDateTime(row.updated_at, locale)}</TableCell>
       <TableCell className="text-center">
         <TableIconActions
-          actions={["edit" /* , "delete" */]}
+          actions={rowActions}
           onAction={(action) => onAction(row.id, action)}
         />
       </TableCell>
@@ -367,6 +383,7 @@ export function SystemMenuList() {
   const tPageMenu = useTranslations("page.adminMenu");
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
+  const perm = useResourcePermissions("system", "system_menu");
 
   const [rows, setRows] = useState<AdminMenuRow[]>([]);
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
@@ -446,7 +463,7 @@ export function SystemMenuList() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
   const headerSortActive = sortKey != null && sortDir != null;
-  const dragEnabled = !listFiltered && !headerSortActive;
+  const dragEnabled = !listFiltered && !headerSortActive && perm.update;
 
   const handleSortChange = (
     nextKey: string | null,
@@ -512,7 +529,7 @@ export function SystemMenuList() {
     //   setDeleteId(id);
     //   return;
     // }
-    if (action === "edit") {
+    if (tableRowDetailAction(action)) {
       const row = rows.find((r) => r.id === id);
       if (row) setMenuSheet({ mode: "edit", row });
     }
@@ -754,6 +771,7 @@ export function SystemMenuList() {
                       row={row}
                       index={index}
                       locale={locale}
+                      perm={perm}
                       dropIntent={dragIntent}
                       onToggleActive={handleToggleActive}
                       onAction={handleRowAction}
@@ -763,7 +781,7 @@ export function SystemMenuList() {
                       key={row.id}
                       row={row}
                       locale={locale}
-                      dropIntent={null}
+                      perm={perm}
                       dragEnabled={false}
                       onToggleActive={handleToggleActive}
                       onAction={handleRowAction}
@@ -795,6 +813,11 @@ export function SystemMenuList() {
 
       <SystemMenuEditSheet
         state={menuSheet}
+        canSave={
+          menuSheet?.mode === "create"
+            ? perm.create
+            : menuSheet != null && perm.update
+        }
         onOpenChange={(open) => {
           if (!open) setMenuSheet(null);
         }}

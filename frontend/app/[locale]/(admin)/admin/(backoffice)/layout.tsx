@@ -10,6 +10,7 @@ import { SSR_REFRESH_TRIED_COOKIE } from "@/lib/auth-cookies";
 import {
   fetchAuthMe,
   fetchAuthNav,
+  fetchAuthPermissions,
   getAccessToken,
   getRefreshToken,
 } from "@/lib/auth-server";
@@ -37,8 +38,11 @@ export default async function BackofficeLayout({ children }: Props) {
     return null;
   }
 
-  const user = await fetchAuthMe(token, locale);
-  const nav = await fetchAuthNav(token, locale);
+  const [user, nav, permissionCodes] = await Promise.all([
+    fetchAuthMe(token, locale),
+    fetchAuthNav(token, locale),
+    fetchAuthPermissions(token, locale),
+  ]);
 
   if (!user || !nav) {
     const jar = await cookies();
@@ -55,7 +59,7 @@ export default async function BackofficeLayout({ children }: Props) {
   const { username } = user;
 
   return (
-    <AdminBackofficeActorProvider user={user}>
+    <AdminBackofficeActorProvider user={user} permissionCodes={permissionCodes}>
       <AdminBackofficeShell navTree={tree} user={{ username }}>
         {children}
       </AdminBackofficeShell>

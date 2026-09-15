@@ -30,11 +30,18 @@ import {
   TableSortHead,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
-import { useAdminBackofficeActor } from "@/lib/admin-backoffice-actor-context";
 import {
-  loadAdminRoleComboboxOptions,
-  resolveAdminRoleComboboxLabel,
-} from "@/lib/admin-role-combobox";
+  useAdminBackofficeActor,
+  useResourcePermissions,
+} from "@/lib/admin-backoffice-actor-context";
+import {
+  tableIconActionsFromResource,
+  tableRowDetailAction,
+} from "@/lib/admin-permissions";
+import {
+  loadAdminUserRoleComboboxOptions,
+  resolveAdminUserRoleComboboxLabel,
+} from "@/lib/admin-user-role-combobox";
 import {
   AdminUserApiError,
   BOOTSTRAP_ADMIN_USER_ID,
@@ -134,6 +141,7 @@ function toUserAccountStatus(status: string): UserAccountStatus {
 export function AdminUserList() {
   const locale = useLocale() as DisplayLocale;
   const actor = useAdminBackofficeActor();
+  const perm = useResourcePermissions("admin", "admin_user");
   const tToast = useTranslations("toast");
   const tPage = useTranslations("page.adminUser");
   const tCrud = useTranslations("crud");
@@ -276,7 +284,7 @@ export function AdminUserList() {
       setDeleteId(id);
       return;
     }
-    if (action === "edit") {
+    if (tableRowDetailAction(action)) {
       const row = rows.find((r) => r.id === id);
       if (row) {
         setServerFieldErrors(undefined);
@@ -318,10 +326,16 @@ export function AdminUserList() {
         title={tPage("title")}
         description={tPage("desc")}
         actions={
-          <Button type="button" size="lg" onClick={() => setSheet({ mode: "create" })}>
-            <Plus className="size-4" aria-hidden />
-            {tPage("add")}
-          </Button>
+          perm.create ? (
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => setSheet({ mode: "create" })}
+            >
+              <Plus className="size-4" aria-hidden />
+              {tPage("add")}
+            </Button>
+          ) : null
         }
       />
 
@@ -339,14 +353,14 @@ export function AdminUserList() {
           inputClassName="w-[min(100%,14rem)]"
           showClear
           onLoadOptions={(ctx) =>
-            loadAdminRoleComboboxOptions(locale, {
+            loadAdminUserRoleComboboxOptions(locale, {
               search: ctx.search,
               signal: ctx.signal,
               activeOnly: false,
             })
           }
           resolveSelectedLabel={(value) =>
-            resolveAdminRoleComboboxLabel(locale, value)
+            resolveAdminUserRoleComboboxLabel(locale, value)
           }
         />
         <RemoteComboboxField
@@ -493,11 +507,10 @@ export function AdminUserList() {
                   </TableCell>
                   <TableCell className="text-center">
                     <TableIconActions
-                      actions={
-                        row.id === BOOTSTRAP_ADMIN_USER_ID
-                          ? ["edit"]
-                          : ["edit", "delete"]
-                      }
+                      actions={tableIconActionsFromResource(perm, {
+                        rowId: row.id,
+                        editOnlyRowId: BOOTSTRAP_ADMIN_USER_ID,
+                      })}
                       onAction={(action) => handleRowAction(row.id, action)}
                     />
                   </TableCell>
@@ -519,6 +532,9 @@ export function AdminUserList() {
       <AdminUserEditSheet
         state={sheet}
         locale={locale}
+        canSave={
+          sheet?.mode === "create" ? perm.create : sheet != null && perm.update
+        }
         serverFieldErrors={serverFieldErrors}
         onOpenChange={(open) => !open && setSheet(null)}
         onSave={handleSave}

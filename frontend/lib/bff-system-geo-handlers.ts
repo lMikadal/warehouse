@@ -1,6 +1,9 @@
 import type { NextResponse } from "next/server";
 
-import { createSystemCrudHandlers } from "@/lib/bff-system-crud";
+import {
+  createSystemCrudHandlers,
+  proxyListGet,
+} from "@/lib/bff-system-crud";
 import type { GeoResource } from "@/lib/system-geo-api";
 
 function geoCrud(resource: GeoResource) {
@@ -12,6 +15,13 @@ export async function handleSystemGeoListGet(
   resource: GeoResource
 ): Promise<NextResponse> {
   return geoCrud(resource).listGet(request);
+}
+
+export async function handleSystemGeoFiltersGet(
+  request: Request,
+  resource: GeoResource
+): Promise<NextResponse> {
+  return proxyListGet(request, `/v1/system/${resource}/filters`);
 }
 
 export async function handleSystemGeoCreate(

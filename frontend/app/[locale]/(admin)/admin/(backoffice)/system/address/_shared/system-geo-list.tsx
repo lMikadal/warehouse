@@ -43,6 +43,11 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
+import {
+  tableIconActionsFromResource,
+  tableRowDetailAction,
+} from "@/lib/admin-permissions";
 import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -58,8 +63,8 @@ import {
   type SystemGeoRow,
 } from "@/lib/system-geo-api";
 import {
-  loadGeoComboboxOptions,
-  resolveGeoComboboxLabel,
+  loadGeoFilterComboboxOptions,
+  resolveGeoFilterComboboxLabel,
 } from "@/lib/system-geo-combobox";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import { cn } from "@/lib/utils";
@@ -112,6 +117,7 @@ function GeoTableCells({
   onAction: (id: number, action: TableIconActionKey) => void;
 }) {
   const tCrud = useTranslations("crud");
+  const perm = useResourcePermissions(config.permModule, config.permType);
   return (
     <>
       <TableCell className="w-10 text-center">
@@ -142,6 +148,7 @@ function GeoTableCells({
         <div className="flex justify-center">
           <StatusSwitchField
             checked={row.is_active}
+            disabled={!perm.update}
             onCheckedChange={(checked) => onToggleActive(row.id, checked)}
           />
         </div>
@@ -151,7 +158,7 @@ function GeoTableCells({
       </TableCell>
       <TableCell className="text-center">
         <TableIconActions
-          actions={["edit", "delete"]}
+          actions={tableIconActionsFromResource(perm)}
           onAction={(action) => onAction(row.id, action)}
         />
       </TableCell>
@@ -199,6 +206,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
   const tComboboxEmpty = useTranslations("form.combobox");
+  const perm = useResourcePermissions(config.permModule, config.permType);
 
   const [filterCountry, setFilterCountry] = useState("");
   const [filterProvince, setFilterProvince] = useState("");
@@ -214,7 +222,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
     sortKey,
     sortDir,
     listFiltered,
-    dragEnabled,
+    dragEnabled: listDragEnabled,
     baseListParams,
     safePage,
     totalPages,
@@ -224,6 +232,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
     onPageSizeChange,
     clearSortAndPage,
   } = useCrudListQuery({ extraFiltered: filtersActive });
+  const dragEnabled = listDragEnabled && perm.update;
 
   const listFetchParams = useMemo((): SystemGeoListParams => {
     return {
@@ -243,52 +252,61 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
 
   const loadCountryFilterOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
-      loadGeoComboboxOptions("countries", locale, {
+      loadGeoFilterComboboxOptions(config.resource, "countries", locale, {
         search: ctx.search,
         signal: ctx.signal,
         isActive: true,
       }),
-    [locale]
+    [config.resource, locale]
   );
 
   const loadProvinceFilterOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
-      loadGeoComboboxOptions("provinces", locale, {
+      loadGeoFilterComboboxOptions(config.resource, "provinces", locale, {
         search: ctx.search,
         signal: ctx.signal,
         isActive: true,
         systemCountryId: filterCountry ? Number(filterCountry) : undefined,
       }),
-    [locale, filterCountry]
+    [config.resource, locale, filterCountry]
   );
 
   const loadDistrictFilterOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
-      loadGeoComboboxOptions("districts", locale, {
+      loadGeoFilterComboboxOptions(config.resource, "districts", locale, {
         search: ctx.search,
         signal: ctx.signal,
         isActive: true,
         systemProvinceId: filterProvince ? Number(filterProvince) : undefined,
       }),
-    [locale, filterProvince]
+    [config.resource, locale, filterProvince]
   );
 
   const resolveCountryLabel = useCallback(
-    (value: string) => resolveGeoComboboxLabel("countries", locale, value),
-    [locale]
+    (value: string) =>
+      resolveGeoFilterComboboxLabel(config.resource, "countries", locale, value),
+    [config.resource, locale]
   );
 
   const resolveProvinceLabel = useCallback(
-    (value: string) => resolveGeoComboboxLabel("provinces", locale, value),
-    [locale]
+    (value: string) =>
+      resolveGeoFilterComboboxLabel(config.resource, "provinces", locale, value),
+    [config.resource, locale]
   );
 
   const resolveDistrictLabel = useCallback(
-    (value: string) => resolveGeoComboboxLabel("districts", locale, value),
-    [locale]
+    (value: string) =>
+      resolveGeoFilterComboboxLabel(config.resource, "districts", locale, value),
+    [config.resource, locale]
   );
 
   const loadList = useCallback(async () => {
+    if (!perm.view) {
+      setRows([]);
+      setListMeta({ total: 0, page: 1, limit: pageSize });
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const result = await fetchSystemGeoList(
@@ -305,7 +323,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
     } finally {
       setLoading(false);
     }
-  }, [config.resource, locale, listFetchParams, tToast]);
+  }, [config.resource, locale, listFetchParams, pageSize, perm.view, tToast]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -393,7 +411,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       setDeleteId(id);
       return;
     }
-    if (action === "edit") {
+    if (tableRowDetailAction(action)) {
       const row = rows.find((r) => r.id === id);
       if (!row) return;
       try {
@@ -484,10 +502,16 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
         title={tPage("title")}
         description={tPage("desc")}
         actions={
-          <Button type="button" size="lg" onClick={() => setSheet({ mode: "create" })}>
-            <Plus className="text-current" />
-            {tPage("add")}
-          </Button>
+          perm.create ? (
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => setSheet({ mode: "create" })}
+            >
+              <Plus className="text-current" />
+              {tPage("add")}
+            </Button>
+          ) : null
         }
       />
 
@@ -504,6 +528,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
             emptyLabel={tComboboxEmpty("noResults")}
             value={filterCountry}
             inputClassName="w-[min(100%,12rem)]"
+            disabled={!perm.view}
             onLoadOptions={loadCountryFilterOptions}
             resolveSelectedLabel={resolveCountryLabel}
             onValueChange={(value) => {
@@ -521,7 +546,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
             emptyLabel={tComboboxEmpty("noResults")}
             value={filterProvince}
             inputClassName="w-[min(100%,12rem)]"
-            disabled={!filterCountry}
+            disabled={!perm.view || !filterCountry}
             onLoadOptions={loadProvinceFilterOptions}
             resolveSelectedLabel={resolveProvinceLabel}
             onValueChange={(value) => {
@@ -538,7 +563,7 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
             emptyLabel={tComboboxEmpty("noResults")}
             value={filterDistrict}
             inputClassName="w-[min(100%,12rem)]"
-            disabled={!filterProvince}
+            disabled={!perm.view || !filterProvince}
             onLoadOptions={loadDistrictFilterOptions}
             resolveSelectedLabel={resolveDistrictLabel}
             onValueChange={(value) => {
@@ -658,6 +683,12 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
                     …
                   </TableCell>
                 </TableRow>
+              ) : !perm.view ? (
+                <TableRow>
+                  <TableCell colSpan={colSpan} className="text-center">
+                    {tError("forbidden")}
+                  </TableCell>
+                </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={colSpan} className="text-center">
@@ -707,6 +738,9 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
       <SystemGeoEditSheet
         config={config}
         state={sheet}
+        canSave={
+          sheet?.mode === "create" ? perm.create : sheet != null && perm.update
+        }
         onOpenChange={(open) => {
           if (!open) setSheet(null);
         }}

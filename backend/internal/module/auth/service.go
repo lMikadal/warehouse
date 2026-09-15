@@ -112,6 +112,31 @@ func (s *Service) Me(ctx context.Context, userID int64) (*UserProfile, error) {
 	return s.users.GetProfile(ctx, userID)
 }
 
+type PermissionCodesResponse struct {
+	Codes []string `json:"codes"`
+}
+
+func (s *Service) PermissionCodes(ctx context.Context, userType string, roleID *int64) (*PermissionCodesResponse, error) {
+	if userType == "superadmin" {
+		codes, err := s.users.ActivePermissionCodes(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &PermissionCodesResponse{Codes: codes}, nil
+	}
+	if roleID == nil {
+		return &PermissionCodesResponse{Codes: []string{}}, nil
+	}
+	codes, err := s.users.RolePermissionCodes(ctx, *roleID)
+	if err != nil {
+		return nil, err
+	}
+	if codes == nil {
+		codes = []string{}
+	}
+	return &PermissionCodesResponse{Codes: codes}, nil
+}
+
 func (s *Service) issueTokens(ctx context.Context, u *LoginUser, ip, userAgent string) (*TokenPair, error) {
 	jti, err := pkgauth.NewJTI()
 	if err != nil {

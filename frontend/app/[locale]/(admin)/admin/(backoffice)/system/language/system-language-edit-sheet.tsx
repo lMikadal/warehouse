@@ -27,6 +27,7 @@ export type SystemLanguageSheetState =
 
 export type SystemLanguageEditSheetProps = {
   state: SystemLanguageSheetState | null;
+  canSave?: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (
     id: number | null,
@@ -46,12 +47,14 @@ function SystemLanguageEditForm({
   editId,
   onSave,
   onClose,
+  canSave = true,
 }: {
   mode: "edit" | "create";
   initial: SystemLanguageEditPayload;
   editId: number | null;
   onSave: SystemLanguageEditSheetProps["onSave"];
   onClose: () => void;
+  canSave?: boolean;
 }) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
@@ -107,6 +110,7 @@ function SystemLanguageEditForm({
           labelKey="col.locale"
           required
           value={locale}
+          readOnly={!canSave}
           onChange={setLocale}
           invalid={fieldInvalid.locale}
           onClearInvalid={() => clearInvalid("locale")}
@@ -116,6 +120,7 @@ function SystemLanguageEditForm({
           labelKey="col.name"
           required
           value={name}
+          readOnly={!canSave}
           onChange={setName}
           invalid={fieldInvalid.name}
           onClearInvalid={() => clearInvalid("name")}
@@ -124,6 +129,7 @@ function SystemLanguageEditForm({
           <span className="text-sm font-medium">{tCol("default")}</span>
           <Switch
             checked={isDefault}
+            disabled={!canSave}
             aria-label={tCol("default")}
             onCheckedChange={(checked) => {
               const on = checked === true;
@@ -136,18 +142,19 @@ function SystemLanguageEditForm({
           <span className="text-sm font-medium">{tCol("status")}</span>
           <StatusSwitchField
             checked={isActive}
-            disabled={isDefault}
+            disabled={isDefault || !canSave}
             onCheckedChange={setIsActive}
           />
         </div>
       </CrudFormSheetBody>
-      <CrudFormSheetFooter dismissLabel={dismissLabel} />
+      <CrudFormSheetFooter dismissLabel={dismissLabel} showSave={canSave} />
     </form>
   );
 }
 
 export function SystemLanguageEditSheet({
   state,
+  canSave = true,
   onOpenChange,
   onSave,
 }: SystemLanguageEditSheetProps) {
@@ -185,6 +192,7 @@ export function SystemLanguageEditSheet({
           editId={editId}
           onSave={onSave}
           onClose={() => onOpenChange(false)}
+          canSave={canSave}
         />
       ) : null}
     </CrudFormSheet>

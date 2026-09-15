@@ -26,6 +26,11 @@ import {
   TableSortHead,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
+import {
+  tableIconActionsFromResource,
+  tableRowDetailAction,
+} from "@/lib/admin-permissions";
 import {
   AdminRoleApiError,
   BOOTSTRAP_ADMIN_ROLE_ID,
@@ -61,6 +66,7 @@ export function AdminRoleList() {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
   const tError = useTranslations("error");
+  const perm = useResourcePermissions("admin", "admin_role");
 
   const {
     query,
@@ -180,7 +186,7 @@ export function AdminRoleList() {
       setDeleteId(id);
       return;
     }
-    if (action === "edit") {
+    if (tableRowDetailAction(action)) {
       const row = rows.find((r) => r.id === id);
       if (row) void openEdit(row);
     }
@@ -206,17 +212,19 @@ export function AdminRoleList() {
         title={tPage("title")}
         description={tPage("desc")}
         actions={
-          <Button
-            type="button"
-            size="lg"
-            onClick={() => {
-              setRoleDetail(null);
-              setSheet({ mode: "create" });
-            }}
-          >
-            <Plus className="size-4" aria-hidden />
-            {tPage("add")}
-          </Button>
+          perm.create ? (
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => {
+                setRoleDetail(null);
+                setSheet({ mode: "create" });
+              }}
+            >
+              <Plus className="size-4" aria-hidden />
+              {tPage("add")}
+            </Button>
+          ) : null
         }
       />
 
@@ -287,7 +295,9 @@ export function AdminRoleList() {
                   <TableCell className="text-center">
                     <StatusSwitchField
                       checked={row.is_active}
-                      disabled={row.id === BOOTSTRAP_ADMIN_ROLE_ID}
+                      disabled={
+                        !perm.update || row.id === BOOTSTRAP_ADMIN_ROLE_ID
+                      }
                       onCheckedChange={(v) => handleToggleActive(row.id, v)}
                     />
                   </TableCell>
@@ -296,11 +306,10 @@ export function AdminRoleList() {
                   </TableCell>
                   <TableCell className="text-center">
                     <TableIconActions
-                      actions={
-                        row.id === BOOTSTRAP_ADMIN_ROLE_ID
-                          ? ["edit"]
-                          : ["edit", "delete"]
-                      }
+                      actions={tableIconActionsFromResource(perm, {
+                        rowId: row.id,
+                        editOnlyRowId: BOOTSTRAP_ADMIN_ROLE_ID,
+                      })}
                       onAction={(action) => handleRowAction(row.id, action)}
                     />
                   </TableCell>
@@ -322,6 +331,9 @@ export function AdminRoleList() {
       <AdminRoleEditSheet
         state={sheet}
         locale={locale}
+        canSave={
+          sheet?.mode === "create" ? perm.create : sheet != null && perm.update
+        }
         onOpenChange={(open) => {
           if (!open) {
             setSheet(null);

@@ -128,6 +128,19 @@ func (h *Handler) me(c *echo.Context) error {
 	return c.JSON(http.StatusOK, profile)
 }
 
+func (h *Handler) permissions(c *echo.Context) error {
+	p, ok := pkgauth.PrincipalFrom(c)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, api.ErrorBody{Code: "unauthorized", Message: "not authenticated"})
+	}
+	out, err := h.svc.PermissionCodes(c.Request().Context(), p.UserType, p.RoleID)
+	if err != nil {
+		applog.HTTPError(c, "auth permissions", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load permissions"})
+	}
+	return c.JSON(http.StatusOK, out)
+}
+
 func msgInvalidCredentials(c *echo.Context) string {
 	al := c.Request().Header.Get("Accept-Language")
 	if strings.HasPrefix(strings.ToLower(al), "en") {

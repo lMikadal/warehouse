@@ -6,6 +6,7 @@
     "usernameTaken": "This username is already taken",
     "emailTaken": "This email is already in use",
     "passwordMismatch": "Passwords do not match",
-    "cannotDeleteSelf": "You cannot delete your own account"
+    "cannotDeleteSelf": "You cannot delete your own account",
+    "forbidden": "You do not have permission to view this page."
   }
 }

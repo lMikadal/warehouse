@@ -22,9 +22,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  loadAdminRoleComboboxOptions,
-  resolveAdminRoleComboboxLabel,
-} from "@/lib/admin-role-combobox";
+  loadAdminUserRoleComboboxOptions,
+  resolveAdminUserRoleComboboxLabel,
+} from "@/lib/admin-user-role-combobox";
 import {
   BOOTSTRAP_ADMIN_USER_ID,
   type AdminUserRow,
@@ -67,6 +67,7 @@ export type AdminUserEditSheetProps = {
   serverFieldErrors?: Partial<
     Record<"username" | "email" | "password" | "passwordConfirm", string>
   >;
+  canSave?: boolean;
 };
 
 type RequiredKey = "username" | "adminRoleId";
@@ -83,6 +84,7 @@ function AdminUserEditForm({
   onClose,
   serverFieldErrors,
   locale,
+  canSave = true,
 }: {
   mode: "edit" | "create";
   editId: number | null;
@@ -91,6 +93,7 @@ function AdminUserEditForm({
   onClose: () => void;
   serverFieldErrors?: AdminUserEditSheetProps["serverFieldErrors"];
   locale: string;
+  canSave?: boolean;
 }) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
@@ -128,6 +131,7 @@ function AdminUserEditForm({
   const showApprovalPins = mode === "edit" && type === "superadmin";
   const isBootstrapUser =
     mode === "edit" && editId === BOOTSTRAP_ADMIN_USER_ID;
+  const fieldLocked = isBootstrapUser || !canSave;
 
   const typeOptions = useMemo(() => {
     const base =
@@ -275,6 +279,7 @@ function AdminUserEditForm({
           id="admin-user-username"
           labelKey="col.username"
           required
+          readOnly={!canSave}
           value={username}
           invalid={fieldInvalid.username || !!serverFieldErrors?.username}
           onChange={setUsername}
@@ -286,6 +291,7 @@ function AdminUserEditForm({
           id="admin-user-email"
           labelKey="col.email"
           type="email"
+          readOnly={!canSave}
           value={email}
           invalid={!!serverFieldErrors?.email}
           onChange={setEmail}
@@ -298,6 +304,7 @@ function AdminUserEditForm({
             <Switch
               id="admin-user-change-pw"
               checked={changePassword}
+              disabled={!canSave}
               onCheckedChange={setChangePassword}
             />
           </Field>
@@ -434,17 +441,17 @@ function AdminUserEditForm({
             placeholder={rolePlaceholder}
             emptyLabel={tComboboxEmpty("noResults")}
             inputClassName="w-full"
-            disabled={isBootstrapUser}
+            disabled={fieldLocked}
             invalid={fieldInvalid.adminRoleId}
             onLoadOptions={(ctx) =>
-              loadAdminRoleComboboxOptions(locale, {
+              loadAdminUserRoleComboboxOptions(locale, {
                 search: ctx.search,
                 signal: ctx.signal,
                 activeOnly: true,
               })
             }
             resolveSelectedLabel={(value) =>
-              resolveAdminRoleComboboxLabel(locale, value)
+              resolveAdminUserRoleComboboxLabel(locale, value)
             }
           />
         </Field>
@@ -452,7 +459,7 @@ function AdminUserEditForm({
           <FieldLabel>{tCol("type")}</FieldLabel>
           <Select
             value={type}
-            disabled={isBootstrapUser}
+            disabled={fieldLocked}
             onValueChange={(v) => v && setType(v)}
           >
             <SelectTrigger className="w-full">
@@ -475,7 +482,7 @@ function AdminUserEditForm({
           <FieldLabel>{tCol("status")}</FieldLabel>
           <Select
             value={status}
-            disabled={isBootstrapUser}
+            disabled={fieldLocked}
             onValueChange={(v) => v && setStatus(v)}
           >
             <SelectTrigger className="w-full">
@@ -495,7 +502,7 @@ function AdminUserEditForm({
           </Select>
         </Field>
       </CrudFormSheetBody>
-      <CrudFormSheetFooter dismissLabel={dismissLabel} />
+      <CrudFormSheetFooter dismissLabel={dismissLabel} showSave={canSave} />
     </form>
   );
 }
@@ -506,6 +513,7 @@ export function AdminUserEditSheet({
   onOpenChange,
   onSave,
   serverFieldErrors,
+  canSave = true,
 }: AdminUserEditSheetProps) {
   const open = state != null;
   const editId = state?.mode === "edit" ? state.row.id : null;
@@ -550,6 +558,7 @@ export function AdminUserEditSheet({
           onSave={onSave}
           onClose={() => onOpenChange(false)}
           serverFieldErrors={serverFieldErrors}
+          canSave={canSave}
         />
       ) : null}
     </CrudFormSheet>

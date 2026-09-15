@@ -1,6 +1,9 @@
 import type { NextResponse } from "next/server";
 
-import { createSystemCrudHandlers } from "@/lib/bff-system-crud";
+import {
+  createSystemCrudHandlers,
+  proxyListGet,
+} from "@/lib/bff-system-crud";
 
 const roleCrud = createSystemCrudHandlers("/v1/admin/roles");
 const userCrud = createSystemCrudHandlers("/v1/admin/users");
@@ -37,6 +40,12 @@ export async function handleAdminRoleDelete(
 export const handleAdminUsersListGet: (
   request: Request
 ) => Promise<NextResponse> = userCrud.listGet;
+
+export async function handleAdminUserFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, "/v1/admin/users/filters");
+}
 
 export const handleAdminUserCreate: (
   request: Request

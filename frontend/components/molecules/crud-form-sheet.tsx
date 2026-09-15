@@ -72,10 +72,12 @@ export function CrudFormSheetBody({
 
 export type CrudFormSheetFooterProps = {
   dismissLabel: string;
+  showSave?: boolean;
 };
 
 export function CrudFormSheetFooter({
   dismissLabel,
+  showSave = true,
 }: CrudFormSheetFooterProps) {
   const tCrud = useTranslations("crud");
 
@@ -84,9 +86,11 @@ export function CrudFormSheetFooter({
       <SheetClose render={<Button type="button" variant="outline" size="lg" />}>
         {dismissLabel}
       </SheetClose>
-      <Button type="submit" size="lg">
-        {tCrud("btn.save")}
-      </Button>
+      {showSave ? (
+        <Button type="submit" size="lg">
+          {tCrud("btn.save")}
+        </Button>
+      ) : null}
     </SheetFooter>
   );
 }

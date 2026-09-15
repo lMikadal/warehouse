@@ -43,4 +43,31 @@ func TestMenuViewAllowed_requiresJunctionCode(t *testing.T) {
 	}
 }
 
+type stubPermissionChecker struct {
+	allowed map[string]bool
+}
+
+func (s stubPermissionChecker) HasPermission(_ context.Context, _ int64, code string) (bool, error) {
+	return s.allowed[code], nil
+}
+
+func TestFilterNavNodes_superadminOnlyGroupShowsChildWithView(t *testing.T) {
+	path := "/admin/system/menu"
+	nodes := []navTreeNode{
+		{row: MenuRow{ID: 2, IsSuperadminOnly: true}, children: []navTreeNode{
+			{row: MenuRow{ID: 3, IsSuperadminOnly: true, Path: &path}},
+		}},
+	}
+	roleID := int64(6)
+	p := pkgauth.Principal{UserType: "staff", RoleID: &roleID}
+	checker := stubPermissionChecker{allowed: map[string]bool{
+		"system.system_menu.view": true,
+	}}
+	viewCodes := map[int64]string{3: "system.system_menu.view"}
+	out := filterNavNodes(context.Background(), checker, p, nodes, viewCodes)
+	if len(out) != 1 || len(out[0].children) != 1 {
+		t.Fatalf("expected admin group + menu leaf for view permission, got %+v", out)
+	}
+}
+
 func strPtr(s string) *string { return &s }

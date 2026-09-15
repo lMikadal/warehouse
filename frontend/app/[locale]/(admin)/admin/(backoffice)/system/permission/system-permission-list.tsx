@@ -21,6 +21,7 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   fetchSystemPermissionFilters,
   fetchSystemPermissions,
@@ -85,6 +86,7 @@ export function SystemPermissionList() {
   const tCol = useTranslations("col");
   const tAction = useTranslations("action");
   const tComboboxEmpty = useTranslations("form.combobox");
+  const perm = useResourcePermissions("system", "system_permission");
 
   const [moduleFilter, setModuleFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -412,6 +414,7 @@ export function SystemPermissionList() {
                     <div className="flex justify-center">
                       <StatusSwitchField
                         checked={row.is_active}
+                        disabled={!perm.update}
                         onCheckedChange={(checked) =>
                           void handleToggleActive(row.id, checked)
                         }

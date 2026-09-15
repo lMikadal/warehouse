@@ -1,29 +1,67 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
+import {
+  buildPermissionIndex,
+  resourceActions,
+  type ResourceActions,
+} from "@/lib/admin-permissions";
 import type { AuthUser } from "@/lib/auth-cookies";
 
-const AdminBackofficeActorContext = createContext<AuthUser | null>(null);
+type BackofficeContextValue = {
+  user: AuthUser;
+  permissionCodes: Set<string>;
+};
+
+const AdminBackofficeContext = createContext<BackofficeContextValue | null>(
+  null
+);
 
 export function AdminBackofficeActorProvider({
   user,
+  permissionCodes,
   children,
 }: {
   user: AuthUser;
+  permissionCodes: string[];
   children: ReactNode;
 }) {
+  const value = useMemo(
+    () => ({
+      user,
+      permissionCodes: buildPermissionIndex(permissionCodes),
+    }),
+    [user, permissionCodes]
+  );
   return (
-    <AdminBackofficeActorContext.Provider value={user}>
+    <AdminBackofficeContext.Provider value={value}>
       {children}
-    </AdminBackofficeActorContext.Provider>
+    </AdminBackofficeContext.Provider>
   );
 }
 
-export function useAdminBackofficeActor(): AuthUser {
-  const ctx = useContext(AdminBackofficeActorContext);
+function useBackofficeContext(): BackofficeContextValue {
+  const ctx = useContext(AdminBackofficeContext);
   if (!ctx) {
-    throw new Error("useAdminBackofficeActor requires AdminBackofficeActorProvider");
+    throw new Error(
+      "Admin backoffice hooks require AdminBackofficeActorProvider"
+    );
   }
   return ctx;
+}
+
+export function useAdminBackofficeActor(): AuthUser {
+  return useBackofficeContext().user;
+}
+
+export function useResourcePermissions(
+  module: string,
+  type: string
+): ResourceActions {
+  const { user, permissionCodes } = useBackofficeContext();
+  return useMemo(
+    () => resourceActions(permissionCodes, user.type, module, type),
+    [permissionCodes, user.type, module, type]
+  );
 }
