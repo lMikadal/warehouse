@@ -17,3 +17,19 @@ export const Active: Story = {
 export const Inactive: Story = {
   args: { active: false },
 };
+
+export const UserActive: Story = {
+  args: { userStatus: "active" },
+};
+
+export const UserInactive: Story = {
+  args: { userStatus: "inactive" },
+};
+
+export const UserSuspended: Story = {
+  args: { userStatus: "suspended" },
+};
+
+export const UserLocked: Story = {
+  args: { userStatus: "locked" },
+};

@@ -46,7 +46,7 @@ function formatDateParts(
   const year = locale === "th" ? d.getFullYear() + 543 : d.getFullYear();
   let out = `${day} ${month} ${year}`;
   if (!withTime) return out;
-  out += ` ${pad2(d.getHours())}.${pad2(d.getMinutes())}`;
+  out += ` ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   return out;
 }
 

@@ -43,6 +43,12 @@ func (h *UserHandler) list(c *echo.Context) error {
 			f.AdminRoleID = &id
 		}
 	}
+	sortCol := strings.TrimSpace(c.QueryParam("sort"))
+	order := strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
+	if sortCol != "" && (order == "asc" || order == "desc") {
+		f.Sort = sortCol
+		f.Order = order
+	}
 	rows, total, err := h.repo.List(c.Request().Context(), f)
 	if err != nil {
 		applog.HTTPError(c, "list users", err)
@@ -118,11 +124,13 @@ func (h *UserHandler) create(c *echo.Context) error {
 }
 
 type userPatchBody struct {
-	Email       *string `json:"email"`
-	Password    *string `json:"password"`
-	AdminRoleID *int64  `json:"admin_role_id"`
-	Type        *string `json:"type"`
-	Status      *string `json:"status"`
+	Email            *string `json:"email"`
+	Password         *string `json:"password"`
+	PasswordCredit   *string `json:"password_credit"`
+	PasswordDiscount *string `json:"password_discount"`
+	AdminRoleID      *int64  `json:"admin_role_id"`
+	Type             *string `json:"type"`
+	Status           *string `json:"status"`
 }
 
 func (h *UserHandler) patch(c *echo.Context) error {
@@ -134,6 +142,29 @@ func (h *UserHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
+	row, err := h.repo.Get(c.Request().Context(), id)
+	if err != nil {
+		applog.HTTPError(c, "patch user load", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
+	}
+	if row == nil {
+		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "user not found"})
+	}
+	effectiveType := row.Type
+	if body.Type != nil {
+		effectiveType = strings.TrimSpace(*body.Type)
+	}
+	creditPlain := ""
+	if body.PasswordCredit != nil {
+		creditPlain = strings.TrimSpace(*body.PasswordCredit)
+	}
+	discountPlain := ""
+	if body.PasswordDiscount != nil {
+		discountPlain = strings.TrimSpace(*body.PasswordDiscount)
+	}
+	if (creditPlain != "" || discountPlain != "") && effectiveType != "superadmin" {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "approval pins only for superadmin"})
+	}
 	var hash *string
 	if body.Password != nil && *body.Password != "" {
 		h, err := pkgauth.HashPassword(*body.Password)
@@ -142,7 +173,24 @@ func (h *UserHandler) patch(c *echo.Context) error {
 		}
 		hash = &h
 	}
-	if err := h.repo.Update(c.Request().Context(), id, body.Email, hash, body.Type, body.Status, body.AdminRoleID, actorID(c)); err != nil {
+	var creditHash *string
+	if creditPlain != "" {
+		h, err := pkgauth.HashPassword(creditPlain)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
+		}
+		creditHash = &h
+	}
+	var discountHash *string
+	if discountPlain != "" {
+		h, err := pkgauth.HashPassword(discountPlain)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
+		}
+		discountHash = &h
+	}
+	clearApprovalPins := effectiveType != "superadmin"
+	if err := h.repo.Update(c.Request().Context(), id, body.Email, hash, creditHash, discountHash, clearApprovalPins, body.Type, body.Status, body.AdminRoleID, actorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "user not found"})
 		}

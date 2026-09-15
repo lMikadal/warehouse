@@ -111,6 +111,7 @@ function GeoTableCells({
   onToggleActive: (id: number, active: boolean) => void;
   onAction: (id: number, action: TableIconActionKey) => void;
 }) {
+  const tCrud = useTranslations("crud");
   return (
     <>
       <TableCell className="w-10 text-center">
@@ -124,6 +125,7 @@ function GeoTableCells({
           )}
           ref={handleRef}
           disabled={!dragEnabled}
+          aria-label={tCrud("reorder.drag")}
         >
           <GripVertical className="text-current" />
         </ButtonIcon>

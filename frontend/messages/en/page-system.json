@@ -38,6 +38,21 @@
       "desc": "Manage sub-districts, postcodes, and names",
       "editTitle": "Edit sub-district",
       "title": "Sub-districts"
+    },
+    "adminRole": {
+      "add": "Add role",
+      "desc": "Manage roles and assignable permission groups",
+      "editTitle": "Edit role",
+      "title": "Roles"
+    },
+    "adminUser": {
+      "add": "Add user",
+      "desc": "Manage admin accounts, roles, and account status",
+      "editTitle": "Edit user",
+      "title": "Users",
+      "changePassword": "Change password",
+      "changeCreditPin": "Change credit approval PIN",
+      "changeDiscountPin": "Change discount approval PIN"
     }
   }
 }

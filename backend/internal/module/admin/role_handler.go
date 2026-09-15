@@ -35,6 +35,12 @@ func (h *RoleHandler) list(c *echo.Context) error {
 		active := v == "true" || v == "1"
 		f.IsActive = &active
 	}
+	sortCol := strings.TrimSpace(c.QueryParam("sort"))
+	order := strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
+	if sortCol != "" && (order == "asc" || order == "desc") {
+		f.Sort = sortCol
+		f.Order = order
+	}
 	rows, total, err := h.repo.List(c.Request().Context(), f)
 	if err != nil {
 		applog.HTTPError(c, "list roles", err)

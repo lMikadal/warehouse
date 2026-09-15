@@ -164,6 +164,14 @@
               }
             },
             {
+              "name": "Permission matrix (role form)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/system/menus/permission-matrix"
+              }
+            },
+            {
               "name": "Create menu",
               "request": {
                 "method": "POST",
@@ -300,6 +308,18 @@
                   "raw": "{\n  \"username\": \"demo_user\",\n  \"password\": \"ChangeMe123\",\n  \"admin_role_id\": 2,\n  \"type\": \"staff\",\n  \"status\": \"active\"\n}"
                 },
                 "url": "{{baseUrl}}/admin/users"
+              }
+            },
+            {
+              "name": "Patch user",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"active\",\n  \"password_credit\": \"8888\",\n  \"password_discount\": \"9999\"\n}"
+                },
+                "url": "{{baseUrl}}/admin/users/1"
               }
             }
           ]

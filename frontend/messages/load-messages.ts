@@ -7,6 +7,7 @@ import enError from "./en/error.json";
 import enForm from "./en/form.json";
 import enPageAuth from "./en/page-auth.json";
 import enPageSystem from "./en/page-system.json";
+import enUser from "./en/user.json";
 import thAction from "./th/action.json";
 import thApp from "./th/app.json";
 import thChrome from "./th/chrome.json";
@@ -16,6 +17,7 @@ import thError from "./th/error.json";
 import thForm from "./th/form.json";
 import thPageAuth from "./th/page-auth.json";
 import thPageSystem from "./th/page-system.json";
+import thUser from "./th/user.json";
 
 export type AppLocale = "en" | "th";
 
@@ -52,6 +54,7 @@ const FRAGMENTS: MessageTree[] = [
   thAction,
   thPageAuth,
   thPageSystem,
+  thUser,
 ];
 
 const FRAGMENTS_EN: MessageTree[] = [
@@ -64,6 +67,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enAction,
   enPageAuth,
   enPageSystem,
+  enUser,
 ];
 
 function mergeFragments(fragments: MessageTree[]): MessageTree {

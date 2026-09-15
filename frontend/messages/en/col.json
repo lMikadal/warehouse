@@ -16,6 +16,18 @@
     "sku": "SKU",
     "path": "Path",
     "status": "Status",
-    "updatedAt": "Last updated"
+    "updatedAt": "Last updated",
+    "username": "Username",
+    "email": "Email",
+    "role": "Role",
+    "password": "Password",
+    "passwordConfirm": "Confirm password",
+    "approvalCreditPin": "Credit approval PIN",
+    "approvalCreditPinConfirm": "Confirm credit approval PIN",
+    "approvalDiscountPin": "Discount approval PIN",
+    "approvalDiscountPinConfirm": "Confirm discount approval PIN",
+    "nameTh": "Name (Thai)",
+    "nameEn": "Name (English)",
+    "lastLogin": "Last login"
   }
 }

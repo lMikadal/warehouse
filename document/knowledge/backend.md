@@ -118,6 +118,7 @@ Permission codes: `{module}.{type}.{action}` — route → code mapping in [`int
 | Method | Path | Permission (non-superadmin) |
 |--------|------|-----------------------------|
 | `GET` | `/system/menus` | `system.system_menu.view` |
+| `GET` | `/system/menus/permission-matrix` | `system.system_menu.view` — role edit UI: `{ "groups": [{ "root_id", "root_label", "rows": [{ "menu_id", "label", "permissions": { "view": id, … } }] }] }` (locale via `Accept-Language`; import/export ids included even when permission `is_active` is false) |
 | `POST` | `/system/menus` | `system.system_menu.create` |
 | `PATCH` | `/system/menus/move` | `system.system_menu.update` |
 | `PATCH` | `/system/menus/:id` | `system.system_menu.update` |
@@ -142,9 +143,9 @@ Query: `page`, `limit`, optional `search`, optional `is_active` (`true`|`false`)
 
 Role write payloads include `names: { th, en }`, `permission_ids[]`. User passwords bcrypt-hashed; never returned in JSON.
 
-Roles list accepts `?is_active=`. Inline status switch: partial `PATCH /admin/roles/:id` with `{ "is_active": false }` only (other fields optional).
+Roles list accepts `?is_active=`, optional `sort`/`order` (`name`, `is_active`, `updated_at`; default `created_at ASC, id ASC`). Inline status switch: partial `PATCH /admin/roles/:id` with `{ "is_active": false }` only (other fields optional).
 
-Users list accepts `?status=` (not `is_active`). Partial `PATCH` may set `{ "status": "inactive" }` among other fields.
+Users list accepts `?status=`, `?type=`, `?admin_role_id=` (not `is_active`), optional `sort`/`order` (`username`, `email`, `type`, `status`, `last_login_at`, `updated_at`; default `created_at ASC, id ASC`). Partial `PATCH` may set `{ "status": "inactive" }` among other fields. Optional `password_credit` / `password_discount` (plaintext, bcrypt-hashed server-side) apply only when the user’s effective `type` is `superadmin`; otherwise `400 validation_error`. Downgrading `type` away from `superadmin` clears `password_credit_hash` and `password_discount_hash`. Hashes are never returned in JSON.
 
 ## System languages (locale registry)
 

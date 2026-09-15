@@ -4,6 +4,7 @@ import { redirect as nextRedirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
 import { AdminBackofficeShell } from "@/components/organisms/admin-backoffice-shell";
+import { AdminBackofficeActorProvider } from "@/lib/admin-backoffice-actor-context";
 import { redirect } from "@/i18n/navigation";
 import { SSR_REFRESH_TRIED_COOKIE } from "@/lib/auth-cookies";
 import {
@@ -33,6 +34,7 @@ export default async function BackofficeLayout({ children }: Props) {
       nextRedirect(refreshRedirectUrl(returnPath));
     }
     redirect({ href: "/admin/login", locale });
+    return null;
   }
 
   const user = await fetchAuthMe(token, locale);
@@ -46,14 +48,17 @@ export default async function BackofficeLayout({ children }: Props) {
       nextRedirect(refreshRedirectUrl(returnPath));
     }
     redirect({ href: "/admin/login", locale });
+    return null;
   }
 
   const { tree } = nav;
   const { username } = user;
 
   return (
-    <AdminBackofficeShell navTree={tree} user={{ username }}>
-      {children}
-    </AdminBackofficeShell>
+    <AdminBackofficeActorProvider user={user}>
+      <AdminBackofficeShell navTree={tree} user={{ username }}>
+        {children}
+      </AdminBackofficeShell>
+    </AdminBackofficeActorProvider>
   );
 }

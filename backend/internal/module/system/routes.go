@@ -2,11 +2,12 @@ package system
 
 import "github.com/labstack/echo/v5"
 
-func RegisterRoutes(g *echo.Group, menuSvc *MenuService, permSvc *PermissionService, langHandler *LanguageHandler, geoRepo *AddressGeoRepository) {
-	mh := newMenuHandler(menuSvc)
+func RegisterRoutes(g *echo.Group, menuSvc *MenuService, menuPerm *MenuPermissionRepository, permSvc *PermissionService, langHandler *LanguageHandler, geoRepo *AddressGeoRepository) {
+	mh := newMenuHandler(menuSvc, menuPerm)
 	ph := newPermissionHandler(permSvc)
 	sys := g.Group("/system")
 	sys.GET("/menus", mh.list)
+	sys.GET("/menus/permission-matrix", mh.permissionMatrix)
 	sys.GET("/menus/:id", mh.get)
 	sys.POST("/menus", mh.create)
 	sys.PATCH("/menus/move", mh.move)

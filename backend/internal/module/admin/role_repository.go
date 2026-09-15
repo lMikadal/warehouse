@@ -28,6 +28,26 @@ type RoleListFilter struct {
 	Locale   string
 	Search   string
 	IsActive *bool
+	Sort     string
+	Order    string
+}
+
+func roleListOrderBy(sort, order string) string {
+	col := "ar.created_at ASC, ar.id ASC"
+	switch sort {
+	case "name":
+		col = "COALESCE(arl.name, '')"
+	case "is_active":
+		col = "ar.is_active"
+	case "updated_at":
+		col = "ar.updated_at"
+	default:
+		return col
+	}
+	if order == "desc" {
+		return col + " DESC, ar.id DESC"
+	}
+	return col + " ASC, ar.id ASC"
 }
 
 func (r *RoleRepository) List(ctx context.Context, f RoleListFilter) ([]RoleRow, int64, error) {
@@ -60,7 +80,7 @@ WHERE %s`, w)
 SELECT ar.id, ar.is_active, COALESCE(arl.name, ''), ar.updated_at
 FROM admin_role ar
 LEFT JOIN admin_role_language arl ON arl.admin_role_id = ar.id AND arl.locale = $1
-WHERE %s ORDER BY ar.created_at ASC, ar.id ASC LIMIT $%d OFFSET $%d`, w, n, n+1)
+WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`, w, roleListOrderBy(f.Sort, f.Order), n, n+1)
 	args = append(args, f.Limit, (f.Page-1)*f.Limit)
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {

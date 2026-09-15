@@ -14,11 +14,25 @@ import (
 )
 
 type MenuHandler struct {
-	svc *MenuService
+	svc      *MenuService
+	menuPerm *MenuPermissionRepository
 }
 
-func newMenuHandler(svc *MenuService) *MenuHandler {
-	return &MenuHandler{svc: svc}
+func newMenuHandler(svc *MenuService, menuPerm *MenuPermissionRepository) *MenuHandler {
+	return &MenuHandler{svc: svc, menuPerm: menuPerm}
+}
+
+func (h *MenuHandler) permissionMatrix(c *echo.Context) error {
+	locale := api.LocaleFromRequest(c)
+	groups, err := h.menuPerm.PermissionMatrix(c.Request().Context(), locale)
+	if err != nil {
+		applog.HTTPError(c, "permission matrix", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load permission matrix"})
+	}
+	if groups == nil {
+		groups = []PermissionMatrixGroup{}
+	}
+	return c.JSON(http.StatusOK, map[string]any{"groups": groups})
 }
 
 func (h *MenuHandler) list(c *echo.Context) error {

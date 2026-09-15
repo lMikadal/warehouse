@@ -35,6 +35,32 @@ type UserListFilter struct {
 	AdminRoleID *int64
 	Type        string
 	Status      string
+	Sort        string
+	Order       string
+}
+
+func userListOrderBy(sort, order string) string {
+	col := "u.created_at ASC, u.id ASC"
+	switch sort {
+	case "username":
+		col = "u.username"
+	case "email":
+		col = "LOWER(COALESCE(u.email, ''))"
+	case "type":
+		col = "u.type"
+	case "status":
+		col = "u.status"
+	case "last_login_at":
+		col = "u.last_login_at NULLS LAST"
+	case "updated_at":
+		col = "u.updated_at"
+	default:
+		return col
+	}
+	if order == "desc" {
+		return col + " DESC, u.id DESC"
+	}
+	return col + " ASC, u.id ASC"
 }
 
 func (r *UserRepository) List(ctx context.Context, f UserListFilter) ([]UserRow, int64, error) {
@@ -55,7 +81,7 @@ SELECT u.id, u.username, u.email, u.type::text, u.status::text, u.admin_role_id,
        u.last_login_at, u.updated_at
 FROM admin_user u
 LEFT JOIN admin_role_language arl ON arl.admin_role_id = u.admin_role_id AND arl.locale = $1
-WHERE %s ORDER BY u.created_at ASC, u.id ASC LIMIT $%d OFFSET $%d`, wList, limitIdx, offsetIdx)
+WHERE %s ORDER BY %s LIMIT $%d OFFSET $%d`, wList, userListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
 	args := append([]any{locale}, listArgs...)
 	args = append(args, f.Limit, (f.Page-1)*f.Limit)
 	rows, err := r.db.QueryContext(ctx, q, args...)
@@ -100,8 +126,7 @@ RETURNING id`,
 	return id, err
 }
 
-func (r *UserRepository) Update(ctx context.Context, id int64, email *string, passwordHash *string, userType, status *string, roleID *int64, actorID int64) error {
-	// ponytail: dynamic UPDATE omitted — patch fields individually
+func (r *UserRepository) Update(ctx context.Context, id int64, email *string, passwordHash, creditHash, discountHash *string, clearApprovalPins bool, userType, status *string, roleID *int64, actorID int64) error {
 	u, err := r.Get(ctx, id)
 	if err != nil || u == nil {
 		return sql.ErrNoRows
@@ -122,21 +147,43 @@ func (r *UserRepository) Update(ctx context.Context, id int64, email *string, pa
 	if roleID != nil {
 		roleVal = sql.NullInt64{Int64: *roleID, Valid: true}
 	}
-	hash := sql.NullString{}
+	var pwArg any
 	if passwordHash != nil {
-		hash = sql.NullString{String: *passwordHash, Valid: true}
+		pwArg = *passwordHash
 	}
-	if passwordHash != nil {
-		_, err = r.db.ExecContext(ctx, `
-UPDATE admin_user SET email = $2, password_hash = $3, type = $4::admin_user_type, status = $5::admin_user_status,
-  admin_role_id = $6, updated_at = NOW(), updated_by = $7 WHERE id = $1`,
-			id, emailVal, hash.String, typeVal, statusVal, roleVal, nullID(actorID))
-	} else {
-		_, err = r.db.ExecContext(ctx, `
-UPDATE admin_user SET email = $2, type = $3::admin_user_type, status = $4::admin_user_status,
-  admin_role_id = $5, updated_at = NOW(), updated_by = $6 WHERE id = $1`,
-			id, emailVal, typeVal, statusVal, roleVal, nullID(actorID))
+	var creditArg any
+	if clearApprovalPins {
+		creditArg = nil
+	} else if creditHash != nil {
+		creditArg = *creditHash
 	}
+	var discountArg any
+	if clearApprovalPins {
+		discountArg = nil
+	} else if discountHash != nil {
+		discountArg = *discountHash
+	}
+	_, err = r.db.ExecContext(ctx, `
+UPDATE admin_user SET
+  email = $2,
+  type = $3::admin_user_type,
+  status = $4::admin_user_status,
+  admin_role_id = $5,
+  password_hash = COALESCE($6, password_hash),
+  password_credit_hash = CASE
+    WHEN $7::boolean THEN NULL
+    WHEN $8::text IS NOT NULL THEN $8
+    ELSE password_credit_hash
+  END,
+  password_discount_hash = CASE
+    WHEN $7::boolean THEN NULL
+    WHEN $9::text IS NOT NULL THEN $9
+    ELSE password_discount_hash
+  END,
+  updated_at = NOW(),
+  updated_by = $10
+WHERE id = $1`,
+		id, emailVal, typeVal, statusVal, roleVal, pwArg, clearApprovalPins, creditArg, discountArg, nullID(actorID))
 	return err
 }
 

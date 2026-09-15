@@ -23,6 +23,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const RemoteSearch: Story = {
+  args: {
+    label: "Warehouse",
+    placeholder: "Select item...",
+    emptyLabel: "No results",
+    inputClassName: "w-56",
+    value: "",
+    onValueChange: () => {},
+    onLoadOptions: async () => [],
+  },
   render: function Render() {
     const [value, setValue] = useState("");
     const loadOptions = useCallback(

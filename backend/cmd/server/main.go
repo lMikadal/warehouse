@@ -85,7 +85,7 @@ func main() {
 	langRepo := system.NewLanguageRepository(deps.DB)
 	langHandler := system.NewLanguageHandler(langRepo)
 	geoRepo := system.NewAddressGeoRepository(deps.DB)
-	system.RegisterRoutes(rbacProtected, menuSvc, permSvc, langHandler, geoRepo)
+	system.RegisterRoutes(rbacProtected, menuSvc, menuPermRepo, permSvc, langHandler, geoRepo)
 	admin.RegisterRoutes(rbacProtected.Group("/admin"), roleHandler, userHandler)
 
 	if err := server.Listen(e, cfg.Port); err != nil {

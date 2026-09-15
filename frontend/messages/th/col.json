@@ -16,6 +16,18 @@
     "sku": "รหัส",
     "path": "เส้นทาง",
     "status": "สถานะ",
-    "updatedAt": "อัปเดตล่าสุด"
+    "updatedAt": "อัปเดตล่าสุด",
+    "username": "ชื่อผู้ใช้",
+    "email": "อีเมล",
+    "role": "บทบาท",
+    "password": "รหัสผ่าน",
+    "passwordConfirm": "ยืนยันรหัสผ่าน",
+    "approvalCreditPin": "PIN อนุมัติเครดิต",
+    "approvalCreditPinConfirm": "ยืนยัน PIN อนุมัติเครดิต",
+    "approvalDiscountPin": "PIN อนุมัติส่วนลด",
+    "approvalDiscountPinConfirm": "ยืนยัน PIN อนุมัติส่วนลด",
+    "nameTh": "ชื่อ (ไทย)",
+    "nameEn": "ชื่อ (อังกฤษ)",
+    "lastLogin": "เข้าสู่ระบบล่าสุด"
   }
 }

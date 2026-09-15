@@ -41,4 +41,8 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "admin.admin_language.update" {
 		t.Fatalf("language reorder: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/system/menus/permission-matrix")
+	if !ok || code != "system.system_menu.view" {
+		t.Fatalf("permission matrix: got %q %v", code, ok)
+	}
 }

@@ -2,6 +2,10 @@
   "error": {
     "invalidParent": "Cannot set parent to this menu or its sub-menu",
     "noData": "No data",
-    "required": "This field is required."
+    "required": "This field is required.",
+    "usernameTaken": "This username is already taken",
+    "emailTaken": "This email is already in use",
+    "passwordMismatch": "Passwords do not match",
+    "cannotDeleteSelf": "You cannot delete your own account"
   }
 }

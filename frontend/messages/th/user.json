@@ -1,0 +1,22 @@
+{
+  "userType": {
+    "superadmin": "ผู้ดูแลระบบสูงสุด",
+    "owner": "เจ้าของ",
+    "manager": "ผู้จัดการ",
+    "staff": "พนักงาน"
+  },
+  "userStatus": {
+    "active": "ใช้งาน",
+    "inactive": "ไม่ใช้งาน",
+    "suspended": "ระงับ",
+    "locked": "ล็อก"
+  },
+  "rolePerm": {
+    "title": "สิทธิ์การใช้งาน",
+    "menu": "เมนู",
+    "search": "ค้นหา",
+    "selectAll": "เลือกทั้งหมด",
+    "selectGroup": "เลือกทั้งหมด",
+    "superAdminLocked": "บทบาทผู้ดูแลระบบสูงสุดมีสิทธิ์ครบทุกเมนูและไม่สามารถแก้ไขได้"
+  }
+}

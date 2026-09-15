@@ -1,0 +1,22 @@
+{
+  "userType": {
+    "superadmin": "Super admin",
+    "owner": "Owner",
+    "manager": "Manager",
+    "staff": "Staff"
+  },
+  "userStatus": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "locked": "Locked"
+  },
+  "rolePerm": {
+    "title": "Permissions",
+    "menu": "Menu",
+    "search": "Search",
+    "selectAll": "Select all",
+    "selectGroup": "Select all",
+    "superAdminLocked": "The super admin role has full access and cannot be edited"
+  }
+}

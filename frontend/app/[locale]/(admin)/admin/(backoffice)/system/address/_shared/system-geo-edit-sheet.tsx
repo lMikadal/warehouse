@@ -228,14 +228,13 @@ function SystemGeoEditForm({
           onClearInvalid={() => clearInvalid("nameEn")}
         />
 
-        <Field className="gap-1.5">
-          <FieldLabel htmlFor="geo-edit-active">{tCol("status")}</FieldLabel>
+        <div className="flex items-center justify-between gap-4 pt-1">
+          <span className="text-sm font-medium">{tCol("status")}</span>
           <StatusSwitchField
-            id="geo-edit-active"
             checked={isActive}
             onCheckedChange={setIsActive}
           />
-        </Field>
+        </div>
       </CrudFormSheetBody>
 
       <CrudFormSheetFooter
