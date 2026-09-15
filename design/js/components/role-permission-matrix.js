@@ -123,7 +123,7 @@
   }
 
   function checkboxCell(perm, checked, locked) {
-    if (!perm) {
+    if (!perm || !perm.is_active) {
       return '<td class="role-perm-matrix__action-col"></td>';
     }
     var disabled = locked;

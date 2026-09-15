@@ -141,7 +141,8 @@ make backend-migrate-up       # needs DATABASE_URL (from infrastructure/.env)
 make backend-migrate-down
 make backend-migrate-status
 make backend-seed-init
-make backend-seed-test
+make backend-seed-bootstrap
+make backend-seed-dev
 ```
 
 Do not run raw `docker compose`, `air`, `go run`, or goose when a make target exists — use `make help`.

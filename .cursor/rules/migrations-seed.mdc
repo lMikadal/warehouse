@@ -1,5 +1,5 @@
 ---
-description: Goose migrations are schema-only; Postgres seeds are split into init (project bootstrap) and test (repeatable).
+description: Goose migrations are schema-only; Postgres seeds are split into init, bootstrap, and dev.
 globs: backend/**/*
 alwaysApply: false
 ---
@@ -24,18 +24,20 @@ If a row must exist for the app to function, ship it via **init seed**, not a mi
 
 ```
 backend/internal/infra/postgres/seeds/
-├── init/          # project bootstrap — minimal baseline on empty DB
-└── test/          # demo/fixture data for local dev, CI, integration tests
+├── init/          # catalog baseline after migrate (languages, permissions, menus, …)
+├── bootstrap/     # minimal super-admin role + user
+└── dev/           # local dev RBAC fixtures (not for production)
 ```
 
-- **`init/`** — first-time project setup after migrate (e.g. default locales, required settings, bootstrap admin). Keep small and stable.
-- **`test/`** — richer dataset for development and automated tests. **Must be safe to run multiple times** (idempotent).
+- **`init/`** — first-time project setup after migrate (locales, permission catalog, menus, geo demo). Keep small and stable.
+- **`bootstrap/`** — super admin only (role/user id 1). Safe to run in any environment; change default password in prod.
+- **`dev/`** — staff + permission-test roles/users (ids 2–8). **Must be safe to run multiple times** (idempotent). Runner refuses when `APP_ENV=production`.
 
-Optional runner: `backend/cmd/seed/` (subcommands `init`, `test`) or ordered `.sql` files executed by Makefile — pick one approach per repo and document in `document/knowledge/backend.md`.
+Optional runner: `backend/cmd/seed/` (subcommands `init`, `bootstrap`, `dev`) or ordered `.sql` files executed by Makefile — document in `document/knowledge/backend.md`.
 
-## Idempotency (required for test; recommended for init)
+## Idempotency (required for dev/bootstrap; recommended for init)
 
-Test seed **must** be re-runnable without manual DB reset. Use one or more of:
+Dev/bootstrap seeds **must** be re-runnable without manual DB reset. Use one or more of:
 
 - `INSERT ... ON CONFLICT ... DO UPDATE` / `DO NOTHING` on primary or natural keys
 - Fixed surrogate IDs consistent with design seeds where parity matters (`BIGINT` literals)
@@ -47,7 +49,7 @@ Init seed should use upserts where practical so re-run after partial failure doe
 ## Secrets and demo credentials
 
 - No real passwords, JWT secrets, or production values in seed SQL/Go
-- Demo login passwords only in test seed (or env-injected); document in `backend/env.example` / knowledge, not in `document/` as live secrets
+- Demo login passwords in bootstrap/dev seeds (or env-injected); document in `backend/env.example` / knowledge, not in `document/` as live secrets
 
 ## Makefile
 
@@ -57,7 +59,8 @@ Prefer root Makefile targets (add when implementing):
 |--------|---------|
 | `make backend-migrate-up` | Apply schema |
 | `make backend-seed-init` | Run init seed (after migrate) |
-| `make backend-seed-test` | Run test seed (repeatable) |
+| `make backend-seed-bootstrap` | Run bootstrap seed (super admin) |
+| `make backend-seed-dev` | Run dev fixtures (local; blocked in production) |
 
 Do not run raw `goose` or `psql` when a make target exists ([`makefile.mdc`](makefile.mdc)).
 

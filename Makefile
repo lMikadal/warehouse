@@ -23,7 +23,7 @@ endef
 	frontend-storybook frontend-storybook-build \
 	backend-dev backend-run backend-test \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
-	backend-seed-init backend-seed-test \
+	backend-seed-init backend-seed-bootstrap backend-seed-dev \
 	docker-up docker-up-d docker-down docker-build docker-logs docker-prod-up docker-prod-down
 
 ## help: Show this help
@@ -126,11 +126,17 @@ backend-seed-init:
 	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
 	cd $(BACKEND_DIR) && go run ./cmd/seed init
 
-## backend-seed-test: Run test SQL seeds (needs DATABASE_URL; idempotent when SQL uses upserts)
-backend-seed-test:
+## backend-seed-bootstrap: Run bootstrap SQL seeds — super admin only (needs DATABASE_URL)
+backend-seed-bootstrap:
 	$(call require_dir,$(BACKEND_DIR))
 	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
-	cd $(BACKEND_DIR) && go run ./cmd/seed test
+	cd $(BACKEND_DIR) && go run ./cmd/seed bootstrap
+
+## backend-seed-dev: Run dev RBAC fixture seeds (needs DATABASE_URL; blocked when APP_ENV=production)
+backend-seed-dev:
+	$(call require_dir,$(BACKEND_DIR))
+	@test -n "$(DATABASE_URL)" || (echo "set DATABASE_URL (e.g. from infrastructure/.env)"; exit 1)
+	cd $(BACKEND_DIR) && go run ./cmd/seed dev
 
 ## docker-up: docker compose up --build (dev images; includes --profile dev admin tools)
 docker-up:

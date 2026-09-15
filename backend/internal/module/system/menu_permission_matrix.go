@@ -42,7 +42,7 @@ SELECT
 FROM system_menu m
 LEFT JOIN system_menu_language ml ON ml.system_menu_id = m.id AND ml.locale = $1
 LEFT JOIN system_menu_permission smp ON smp.system_menu_id = m.id
-LEFT JOIN system_permission sp ON sp.id = smp.system_permission_id AND sp.deleted_at IS NULL
+LEFT JOIN system_permission sp ON sp.id = smp.system_permission_id AND sp.deleted_at IS NULL AND sp.is_active = TRUE
 WHERE m.deleted_at IS NULL AND m.is_active = TRUE
 ORDER BY m.sort_order ASC, m.id ASC`, locale)
 	if err != nil {

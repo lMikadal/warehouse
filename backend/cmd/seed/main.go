@@ -17,12 +17,12 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: seed <init|test>")
+		fmt.Fprintln(os.Stderr, "usage: seed <init|bootstrap|dev>")
 		os.Exit(2)
 	}
 	mode := os.Args[1]
-	if mode != "init" && mode != "test" {
-		fmt.Fprintln(os.Stderr, "usage: seed <init|test>")
+	if mode != "init" && mode != "bootstrap" && mode != "dev" {
+		fmt.Fprintln(os.Stderr, "usage: seed <init|bootstrap|dev>")
 		os.Exit(2)
 	}
 
@@ -32,6 +32,11 @@ func main() {
 		os.Exit(1)
 	}
 	applog.Setup(cfg)
+
+	if mode == "dev" && cfg.AppEnv == "production" {
+		slog.Error("refusing dev seed in production", "APP_ENV", cfg.AppEnv)
+		os.Exit(1)
+	}
 
 	db, err := postgres.Open(cfg.DatabaseURL)
 	if err != nil {

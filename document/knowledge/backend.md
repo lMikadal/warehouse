@@ -8,7 +8,7 @@ Warehouse API under `backend/` — Go 1.27+, Echo v5, PostgreSQL (pgx), goose mi
 backend/
 ├── cmd/
 │   ├── server/main.go     # composition root
-│   └── seed/main.go       # init | test SQL seeds
+│   └── seed/main.go       # init | bootstrap | dev SQL seeds
 ├── internal/
 │   ├── api/               # V1Prefix, pagination, ListResponse, Audit embed
 │   ├── auth/              # JWT, Bearer + RBAC middleware
@@ -48,9 +48,22 @@ Module path: `github.com/lMikadal/warehouse/backend`.
 
 Copy `backend/env.example` → `backend/.env` for local `make backend-dev` / `go run`. On startup, `config.Load` reads `backend/.env` and sets any keys not already present in the process environment (Docker Compose injects vars directly).
 
-## Demo login (test seed only)
+## Demo login (seeds)
 
-After `make backend-seed-test`: username `admin` / password `admin` (superadmin), `staff` / `staff`. Do not use in production.
+After `make backend-seed-init`, `make backend-seed-bootstrap`, and (local dev only) `make backend-seed-dev`. Do not use default passwords in production.
+
+| User | Password | Role | Notes |
+|------|----------|------|--------|
+| `admin` | `admin` | Super Admin (bootstrap) | `type=superadmin`; full nav |
+| `staff` | `staff` | Staff (dev) | Design `staffAllowedCodes`; limited product/member/order/warehouse nav |
+| `user_view` | `user_view` | Users viewer (dev) | `admin.admin_user.view` only — list/users nav; no create/update/delete API |
+| `user_edit` | `user_edit` | Users editor (dev) | view + create + update on admin users; no delete |
+| `role_view` | `role_view` | Roles viewer (dev) | `admin.admin_role.view` only — roles nav; no role mutations |
+| `menu_view` | `menu_view` | System menu viewer (dev) | `system.system_menu.view` — System → Menu nav; read-only API |
+| `menu_edit` | `menu_edit` | System menu editor (dev) | menu view + create + update; no delete |
+| `perm_view` | `perm_view` | System permission viewer (dev) | `system.system_permission.view` — System → Permission nav |
+
+`backend-seed-dev` is refused when `APP_ENV=production` (`cmd/seed`).
 
 ## Logging
 
@@ -72,7 +85,7 @@ Before HTTP listen, [`cmd/server`](../../backend/cmd/server/main.go) may run goo
 | `AUTO_MIGRATE=false` | No |
 | `APP_ENV=production` (unset `AUTO_MIGRATE`) | No |
 
-Seeds are **not** run on start — use `make backend-seed-init`. Manual migrate still works: `make backend-migrate-up`.
+Seeds are **not** run on start — use `make backend-seed-init` then `make backend-seed-bootstrap` (and `make backend-seed-dev` locally). Manual migrate still works: `make backend-migrate-up`.
 
 ## API versioning
 
@@ -118,7 +131,7 @@ Permission codes: `{module}.{type}.{action}` — route → code mapping in [`int
 | Method | Path | Permission (non-superadmin) |
 |--------|------|-----------------------------|
 | `GET` | `/system/menus` | `system.system_menu.view` |
-| `GET` | `/system/menus/permission-matrix` | `system.system_menu.view` — role edit UI: `{ "groups": [{ "root_id", "root_label", "rows": [{ "menu_id", "label", "permissions": { "view": id, … } }] }] }` (locale via `Accept-Language`; import/export ids included even when permission `is_active` is false) |
+| `GET` | `/system/menus/permission-matrix` | `system.system_menu.view` — role edit UI: `{ "groups": [{ "root_id", "root_label", "rows": [{ "menu_id", "label", "permissions": { "view": id, … } }] }] }` (locale via `Accept-Language`; only permissions with `is_active = true` appear in `permissions`) |
 | `POST` | `/system/menus` | `system.system_menu.create` |
 | `PATCH` | `/system/menus/move` | `system.system_menu.update` |
 | `PATCH` | `/system/menus/:id` | `system.system_menu.update` |
@@ -192,13 +205,14 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 ## Migrations and seeds
 
 - **Goose:** `internal/infra/postgres/migrations/` — **schema only** ([migrations-seed.mdc](../../.cursor/rules/migrations-seed.mdc))
-- **Seeds:** `internal/infra/postgres/seeds/init/` (bootstrap), `seeds/test/` (repeatable demo)
+- **Seeds:** `seeds/init/` (catalog), `seeds/bootstrap/` (super admin), `seeds/dev/` (local RBAC fixtures; ids roles/users 2–8)
 
 | Make target | Purpose |
 |-------------|---------|
 | `make backend-migrate-up` | Apply migrations manually (`DATABASE_URL`) |
 | `make backend-seed-init` | Run init SQL |
-| `make backend-seed-test` | Run test SQL |
+| `make backend-seed-bootstrap` | Run bootstrap SQL (role/user 1) |
+| `make backend-seed-dev` | Run dev fixtures (blocked in production) |
 | `make backend-run` | `go run ./cmd/server` |
 | `make backend-dev` | air |
 | `make backend-test` | `go test ./...` |
