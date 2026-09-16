@@ -78,14 +78,18 @@ type InfoBlockKey = "contact" | "tax" | "delivery";
 
 type InfoState = {
   setting_prefix_id: string;
+  setting_prefix_name: string;
   name: string;
   branch: "" | "headquarter" | "branch";
   branch_name: string;
   tax_number: string;
   address: string;
   website_province_id: string;
+  website_province_name: string;
   website_district_id: string;
+  website_district_name: string;
   website_sub_district_id: string;
+  website_sub_district_name: string;
   postcode: string;
   tel: string;
   email: string;
@@ -93,14 +97,18 @@ type InfoState = {
 
 const emptyInfo = (): InfoState => ({
   setting_prefix_id: "",
+  setting_prefix_name: "",
   name: "",
   branch: "",
   branch_name: "",
   tax_number: "",
   address: "",
   website_province_id: "",
+  website_province_name: "",
   website_district_id: "",
+  website_district_name: "",
   website_sub_district_id: "",
+  website_sub_district_name: "",
   postcode: "",
   tel: "",
   email: "",
@@ -141,6 +149,7 @@ function infoFromApi(row?: SupplierInformationInput): InfoState {
   return {
     setting_prefix_id:
       row.setting_prefix_id != null ? String(row.setting_prefix_id) : "",
+    setting_prefix_name: row.setting_prefix_name ?? "",
     name: row.name ?? "",
     branch: (row.branch as InfoState["branch"]) ?? "",
     branch_name: row.branch_name ?? "",
@@ -148,12 +157,15 @@ function infoFromApi(row?: SupplierInformationInput): InfoState {
     address: row.address ?? "",
     website_province_id:
       row.website_province_id != null ? String(row.website_province_id) : "",
+    website_province_name: row.website_province_name ?? "",
     website_district_id:
       row.website_district_id != null ? String(row.website_district_id) : "",
+    website_district_name: row.website_district_name ?? "",
     website_sub_district_id:
       row.website_sub_district_id != null
         ? String(row.website_sub_district_id)
         : "",
+    website_sub_district_name: row.website_sub_district_name ?? "",
     postcode: row.postcode ?? "",
     tel: row.tel ?? "",
     email: row.email ?? "",
@@ -162,6 +174,14 @@ function infoFromApi(row?: SupplierInformationInput): InfoState {
 
 function copyInfo(src: InfoState): InfoState {
   return { ...src };
+}
+
+function comboboxPinned(
+  value: string,
+  label: string
+): { value: string; label: string }[] {
+  if (!value) return [];
+  return [{ value, label: label.trim() || value }];
 }
 
 const TAX_OTP_GROUPS = [1, 4, 5, 2, 1] as const;
@@ -303,6 +323,7 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   const canSave = isEdit ? perms.update : perms.create;
+  const formReadOnly = isEdit && !canSave;
 
   const loadDetail = useCallback(async (options?: { keepUi?: boolean }) => {
     if (!isEdit || supplierId == null) return;
@@ -610,7 +631,7 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
     setBlock: (v: InfoState) => void,
     opts: InfoBlockRenderOpts
   ) => {
-    const disabled = opts.disabled ?? false;
+    const disabled = (opts.disabled ?? false) || formReadOnly;
     const prefix = opts.prefix;
     const showPrefix = opts.showPrefix ?? true;
     const showTax = opts.showTax ?? true;
@@ -637,6 +658,7 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                   id={`${prefix}-same-switch`}
                   checked={opts.headerSwitch.checked}
                   onCheckedChange={opts.headerSwitch.onCheckedChange}
+                  disabled={formReadOnly}
                 />
               </div>
             </FormCardAction>
@@ -655,6 +677,10 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                 label: tCol("prefix"),
               })}
               disabled={disabled}
+              pinnedItems={comboboxPinned(
+                block.setting_prefix_id,
+                block.setting_prefix_name
+              )}
               onValueChange={(v) => set({ setting_prefix_id: v })}
               onLoadOptions={async ({ search, signal }) => {
                 const { items } = await fetchSettingLangList(
@@ -674,14 +700,18 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                   label: i.name,
                 }));
               }}
-              resolveSelectedLabel={async (value) => {
-                const item = await fetchSettingLangById(
-                  locale,
-                  "prefixes",
-                  Number(value)
-                );
-                return item.name;
-              }}
+              resolveSelectedLabel={
+                formReadOnly
+                  ? undefined
+                  : async (value) => {
+                      const item = await fetchSettingLangById(
+                        locale,
+                        "prefixes",
+                        Number(value)
+                      );
+                      return item.name;
+                    }
+              }
             />
           ) : null}
           <FormField
@@ -769,6 +799,10 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                 label: tCol("province"),
               })}
               disabled={disabled}
+              pinnedItems={comboboxPinned(
+                block.website_province_id,
+                block.website_province_name
+              )}
               onValueChange={(v) =>
                 set({
                   website_province_id: v,
@@ -779,8 +813,11 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
               onLoadOptions={({ search, signal }) =>
                 loadGeoComboboxOptions("provinces", locale, { search, signal })
               }
-              resolveSelectedLabel={(value) =>
-                resolveGeoComboboxLabel("provinces", locale, value)
+              resolveSelectedLabel={
+                formReadOnly
+                  ? undefined
+                  : (value) =>
+                      resolveGeoComboboxLabel("provinces", locale, value)
               }
             />
             <LabeledRemoteCombobox
@@ -793,6 +830,10 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                 label: tCol("district"),
               })}
               disabled={disabled || !block.website_province_id}
+              pinnedItems={comboboxPinned(
+                block.website_district_id,
+                block.website_district_name
+              )}
               onValueChange={(v) =>
                 set({ website_district_id: v, website_sub_district_id: "" })
               }
@@ -803,8 +844,11 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                   systemProvinceId: Number(block.website_province_id),
                 })
               }
-              resolveSelectedLabel={(value) =>
-                resolveGeoComboboxLabel("districts", locale, value)
+              resolveSelectedLabel={
+                formReadOnly
+                  ? undefined
+                  : (value) =>
+                      resolveGeoComboboxLabel("districts", locale, value)
               }
             />
             <LabeledRemoteCombobox
@@ -817,6 +861,10 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                 label: tCol("subDistrict"),
               })}
               disabled={disabled || !block.website_district_id}
+              pinnedItems={comboboxPinned(
+                block.website_sub_district_id,
+                block.website_sub_district_name
+              )}
               onValueChange={(v) => set({ website_sub_district_id: v })}
               onLoadOptions={({ search, signal }) =>
                 loadGeoComboboxOptions("sub-districts", locale, {
@@ -825,8 +873,11 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                   systemDistrictId: Number(block.website_district_id),
                 })
               }
-              resolveSelectedLabel={(value) =>
-                resolveGeoComboboxLabel("sub-districts", locale, value)
+              resolveSelectedLabel={
+                formReadOnly
+                  ? undefined
+                  : (value) =>
+                      resolveGeoComboboxLabel("sub-districts", locale, value)
               }
             />
             <FormField
@@ -939,12 +990,14 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                     type="number"
                     value={creditTerm}
                     onChange={setCreditTerm}
+                    readOnly={formReadOnly}
                   />
                   <FormField
                     id="supplier-credit-note"
                     labelKey="col.creditTermNote"
                     value={creditTermNote}
                     onChange={setCreditTermNote}
+                    readOnly={formReadOnly}
                   />
                 </FormCardContent>
               </FormCard>
@@ -977,11 +1030,13 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                   }
                   value={sku}
                   onChange={setSku}
+                  readOnly={formReadOnly}
                 />
                 <StatusSwitchField
                   checked={isActive}
                   onCheckedChange={setIsActive}
                   labelKey="col.status"
+                  disabled={formReadOnly}
                 />
               </FormCardContent>
             </FormCard>

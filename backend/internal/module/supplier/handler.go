@@ -66,7 +66,9 @@ func (h *Handler) get(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
-	base, info, contacts, banks, err := h.repo.GetAggregate(c.Request().Context(), id)
+	base, info, contacts, banks, err := h.repo.GetAggregate(
+		c.Request().Context(), id, api.LocaleFromRequest(c),
+	)
 	if err != nil {
 		applog.HTTPError(c, "get supplier user", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load supplier"})
@@ -501,6 +503,9 @@ func informationJSON(row InformationRow) map[string]any {
 	if row.SettingPrefixID.Valid {
 		m["setting_prefix_id"] = row.SettingPrefixID.Int64
 	}
+	if row.SettingPrefixName.Valid {
+		m["setting_prefix_name"] = row.SettingPrefixName.String
+	}
 	if row.Name.Valid {
 		m["name"] = row.Name.String
 	}
@@ -519,11 +524,20 @@ func informationJSON(row InformationRow) map[string]any {
 	if row.WebsiteProvinceID.Valid {
 		m["website_province_id"] = row.WebsiteProvinceID.Int64
 	}
+	if row.WebsiteProvinceName.Valid {
+		m["website_province_name"] = row.WebsiteProvinceName.String
+	}
 	if row.WebsiteDistrictID.Valid {
 		m["website_district_id"] = row.WebsiteDistrictID.Int64
 	}
+	if row.WebsiteDistrictName.Valid {
+		m["website_district_name"] = row.WebsiteDistrictName.String
+	}
 	if row.WebsiteSubDistrictID.Valid {
 		m["website_sub_district_id"] = row.WebsiteSubDistrictID.Int64
+	}
+	if row.WebsiteSubDistrictName.Valid {
+		m["website_sub_district_name"] = row.WebsiteSubDistrictName.String
 	}
 	if row.Postcode.Valid {
 		m["postcode"] = row.Postcode.String

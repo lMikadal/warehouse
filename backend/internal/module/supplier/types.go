@@ -30,14 +30,18 @@ type UserRow struct {
 type InformationRow struct {
 	Type                string
 	SettingPrefixID     sql.NullInt64
+	SettingPrefixName   sql.NullString
 	Name                sql.NullString
 	Branch              sql.NullString
 	BranchName          sql.NullString
 	TaxNumber           sql.NullString
 	Address             sql.NullString
 	WebsiteProvinceID   sql.NullInt64
+	WebsiteProvinceName sql.NullString
 	WebsiteDistrictID   sql.NullInt64
+	WebsiteDistrictName sql.NullString
 	WebsiteSubDistrictID sql.NullInt64
+	WebsiteSubDistrictName sql.NullString
 	Postcode            sql.NullString
 	Tel                 sql.NullString
 	Email               sql.NullString

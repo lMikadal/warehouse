@@ -16,14 +16,19 @@ export type SupplierInformationType = "contact" | "tax_invoice" | "delivery";
 
 export type SupplierInformationInput = {
   setting_prefix_id?: number | null;
+  /** Present on GET detail only; not sent on create/patch */
+  setting_prefix_name?: string | null;
   name?: string | null;
   branch?: "headquarter" | "branch" | null;
   branch_name?: string | null;
   tax_number?: string | null;
   address?: string | null;
   website_province_id?: number | null;
+  website_province_name?: string | null;
   website_district_id?: number | null;
+  website_district_name?: string | null;
   website_sub_district_id?: number | null;
+  website_sub_district_name?: string | null;
   postcode?: string | null;
   tel?: string | null;
   email?: string | null;

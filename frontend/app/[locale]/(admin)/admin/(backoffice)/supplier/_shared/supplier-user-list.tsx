@@ -302,14 +302,13 @@ export function SupplierUserList() {
                   </TableCell>
                   <TableCell>{formatCredit(tSupplier, row.credit_term)}</TableCell>
                   <TableCell className="text-center">
-                    {perms.update ? (
+                    <div className="flex justify-center">
                       <StatusSwitchField
                         checked={row.is_active}
+                        disabled={!perms.update}
                         onCheckedChange={(v) => void onToggleActive(row, v)}
                       />
-                    ) : (
-                      row.is_active ? tCol("active") : tCol("inactive")
-                    )}
+                    </div>
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {formatDateTime(row.updated_at, locale)}

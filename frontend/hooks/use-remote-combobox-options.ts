@@ -90,12 +90,16 @@ export function useRemoteComboboxOptions({
 
     let cancelled = false;
     void (async () => {
-      const label = await resolveSelectedLabel(value);
-      if (cancelled || !label) return;
-      setExtraPinned((prev) => {
-        if (prev.some((p) => p.value === value)) return prev;
-        return [...prev, { value, label }];
-      });
+      try {
+        const label = await resolveSelectedLabel(value);
+        if (cancelled || !label) return;
+        setExtraPinned((prev) => {
+          if (prev.some((p) => p.value === value)) return prev;
+          return [...prev, { value, label }];
+        });
+      } catch {
+        return;
+      }
     })();
     return () => {
       cancelled = true;

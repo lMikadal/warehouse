@@ -124,7 +124,7 @@ func (r *Repository) UserExists(ctx context.Context, id int64) (bool, error) {
 	return err == nil, err
 }
 
-func (r *Repository) GetAggregate(ctx context.Context, id int64) (*UserRow, map[string]InformationRow, []ContactRow, []BankRow, error) {
+func (r *Repository) GetAggregate(ctx context.Context, id int64, locale string) (*UserRow, map[string]InformationRow, []ContactRow, []BankRow, error) {
 	var base UserRow
 	err := r.db.QueryRowContext(ctx, `
 SELECT id, sku, credit_term, credit_term_note, is_active, updated_at
@@ -136,7 +136,7 @@ FROM supplier_user WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	info, err := r.loadInformation(ctx, id)
+	info, err := r.loadInformation(ctx, id, locale)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -151,11 +151,42 @@ FROM supplier_user WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
 	return &base, info, contacts, banks, nil
 }
 
-func (r *Repository) loadInformation(ctx context.Context, supplierID int64) (map[string]InformationRow, error) {
+func (r *Repository) loadInformation(ctx context.Context, supplierID int64, locale string) (map[string]InformationRow, error) {
+	if locale == "" {
+		locale = "th"
+	}
 	rows, err := r.db.QueryContext(ctx, `
-SELECT type::text, setting_prefix_id, name, branch::text, branch_name, tax_number, address,
-       website_province_id, website_district_id, website_sub_district_id, postcode, tel, email, is_same_information
-FROM supplier_information WHERE supplier_user_id = $1`, supplierID)
+SELECT si.type::text, si.setting_prefix_id,
+       COALESCE(
+         (SELECT spl.name FROM setting_prefix_language spl
+          WHERE spl.setting_prefix_id = si.setting_prefix_id AND spl.locale = $2 LIMIT 1),
+         (SELECT spl.name FROM setting_prefix_language spl
+          WHERE spl.setting_prefix_id = si.setting_prefix_id AND spl.locale = 'th' LIMIT 1)
+       ) AS setting_prefix_name,
+       si.name, si.branch::text, si.branch_name, si.tax_number, si.address,
+       si.website_province_id,
+       COALESCE(
+         (SELECT pl.name FROM system_province_language pl
+          WHERE pl.system_province_id = si.website_province_id AND pl.locale = $2 LIMIT 1),
+         (SELECT pl.name FROM system_province_language pl
+          WHERE pl.system_province_id = si.website_province_id AND pl.locale = 'th' LIMIT 1)
+       ) AS website_province_name,
+       si.website_district_id,
+       COALESCE(
+         (SELECT dl.name FROM system_district_language dl
+          WHERE dl.system_district_id = si.website_district_id AND dl.locale = $2 LIMIT 1),
+         (SELECT dl.name FROM system_district_language dl
+          WHERE dl.system_district_id = si.website_district_id AND dl.locale = 'th' LIMIT 1)
+       ) AS website_district_name,
+       si.website_sub_district_id,
+       COALESCE(
+         (SELECT sdl.name FROM system_sub_district_language sdl
+          WHERE sdl.system_sub_district_id = si.website_sub_district_id AND sdl.locale = $2 LIMIT 1),
+         (SELECT sdl.name FROM system_sub_district_language sdl
+          WHERE sdl.system_sub_district_id = si.website_sub_district_id AND sdl.locale = 'th' LIMIT 1)
+       ) AS website_sub_district_name,
+       si.postcode, si.tel, si.email, si.is_same_information
+FROM supplier_information si WHERE si.supplier_user_id = $1`, supplierID, locale)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +194,14 @@ FROM supplier_information WHERE supplier_user_id = $1`, supplierID)
 	out := map[string]InformationRow{}
 	for rows.Next() {
 		var row InformationRow
-		if err := rows.Scan(&row.Type, &row.SettingPrefixID, &row.Name, &row.Branch, &row.BranchName, &row.TaxNumber,
-			&row.Address, &row.WebsiteProvinceID, &row.WebsiteDistrictID, &row.WebsiteSubDistrictID,
-			&row.Postcode, &row.Tel, &row.Email, &row.IsSameInformation); err != nil {
+		if err := rows.Scan(
+			&row.Type, &row.SettingPrefixID, &row.SettingPrefixName,
+			&row.Name, &row.Branch, &row.BranchName, &row.TaxNumber,
+			&row.Address, &row.WebsiteProvinceID, &row.WebsiteProvinceName,
+			&row.WebsiteDistrictID, &row.WebsiteDistrictName,
+			&row.WebsiteSubDistrictID, &row.WebsiteSubDistrictName,
+			&row.Postcode, &row.Tel, &row.Email, &row.IsSameInformation,
+		); err != nil {
 			return nil, err
 		}
 		out[row.Type] = row
