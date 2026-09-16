@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -81,9 +82,9 @@ func (h *FileHandler) delete(c *echo.Context) error {
 }
 
 func filePathID(c *echo.Context) (int64, error) {
-	return pathID(c)
+	return httputil.PathID(c, "id")
 }
 
 func fileActorID(c *echo.Context) int64 {
-	return actorID(c)
+	return httputil.ActorID(c)
 }

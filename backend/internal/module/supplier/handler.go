@@ -4,13 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
-	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -63,7 +62,7 @@ func (h *Handler) list(c *echo.Context) error {
 }
 
 func (h *Handler) get(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func (h *Handler) create(c *echo.Context) error {
 	id, err := h.repo.Create(ctx, CreateUserInput{
 		SKU: body.SKU, CreditTerm: body.CreditTerm, CreditTermNote: body.CreditTermNote,
 		IsActive: active, Information: body.Information, Contacts: body.Contacts, Banks: body.Banks,
-	}, actorID(c))
+	}, httputil.ActorID(c))
 	if err != nil {
 		applog.HTTPError(c, "create supplier", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -146,7 +145,7 @@ type patchBody struct {
 }
 
 func (h *Handler) patch(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
@@ -178,7 +177,7 @@ func (h *Handler) patch(c *echo.Context) error {
 	if err := h.repo.Patch(ctx, id, PatchUserInput{
 		SKU: body.SKU, CreditTerm: body.CreditTerm, CreditTermNote: body.CreditTermNote,
 		IsActive: body.IsActive, Information: body.Information,
-	}, actorID(c)); err != nil {
+	}, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "supplier not found"})
 		}
@@ -189,11 +188,11 @@ func (h *Handler) patch(c *echo.Context) error {
 }
 
 func (h *Handler) delete(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(c.Request().Context(), id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "supplier not found"})
 		}
@@ -204,7 +203,7 @@ func (h *Handler) delete(c *echo.Context) error {
 }
 
 func (h *Handler) createContact(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
@@ -220,7 +219,7 @@ func (h *Handler) createContact(c *echo.Context) error {
 	if err != nil || !ok {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "supplier not found"})
 	}
-	id, err := h.repo.CreateContact(ctx, sid, body, actorID(c))
+	id, err := h.repo.CreateContact(ctx, sid, body, httputil.ActorID(c))
 	if err != nil {
 		applog.HTTPError(c, "create supplier contact", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -228,17 +227,12 @@ func (h *Handler) createContact(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, map[string]any{"id": id})
 }
 
-type contactReorderBody struct {
-	DragID   int64 `json:"drag_id"`
-	TargetID int64 `json:"target_id"`
-}
-
 func (h *Handler) reorderContacts(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	var body contactReorderBody
+	var body httputil.ReorderBody
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
@@ -247,7 +241,7 @@ func (h *Handler) reorderContacts(c *echo.Context) error {
 	if err != nil || !ok {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "supplier not found"})
 	}
-	if err := h.repo.ReorderContacts(ctx, sid, body.DragID, body.TargetID, actorID(c)); err != nil {
+	if err := h.repo.ReorderContacts(ctx, sid, body.DragID, body.TargetID, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})
 		}
@@ -258,11 +252,11 @@ func (h *Handler) reorderContacts(c *echo.Context) error {
 }
 
 func (h *Handler) patchContact(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	cid, err := parseNestedID(c, "contactId")
+	cid, err := httputil.PathIDValidation(c, "contactId")
 	if err != nil {
 		return err
 	}
@@ -273,7 +267,7 @@ func (h *Handler) patchContact(c *echo.Context) error {
 	if msg := validateContactInput(body); msg != "" {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: msg})
 	}
-	if err := h.repo.PatchContact(c.Request().Context(), sid, cid, body, actorID(c)); err != nil {
+	if err := h.repo.PatchContact(c.Request().Context(), sid, cid, body, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "contact not found"})
 		}
@@ -284,15 +278,15 @@ func (h *Handler) patchContact(c *echo.Context) error {
 }
 
 func (h *Handler) deleteContact(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	cid, err := parseNestedID(c, "contactId")
+	cid, err := httputil.PathIDValidation(c, "contactId")
 	if err != nil {
 		return err
 	}
-	if err := h.repo.DeleteContact(c.Request().Context(), sid, cid, actorID(c)); err != nil {
+	if err := h.repo.DeleteContact(c.Request().Context(), sid, cid, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "contact not found"})
 		}
@@ -303,7 +297,7 @@ func (h *Handler) deleteContact(c *echo.Context) error {
 }
 
 func (h *Handler) createBank(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
@@ -323,7 +317,7 @@ func (h *Handler) createBank(c *echo.Context) error {
 	if err != nil || !active {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid bank"})
 	}
-	id, err := h.repo.CreateBank(ctx, sid, body, actorID(c))
+	id, err := h.repo.CreateBank(ctx, sid, body, httputil.ActorID(c))
 	if err != nil {
 		applog.HTTPError(c, "create supplier bank", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -332,11 +326,11 @@ func (h *Handler) createBank(c *echo.Context) error {
 }
 
 func (h *Handler) reorderBanks(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	var body contactReorderBody
+	var body httputil.ReorderBody
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
@@ -345,7 +339,7 @@ func (h *Handler) reorderBanks(c *echo.Context) error {
 	if err != nil || !ok {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "supplier not found"})
 	}
-	if err := h.repo.ReorderBanks(ctx, sid, body.DragID, body.TargetID, actorID(c)); err != nil {
+	if err := h.repo.ReorderBanks(ctx, sid, body.DragID, body.TargetID, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})
 		}
@@ -356,11 +350,11 @@ func (h *Handler) reorderBanks(c *echo.Context) error {
 }
 
 func (h *Handler) patchBank(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	bid, err := parseNestedID(c, "bankId")
+	bid, err := httputil.PathIDValidation(c, "bankId")
 	if err != nil {
 		return err
 	}
@@ -376,7 +370,7 @@ func (h *Handler) patchBank(c *echo.Context) error {
 	if err != nil || !active {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid bank"})
 	}
-	if err := h.repo.PatchBank(ctx, sid, bid, body, actorID(c)); err != nil {
+	if err := h.repo.PatchBank(ctx, sid, bid, body, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "bank not found"})
 		}
@@ -387,15 +381,15 @@ func (h *Handler) patchBank(c *echo.Context) error {
 }
 
 func (h *Handler) deleteBank(c *echo.Context) error {
-	sid, err := parseID(c)
+	sid, err := httputil.PathIDValidation(c, "id")
 	if err != nil {
 		return err
 	}
-	bid, err := parseNestedID(c, "bankId")
+	bid, err := httputil.PathIDValidation(c, "bankId")
 	if err != nil {
 		return err
 	}
-	if err := h.repo.DeleteBank(c.Request().Context(), sid, bid, actorID(c)); err != nil {
+	if err := h.repo.DeleteBank(c.Request().Context(), sid, bid, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "bank not found"})
 		}
@@ -442,26 +436,6 @@ func (h *Handler) validateInformationRefs(c *echo.Context, info InformationInput
 		}
 	}
 	return h.repo.GeoChainValid(ctx, info.WebsiteProvinceID, info.WebsiteDistrictID, info.WebsiteSubDistrictID)
-}
-
-func parseID(c *echo.Context) (int64, error) {
-	return parseNestedID(c, "id")
-}
-
-func parseNestedID(c *echo.Context, param string) (int64, error) {
-	raw := strings.TrimSpace(c.Param(param))
-	id, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil || id <= 0 {
-		return 0, c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid id"})
-	}
-	return id, nil
-}
-
-func actorID(c *echo.Context) int64 {
-	if p, ok := pkgauth.PrincipalFrom(c); ok {
-		return p.UserID
-	}
-	return 0
 }
 
 func toListItem(r UserRow) listItem {

@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -60,15 +60,15 @@ type permPatchBody struct {
 }
 
 func (h *PermissionHandler) patch(c *echo.Context) error {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil || id <= 0 {
-		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid id"})
+	id, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
 	}
 	var body permPatchBody
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	item, err := h.svc.SetActive(c.Request().Context(), id, body.IsActive, actorID(c))
+	item, err := h.svc.SetActive(c.Request().Context(), id, body.IsActive, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "permission not found"})

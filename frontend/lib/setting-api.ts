@@ -18,6 +18,7 @@ export type SettingLangSegment =
 export type SettingLangItem = {
   id: number;
   name: string;
+  code?: string;
   sort_order: number;
   is_active: boolean;
   updated_at: string;

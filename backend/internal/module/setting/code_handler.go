@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -49,7 +50,7 @@ func (h *CodeHandler) list(c *echo.Context) error {
 }
 
 func (h *CodeHandler) get(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func (h *CodeHandler) create(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	id, err := h.repo.Create(c.Request().Context(), body.Code, body.Value, body.IsActive, actorID(c))
+	id, err := h.repo.Create(c.Request().Context(), body.Code, body.Value, body.IsActive, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, ErrValidation) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
@@ -88,7 +89,7 @@ func (h *CodeHandler) create(c *echo.Context) error {
 }
 
 func (h *CodeHandler) patch(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -100,7 +101,7 @@ func (h *CodeHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	err = h.repo.Update(c.Request().Context(), id, body.Code, body.Value, body.IsActive, actorID(c))
+	err = h.repo.Update(c.Request().Context(), id, body.Code, body.Value, body.IsActive, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
@@ -118,11 +119,11 @@ func (h *CodeHandler) patch(c *echo.Context) error {
 }
 
 func (h *CodeHandler) delete(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(c.Request().Context(), id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 		}
@@ -137,7 +138,7 @@ func (h *CodeHandler) reorder(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	if err := h.repo.Reorder(c.Request().Context(), body.DragID, body.TargetID, actorID(c)); err != nil {
+	if err := h.repo.Reorder(c.Request().Context(), body.DragID, body.TargetID, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})
 		}

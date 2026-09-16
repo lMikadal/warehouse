@@ -9,6 +9,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -65,7 +66,7 @@ func (h *LanguageHandler) list(c *echo.Context) error {
 }
 
 func (h *LanguageHandler) get(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func (h *LanguageHandler) create(c *echo.Context) error {
 	}
 	isDefault := body.IsDefault != nil && *body.IsDefault
 	id, err := h.repo.Create(c.Request().Context(), LanguageCreateInput{
-		Locale: locale, Name: name, IsActive: active, IsDefault: isDefault, ActorID: actorID(c),
+		Locale: locale, Name: name, IsActive: active, IsDefault: isDefault, ActorID: httputil.ActorID(c),
 	})
 	if err != nil {
 		if errors.Is(err, ErrLanguageDuplicateLocale) {
@@ -123,7 +124,7 @@ func (h *LanguageHandler) create(c *echo.Context) error {
 }
 
 func (h *LanguageHandler) patch(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -131,7 +132,7 @@ func (h *LanguageHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	patch := LanguagePatch{ActorID: actorID(c)}
+	patch := LanguagePatch{ActorID: httputil.ActorID(c)}
 	if body.Locale != nil {
 		loc := strings.TrimSpace(*body.Locale)
 		if !localePattern.MatchString(loc) {
@@ -173,11 +174,11 @@ func (h *LanguageHandler) patch(c *echo.Context) error {
 }
 
 func (h *LanguageHandler) delete(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(c.Request().Context(), id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrLanguageNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "language not found"})
 		}
@@ -200,7 +201,7 @@ func (h *LanguageHandler) reorder(c *echo.Context) error {
 	if body.DragID <= 0 || body.TargetID <= 0 {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "drag_id and target_id required"})
 	}
-	err := h.repo.Reorder(c.Request().Context(), body.DragID, body.TargetID, actorID(c))
+	err := h.repo.Reorder(c.Request().Context(), body.DragID, body.TargetID, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, ErrLanguageInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})

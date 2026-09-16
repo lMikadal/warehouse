@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -39,7 +40,7 @@ func (h *VatHandler) getSingleton(c *echo.Context) error {
 }
 
 func (h *VatHandler) patch(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -51,7 +52,7 @@ func (h *VatHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	err = h.repo.Update(c.Request().Context(), id, body.VatType, body.Rate, body.IsActive, actorID(c))
+	err = h.repo.Update(c.Request().Context(), id, body.VatType, body.Rate, body.IsActive, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})

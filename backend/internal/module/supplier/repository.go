@@ -365,46 +365,15 @@ WHERE id = $1 AND supplier_user_id = $2 AND deleted_at IS NULL`, contactID, supp
 }
 
 func (r *Repository) ReorderContacts(ctx context.Context, supplierID, dragID, targetID int64, actorID int64) error {
-	rows, err := r.db.QueryContext(ctx, `
-SELECT id, sort_order FROM supplier_contact
-WHERE supplier_user_id = $1 AND deleted_at IS NULL
-ORDER BY sort_order ASC, id ASC`, supplierID)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var nodes []tree.Node
-	for rows.Next() {
-		var n tree.Node
-		if err := rows.Scan(&n.ID, &n.SortOrder); err != nil {
-			return err
+	if err := tree.PersistParentScopedSiblingReorder(
+		ctx, r.db, tree.ReorderSupplierContact, supplierID, dragID, targetID, actorID,
+	); err != nil {
+		if errors.Is(err, tree.ErrInvalidReorder) {
+			return ErrInvalidReorder
 		}
-		nodes = append(nodes, n)
-	}
-	if err := rows.Err(); err != nil {
 		return err
 	}
-	next, err := tree.ReorderSiblings(nodes, dragID, targetID)
-	if err != nil {
-		return ErrInvalidReorder
-	}
-	orderByID := map[int64]int{}
-	for _, n := range next {
-		orderByID[n.ID] = n.SortOrder
-	}
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	for id, so := range orderByID {
-		if _, err := tx.ExecContext(ctx, `
-UPDATE supplier_contact SET sort_order = $3, updated_at = CURRENT_TIMESTAMP, updated_by = $4
-WHERE id = $1 AND supplier_user_id = $2 AND deleted_at IS NULL`, id, supplierID, so, actorID); err != nil {
-			return err
-		}
-	}
-	return tx.Commit()
+	return nil
 }
 
 func (r *Repository) CreateBank(ctx context.Context, supplierID int64, in BankInput, actorID int64) (int64, error) {
@@ -502,46 +471,15 @@ WHERE id = $1 AND supplier_user_id = $2 AND deleted_at IS NULL`, bankID, supplie
 }
 
 func (r *Repository) ReorderBanks(ctx context.Context, supplierID, dragID, targetID int64, actorID int64) error {
-	rows, err := r.db.QueryContext(ctx, `
-SELECT id, sort_order FROM supplier_bank
-WHERE supplier_user_id = $1 AND deleted_at IS NULL
-ORDER BY sort_order ASC, id ASC`, supplierID)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var nodes []tree.Node
-	for rows.Next() {
-		var n tree.Node
-		if err := rows.Scan(&n.ID, &n.SortOrder); err != nil {
-			return err
+	if err := tree.PersistParentScopedSiblingReorder(
+		ctx, r.db, tree.ReorderSupplierBank, supplierID, dragID, targetID, actorID,
+	); err != nil {
+		if errors.Is(err, tree.ErrInvalidReorder) {
+			return ErrInvalidReorder
 		}
-		nodes = append(nodes, n)
-	}
-	if err := rows.Err(); err != nil {
 		return err
 	}
-	next, err := tree.ReorderSiblings(nodes, dragID, targetID)
-	if err != nil {
-		return ErrInvalidReorder
-	}
-	orderByID := map[int64]int{}
-	for _, n := range next {
-		orderByID[n.ID] = n.SortOrder
-	}
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	for id, so := range orderByID {
-		if _, err := tx.ExecContext(ctx, `
-UPDATE supplier_bank SET sort_order = $3, updated_at = CURRENT_TIMESTAMP, updated_by = $4
-WHERE id = $1 AND supplier_user_id = $2 AND deleted_at IS NULL`, id, supplierID, so, actorID); err != nil {
-			return err
-		}
-	}
-	return tx.Commit()
+	return nil
 }
 
 func clearBankDefaultsTx(ctx context.Context, tx *sql.Tx, supplierID, exceptID int64) error {

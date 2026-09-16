@@ -203,7 +203,7 @@ Convention ([`.cursor/rules/crud-mutations.mdc`](../../.cursor/rules/crud-mutati
 | Flat drag sort | List table has `sort_order` (no tree) | `PATCH /reorder` `{ "drag_id", "target_id" }` → `204` |
 | Tree drag sort | `parent_id` + `tree_path` | `PATCH /move` `{ "drag_id", "target_id", "zone" }` → `204` |
 
-Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderSiblings`, `RecomputePaths`). RBAC: `PATCH` on subpaths `/move` and `/reorder` maps to `{module}.{type}.update` via resource prefix match.
+Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderSiblings`, `RecomputePaths`, `PersistParentScopedSiblingReorder` for whitelisted parent-scoped child tables e.g. supplier contact/bank). HTTP: [`internal/httputil`](../../backend/internal/httputil/) (`PathID`, `PathIDValidation`, `ActorID`, `ReorderBody`) — use instead of per-module `pathID` / `actorID` copies. RBAC: `PATCH` on subpaths `/move` and `/reorder` maps to `{module}.{type}.update` via resource prefix match.
 
 **Exceptions:** `admin_user` uses `status`; `system_permission` list is read-only but uses the same active patch shape; `system_language` also has exclusive `is_default`; nested rows and `*_file` galleries reorder on the parent API.
 

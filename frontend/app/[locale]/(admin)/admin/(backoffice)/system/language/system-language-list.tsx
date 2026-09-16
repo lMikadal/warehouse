@@ -4,7 +4,7 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ComponentProps, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
@@ -32,12 +32,12 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import { useCrudSortableReorder } from "@/hooks/use-crud-sortable-reorder";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   tableIconActionsFromResource,
   tableRowDetailAction,
 } from "@/lib/admin-permissions";
-import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
 import {
@@ -271,7 +271,6 @@ export function SystemLanguageList() {
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState<SystemLanguageSheetState | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [sortableEpoch, setSortableEpoch] = useState(0);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -411,31 +410,21 @@ export function SystemLanguageList() {
     }
   };
 
-  const handleDragEnd: ComponentProps<
-    typeof DragDropProvider
-  >["onDragEnd"] = (event) => {
-    if (event.canceled || !dragEnabled) return;
-    const indices = sortableIndicesFromSource(event.operation?.source);
-    if (!indices || indices.from === indices.to) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    const dragRow = rows[indices.from];
-    const targetRow = rows[indices.to];
-    if (!dragRow || !targetRow) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    void reorderSystemLanguages(dragRow.id, targetRow.id, locale)
-      .then(() => loadList())
-      .then(() => toast.success(tCrud("toast.reordered")))
-      .catch((err: unknown) => {
-        queueMicrotask(() => setSortableEpoch((e) => e + 1));
-        toast.error(
-          err instanceof SystemLanguageApiError ? err.message : undefined
-        );
-      });
-  };
+  const { sortableEpoch, handleDragEnd } = useCrudSortableReorder({
+    rows,
+    dragEnabled,
+    persistReorder: (dragId, targetId) =>
+      reorderSystemLanguages(dragId, targetId, locale),
+    onSuccess: () => {
+      void loadList();
+      toast.success(tCrud("toast.reordered"));
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof SystemLanguageApiError ? err.message : undefined
+      );
+    },
+  });
 
   return (
     <div className="space-y-4">

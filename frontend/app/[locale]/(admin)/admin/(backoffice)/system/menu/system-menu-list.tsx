@@ -25,10 +25,7 @@ import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-sk
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
-import {
-  StatusFilterGroup,
-  type StatusFilterValue,
-} from "@/components/molecules/status-filter-group";
+import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
   TableIconActions,
@@ -63,7 +60,7 @@ import {
   treeDepth,
   type TreeDropZone,
 } from "@/lib/crud-list-rows";
-import type { PageSizeOption } from "@/lib/crud-pagination";
+import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   tableIconActionsFromResource,
@@ -386,55 +383,45 @@ export function SystemMenuList() {
   const tCol = useTranslations("col");
   const perm = useResourcePermissions("system", "system_menu");
 
+  const listQuery = useCrudListQuery();
+  const {
+    query,
+    statusFilter,
+    pageSize,
+    sortKey,
+    sortDir,
+    listFiltered,
+    baseListParams,
+    dragEnabled: listDragEnabled,
+    handleSortChange,
+    onSearchChange,
+    onStatusFilterChange,
+    onPageSizeChange,
+    setPage,
+    totalPages: listTotalPages,
+    safePage: listSafePage,
+  } = listQuery;
+
   const [rows, setRows] = useState<AdminMenuRow[]>([]);
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSizeOption>(10);
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
   // const [deleteId, setDeleteId] = useState<number | null>(null);
   const [menuSheet, setMenuSheet] = useState<SystemMenuSheetState | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
   const [dragIntent, setDragIntent] = useState<MenuDragIntent | null>(null);
   const dragIntentRef = useRef<MenuDragIntent | null>(null);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  const listFiltered =
-    debouncedQuery.trim() !== "" || statusFilter !== "";
-
-  const listFetchParams = useMemo((): SystemMenuListParams => {
-    const isActive =
-      statusFilter === "active"
-        ? true
-        : statusFilter === "inactive"
-          ? false
-          : undefined;
-    const headerSortActive = sortKey != null && sortDir != null;
-    return {
-      page,
-      limit: pageSize,
-      search: debouncedQuery.trim() || undefined,
-      isActive,
-      sort: !listFiltered && headerSortActive ? sortKey : undefined,
-      order: !listFiltered && headerSortActive ? sortDir ?? undefined : undefined,
-    };
-  }, [
-    page,
-    pageSize,
-    debouncedQuery,
-    statusFilter,
-    sortKey,
-    sortDir,
-    listFiltered,
-  ]);
+  const listFetchParams = useMemo(
+    (): SystemMenuListParams => ({
+      page: baseListParams.page,
+      limit: baseListParams.limit,
+      search: baseListParams.search,
+      isActive: baseListParams.isActive,
+      sort: baseListParams.sort ?? undefined,
+      order: baseListParams.order ?? undefined,
+    }),
+    [baseListParams]
+  );
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -461,20 +448,9 @@ export function SystemMenuList() {
   );
 
   const total = listMeta.total;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const headerSortActive = sortKey != null && sortDir != null;
-  const dragEnabled = !listFiltered && !headerSortActive && perm.update;
-
-  const handleSortChange = (
-    nextKey: string | null,
-    nextDir: TableSortDirection | null
-  ) => {
-    if (listFiltered) return;
-    setSortKey(nextKey);
-    setSortDir(nextDir);
-    setPage(1);
-  };
+  const totalPages = listTotalPages(total);
+  const safePage = listSafePage(total);
+  const dragEnabled = listDragEnabled && perm.update;
 
   const handleToggleActive = async (id: number, active: boolean) => {
     const prev = rows.find((r) => r.id === id);
@@ -640,23 +616,10 @@ export function SystemMenuList() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <CrudSearchField
-          value={query}
-          onChange={(value) => {
-            setQuery(value);
-            setSortKey(null);
-            setSortDir(null);
-            setPage(1);
-          }}
-        />
+        <CrudSearchField value={query} onChange={onSearchChange} />
         <StatusFilterGroup
           value={statusFilter}
-          onChange={(value) => {
-            setStatusFilter(value);
-            setSortKey(null);
-            setSortDir(null);
-            setPage(1);
-          }}
+          onChange={onStatusFilterChange}
         />
       </div>
 
@@ -806,10 +769,7 @@ export function SystemMenuList() {
         pageSize={pageSize}
         meta={{ total, totalPages }}
         onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={onPageSizeChange}
       />
 
       <SystemMenuEditSheet

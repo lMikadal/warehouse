@@ -5,7 +5,6 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Image as ImageIcon, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  type ComponentProps,
   useCallback,
   useEffect,
   useMemo,
@@ -40,7 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import {
   Table,
   TableBody,
@@ -50,6 +48,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import {
+  CrudReorderRejectedError,
+  useCrudSortableReorder,
+} from "@/hooks/use-crud-sortable-reorder";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   tableIconActionsFromResource,
@@ -310,7 +312,6 @@ export function SettingLangList({ config }: Props) {
   const [returnFilter, setReturnFilter] = useState<TriFilter>("");
   const [personFilter, setPersonFilter] = useState<TriFilter>("");
   const [companyFilter, setCompanyFilter] = useState<TriFilter>("");
-  const [sortableEpoch, setSortableEpoch] = useState(0);
 
   const tComboboxEmpty = useTranslations("form.combobox");
 
@@ -503,47 +504,43 @@ export function SettingLangList({ config }: Props) {
   const rowActions = (row: SettingLangItem): TableIconActionKey[] =>
     tableIconActionsFromResource(perms, { rowId: row.id });
 
-  const handleDragEnd: ComponentProps<typeof DragDropProvider>["onDragEnd"] = (
-    event
-  ) => {
-    if (event.canceled || !dragEnabled) return;
-    const indices = sortableIndicesFromSource(event.operation?.source);
-    if (!indices || indices.from === indices.to) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    const dragRow = rows[indices.from];
-    const targetRow = rows[indices.to];
-    if (!dragRow || !targetRow) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    const reorderExtra = config.prefixFlags
-      ? prefixReorderScopeForDrag(personFilter, companyFilter, dragRow)
-      : undefined;
-    const scopeMismatch =
-      config.prefixFlags &&
-      (!reorderExtra ||
-        prefixReorderExtraKey(reorderExtra) !==
-          prefixReorderExtraKey(prefixReorderExtraFromRow(targetRow)));
-    if (scopeMismatch) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    void reorderSettingLang(
-      locale,
-      config.segment,
-      dragRow.id,
-      targetRow.id,
-      reorderExtra
-    )
-      .then(() => load())
-      .then(() => toast.success(tCrud("toast.reordered")))
-      .catch((e: unknown) => {
-        queueMicrotask(() => setSortableEpoch((e) => e + 1));
-        toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
-      });
-  };
+  const { sortableEpoch, handleDragEnd } = useCrudSortableReorder({
+    rows,
+    dragEnabled: Boolean(dragEnabled),
+    persistReorder: async (dragId, targetId) => {
+      const dragRow = rows.find((r) => r.id === dragId);
+      const targetRow = rows.find((r) => r.id === targetId);
+      if (!dragRow || !targetRow) {
+        throw new CrudReorderRejectedError();
+      }
+      const reorderExtra = config.prefixFlags
+        ? prefixReorderScopeForDrag(personFilter, companyFilter, dragRow)
+        : undefined;
+      const scopeMismatch =
+        config.prefixFlags &&
+        (!reorderExtra ||
+          prefixReorderExtraKey(reorderExtra) !==
+            prefixReorderExtraKey(prefixReorderExtraFromRow(targetRow)));
+      if (scopeMismatch) {
+        throw new CrudReorderRejectedError();
+      }
+      await reorderSettingLang(
+        locale,
+        config.segment,
+        dragId,
+        targetId,
+        reorderExtra
+      );
+    },
+    onSuccess: () => {
+      void load();
+      toast.success(tCrud("toast.reordered"));
+    },
+    onError: (e) => {
+      if (e instanceof CrudReorderRejectedError) return;
+      toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
+    },
+  });
 
   const tableColCount = settingLangTableColumnCount(config);
 

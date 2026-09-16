@@ -4,13 +4,7 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  type ComponentProps,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -44,12 +38,15 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import {
+  CrudReorderRejectedError,
+  useCrudSortableReorder,
+} from "@/hooks/use-crud-sortable-reorder";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   tableIconActionsFromResource,
   tableRowDetailAction,
 } from "@/lib/admin-permissions";
-import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
 import {
@@ -249,7 +246,6 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState<SystemGeoSheetState | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [sortableEpoch, setSortableEpoch] = useState(0);
 
   const loadCountryFilterOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
@@ -447,50 +443,40 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
     }
   };
 
-  const handleDragEnd: ComponentProps<
-    typeof DragDropProvider
-  >["onDragEnd"] = (event) => {
-    if (event.canceled || !dragEnabled) return;
-    const indices = sortableIndicesFromSource(event.operation?.source);
-    if (!indices || indices.from === indices.to) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    const dragRow = rows[indices.from];
-    const targetRow = rows[indices.to];
-    if (!dragRow || !targetRow) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    const scopeKey = config.createParentKey;
-    if (!geoRowsSameReorderScope(scopeKey, dragRow, targetRow)) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      toast.warning(tCrud("reorder.siblingOnly"));
-      return;
-    }
-    void reorderSystemGeo(
-      config.resource,
-      dragRow.id,
-      targetRow.id,
-      locale
-    )
-      .then(() => loadList())
-      .then(() => toast.success(tCrud("toast.reordered")))
-      .catch((err: unknown) => {
-        queueMicrotask(() => setSortableEpoch((e) => e + 1));
-        if (
-          err instanceof SystemGeoApiError &&
-          err.status === 400 &&
-          err.code === "validation_error"
-        ) {
-          toast.warning(tCrud("reorder.siblingOnly"));
-          return;
-        }
-        toast.error(
-          err instanceof SystemGeoApiError ? err.message : tToast("demoError")
-        );
-      });
-  };
+  const { sortableEpoch, handleDragEnd } = useCrudSortableReorder({
+    rows,
+    dragEnabled,
+    persistReorder: async (dragId, targetId) => {
+      const dragRow = rows.find((r) => r.id === dragId);
+      const targetRow = rows.find((r) => r.id === targetId);
+      if (!dragRow || !targetRow) {
+        throw new CrudReorderRejectedError();
+      }
+      if (!geoRowsSameReorderScope(config.createParentKey, dragRow, targetRow)) {
+        toast.warning(tCrud("reorder.siblingOnly"));
+        throw new CrudReorderRejectedError();
+      }
+      await reorderSystemGeo(config.resource, dragId, targetId, locale);
+    },
+    onSuccess: () => {
+      void loadList();
+      toast.success(tCrud("toast.reordered"));
+    },
+    onError: (err) => {
+      if (err instanceof CrudReorderRejectedError) return;
+      if (
+        err instanceof SystemGeoApiError &&
+        err.status === 400 &&
+        err.code === "validation_error"
+      ) {
+        toast.warning(tCrud("reorder.siblingOnly"));
+        return;
+      }
+      toast.error(
+        err instanceof SystemGeoApiError ? err.message : tToast("demoError")
+      );
+    },
+  });
 
   const colSpan =
     5 +

@@ -9,6 +9,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -165,7 +166,7 @@ func (h *AddressGeoHandler) list(c *echo.Context) error {
 }
 
 func (h *AddressGeoHandler) get(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -205,7 +206,7 @@ func (h *AddressGeoHandler) create(c *echo.Context) error {
 		active = *body.IsActive
 	}
 	in := GeoCreateInput{
-		SKU: body.SKU, Postcode: body.Postcode, IsActive: active, ActorID: actorID(c),
+		SKU: body.SKU, Postcode: body.Postcode, IsActive: active, ActorID: httputil.ActorID(c),
 		Names: map[string]string{"th": strings.TrimSpace(body.Names.Th), "en": strings.TrimSpace(body.Names.En)},
 	}
 	if body.SystemCountryID != nil {
@@ -239,7 +240,7 @@ type geoPatchBody struct {
 }
 
 func (h *AddressGeoHandler) patch(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -247,7 +248,7 @@ func (h *AddressGeoHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	patch := GeoPatch{ActorID: actorID(c), SKU: body.SKU, Postcode: body.Postcode, IsActive: body.IsActive,
+	patch := GeoPatch{ActorID: httputil.ActorID(c), SKU: body.SKU, Postcode: body.Postcode, IsActive: body.IsActive,
 		SystemCountryID: body.SystemCountryID, SystemProvinceID: body.SystemProvinceID, SystemDistrictID: body.SystemDistrictID}
 	if body.Names != nil {
 		patch.Names = map[string]string{"th": strings.TrimSpace(body.Names.Th), "en": strings.TrimSpace(body.Names.En)}
@@ -271,11 +272,11 @@ func (h *AddressGeoHandler) patch(c *echo.Context) error {
 }
 
 func (h *AddressGeoHandler) delete(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), h.level, id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(c.Request().Context(), h.level, id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrGeoNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 		}
@@ -293,7 +294,7 @@ func (h *AddressGeoHandler) reorder(c *echo.Context) error {
 	if body.DragID <= 0 || body.TargetID <= 0 {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "drag_id and target_id required"})
 	}
-	err := h.repo.Reorder(c.Request().Context(), h.level, body.DragID, body.TargetID, actorID(c))
+	err := h.repo.Reorder(c.Request().Context(), h.level, body.DragID, body.TargetID, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, ErrGeoInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})

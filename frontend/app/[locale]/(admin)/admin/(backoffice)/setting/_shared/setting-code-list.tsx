@@ -4,7 +4,7 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ComponentProps, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
+import { useCrudSortableReorder } from "@/hooks/use-crud-sortable-reorder";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   tableIconActionsFromResource,
@@ -53,7 +54,6 @@ import {
   SettingApiError,
   type SettingCodeItem,
 } from "@/lib/setting-api";
-import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import { cn } from "@/lib/utils";
 
 export function SettingCodeList() {
@@ -67,7 +67,6 @@ export function SettingCodeList() {
   const dragEnabled = listQuery.dragEnabled && perms.update;
 
   const [rows, setRows] = useState<SettingCodeItem[]>([]);
-  const [sortableEpoch, setSortableEpoch] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<number | "new" | null>(null);
@@ -159,29 +158,19 @@ export function SettingCodeList() {
 
   const rowActions = (): TableIconActionKey[] => tableIconActionsFromResource(perms);
 
-  const handleDragEnd: ComponentProps<typeof DragDropProvider>["onDragEnd"] = (
-    event
-  ) => {
-    if (event.canceled || !dragEnabled) return;
-    const indices = sortableIndicesFromSource(event.operation?.source);
-    if (!indices || indices.from === indices.to) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    const dragRow = rows[indices.from];
-    const targetRow = rows[indices.to];
-    if (!dragRow || !targetRow) {
-      queueMicrotask(() => setSortableEpoch((e) => e + 1));
-      return;
-    }
-    void reorderSettingCodes(locale, dragRow.id, targetRow.id)
-      .then(() => load())
-      .then(() => toast.success(tCrud("toast.reordered")))
-      .catch((e: unknown) => {
-        queueMicrotask(() => setSortableEpoch((n) => n + 1));
-        toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
-      });
-  };
+  const { sortableEpoch, handleDragEnd } = useCrudSortableReorder({
+    rows,
+    dragEnabled,
+    persistReorder: (dragId, targetId) =>
+      reorderSettingCodes(locale, dragId, targetId),
+    onSuccess: () => {
+      void load();
+      toast.success(tCrud("toast.reordered"));
+    },
+    onError: (e) => {
+      toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
+    },
+  });
 
   return (
     <>

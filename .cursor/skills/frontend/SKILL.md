@@ -39,6 +39,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 2. Rules from the table for the task
 3. Matching Storybook stories before implementing `app/` pages
 4. `document/checklist/frontend/` + `document/knowledge/frontend.md` if behavior changes
+5. Admin CRUD lists: `useCrudListQuery`, `useCrudSortableReorder`, `CrudNestedSortableList`, `proxyNestedMutate` — [`document/knowledge/frontend.md`](../../../document/knowledge/frontend.md)
 
 ## Scope
 

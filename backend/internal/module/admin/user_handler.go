@@ -10,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
@@ -124,7 +125,7 @@ func (h *UserHandler) list(c *echo.Context) error {
 }
 
 func (h *UserHandler) get(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -177,7 +178,7 @@ func (h *UserHandler) create(c *echo.Context) error {
 	if status == "" {
 		status = "active"
 	}
-	id, err := h.repo.Create(c.Request().Context(), body.Username, body.Email, hash, userType, status, body.AdminRoleID, actorID(c))
+	id, err := h.repo.Create(c.Request().Context(), body.Username, body.Email, hash, userType, status, body.AdminRoleID, httputil.ActorID(c))
 	if err != nil {
 		applog.HTTPError(c, "create user", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -196,7 +197,7 @@ type userPatchBody struct {
 }
 
 func (h *UserHandler) patch(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -252,7 +253,7 @@ func (h *UserHandler) patch(c *echo.Context) error {
 		discountHash = &h
 	}
 	clearApprovalPins := effectiveType != "superadmin"
-	if err := h.repo.Update(c.Request().Context(), id, body.Email, hash, creditHash, discountHash, clearApprovalPins, body.Type, body.Status, body.AdminRoleID, actorID(c)); err != nil {
+	if err := h.repo.Update(c.Request().Context(), id, body.Email, hash, creditHash, discountHash, clearApprovalPins, body.Type, body.Status, body.AdminRoleID, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "user not found"})
 		}
@@ -263,14 +264,14 @@ func (h *UserHandler) patch(c *echo.Context) error {
 }
 
 func (h *UserHandler) delete(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
 	if id == 1 {
 		return c.JSON(http.StatusConflict, api.ErrorBody{Code: "forbidden", Message: "cannot delete bootstrap user"})
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(c.Request().Context(), id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "user not found"})
 		}
@@ -298,9 +299,3 @@ func toUserListItem(r UserRow) userListItem {
 	return item
 }
 
-func actorID(c *echo.Context) int64 {
-	if p, ok := pkgauth.PrincipalFrom(c); ok {
-		return p.UserID
-	}
-	return 0
-}

@@ -4,12 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
-	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -63,7 +62,7 @@ func (h *MenuHandler) list(c *echo.Context) error {
 }
 
 func (h *MenuHandler) get(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -104,7 +103,7 @@ func (h *MenuHandler) create(c *echo.Context) error {
 	if body.IsActive != nil {
 		active = *body.IsActive
 	}
-	actor := actorID(c)
+	actor := httputil.ActorID(c)
 	item, err := h.svc.Create(c.Request().Context(), MenuCreateInput{
 		ParentID: body.ParentID,
 		Module:   strings.TrimSpace(body.Module),
@@ -127,7 +126,7 @@ type menuPatchBody struct {
 }
 
 func (h *MenuHandler) patch(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -135,7 +134,7 @@ func (h *MenuHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	in := MenuUpdateInput{ActorID: actorID(c)}
+	in := MenuUpdateInput{ActorID: httputil.ActorID(c)}
 	if body.Names != nil {
 		in.Names = map[string]string{"th": strings.TrimSpace(body.Names.Th), "en": strings.TrimSpace(body.Names.En)}
 	}
@@ -162,18 +161,18 @@ func (h *MenuHandler) move(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	if err := h.svc.Move(c.Request().Context(), body.DragID, body.TargetID, body.Zone, actorID(c)); err != nil {
+	if err := h.svc.Move(c.Request().Context(), body.DragID, body.TargetID, body.Zone, httputil.ActorID(c)); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: err.Error()})
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *MenuHandler) delete(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
-	if err := h.svc.Delete(c.Request().Context(), id, actorID(c)); err != nil {
+	if err := h.svc.Delete(c.Request().Context(), id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "menu not found"})
 		}
@@ -183,18 +182,3 @@ func (h *MenuHandler) delete(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-func pathID(c *echo.Context) (int64, error) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil || id <= 0 {
-		_ = c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid id"})
-		return 0, err
-	}
-	return id, nil
-}
-
-func actorID(c *echo.Context) int64 {
-	if p, ok := pkgauth.PrincipalFrom(c); ok {
-		return p.UserID
-	}
-	return 0
-}

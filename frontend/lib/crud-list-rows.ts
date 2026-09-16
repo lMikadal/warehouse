@@ -402,3 +402,17 @@ function resolveTreeDropZoneSelfCheck(): void {
   }
 }
 
+export type SortOrderRow = { id: number; sort_order: number };
+
+export function sortBySortOrderThenId<T extends SortOrderRow>(rows: T[]): T[] {
+  return [...rows].sort(
+    (a, b) => a.sort_order - b.sort_order || a.id - b.id
+  );
+}
+
+export function withSortOrderSteps100<T extends SortOrderRow>(rows: T[]): T[] {
+  return rows.map((row, index) => ({
+    ...row,
+    sort_order: (index + 1) * 100,
+  }));
+}

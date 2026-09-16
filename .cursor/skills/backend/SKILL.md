@@ -125,7 +125,7 @@ Reference sibling Warehouse `infrastructure/docker-compose.yml` for shape — ad
 ## Workflow
 
 1. Agree API contract (method, path, request/response)
-2. Implement handler → service → repository
+2. Implement handler → service → repository (reuse [`internal/httputil`](../../../backend/internal/httputil/) for route IDs / actor; [`internal/tree`](../../../backend/internal/tree/) for reorder/move)
 3. Add goose SQL under `internal/infra/postgres/migrations/` from `design/schema/`
 4. Update `docker-compose.yml` when adding a service
 5. Smoke-test from repo root: `make run` (or `make docker-up`) — dev backend auto-runs goose `up` on start when `APP_ENV=development`

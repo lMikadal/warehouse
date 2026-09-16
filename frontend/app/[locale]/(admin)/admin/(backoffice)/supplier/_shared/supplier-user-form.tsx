@@ -24,13 +24,6 @@ import { FormField } from "@/components/molecules/form-field";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -74,6 +67,8 @@ import {
   SupplierBankList,
   type SupplierBankListRow,
 } from "./supplier-bank-list";
+import { SupplierBankFormDialog } from "./supplier-bank-form-dialog";
+import { SupplierContactFormDialog } from "./supplier-contact-form-dialog";
 import {
   SupplierContactList,
   type SupplierContactListRow,
@@ -1023,153 +1018,21 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
         </div>
       </div>
 
-      <Dialog
+      <SupplierContactFormDialog
         open={contactDialog != null}
-        onOpenChange={(open) => !open && setContactDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{tSupplier("editContact")}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3">
-            <FormField
-              id="contact-dialog-name"
-              labelKey="col.name"
-              required
-              value={draftContact.name}
-              onChange={(v) => setDraftContact((d) => ({ ...d, name: v }))}
-            />
-            <FormField
-              id="contact-dialog-email"
-              labelKey="col.email"
-              type="email"
-              value={draftContact.email ?? ""}
-              onChange={(v) => setDraftContact((d) => ({ ...d, email: v }))}
-            />
-            <FormField
-              id="contact-dialog-tel"
-              labelKey="col.tel"
-              type="tel"
-              value={draftContact.tel ?? ""}
-              onChange={(v) =>
-                setDraftContact((d) => ({
-                  ...d,
-                  tel: v.replace(/[^0-9-]/g, ""),
-                }))
-              }
-            />
-            <FormField
-              id="contact-dialog-position"
-              labelKey="col.position"
-              value={draftContact.position ?? ""}
-              onChange={(v) => setDraftContact((d) => ({ ...d, position: v }))}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="lg" onClick={() => setContactDialog(null)}>
-              {tCrud("btn.cancel")}
-            </Button>
-            <Button size="lg" onClick={() => void saveContactDialog()}>
-              {tCrud("btn.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
+        draft={draftContact}
+        onDraftChange={setDraftContact}
+        onClose={() => setContactDialog(null)}
+        onSave={() => void saveContactDialog()}
+      />
+      <SupplierBankFormDialog
         open={bankDialog != null}
-        onOpenChange={(open) => !open && setBankDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{tSupplier("editBank")}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3">
-            <RemoteComboboxField
-              id="bank-dialog-bank"
-              label={tCol("bank")}
-              value={
-                draftBank.setting_bank_id
-                  ? String(draftBank.setting_bank_id)
-                  : ""
-              }
-              inputClassName="w-full"
-              emptyLabel={tForm("combobox.noResults")}
-              placeholder={tForm("placeholder.select", { label: tCol("bank") })}
-              onValueChange={(v) =>
-                setDraftBank((d) => ({
-                  ...d,
-                  setting_bank_id: Number(v),
-                }))
-              }
-              onLoadOptions={async ({ search, signal }) => {
-                const { items } = await fetchSettingLangList(locale, "banks", {
-                  page: 1,
-                  limit: 50,
-                  search,
-                  isActive: true,
-                });
-                if (signal?.aborted) return [];
-                return items.map((i) => ({ value: String(i.id), label: i.name }));
-              }}
-              resolveSelectedLabel={async (value) => {
-                const item = await fetchSettingLangById(
-                  locale,
-                  "banks",
-                  Number(value)
-                );
-                return item.name;
-              }}
-            />
-            <FormField
-              id="bank-dialog-name"
-              labelKey="supplier.bankAccountName"
-              required
-              value={draftBank.name}
-              onChange={(v) => setDraftBank((d) => ({ ...d, name: v }))}
-            />
-            <FormField
-              id="bank-dialog-number"
-              labelKey="supplier.bankAccountNumber"
-              required
-              value={draftBank.number}
-              onChange={(v) => setDraftBank((d) => ({ ...d, number: v }))}
-            />
-            <FormField
-              id="bank-dialog-branch"
-              labelKey="supplier.bankBranch"
-              value={draftBank.branch ?? ""}
-              onChange={(v) => setDraftBank((d) => ({ ...d, branch: v }))}
-            />
-            <div className="flex flex-col gap-3">
-              <StatusSwitchField
-                className="w-full"
-                checked={draftBank.is_active ?? true}
-                onCheckedChange={(v) =>
-                  setDraftBank((d) => ({ ...d, is_active: v }))
-                }
-                labelKey="col.active"
-              />
-              <StatusSwitchField
-                className="w-full"
-                checked={draftBank.is_default ?? false}
-                onCheckedChange={(v) =>
-                  setDraftBank((d) => ({ ...d, is_default: v }))
-                }
-                labelKey="col.default"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="lg" onClick={() => setBankDialog(null)}>
-              {tCrud("btn.cancel")}
-            </Button>
-            <Button size="lg" onClick={() => void saveBankDialog()}>
-              {tCrud("btn.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        locale={locale}
+        draft={draftBank}
+        onDraftChange={setDraftBank}
+        onClose={() => setBankDialog(null)}
+        onSave={() => void saveBankDialog()}
+      />
     </>
   );
 }

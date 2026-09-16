@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -66,7 +66,7 @@ type roleDetail struct {
 }
 
 func (h *RoleHandler) get(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (h *RoleHandler) create(c *echo.Context) error {
 	if body.IsActive != nil {
 		active = *body.IsActive
 	}
-	id, err := h.repo.Create(c.Request().Context(), active, map[string]string{"th": body.Names.Th, "en": body.Names.En}, body.PermissionIDs, actorID(c))
+	id, err := h.repo.Create(c.Request().Context(), active, map[string]string{"th": body.Names.Th, "en": body.Names.En}, body.PermissionIDs, httputil.ActorID(c))
 	if err != nil {
 		applog.HTTPError(c, "create role", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -111,7 +111,7 @@ func (h *RoleHandler) create(c *echo.Context) error {
 }
 
 func (h *RoleHandler) patch(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (h *RoleHandler) patch(c *echo.Context) error {
 	if body.Names != nil {
 		names = map[string]string{"th": body.Names.Th, "en": body.Names.En}
 	}
-	if err := h.repo.Update(c.Request().Context(), id, body.IsActive, names, body.PermissionIDs, actorID(c)); err != nil {
+	if err := h.repo.Update(c.Request().Context(), id, body.IsActive, names, body.PermissionIDs, httputil.ActorID(c)); err != nil {
 		applog.HTTPError(c, "update role", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
 	}
@@ -134,7 +134,7 @@ func (h *RoleHandler) patch(c *echo.Context) error {
 }
 
 func (h *RoleHandler) delete(c *echo.Context) error {
-	id, err := parseID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (h *RoleHandler) delete(c *echo.Context) error {
 	if has {
 		return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "role has active users"})
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(c.Request().Context(), id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "role not found"})
 		}
@@ -159,11 +159,3 @@ func (h *RoleHandler) delete(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-func parseID(c *echo.Context) (int64, error) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil || id <= 0 {
-		_ = c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid id"})
-		return 0, err
-	}
-	return id, nil
-}

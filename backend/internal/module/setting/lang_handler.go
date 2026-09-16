@@ -10,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -138,7 +139,7 @@ func (h *LangHandler) list(c *echo.Context) error {
 }
 
 func (h *LangHandler) get(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -173,7 +174,7 @@ func (h *LangHandler) create(c *echo.Context) error {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
 	in := LangCreateInput{
-		IsActive: body.IsActive, Names: namesFromBody(body.Names.Th, body.Names.En), ActorID: actorID(c),
+		IsActive: body.IsActive, Names: namesFromBody(body.Names.Th, body.Names.En), ActorID: httputil.ActorID(c),
 		IsSale: body.IsSale, IsPurchase: body.IsPurchase, IsDefault: body.IsDefault,
 		IsClaim: body.IsClaim, IsReturn: body.IsReturn,
 		SystemFileID: body.SystemFileID, MemberSettingRelationID: body.MemberSettingRelationID,
@@ -205,7 +206,7 @@ type langPatchBody struct {
 }
 
 func (h *LangHandler) patch(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -213,7 +214,7 @@ func (h *LangHandler) patch(c *echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	patch := LangPatch{ActorID: actorID(c), IsActive: body.IsActive, IsSale: body.IsSale, IsPurchase: body.IsPurchase,
+	patch := LangPatch{ActorID: httputil.ActorID(c), IsActive: body.IsActive, IsSale: body.IsSale, IsPurchase: body.IsPurchase,
 		IsDefault: body.IsDefault, IsClaim: body.IsClaim, IsReturn: body.IsReturn,
 		IsPerson: body.IsPerson, IsCompany: body.IsCompany}
 	if body.Names != nil {
@@ -246,13 +247,13 @@ func (h *LangHandler) patch(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
 	}
 	if patch.SystemFileIDSet && !int64PtrEqual(oldFileID, patch.SystemFileID) {
-		h.purgeFileIfUnreferenced(ctx, oldFileID, actorID(c))
+		h.purgeFileIfUnreferenced(ctx, oldFileID, httputil.ActorID(c))
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *LangHandler) delete(c *echo.Context) error {
-	id, err := pathID(c)
+	id, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
@@ -264,14 +265,14 @@ func (h *LangHandler) delete(c *echo.Context) error {
 			oldFileID = row.SystemFileID
 		}
 	}
-	if err := h.repo.SoftDelete(ctx, h.k, id, actorID(c)); err != nil {
+	if err := h.repo.SoftDelete(ctx, h.k, id, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 		}
 		applog.HTTPError(c, "delete setting lang", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "delete failed"})
 	}
-	h.purgeFileIfUnreferenced(ctx, oldFileID, actorID(c))
+	h.purgeFileIfUnreferenced(ctx, oldFileID, httputil.ActorID(c))
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -284,7 +285,7 @@ func (h *LangHandler) reorder(c *echo.Context) error {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "drag_id and target_id required"})
 	}
 	scope := prefixReorderScopeFromRequest(c, body)
-	err := h.repo.Reorder(c.Request().Context(), h.k, body.DragID, body.TargetID, scope, actorID(c))
+	err := h.repo.Reorder(c.Request().Context(), h.k, body.DragID, body.TargetID, scope, httputil.ActorID(c))
 	if err != nil {
 		if errors.Is(err, ErrInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})
