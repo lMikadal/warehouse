@@ -209,7 +209,7 @@
     return global.store
       .getAll("setting_prefix")
       .filter(function (r) {
-        return r.deleted_at == null && r.is_active && r.type === "company";
+        return r.deleted_at == null && r.is_active && r.is_company;
       })
       .map(function (r) {
         return { value: r.id, label: langName("setting_prefix_language", "setting_prefix_id", r.id) };

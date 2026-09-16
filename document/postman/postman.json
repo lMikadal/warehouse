@@ -778,17 +778,17 @@
               "name": "List prefixes",
               "request": {
                 "method": "GET",
-                "url": "{{baseUrl}}/setting/prefixes?page=1&limit=10&type=person"
+                "url": "{{baseUrl}}/setting/prefixes?page=1&limit=10&is_person=true"
               }
             },
             {
-              "name": "Reorder prefixes (scoped by type)",
+              "name": "Reorder prefixes (scoped by is_person)",
               "request": {
                 "method": "PATCH",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1,\n  \"type\": \"person\"\n}"
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1,\n  \"is_person\": true\n}"
                 },
                 "url": "{{baseUrl}}/setting/prefixes/reorder"
               }

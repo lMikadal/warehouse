@@ -60,15 +60,14 @@ type langItem struct {
 	IsReturn                *bool             `json:"is_return,omitempty"`
 	SystemFileID            *int64            `json:"system_file_id,omitempty"`
 	MemberSettingRelationID *int64            `json:"member_setting_relation_id,omitempty"`
-	Type                    string            `json:"type,omitempty"`
-	Code                    string            `json:"code,omitempty"`
+	IsPerson                *bool             `json:"is_person,omitempty"`
+	IsCompany               *bool             `json:"is_company,omitempty"`
 }
 
 func langItemFromRow(r LangRow, k LangKind, includeNames bool) langItem {
 	item := langItem{
 		ID: r.ID, Name: r.Name, SortOrder: r.SortOrder, IsActive: r.IsActive, UpdatedAt: r.UpdatedAt,
 		SystemFileID: r.SystemFileID, MemberSettingRelationID: r.MemberSettingRelationID,
-		Type: r.PrefixType, Code: r.Code,
 	}
 	if includeNames && r.Names != nil {
 		item.Names = r.Names
@@ -84,6 +83,10 @@ func langItemFromRow(r LangRow, k LangKind, includeNames bool) langItem {
 	if k == LangSaleChannel {
 		d := r.IsDefault
 		item.IsDefault = &d
+	}
+	if k == LangPrefix {
+		p, c := r.IsPerson, r.IsCompany
+		item.IsPerson, item.IsCompany = &p, &c
 	}
 	return item
 }
@@ -111,7 +114,14 @@ func (h *LangHandler) list(c *echo.Context) error {
 		b := v == "true" || v == "1"
 		f.IsReturn = &b
 	}
-	f.PrefixType = strings.TrimSpace(c.QueryParam("type"))
+	if v := strings.TrimSpace(c.QueryParam("is_person")); v != "" {
+		b := v == "true" || v == "1"
+		f.IsPerson = &b
+	}
+	if v := strings.TrimSpace(c.QueryParam("is_company")); v != "" {
+		b := v == "true" || v == "1"
+		f.IsCompany = &b
+	}
 	f.Sort = strings.TrimSpace(c.QueryParam("sort"))
 	f.Order = strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
 
@@ -153,8 +163,8 @@ type langCreateBody struct {
 	IsReturn                bool      `json:"is_return"`
 	SystemFileID            *int64    `json:"system_file_id"`
 	MemberSettingRelationID *int64    `json:"member_setting_relation_id"`
-	Type                    string    `json:"type"`
-	Code                    string    `json:"code"`
+	IsPerson                bool      `json:"is_person"`
+	IsCompany               bool      `json:"is_company"`
 }
 
 func (h *LangHandler) create(c *echo.Context) error {
@@ -167,15 +177,12 @@ func (h *LangHandler) create(c *echo.Context) error {
 		IsSale: body.IsSale, IsPurchase: body.IsPurchase, IsDefault: body.IsDefault,
 		IsClaim: body.IsClaim, IsReturn: body.IsReturn,
 		SystemFileID: body.SystemFileID, MemberSettingRelationID: body.MemberSettingRelationID,
-		PrefixType: body.Type, Code: body.Code,
+		IsPerson: body.IsPerson, IsCompany: body.IsCompany,
 	}
 	id, err := h.repo.Create(c.Request().Context(), h.k, in)
 	if err != nil {
 		if errors.Is(err, ErrValidation) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
-		}
-		if errors.Is(err, ErrConflict) {
-			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "code already taken"})
 		}
 		applog.HTTPError(c, "create setting lang", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -193,7 +200,8 @@ type langPatchBody struct {
 	IsReturn                *bool      `json:"is_return"`
 	SystemFileID            optionalInt64 `json:"system_file_id"`
 	MemberSettingRelationID *int64        `json:"member_setting_relation_id"`
-	Code                    *string       `json:"code"`
+	IsPerson                *bool         `json:"is_person"`
+	IsCompany               *bool         `json:"is_company"`
 }
 
 func (h *LangHandler) patch(c *echo.Context) error {
@@ -206,7 +214,8 @@ func (h *LangHandler) patch(c *echo.Context) error {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
 	patch := LangPatch{ActorID: actorID(c), IsActive: body.IsActive, IsSale: body.IsSale, IsPurchase: body.IsPurchase,
-		IsDefault: body.IsDefault, IsClaim: body.IsClaim, IsReturn: body.IsReturn, Code: body.Code}
+		IsDefault: body.IsDefault, IsClaim: body.IsClaim, IsReturn: body.IsReturn,
+		IsPerson: body.IsPerson, IsCompany: body.IsCompany}
 	if body.Names != nil {
 		patch.Names = namesFromBody(body.Names.Th, body.Names.En)
 	}
@@ -232,9 +241,6 @@ func (h *LangHandler) patch(c *echo.Context) error {
 		}
 		if errors.Is(err, ErrValidation) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
-		}
-		if errors.Is(err, ErrConflict) {
-			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "code already taken"})
 		}
 		applog.HTTPError(c, "patch setting lang", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
@@ -277,11 +283,8 @@ func (h *LangHandler) reorder(c *echo.Context) error {
 	if body.DragID <= 0 || body.TargetID <= 0 {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "drag_id and target_id required"})
 	}
-	prefixType := body.Type
-	if h.k == LangPrefix && prefixType == "" {
-		prefixType = strings.TrimSpace(c.QueryParam("type"))
-	}
-	err := h.repo.Reorder(c.Request().Context(), h.k, body.DragID, body.TargetID, prefixType, actorID(c))
+	scope := prefixReorderScopeFromRequest(c, body)
+	err := h.repo.Reorder(c.Request().Context(), h.k, body.DragID, body.TargetID, scope, actorID(c))
 	if err != nil {
 		if errors.Is(err, ErrInvalidReorder) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid reorder"})

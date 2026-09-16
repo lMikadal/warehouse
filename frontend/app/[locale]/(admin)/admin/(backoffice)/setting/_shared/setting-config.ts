@@ -14,7 +14,7 @@ export type SettingLangListConfig = {
   paymentFilters?: boolean;
   claimFlags?: boolean;
   saleDefault?: boolean;
-  prefixTypeFilter?: boolean;
+  prefixFlags?: boolean;
   showCodeColumn?: boolean;
 };
 
@@ -51,6 +51,5 @@ export const SETTING_PREFIX_CONFIG: SettingLangListConfig = {
   segment: "prefixes",
   permType: "setting_prefix",
   pageKey: "settingPrefix",
-  prefixTypeFilter: true,
-  showCodeColumn: true,
+  prefixFlags: true,
 };

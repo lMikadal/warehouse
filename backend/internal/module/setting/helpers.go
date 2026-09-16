@@ -77,7 +77,35 @@ type namesBody struct {
 }
 
 type reorderBody struct {
-	DragID   int64  `json:"drag_id"`
-	TargetID int64  `json:"target_id"`
-	Type     string `json:"type"` // prefix reorder scope: person | company
+	DragID    int64 `json:"drag_id"`
+	TargetID  int64 `json:"target_id"`
+	IsPerson  *bool `json:"is_person,omitempty"`  // prefix reorder scope (exactly one true)
+	IsCompany *bool `json:"is_company,omitempty"` // prefix reorder scope (exactly one true)
+}
+
+func prefixReorderScopeFromRequest(c *echo.Context, body reorderBody) prefixReorderScope {
+	person := body.IsPerson
+	company := body.IsCompany
+	if person == nil {
+		if v := strings.TrimSpace(c.QueryParam("is_person")); v == "true" || v == "1" {
+			b := true
+			person = &b
+		}
+	}
+	if company == nil {
+		if v := strings.TrimSpace(c.QueryParam("is_company")); v == "true" || v == "1" {
+			b := true
+			company = &b
+		}
+	}
+	scope := prefixReorderScope{}
+	if person != nil && *person && (company == nil || !*company) {
+		scope.IsPerson = true
+		return scope
+	}
+	if company != nil && *company && (person == nil || !*person) {
+		scope.IsCompany = true
+		return scope
+	}
+	return scope
 }

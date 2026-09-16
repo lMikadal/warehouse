@@ -1467,71 +1467,63 @@
   REGISTRY.setting_prefix = settingLangConfig("setting_prefix", {
     pageTitleKey: "page.settingPrefix",
     pageDescriptionKey: "page.settingPrefix.desc",
-    leadColumns: [
+    midColumns: [
       {
-        id: "type",
-        labelKey: "col.type",
+        id: "is_person",
+        labelKey: "col.isPerson",
         render: function (row) {
-          return escapeHtml(global.i18n.t("prefixType." + row.type));
+          return statusSwitchHtml(row, "is_person", "col.isPerson");
         },
       },
-      { id: "code", labelKey: "col.settingCode" },
+      {
+        id: "is_company",
+        labelKey: "col.isCompany",
+        render: function (row) {
+          return statusSwitchHtml(row, "is_company", "col.isCompany");
+        },
+      },
     ],
     columnFilters: [
       {
-        key: "type",
-        labelKey: "col.type",
-        optionI18nPrefix: "prefixType.",
-        optionValues: ["person", "company"],
+        key: "is_person",
+        labelKey: "col.isPerson",
+        optionValues: [true, false],
+        optionLabel: function (val) {
+          return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
+        },
+      },
+      {
+        key: "is_company",
+        labelKey: "col.isCompany",
+        optionValues: [true, false],
+        optionLabel: function (val) {
+          return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
+        },
       },
     ],
     formFields: [
-      {
-        key: "type",
-        labelKey: "col.type",
-        type: "select",
-        required: true,
-        options: function () {
-          return ["person", "company"].map(function (v) {
-            return { value: v, label: global.i18n.t("prefixType." + v) };
-          });
-        },
-      },
-      { key: "code", labelKey: "col.settingCode", type: "text", required: true },
       { key: "name_th", labelKey: "col.nameTh", type: "text", required: true },
       { key: "name_en", labelKey: "col.nameEn", type: "text", required: true },
+      { key: "is_person", labelKey: "col.isPerson", type: "checkbox", defaultValue: true },
+      { key: "is_company", labelKey: "col.isCompany", type: "checkbox", defaultValue: false },
       { key: "is_active", labelKey: "col.active", type: "checkbox", defaultValue: true },
     ],
     extraDefaults: function () {
-      return { type: "person", code: "" };
+      return { is_person: true, is_company: false };
     },
     extraGet: function (vals, r) {
-      vals.type = r.type;
-      vals.code = r.code;
+      vals.is_person = r.is_person;
+      vals.is_company = r.is_company;
     },
     extraSave: function (base, values) {
-      base.type = values.type;
-      base.code = values.code;
+      base.is_person = values.is_person;
+      base.is_company = values.is_company;
     },
-    extraValidate: function (values, id) {
-      var errors = {};
-      var rows = global.store.getAll("setting_prefix").filter(function (r) {
-        return r.deleted_at == null;
-      });
-      if (
-        rows.some(function (r) {
-          return r.id !== id && String(r.code).toLowerCase() === String(values.code).toLowerCase();
-        })
-      ) {
-        errors.code = global.i18n.t("error.codeTaken");
+    extraValidate: function (values) {
+      if (!values.is_person && !values.is_company) {
+        return { ok: false, errors: { is_person: global.i18n.t("error.claimReasonType") } };
       }
-      return { ok: Object.keys(errors).length === 0, errors: errors };
-    },
-    extraSearch: function (row, q) {
-      return (
-        String(row.code).toLowerCase().indexOf(q) >= 0 ||
-        global.i18n.t("prefixType." + row.type).toLowerCase().indexOf(q) >= 0
-      );
+      return { ok: true, errors: {} };
     },
   });
 

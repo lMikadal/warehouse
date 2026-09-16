@@ -116,18 +116,18 @@ ON CONFLICT (setting_claim_reason_id, locale) DO UPDATE SET
   updated_at = EXCLUDED.updated_at;
 
 -- setting_prefix
-INSERT INTO setting_prefix (id, type, code, sort_order, is_active, deleted_at, created_at, updated_at)
+INSERT INTO setting_prefix (id, is_person, is_company, sort_order, is_active, deleted_at, created_at, updated_at)
 VALUES
-  (1, 'person', 'mr', 100, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (2, 'person', 'mrs', 200, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (3, 'person', 'miss', 300, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (4, 'company', 'co_ltd', 100, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (5, 'company', 'pcl', 200, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (6, 'company', 'ltd_part', 300, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (7, 'company', 'individual', 400, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+  (1, true, false, 100, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, true, false, 200, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (3, true, false, 300, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (4, false, true, 100, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (5, false, true, 200, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (6, false, true, 300, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (7, false, true, 400, true, NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
 ON CONFLICT (id) DO UPDATE SET
-  type = EXCLUDED.type,
-  code = EXCLUDED.code,
+  is_person = EXCLUDED.is_person,
+  is_company = EXCLUDED.is_company,
   sort_order = EXCLUDED.sort_order,
   is_active = EXCLUDED.is_active,
   deleted_at = NULL,

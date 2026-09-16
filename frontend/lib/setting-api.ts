@@ -27,8 +27,8 @@ export type SettingLangItem = {
   is_default?: boolean;
   is_claim?: boolean;
   is_return?: boolean;
-  type?: string;
-  code?: string;
+  is_person?: boolean;
+  is_company?: boolean;
   system_file_id?: number | null;
 };
 
@@ -66,7 +66,8 @@ export type SettingLangListParams = BffStandardListParams & {
   isPurchase?: boolean;
   isClaim?: boolean;
   isReturn?: boolean;
-  prefixType?: string;
+  isPerson?: boolean;
+  isCompany?: boolean;
 };
 
 function langListAppend(params: SettingLangListParams): AppendListQuery {
@@ -79,7 +80,12 @@ function langListAppend(params: SettingLangListParams): AppendListQuery {
     if (params.isReturn !== undefined) {
       qs.set("is_return", params.isReturn ? "true" : "false");
     }
-    if (params.prefixType) qs.set("type", params.prefixType);
+    if (params.isPerson !== undefined) {
+      qs.set("is_person", params.isPerson ? "true" : "false");
+    }
+    if (params.isCompany !== undefined) {
+      qs.set("is_company", params.isCompany ? "true" : "false");
+    }
   };
 }
 
@@ -133,7 +139,7 @@ export async function reorderSettingLang(
   segment: SettingLangSegment,
   dragId: number,
   targetId: number,
-  extra?: { type?: string }
+  extra?: { is_person?: boolean; is_company?: boolean }
 ) {
   const res = await authFetch(`${langBase(segment)}/reorder`, {
     method: "PATCH",
@@ -144,7 +150,8 @@ export async function reorderSettingLang(
     body: JSON.stringify({
       drag_id: dragId,
       target_id: targetId,
-      ...(extra?.type ? { type: extra.type } : {}),
+      ...(extra?.is_person ? { is_person: true } : {}),
+      ...(extra?.is_company ? { is_company: true } : {}),
     }),
   });
   if (!res.ok) throw await parseBffError(res);

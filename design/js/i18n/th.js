@@ -565,6 +565,8 @@ window.I18N_TH = {
   "col.purchase": "จัดซื้อ",
   "col.claim": "เคลม",
   "col.return": "คืนสินค้า",
+  "col.isPerson": "บุคคล",
+  "col.isCompany": "บริษัท",
   "col.company": "บริษัท",
   "col.companyName": "ชื่อบริษัท",
   "col.prefix": "คำนำหน้า",

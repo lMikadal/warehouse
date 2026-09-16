@@ -219,7 +219,7 @@ All uploaded files go through [`system_file`](../../design/schema/system_file.sq
 |--------|--------|-----------|
 | system (14+) | `language`, `file`, country+lang, province+lang, district+lang, sub_district+lang, menu+lang+permission | locale registry; geo hierarchy via typed FK + sort_order (no LTREE); uploads via `system_file` |
 | admin (9) | user, session, role+lang, permission, role_permission, menu+lang+permission | `admin_permission.is_active` toggles UI actions; `admin_user.type`: `superadmin` \| `owner` \| `manager` \| `staff` |
-| setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (person \| company) replaces member/supplier prefix enums |
+| setting (12) | vat, sale_channel+lang, bank+lang, payment_method+lang, code, claim_reason+lang, prefix+lang | shared `setting_prefix` lookup (`is_person` / `is_company`; at least one true) replaces member/supplier prefix enums |
 | location (2) | location+lang | custom named locations (v1 `location_locations`); split from setting module |
 | product (16) | attribute+lang+relation, list+lang+code+car+supplier, item+lang+price+stock+stop_log+file+supplier+warehouse | product_list: tag/supplier_sku/note/is_new restored; car stop-sell on product_attribute.is_stopped not product_list_car; gallery via product_item_file |
 

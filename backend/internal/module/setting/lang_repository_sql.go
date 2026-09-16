@@ -18,7 +18,7 @@ func langListExtraSelect(k LangKind) string {
 	case LangClaimReason:
 		return ", t.is_claim, t.is_return"
 	case LangPrefix:
-		return ", t.type::text, t.code"
+		return ", t.is_person, t.is_company"
 	default:
 		return ""
 	}
@@ -62,15 +62,25 @@ func langListWhere(k LangKind, f LangListFilter, locale string) (string, []any) 
 			n++
 		}
 	}
-	if k == LangPrefix && f.PrefixType != "" {
-		clauses = append(clauses, fmt.Sprintf("t.type = $%d::setting_prefix_type", n))
-		args = append(args, f.PrefixType)
-		n++
+	if k == LangPrefix {
+		if f.IsPerson != nil {
+			clauses = append(clauses, fmt.Sprintf("t.is_person = $%d", n))
+			args = append(args, *f.IsPerson)
+			n++
+		}
+		if f.IsCompany != nil {
+			clauses = append(clauses, fmt.Sprintf("t.is_company = $%d", n))
+			args = append(args, *f.IsCompany)
+			n++
+		}
 	}
 	return strings.Join(clauses, " AND "), args
 }
 
-func langOrderBy(sort, order string) string {
+func langOrderBy(k LangKind, sort, order string) string {
+	if sort == "" && k == LangPrefix {
+		return "t.is_person DESC, t.is_company ASC, t.sort_order ASC, t.id ASC"
+	}
 	col := "t.sort_order"
 	dir := "ASC"
 	switch strings.ToLower(sort) {
@@ -78,8 +88,10 @@ func langOrderBy(sort, order string) string {
 		col = "l.name"
 	case "updated_at":
 		col = "t.updated_at"
-	case "code":
-		col = "t.code"
+	case "is_person":
+		col = "t.is_person"
+	case "is_company":
+		col = "t.is_company"
 	}
 	if strings.ToLower(order) == "desc" {
 		dir = "DESC"
@@ -114,7 +126,7 @@ func scanLangListRow(rows *sql.Rows, k LangKind) (LangRow, error) {
 	case LangClaimReason:
 		err = rows.Scan(&row.ID, &row.Name, &row.SortOrder, &row.IsActive, &row.UpdatedAt, &row.IsClaim, &row.IsReturn)
 	case LangPrefix:
-		err = rows.Scan(&row.ID, &row.Name, &row.SortOrder, &row.IsActive, &row.UpdatedAt, &row.PrefixType, &row.Code)
+		err = rows.Scan(&row.ID, &row.Name, &row.SortOrder, &row.IsActive, &row.UpdatedAt, &row.IsPerson, &row.IsCompany)
 	default:
 		err = rows.Scan(&row.ID, &row.Name, &row.SortOrder, &row.IsActive, &row.UpdatedAt)
 	}
@@ -148,52 +160,62 @@ func scanLangListRowSingle(row *sql.Row, k LangKind) (LangRow, error) {
 	case LangClaimReason:
 		err = row.Scan(&r.ID, &r.Name, &r.SortOrder, &r.IsActive, &r.UpdatedAt, &r.IsClaim, &r.IsReturn)
 	case LangPrefix:
-		err = row.Scan(&r.ID, &r.Name, &r.SortOrder, &r.IsActive, &r.UpdatedAt, &r.PrefixType, &r.Code)
+		err = row.Scan(&r.ID, &r.Name, &r.SortOrder, &r.IsActive, &r.UpdatedAt, &r.IsPerson, &r.IsCompany)
 	default:
 		err = row.Scan(&r.ID, &r.Name, &r.SortOrder, &r.IsActive, &r.UpdatedAt)
 	}
 	return r, err
 }
 
-func langReorderScopeSQL(k LangKind, prefixType string) string {
-	if k == LangPrefix && prefixType != "" {
-		return fmt.Sprintf(" AND type = '%s'::setting_prefix_type", prefixType)
-	}
-	return ""
-}
-
 func langValidateCreate(k LangKind, in LangCreateInput) error {
 	if k == LangClaimReason && !in.IsClaim && !in.IsReturn {
 		return ErrValidation
 	}
-	if k == LangPrefix {
-		if in.PrefixType != "person" && in.PrefixType != "company" {
-			return ErrValidation
-		}
-		if strings.TrimSpace(in.Code) == "" {
-			return ErrValidation
-		}
+	if k == LangPrefix && !in.IsPerson && !in.IsCompany {
+		return ErrValidation
 	}
 	return nil
 }
 
-func langValidatePatch(k LangKind, p LangPatch) error {
-	if k != LangClaimReason {
+func langValidatePatch(ctx context.Context, k LangKind, p LangPatch, db *sql.DB, id int64) error {
+	if k == LangClaimReason {
+		if p.IsClaim == nil && p.IsReturn == nil {
+			return nil
+		}
+		var curClaim, curReturn bool
+		if err := db.QueryRowContext(ctx, "SELECT is_claim, is_return FROM setting_claim_reason WHERE id = $1", id).Scan(&curClaim, &curReturn); err != nil {
+			return err
+		}
+		claim, ret := curClaim, curReturn
+		if p.IsClaim != nil {
+			claim = *p.IsClaim
+		}
+		if p.IsReturn != nil {
+			ret = *p.IsReturn
+		}
+		if !claim && !ret {
+			return ErrValidation
+		}
 		return nil
 	}
-	// Load current if toggles omitted — ponytail: require both flags in full patch; partial toggle via explicit values
-	claim := false
-	ret := false
-	if p.IsClaim != nil {
-		claim = *p.IsClaim
-	}
-	if p.IsReturn != nil {
-		ret = *p.IsReturn
-	}
-	if p.IsClaim == nil && p.IsReturn == nil {
+	if k != LangPrefix {
 		return nil
 	}
-	if !claim && !ret {
+	if p.IsPerson == nil && p.IsCompany == nil {
+		return nil
+	}
+	var curPerson, curCompany bool
+	if err := db.QueryRowContext(ctx, "SELECT is_person, is_company FROM setting_prefix WHERE id = $1", id).Scan(&curPerson, &curCompany); err != nil {
+		return err
+	}
+	person, company := curPerson, curCompany
+	if p.IsPerson != nil {
+		person = *p.IsPerson
+	}
+	if p.IsCompany != nil {
+		company = *p.IsCompany
+	}
+	if !person && !company {
 		return ErrValidation
 	}
 	return nil
@@ -223,9 +245,9 @@ INSERT INTO setting_claim_reason (is_claim, is_return, sort_order, is_active, cr
 VALUES ($1, $2, $3, $4, $5, $5) RETURNING id`, in.IsClaim, in.IsReturn, sortOrder, in.IsActive, act).Scan(&id)
 	case LangPrefix:
 		err = tx.QueryRowContext(ctx, `
-INSERT INTO setting_prefix (type, code, sort_order, is_active, created_by, updated_by)
-VALUES ($1::setting_prefix_type, $2, $3, $4, $5, $5) RETURNING id`,
-			in.PrefixType, strings.TrimSpace(in.Code), sortOrder, in.IsActive, act).Scan(&id)
+INSERT INTO setting_prefix (is_person, is_company, sort_order, is_active, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5, $5) RETURNING id`,
+			in.IsPerson, in.IsCompany, sortOrder, in.IsActive, act).Scan(&id)
 	default:
 		err = fmt.Errorf("unknown kind")
 	}
@@ -272,7 +294,6 @@ func langUpdateBase(ctx context.Context, tx *sql.Tx, k LangKind, id int64, p Lan
 		}
 	case LangClaimReason:
 		if p.IsClaim != nil || p.IsReturn != nil {
-			// merge with current row for CHECK constraint
 			var curClaim, curReturn bool
 			if err := tx.QueryRowContext(ctx, "SELECT is_claim, is_return FROM setting_claim_reason WHERE id = $1", id).Scan(&curClaim, &curReturn); err != nil {
 				return err
@@ -299,10 +320,31 @@ func langUpdateBase(ctx context.Context, tx *sql.Tx, k LangKind, id int64, p Lan
 			}
 		}
 	case LangPrefix:
-		if p.Code != nil {
-			sets = append(sets, fmt.Sprintf("code = $%d", n))
-			args = append(args, strings.TrimSpace(*p.Code))
-			n++
+		if p.IsPerson != nil || p.IsCompany != nil {
+			var curPerson, curCompany bool
+			if err := tx.QueryRowContext(ctx, "SELECT is_person, is_company FROM setting_prefix WHERE id = $1", id).Scan(&curPerson, &curCompany); err != nil {
+				return err
+			}
+			person, company := curPerson, curCompany
+			if p.IsPerson != nil {
+				person = *p.IsPerson
+			}
+			if p.IsCompany != nil {
+				company = *p.IsCompany
+			}
+			if !person && !company {
+				return ErrValidation
+			}
+			if p.IsPerson != nil {
+				sets = append(sets, fmt.Sprintf("is_person = $%d", n))
+				args = append(args, person)
+				n++
+			}
+			if p.IsCompany != nil {
+				sets = append(sets, fmt.Sprintf("is_company = $%d", n))
+				args = append(args, company)
+				n++
+			}
 		}
 	case LangBank:
 		if p.SystemFileIDSet {

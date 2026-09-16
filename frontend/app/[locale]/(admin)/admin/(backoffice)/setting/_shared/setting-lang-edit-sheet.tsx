@@ -13,14 +13,6 @@ import {
 import { FormField } from "@/components/molecules/form-field";
 import { ImageUploadField } from "@/components/molecules/image-upload-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Field, FieldLabel } from "@/components/ui/field";
 import type { SettingLangItem } from "@/lib/setting-api";
 import {
   fetchSystemFile,
@@ -37,7 +29,8 @@ export type SettingLangEditPayload = {
   isDefault: boolean;
   isClaim: boolean;
   isReturn: boolean;
-  prefixType: string;
+  isPerson: boolean;
+  isCompany: boolean;
   code: string;
   logoItems?: ImageUploadItem[];
   initialLogoRemoteId?: number | null;
@@ -45,7 +38,7 @@ export type SettingLangEditPayload = {
 
 export type SettingLangSheetState =
   | { mode: "edit"; row: SettingLangItem; names: { th: string; en: string } }
-  | { mode: "create"; prefixType?: string };
+  | { mode: "create" };
 
 type Props = {
   config: SettingLangListConfig;
@@ -66,8 +59,9 @@ function defaults(config: SettingLangListConfig, state: SettingLangSheetState): 
       isDefault: state.row.is_default ?? false,
       isClaim: state.row.is_claim ?? false,
       isReturn: state.row.is_return ?? false,
-      prefixType: state.row.type ?? "person",
-      code: state.row.code ?? "",
+      isPerson: state.row.is_person ?? false,
+      isCompany: state.row.is_company ?? false,
+      code: "",
       initialLogoRemoteId: state.row.system_file_id ?? null,
     };
   }
@@ -80,7 +74,8 @@ function defaults(config: SettingLangListConfig, state: SettingLangSheetState): 
     isDefault: false,
     isClaim: false,
     isReturn: false,
-    prefixType: state.prefixType ?? "person",
+    isPerson: true,
+    isCompany: false,
     code: "",
     initialLogoRemoteId: null,
   };
@@ -131,8 +126,8 @@ function SettingLangEditForm({
 }) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
-  const tForm = useTranslations("form");
   const tPage = useTranslations("page");
+  const tError = useTranslations("error");
   const t = useTranslations();
   const locale = useLocale();
 
@@ -144,7 +139,8 @@ function SettingLangEditForm({
   const [isDefault, setIsDefault] = useState(initial.isDefault);
   const [isClaim, setIsClaim] = useState(initial.isClaim);
   const [isReturn, setIsReturn] = useState(initial.isReturn);
-  const [prefixType, setPrefixType] = useState(initial.prefixType);
+  const [isPerson, setIsPerson] = useState(initial.isPerson);
+  const [isCompany, setIsCompany] = useState(initial.isCompany);
   const [code, setCode] = useState(initial.code);
   const [invalid, setInvalid] = useState<Record<string, boolean>>({});
   const [logoFiles, setLogoFiles] = useState<ImageUploadItem[]>([]);
@@ -189,6 +185,7 @@ function SettingLangEditForm({
     if (!nameEn.trim()) next.nameEn = true;
     if (config.showCodeColumn && !code.trim()) next.code = true;
     if (config.claimFlags && !isClaim && !isReturn) next.claim = true;
+    if (config.prefixFlags && !isPerson && !isCompany) next.prefixAudience = true;
     setInvalid(next);
     if (Object.keys(next).length > 0) return;
     setSaving(true);
@@ -202,7 +199,8 @@ function SettingLangEditForm({
         isDefault,
         isClaim,
         isReturn,
-        prefixType,
+        isPerson,
+        isCompany,
         code,
         logoItems: config.logoPurpose ? logoFiles : undefined,
         initialLogoRemoteId: config.logoPurpose
@@ -225,25 +223,6 @@ function SettingLangEditForm({
           title={mode === "edit" ? pageTitle : tCrud("btn.create")}
         />
         <CrudFormSheetBody className="space-y-4">
-          {config.prefixTypeFilter && mode === "create" && (
-            <Field className="gap-1.5">
-              <FieldLabel>{tCol("type")}</FieldLabel>
-              <Select
-                value={prefixType}
-                onValueChange={(v) => setPrefixType(v ?? "person")}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={tForm("placeholder.select", { label: tCol("type") })}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="person">{t("prefixType.person")}</SelectItem>
-                  <SelectItem value="company">{t("prefixType.company")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
           {config.showCodeColumn && (
             <FormField
               id="setting-code"
@@ -314,7 +293,26 @@ function SettingLangEditForm({
               />
               {invalid.claim ? (
                 <p className="text-sm text-destructive" role="alert">
-                  {t("error.required")}
+                  {tError("claimReasonType")}
+                </p>
+              ) : null}
+            </>
+          )}
+          {config.prefixFlags && (
+            <>
+              <StatusSwitchField
+                labelKey="col.isPerson"
+                checked={isPerson}
+                onCheckedChange={setIsPerson}
+              />
+              <StatusSwitchField
+                labelKey="col.isCompany"
+                checked={isCompany}
+                onCheckedChange={setIsCompany}
+              />
+              {invalid.prefixAudience ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {tError("prefixAudienceType")}
                 </p>
               ) : null}
             </>

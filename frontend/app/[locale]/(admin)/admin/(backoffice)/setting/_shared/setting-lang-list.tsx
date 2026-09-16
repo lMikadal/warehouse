@@ -79,8 +79,64 @@ function settingLangTableColumnCount(config: SettingLangListConfig): number {
   if (config.paymentFilters) n += 2;
   if (config.saleDefault) n += 1;
   if (config.claimFlags) n += 2;
+  if (config.prefixFlags) n += 2;
   n += 3;
   return n;
+}
+
+function settingLangApiErrorMessage(
+  config: SettingLangListConfig,
+  e: unknown,
+  tError: ReturnType<typeof useTranslations<"error">>,
+  fallback: string
+): string {
+  if (e instanceof SettingApiError && e.code === "validation_error") {
+    if (config.claimFlags) return tError("claimReasonType");
+    if (config.prefixFlags) return tError("prefixAudienceType");
+  }
+  if (e instanceof SettingApiError) return e.message;
+  return fallback;
+}
+
+type PrefixReorderExtra = { is_person: true } | { is_company: true };
+
+function prefixReorderExtra(
+  personFilter: TriFilter,
+  companyFilter: TriFilter
+): PrefixReorderExtra | undefined {
+  if (personFilter === "yes" && companyFilter !== "yes") {
+    return { is_person: true };
+  }
+  if (companyFilter === "yes" && personFilter !== "yes") {
+    return { is_company: true };
+  }
+  return undefined;
+}
+
+function prefixReorderExtraFromRow(
+  row: SettingLangItem
+): PrefixReorderExtra | undefined {
+  const person = row.is_person === true;
+  const company = row.is_company === true;
+  if (person && !company) return { is_person: true };
+  if (company && !person) return { is_company: true };
+  return undefined;
+}
+
+function prefixReorderExtraKey(extra: PrefixReorderExtra | undefined): string {
+  if (!extra) return "";
+  return "is_person" in extra ? "person" : "company";
+}
+
+function prefixReorderScopeForDrag(
+  personFilter: TriFilter,
+  companyFilter: TriFilter,
+  dragRow: SettingLangItem
+): PrefixReorderExtra | undefined {
+  return (
+    prefixReorderExtra(personFilter, companyFilter) ??
+    prefixReorderExtraFromRow(dragRow)
+  );
 }
 
 function SettingLangLogoPlaceholder() {
@@ -251,22 +307,33 @@ export function SettingLangList({ config }: Props) {
   const [purchaseFilter, setPurchaseFilter] = useState<TriFilter>("");
   const [claimFilter, setClaimFilter] = useState<TriFilter>("");
   const [returnFilter, setReturnFilter] = useState<TriFilter>("");
-  const [prefixType, setPrefixType] = useState<"" | "person" | "company">("");
+  const [personFilter, setPersonFilter] = useState<TriFilter>("");
+  const [companyFilter, setCompanyFilter] = useState<TriFilter>("");
   const [sortableEpoch, setSortableEpoch] = useState(0);
 
   const tComboboxEmpty = useTranslations("form.combobox");
+
+  const prefixReorderScopeFromFilters = config.prefixFlags
+    ? prefixReorderExtra(personFilter, companyFilter)
+    : undefined;
+  const prefixAudienceFiltersSet =
+    config.prefixFlags && (personFilter !== "" || companyFilter !== "");
 
   const filtersActive =
     (config.paymentFilters &&
       (saleFilter !== "" || purchaseFilter !== "")) ||
     (config.claimFlags && (claimFilter !== "" || returnFilter !== "")) ||
-    (config.prefixTypeFilter && prefixType !== "");
+    (prefixAudienceFiltersSet && prefixReorderScopeFromFilters == null);
 
   const listQuery = useCrudListQuery({ extraFiltered: filtersActive });
+  const prefixDnDWithoutAudienceFilter =
+    config.prefixFlags && personFilter === "" && companyFilter === "";
   const dragEnabled =
     listQuery.dragEnabled &&
     perms.update &&
-    (!config.prefixTypeFilter || prefixType !== "");
+    (!config.prefixFlags ||
+      prefixReorderScopeFromFilters != null ||
+      prefixDnDWithoutAudienceFilter);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -287,7 +354,10 @@ export function SettingLangList({ config }: Props) {
           claimFilter === "" ? undefined : claimFilter === "yes",
         isReturn:
           returnFilter === "" ? undefined : returnFilter === "yes",
-        prefixType: prefixType || undefined,
+        isPerson:
+          personFilter === "" ? undefined : personFilter === "yes",
+        isCompany:
+          companyFilter === "" ? undefined : companyFilter === "yes",
       });
       setRows(res.items);
       setTotal(res.meta.total);
@@ -305,7 +375,8 @@ export function SettingLangList({ config }: Props) {
     listQuery.sortParamsForFetch,
     locale,
     claimFilter,
-    prefixType,
+    personFilter,
+    companyFilter,
     purchaseFilter,
     returnFilter,
     saleFilter,
@@ -319,10 +390,7 @@ export function SettingLangList({ config }: Props) {
   }, [load]);
 
   const openCreate = () => {
-    setSheet({
-      mode: "create",
-      prefixType: prefixType || undefined,
-    });
+    setSheet({ mode: "create" });
   };
 
   const openEdit = async (row: SettingLangItem) => {
@@ -357,7 +425,10 @@ export function SettingLangList({ config }: Props) {
     }
     if (config.showCodeColumn) {
       body.code = payload.code;
-      if (sheet?.mode === "create") body.type = payload.prefixType;
+    }
+    if (config.prefixFlags) {
+      body.is_person = payload.isPerson;
+      body.is_company = payload.isCompany;
     }
     return body;
   };
@@ -386,8 +457,9 @@ export function SettingLangList({ config }: Props) {
       setSheet(null);
       await load();
     } catch (e) {
-      const msg = e instanceof SettingApiError ? e.message : t("error.generic");
-      toast.error(msg);
+      toast.error(
+        settingLangApiErrorMessage(config, e, tError, t("error.generic"))
+      );
     }
   };
 
@@ -396,7 +468,9 @@ export function SettingLangList({ config }: Props) {
       await patchSettingLang(locale, config.segment, row.id, { is_active: active });
       await load();
     } catch (e) {
-      toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
+      toast.error(
+        settingLangApiErrorMessage(config, e, tError, t("error.generic"))
+      );
     }
   };
 
@@ -408,7 +482,9 @@ export function SettingLangList({ config }: Props) {
       await patchSettingLang(locale, config.segment, rowId, body);
       await load();
     } catch (e) {
-      toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
+      toast.error(
+        settingLangApiErrorMessage(config, e, tError, t("error.generic"))
+      );
     }
   };
 
@@ -441,10 +517,18 @@ export function SettingLangList({ config }: Props) {
       queueMicrotask(() => setSortableEpoch((e) => e + 1));
       return;
     }
-    const reorderExtra =
-      config.prefixTypeFilter && prefixType
-        ? { type: prefixType }
-        : undefined;
+    const reorderExtra = config.prefixFlags
+      ? prefixReorderScopeForDrag(personFilter, companyFilter, dragRow)
+      : undefined;
+    const scopeMismatch =
+      config.prefixFlags &&
+      (!reorderExtra ||
+        prefixReorderExtraKey(reorderExtra) !==
+          prefixReorderExtraKey(prefixReorderExtraFromRow(targetRow)));
+    if (scopeMismatch) {
+      queueMicrotask(() => setSortableEpoch((e) => e + 1));
+      return;
+    }
     void reorderSettingLang(
       locale,
       config.segment,
@@ -538,19 +622,35 @@ export function SettingLangList({ config }: Props) {
             />
           </>
         )}
-        {config.prefixTypeFilter && (
-          <select
-            className="h-9 rounded-md border bg-background px-2 text-sm"
-            value={prefixType}
-            onChange={(e) => {
-              setPrefixType(e.target.value as typeof prefixType);
-              listQuery.setPage(1);
-            }}
-          >
-            <option value="">{tCol("type")}</option>
-            <option value="person">{t("prefixType.person")}</option>
-            <option value="company">{t("prefixType.company")}</option>
-          </select>
+        {config.prefixFlags && (
+          <>
+            <BoolColumnFilterField
+              id="setting-prefix-filter-person"
+              label={tCol("isPerson")}
+              value={personFilter}
+              onChange={(v) => {
+                setPersonFilter(v);
+                listQuery.setPage(1);
+              }}
+              placeholder={tCrud("filter.select", { label: tCol("isPerson") })}
+              emptyLabel={tComboboxEmpty("noResults")}
+              labelYes={tCol("yes")}
+              labelNo={tCol("no")}
+            />
+            <BoolColumnFilterField
+              id="setting-prefix-filter-company"
+              label={tCol("isCompany")}
+              value={companyFilter}
+              onChange={(v) => {
+                setCompanyFilter(v);
+                listQuery.setPage(1);
+              }}
+              placeholder={tCrud("filter.select", { label: tCol("isCompany") })}
+              emptyLabel={tComboboxEmpty("noResults")}
+              labelYes={tCol("yes")}
+              labelNo={tCol("no")}
+            />
+          </>
         )}
         <StatusFilterGroup
           value={listQuery.statusFilter}
@@ -581,6 +681,12 @@ export function SettingLangList({ config }: Props) {
                 <>
                   <TableHead className="text-center">{tCol("claim")}</TableHead>
                   <TableHead className="text-center">{tCol("return")}</TableHead>
+                </>
+              )}
+              {config.prefixFlags && (
+                <>
+                  <TableHead className="text-center">{tCol("isPerson")}</TableHead>
+                  <TableHead className="text-center">{tCol("isCompany")}</TableHead>
                 </>
               )}
               <TableHead className="text-center">{tCol("status")}</TableHead>
@@ -769,6 +875,24 @@ function SettingLangRowCells({
               checked={row.is_return ?? false}
               disabled={!perms.update}
               onCheckedChange={(v) => onPatchBool({ is_return: v })}
+            />
+          </TableCell>
+        </>
+      )}
+      {config.prefixFlags && (
+        <>
+          <TableCell className="text-center">
+            <StatusSwitchField
+              checked={row.is_person ?? false}
+              disabled={!perms.update}
+              onCheckedChange={(v) => onPatchBool({ is_person: v })}
+            />
+          </TableCell>
+          <TableCell className="text-center">
+            <StatusSwitchField
+              checked={row.is_company ?? false}
+              disabled={!perms.update}
+              onCheckedChange={(v) => onPatchBool({ is_company: v })}
             />
           </TableCell>
         </>

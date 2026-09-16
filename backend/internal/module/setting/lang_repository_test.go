@@ -19,3 +19,12 @@ func TestLangValidateCreateClaimReason(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestLangValidateCreatePrefix(t *testing.T) {
+	if err := langValidateCreate(LangPrefix, LangCreateInput{}); err != ErrValidation {
+		t.Fatalf("want validation when no person/company flags")
+	}
+	if err := langValidateCreate(LangPrefix, LangCreateInput{IsPerson: true}); err != nil {
+		t.Fatal(err)
+	}
+}

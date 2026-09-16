@@ -37,6 +37,8 @@
     "purchase": "จัดซื้อ",
     "claim": "เคลม",
     "return": "คืน",
+    "isPerson": "บุคคล",
+    "isCompany": "บริษัท",
     "yes": "ใช่",
     "no": "ไม่",
     "logo": "โลโก้"

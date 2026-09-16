@@ -7,6 +7,8 @@
     "emailTaken": "This email is already in use",
     "passwordMismatch": "Passwords do not match",
     "cannotDeleteSelf": "You cannot delete your own account",
-    "forbidden": "You do not have permission to view this page."
+    "forbidden": "You do not have permission to view this page.",
+    "claimReasonType": "Select at least one of claim or return",
+    "prefixAudienceType": "Select at least one of person or company"
   }
 }

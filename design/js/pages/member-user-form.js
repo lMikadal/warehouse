@@ -377,7 +377,10 @@
     return global.store
       .getAll("setting_prefix")
       .filter(function (r) {
-        return r.deleted_at == null && r.is_active && r.type === type;
+        if (r.deleted_at != null || !r.is_active) return false;
+        if (type === "person") return r.is_person;
+        if (type === "company") return r.is_company;
+        return false;
       })
       .map(function (r) {
         return {

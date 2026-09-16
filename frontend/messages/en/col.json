@@ -37,6 +37,8 @@
     "purchase": "Purchase",
     "claim": "Claim",
     "return": "Return",
+    "isPerson": "Person",
+    "isCompany": "Company",
     "yes": "Yes",
     "no": "No",
     "logo": "Logo"

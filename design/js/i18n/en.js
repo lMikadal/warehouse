@@ -565,6 +565,8 @@ window.I18N_EN = {
   "col.purchase": "Purchase",
   "col.claim": "Claim",
   "col.return": "Return",
+  "col.isPerson": "Person",
+  "col.isCompany": "Company",
   "col.company": "Company",
   "col.companyName": "Company name",
   "col.prefix": "Prefix",

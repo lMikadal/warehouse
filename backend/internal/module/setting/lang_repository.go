@@ -25,8 +25,8 @@ type LangRow struct {
 	IsReturn                bool
 	SystemFileID            *int64
 	MemberSettingRelationID *int64
-	PrefixType              string
-	Code                    string
+	IsPerson                bool
+	IsCompany               bool
 }
 
 type LangListFilter struct {
@@ -38,7 +38,8 @@ type LangListFilter struct {
 	IsPurchase     *bool
 	IsClaim        *bool
 	IsReturn       *bool
-	PrefixType     string
+	IsPerson       *bool
+	IsCompany      *bool
 }
 
 type LangCreateInput struct {
@@ -52,8 +53,8 @@ type LangCreateInput struct {
 	IsReturn                bool
 	SystemFileID            *int64
 	MemberSettingRelationID *int64
-	PrefixType              string
-	Code                    string
+	IsPerson                bool
+	IsCompany               bool
 }
 
 type LangPatch struct {
@@ -68,7 +69,8 @@ type LangPatch struct {
 	SystemFileIDSet         bool
 	SystemFileID            *int64
 	MemberSettingRelationID *int64
-	Code                    *string
+	IsPerson                *bool
+	IsCompany               *bool
 }
 
 type LangRepository struct {
@@ -104,7 +106,7 @@ func (r *LangRepository) List(ctx context.Context, k LangKind, f LangListFilter)
 		page = 1
 	}
 	offset := (page - 1) * limit
-	orderBy := langOrderBy(f.Sort, f.Order)
+	orderBy := langOrderBy(k, f.Sort, f.Order)
 
 	extraCols := langListExtraSelect(k)
 	q := fmt.Sprintf(`SELECT t.id, COALESCE(l.name, ''), t.sort_order, t.is_active, t.updated_at%s
@@ -161,15 +163,6 @@ func (r *LangRepository) Create(ctx context.Context, k LangKind, in LangCreateIn
 	if err := langValidateCreate(k, in); err != nil {
 		return 0, err
 	}
-	if k == LangPrefix {
-		taken, err := r.prefixCodeTaken(ctx, in.Code, 0)
-		if err != nil {
-			return 0, err
-		}
-		if taken {
-			return 0, ErrConflict
-		}
-	}
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -180,7 +173,7 @@ func (r *LangRepository) Create(ctx context.Context, k LangKind, in LangCreateIn
 	var maxSort int
 	maxQ := fmt.Sprintf("SELECT COALESCE(MAX(sort_order), 0) FROM %s WHERE deleted_at IS NULL", spec.table)
 	if k == LangPrefix {
-		if err := tx.QueryRowContext(ctx, maxQ+" AND type = $1::setting_prefix_type", in.PrefixType).Scan(&maxSort); err != nil {
+		if err := tx.QueryRowContext(ctx, maxQ+" AND is_person = $1 AND is_company = $2", in.IsPerson, in.IsCompany).Scan(&maxSort); err != nil {
 			return 0, err
 		}
 	} else if err := tx.QueryRowContext(ctx, maxQ).Scan(&maxSort); err != nil {
@@ -211,16 +204,7 @@ func (r *LangRepository) Update(ctx context.Context, k LangKind, id int64, p Lan
 			return ErrValidation
 		}
 	}
-	if p.Code != nil && k == LangPrefix {
-		taken, err := r.prefixCodeTaken(ctx, *p.Code, id)
-		if err != nil {
-			return err
-		}
-		if taken {
-			return ErrConflict
-		}
-	}
-	if err := langValidatePatch(k, p); err != nil {
+	if err := langValidatePatch(ctx, k, p, r.db, id); err != nil {
 		return err
 	}
 
@@ -258,9 +242,9 @@ UPDATE %s SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id =
 	return nil
 }
 
-func (r *LangRepository) Reorder(ctx context.Context, k LangKind, dragID, targetID int64, prefixType string, actorID int64) error {
+func (r *LangRepository) Reorder(ctx context.Context, k LangKind, dragID, targetID int64, prefixScope prefixReorderScope, actorID int64) error {
 	spec := langSpecFor(k)
-	nodes, err := r.loadReorderNodes(ctx, k, prefixType)
+	nodes, err := r.loadReorderNodes(ctx, k, prefixScope)
 	if err != nil {
 		return err
 	}
@@ -287,16 +271,24 @@ UPDATE %s SET sort_order = $2, updated_at = NOW(), updated_by = $3 WHERE id = $1
 	return tx.Commit()
 }
 
-func (r *LangRepository) loadReorderNodes(ctx context.Context, k LangKind, prefixType string) ([]tree.Node, error) {
+type prefixReorderScope struct {
+	IsPerson  bool
+	IsCompany bool
+}
+
+func (r *LangRepository) loadReorderNodes(ctx context.Context, k LangKind, scope prefixReorderScope) ([]tree.Node, error) {
 	spec := langSpecFor(k)
 	q := fmt.Sprintf("SELECT id, sort_order FROM %s WHERE deleted_at IS NULL", spec.table)
 	var args []any
 	if k == LangPrefix {
-		if prefixType != "person" && prefixType != "company" {
+		if scope.IsPerson == scope.IsCompany {
 			return nil, ErrInvalidReorder
 		}
-		q += " AND type = $1::setting_prefix_type"
-		args = append(args, prefixType)
+		if scope.IsPerson {
+			q += " AND is_person = TRUE"
+		} else {
+			q += " AND is_company = TRUE"
+		}
 	}
 	q += " ORDER BY sort_order ASC, id ASC"
 	rows, err := r.db.QueryContext(ctx, q, args...)
@@ -331,14 +323,6 @@ func (r *LangRepository) loadNames(ctx context.Context, spec langSpec, id int64)
 		out[loc] = name
 	}
 	return out, rows.Err()
-}
-
-func (r *LangRepository) prefixCodeTaken(ctx context.Context, code string, excludeID int64) (bool, error) {
-	var exists bool
-	err := r.db.QueryRowContext(ctx, `
-SELECT EXISTS(SELECT 1 FROM setting_prefix WHERE code = $1 AND deleted_at IS NULL AND id <> $2)`,
-		strings.TrimSpace(code), excludeID).Scan(&exists)
-	return exists, err
 }
 
 func upsertLangNames(ctx context.Context, tx *sql.Tx, spec langSpec, id int64, names map[string]string) error {
