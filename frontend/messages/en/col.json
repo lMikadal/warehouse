@@ -41,6 +41,22 @@
     "isCompany": "Company",
     "yes": "Yes",
     "no": "No",
-    "logo": "Logo"
+    "logo": "Logo",
+    "company": "Company",
+    "companyName": "Company name",
+    "subDistrict": "Sub-district",
+    "contact": "Contact",
+    "credit": "Credit",
+    "creditTerm": "Credit term (days)",
+    "creditTermNote": "Credit term note",
+    "taxNumber": "Tax ID",
+    "prefix": "Prefix",
+    "bank": "Bank",
+    "position": "Position",
+    "tel": "Phone",
+    "branch": "Branch",
+    "branchName": "Branch name",
+    "recipientName": "Recipient name",
+    "address": "Address"
   }
 }

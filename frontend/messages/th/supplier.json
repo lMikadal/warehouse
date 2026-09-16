@@ -1,0 +1,27 @@
+{
+  "supplier": {
+    "tabGeneral": "ข้อมูลทั่วไป",
+    "tabContacts": "ผู้ติดต่อ",
+    "tabFinancial": "การเงิน",
+    "contactInfo": "ที่อยู่ติดต่อ",
+    "taxInvoiceInfo": "ที่อยู่ใบกำกับภาษี",
+    "deliveryInfo": "ที่อยู่จัดส่งเอกสาร",
+    "invoiceSameAsContact": "ใช้ที่อยู่เดียวกับที่อยู่ติดต่อ",
+    "bankAccounts": "บัญชีธนาคาร",
+    "bankAccountName": "ชื่อบัญชี",
+    "bankAccountNumber": "เลขที่บัญชี",
+    "bankBranch": "สาขาธนาคาร",
+    "editContact": "ผู้ติดต่อ",
+    "editBank": "บัญชีธนาคาร",
+    "creditDays": "{days} วัน",
+    "creditNone": "ไม่มี",
+    "branchHeadquarter": "สำนักงานใหญ่",
+    "branchOffice": "สาขา",
+    "contactsTabDescription": "เพิ่มและจัดการผู้ติดต่อของคู่ค้า",
+    "banksTabDescription": "เพิ่มและจัดการบัญชีธนาคารของคู่ค้า",
+    "addContact": "เพิ่มผู้ติดต่อ",
+    "addBank": "เพิ่มบัญชีธนาคาร",
+    "emptyContacts": "ยังไม่มีผู้ติดต่อ",
+    "emptyBanks": "ยังไม่มีบัญชีธนาคาร"
+  }
+}

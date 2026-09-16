@@ -41,6 +41,22 @@
     "isCompany": "บริษัท",
     "yes": "ใช่",
     "no": "ไม่",
-    "logo": "โลโก้"
+    "logo": "โลโก้",
+    "company": "บริษัท",
+    "companyName": "ชื่อบริษัท",
+    "subDistrict": "ตำบล/แขวง",
+    "contact": "ผู้ติดต่อ",
+    "credit": "เครดิต",
+    "creditTerm": "เครดิต (วัน)",
+    "creditTermNote": "หมายเหตุเครดิต",
+    "taxNumber": "เลขประจำตัวผู้เสียภาษี",
+    "prefix": "คำนำหน้า",
+    "bank": "ธนาคาร",
+    "position": "ตำแหน่ง",
+    "tel": "โทรศัพท์",
+    "branch": "สาขา",
+    "branchName": "ชื่อสาขา",
+    "recipientName": "ชื่อติดต่อ",
+    "address": "ที่อยู่"
   }
 }

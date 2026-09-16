@@ -1,0 +1,11 @@
+{
+  "page": {
+    "supplierUser": {
+      "title": "Suppliers",
+      "desc": "Manage suppliers, addresses, contacts, and bank accounts",
+      "add": "Add supplier",
+      "create": "Add supplier",
+      "edit": "Edit supplier"
+    }
+  }
+}

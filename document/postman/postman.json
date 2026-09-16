@@ -796,6 +796,96 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Supplier",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "List suppliers",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/supplier/users?page=1&limit=10&is_active=true"
+              }
+            },
+            {
+              "name": "Get supplier",
+              "request": { "method": "GET", "url": "{{baseUrl}}/supplier/users/1" }
+            },
+            {
+              "name": "Create supplier",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sku\": \"SUP999\",\n  \"is_active\": true,\n  \"information\": {\n    \"contact\": { \"name\": \"Demo Supplier Co.\" },\n    \"tax_invoice\": { \"is_same_information\": true },\n    \"delivery\": {}\n  }\n}"
+                },
+                "url": "{{baseUrl}}/supplier/users"
+              }
+            },
+            {
+              "name": "Patch supplier is_active",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_active\": false\n}" },
+                "url": "{{baseUrl}}/supplier/users/1"
+              }
+            },
+            {
+              "name": "Create supplier contact",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Contact person\",\n  \"email\": \"contact@example.test\",\n  \"tel\": \"081-2345678\"\n}"
+                },
+                "url": "{{baseUrl}}/supplier/users/1/contacts"
+              }
+            },
+            {
+              "name": "Reorder supplier contacts",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 1,\n  \"target_id\": 2\n}"
+                },
+                "url": "{{baseUrl}}/supplier/users/1/contacts/reorder"
+              }
+            },
+            {
+              "name": "Create supplier bank",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"setting_bank_id\": 1,\n  \"name\": \"Account holder\",\n  \"number\": \"1234567890\",\n  \"is_default\": true\n}"
+                },
+                "url": "{{baseUrl}}/supplier/users/1/banks"
+              }
+            },
+            {
+              "name": "Reorder supplier banks",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 1,\n  \"target_id\": 2\n}"
+                },
+                "url": "{{baseUrl}}/supplier/users/1/banks/reorder"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

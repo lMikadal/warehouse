@@ -34,7 +34,7 @@ const PATH_OVERRIDE_BY_ID: Record<number, string> = {
   5: "/admin/system/language",
   12: "/admin/admin/users",
   13: "/admin/admin/roles",
-  22: "/admin/supplier/users",
+  22: "/admin/supplier",
   24: "/admin/location/locations",
   26: "/admin/warehouse/list",
   27: "/admin/warehouse/list/view",

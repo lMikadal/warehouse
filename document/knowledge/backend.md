@@ -23,7 +23,9 @@ backend/
 │   │   ├── auth/          # login, refresh, logout, me
 │   │   ├── health/
 │   │   ├── system/        # system_menu, system_permission, system_language (locales)
-│   │   └── admin/         # users, roles
+│   │   ├── admin/         # users, roles
+│   │   ├── setting/       # setting_* CRUD
+│   │   └── supplier/      # supplier_user aggregate
 │   └── server/
 ├── env.example
 └── go.mod
@@ -227,6 +229,8 @@ Wave 1 schema: shared enums, locale registry (`system_language` after rename), `
 
 **Upload API:** `internal/module/system` — authed routes (Bearer only, no RBAC catalog row): `POST /api/v1/system/files` (multipart `file` + `purpose`), `GET/DELETE /api/v1/system/files/:id`. Images only (jpeg/png/webp/gif, max 5MB); writes MinIO then inserts `system_file`. Response includes public `url`. Delete soft-deletes metadata and removes object when not referenced (`409` if still linked from setting bank/sale channel). **`DeleteIfUnreferenced`** — same as delete when nothing references the id (used after setting bank/sale-channel **DELETE** or **PATCH** that clears/changes `system_file_id`). **`CleanupOrphans`** / **`make backend-file-cleanup`** — removes active `system_file` rows with no FK from `IsReferenced` and `created_at` older than grace (orphans from pre-deferred upload or abandoned drafts).
 
+**Supplier module:** migration `20260917100000_supplier_module.sql` — `supplier_user`, `supplier_information` (PK `supplier_user_id` + `type`), `supplier_contact`, `supplier_bank`. Handlers: [`internal/module/supplier`](../../backend/internal/module/supplier/) on RBAC group `/api/v1/supplier` — resource prefix `/supplier/users` (`supplier.supplier_user.*`). List joins contact information for display; `GET /:id` returns aggregate (`information`, `contacts`, `banks`); create accepts nested contacts/banks; nested `POST/PATCH/DELETE` on `/:id/contacts/:contactId` and `/:id/banks/:bankId`; `PATCH /:id/contacts/reorder` and `PATCH /:id/banks/reorder` with `{ "drag_id", "target_id" }` renumber nested `sort_order` under that user (same RBAC as nested update); delete soft-deletes user + children and removes `supplier_information` rows. Dev demo: `seeds/dev/11_supplier_demo.sql` (after `10_setting_catalog.sql` + init geo).
+
 **Setting module:** goose migrations add `system_file` then `setting_*` tables. **CRUD:** `internal/module/setting` on RBAC group `/api/v1/setting` — lang resources (`banks`, `payment-methods`, `sale-channels`, `claim-reasons`, `prefixes`) with th/en `names`, flat `codes`, singleton `GET/PATCH /vat`; list filters — `payment-methods`: `is_sale`, `is_purchase`; `claim-reasons`: `is_claim`, `is_return`; `prefixes`: `is_person`, `is_company` (CHECK: at least one true; no `code`/`type` columns). RBAC catalog: **`setting.setting_vat.view`** (id 61) and **`setting.setting_vat.update`** (id 63) only — no create/delete/import/export rows; dev trim: `seeds/dev/10_setting_vat_permissions.sql`. Prefix reorder requires exactly one scope flag (`is_person` or `is_company` true) in body or query. Prefix list default sort (no column sort): `is_person DESC`, `is_company ASC`, `sort_order`, `id` — groups person vs company rows for display/reorder. Postgres seeds: init `seeds/init/09_setting_vat.sql` (singleton VAT only). Dev fixtures (mirrors `design/js/seed/setting_*.js`): `seeds/dev/09_setting_vat.sql` + `seeds/dev/10_setting_catalog.sql` (all other `setting_*` tables). Postman folder **Setting** in `document/postman/postman.json`.
 
 Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction), `08_system_address_geo.sql` (TH/SG geo demo — same IDs as `design/js/seed/system_*`; idempotent upserts).
@@ -255,7 +259,7 @@ Test: `01_admin_bootstrap.sql` (demo users/roles).
 
 ## Postman
 
-`document/postman/postman.json` — folders: Health, Auth, System, Admin, Website. `baseUrl` = `http://localhost:1323/api/v1`.
+`document/postman/postman.json` — folders: Health, Auth, System, Admin, Website, Setting, Supplier. `baseUrl` = `http://localhost:1323/api/v1`.
 
 ## Docs
 

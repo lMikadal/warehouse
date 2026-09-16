@@ -24,7 +24,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `product_list` | TBD | active | [ ] | No `sort_order` |
 | `product_item` | TBD | active | [ ] | |
 | `product_attribute` | TBD | active, move | [ ] | Tree; attribute UI may restrict drag scope |
-| `supplier_user` | TBD | active | [ ] | No list `sort_order` |
+| `supplier_user` | `/supplier/users` | active | [x] | No list `sort_order` |
 | `supplier_bank` | TBD | active | [ ] | Reorder parent-scoped — see §D |
 | `warehouse_list` | TBD | active, move | [ ] | Tree |
 | `setting_bank` | `/setting/banks` | active, reorder | [x] | |
@@ -79,7 +79,7 @@ Shared logic: [`backend/internal/tree/`](../../../backend/internal/tree/).
 | `admin_user_session.is_active` | Revoked by auth flows only |
 | `system_language.is_default` | Exclusive boolean; partial `PATCH` + clear other rows (with standard `is_active` on same resource) |
 | `*_file` (`product_item_file`, `member_file`, `purchase_order_file`, …) | Gallery `sort_order` on parent resource |
-| `supplier_contact`, `supplier_bank` | `sort_order` under `supplier_user_id` |
+| `supplier_contact`, `supplier_bank` | `sort_order` under `supplier_user_id` — **contact** reorder: `PATCH /supplier/users/:id/contacts/reorder` [x]; **bank** reorder: `PATCH /supplier/users/:id/banks/reorder` [x] |
 | `order_payment_method` | Junction; validates linked `setting_payment_method.is_active` |
 | Tables without list API yet | YAGNI — add mutations when the list module ships |
 

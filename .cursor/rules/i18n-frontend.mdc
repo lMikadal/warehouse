@@ -1,0 +1,52 @@
+---
+description: Frontend next-intl — message namespaces, nested keys, and design vs production copy.
+globs: frontend/**
+alwaysApply: false
+---
+
+# Frontend i18n (next-intl)
+
+Applies to `frontend/**` route pages, molecules, and new keys under `frontend/messages/`.
+
+## Do not copy design key paths literally
+
+`design/js/i18n/` uses **flat dotted keys** in one object (e.g. `crud.create`, `crud.save`, `crud.empty`). Production merges **JSON fragments** in `frontend/messages/{th,en}/` via [`load-messages.ts`](../../frontend/messages/load-messages.ts). The same English label often lives under a **different path**.
+
+With `useTranslations("crud")`, the argument is a path **inside** the `crud` object in [`crud.json`](../../frontend/messages/th/crud.json), not the design string after the `crud.` prefix.
+
+| Design / mock (`data-i18n="crud.create"`) | Frontend (`useTranslations("crud")`) |
+|-------------------------------------------|--------------------------------------|
+| `crud.create` | `tCrud("btn.create")` |
+| `crud.save` / `crud.cancel` / `crud.back` | `tCrud("btn.save")`, `btn.cancel`, `btn.back` |
+| `crud.created` / `crud.saved` / `crud.deleted` | `tCrud("toast.created")`, `toast.saved`, `toast.deleted` |
+| `crud.empty` | `useTranslations("error")` → `tError("noData")` |
+| `crud.actions` | `tCrud("table.actions")` |
+| `crud.sortAsc` / sort helpers | `tCrud("sort.asc")`, `sort.desc`, `sort.none` |
+
+There is **no** `crud.add`, `crud.loading`, or top-level `crud.save` in production JSON — using them triggers `MISSING_MESSAGE` at runtime (often first seen on locale `th`).
+
+## Before adding `t("…")` or `tCrud("…")`
+
+1. Grep an existing backoffice list or form (e.g. `setting-lang-list.tsx`, `admin-user-list.tsx`) for the same UX.
+2. Open the matching fragment file (`crud.json`, `error.json`, `form.json`, `page-*.json`, `col.json`) for **both** `th` and `en`.
+3. Add new keys only when copy is truly new — prefer extending the correct fragment over inventing parallel keys.
+
+## Namespaces
+
+- **Columns:** `useTranslations("col")` — shared field labels.
+- **CRUD chrome:** `useTranslations("crud")` — buttons, pagination, sort aria, toasts, delete confirm.
+- **Validation / empty table:** `useTranslations("error")` — e.g. `noData`, `required`.
+- **Forms:** `useTranslations("form")` — placeholders (`form.placeholder.input` / `select`).
+- **Page titles:** `useTranslations("page.<feature>")` — see `page-setting.json`, `page-supplier.json`, etc.
+
+Module-specific copy belongs in a dedicated fragment (e.g. `supplier.json`) registered in `load-messages.ts`, not duplicated under `crud`.
+
+## List loading row
+
+Other lists use an ellipsis (`…`) in the loading table cell, not an i18n key. Empty state uses `error.noData`.
+
+## Checklist when porting from design
+
+- [ ] Map every `crud.*` design key through the table above or `messages/*/crud.json`.
+- [ ] Run the page with locale `th` and confirm the console has no `MISSING_MESSAGE`.
+- [ ] Add keys to **both** `th` and `en` fragments.

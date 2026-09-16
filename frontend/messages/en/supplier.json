@@ -1,0 +1,27 @@
+{
+  "supplier": {
+    "tabGeneral": "General",
+    "tabContacts": "Contacts",
+    "tabFinancial": "Financial",
+    "contactInfo": "Contact address",
+    "taxInvoiceInfo": "Tax invoice address",
+    "deliveryInfo": "Document delivery address",
+    "invoiceSameAsContact": "Same as contact address",
+    "bankAccounts": "Bank accounts",
+    "bankAccountName": "Account name",
+    "bankAccountNumber": "Account number",
+    "bankBranch": "Bank branch",
+    "editContact": "Contact",
+    "editBank": "Bank account",
+    "creditDays": "{days} days",
+    "creditNone": "None",
+    "branchHeadquarter": "Head office",
+    "branchOffice": "Branch",
+    "contactsTabDescription": "Add and manage supplier contacts",
+    "banksTabDescription": "Add and manage supplier bank accounts",
+    "addContact": "Add contact",
+    "addBank": "Add bank account",
+    "emptyContacts": "No contacts yet",
+    "emptyBanks": "No bank accounts yet"
+  }
+}
