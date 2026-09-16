@@ -57,4 +57,8 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "setting.setting_vat.update" {
 		t.Fatalf("setting vat patch: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/location/locations/1")
+	if !ok || code != "location.location_location.view" {
+		t.Fatalf("location get: got %q %v", code, ok)
+	}
 }

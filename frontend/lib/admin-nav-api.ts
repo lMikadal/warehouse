@@ -165,3 +165,41 @@ export function filterAdminNavTree(
 
   return walk(nodes);
 }
+
+/** Location rows merged under map-pin menu (system_menu id 23). */
+export const LOCATION_MENU_GROUP_ID = "23";
+
+export type LocationNavMergeItem = {
+  id: number;
+  name: string;
+  names?: { th?: string; en?: string };
+};
+
+export function mergeLocationNavNodes(
+  tree: AdminNavNode[],
+  items: LocationNavMergeItem[]
+): AdminNavNode[] {
+  if (items.length === 0) return tree;
+  const extra: AdminNavNode[] = items.map((item) => {
+    const th = item.names?.th?.trim() || item.name;
+    const en = item.names?.en?.trim() || item.name;
+    return {
+      id: `loc:${item.id}`,
+      labels: { th, en },
+      href: `/admin/location/${item.id}`,
+    };
+  });
+  return tree.map((node) => {
+    let children = node.children;
+    if (children?.length) {
+      children = mergeLocationNavNodes(children, items);
+    }
+    if (node.icon === "map-pin" || node.id === LOCATION_MENU_GROUP_ID) {
+      children = [...(children ?? []), ...extra];
+    }
+    if (children !== node.children) {
+      return { ...node, children };
+    }
+    return node;
+  });
+}

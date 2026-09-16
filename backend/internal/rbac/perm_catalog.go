@@ -31,6 +31,7 @@ var CatalogPermPages = []PermPage{
 	{Module: "setting", Type: "setting_claim_reason", Resource: "/api/v1/setting/claim-reasons"},
 	{Module: "setting", Type: "setting_prefix", Resource: "/api/v1/setting/prefixes"},
 	{Module: "supplier", Type: "supplier_user", Resource: "/api/v1/supplier/users"},
+	{Module: "location", Type: "location_location", Resource: "/api/v1/location/locations"},
 }
 
 func routePermPages() []PermPage {

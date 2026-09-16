@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server";
 import { AdminBackofficeShell } from "@/components/organisms/admin-backoffice-shell";
 import { AdminBackofficeActorProvider } from "@/lib/admin-backoffice-actor-context";
 import { redirect } from "@/i18n/navigation";
+import { mergeLocationNavNodes } from "@/lib/admin-nav-api";
 import { SSR_REFRESH_TRIED_COOKIE } from "@/lib/auth-cookies";
 import {
   fetchAuthMe,
@@ -14,6 +15,9 @@ import {
   getAccessToken,
   getRefreshToken,
 } from "@/lib/auth-server";
+import { fetchActiveLocationsForNavServer } from "@/lib/location-api-server";
+
+const LOCATION_VIEW_PERM = "location.location_location.view";
 
 type Props = {
   children: ReactNode;
@@ -55,8 +59,14 @@ export default async function BackofficeLayout({ children }: Props) {
     return null;
   }
 
-  const { tree } = nav;
+  const { tree: baseTree } = nav;
   const { username } = user;
+
+  let tree = baseTree;
+  if (permissionCodes.includes(LOCATION_VIEW_PERM)) {
+    const locations = await fetchActiveLocationsForNavServer(token, locale);
+    tree = mergeLocationNavNodes(baseTree, locations);
+  }
 
   return (
     <AdminBackofficeActorProvider user={user} permissionCodes={permissionCodes}>

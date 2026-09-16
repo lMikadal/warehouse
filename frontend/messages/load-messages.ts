@@ -7,6 +7,7 @@ import enError from "./en/error.json";
 import enForm from "./en/form.json";
 import enPageAuth from "./en/page-auth.json";
 import enPageSetting from "./en/page-setting.json";
+import enPageLocation from "./en/page-location.json";
 import enPageSupplier from "./en/page-supplier.json";
 import enPageSystem from "./en/page-system.json";
 import enSupplier from "./en/supplier.json";
@@ -20,6 +21,7 @@ import thError from "./th/error.json";
 import thForm from "./th/form.json";
 import thPageAuth from "./th/page-auth.json";
 import thPageSetting from "./th/page-setting.json";
+import thPageLocation from "./th/page-location.json";
 import thPageSupplier from "./th/page-supplier.json";
 import thPageSystem from "./th/page-system.json";
 import thSupplier from "./th/supplier.json";
@@ -61,6 +63,7 @@ const FRAGMENTS: MessageTree[] = [
   thPageAuth,
   thPageSystem,
   thPageSetting,
+  thPageLocation,
   thPageSupplier,
   thSupplier,
   thUser,
@@ -77,6 +80,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageAuth,
   enPageSystem,
   enPageSetting,
+  enPageLocation,
   enPageSupplier,
   enSupplier,
   enUser,

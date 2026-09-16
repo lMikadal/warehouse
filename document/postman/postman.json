@@ -798,6 +798,89 @@
       ]
     },
     {
+      "name": "Location",
+      "item": [
+        {
+          "name": "Locations",
+          "item": [
+            {
+              "name": "List locations",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/location/locations?page=1&limit=10"
+              }
+            },
+            {
+              "name": "List active locations (nav)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/location/locations?page=1&limit=100&is_active=true"
+              }
+            },
+            {
+              "name": "Create location",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"names\": { \"th\": \"โกดังทดสอบ\", \"en\": \"Test warehouse\" }\n}"
+                },
+                "url": "{{baseUrl}}/location/locations"
+              }
+            },
+            {
+              "name": "Get location",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/location/locations/1"
+              }
+            },
+            {
+              "name": "Patch location",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": false\n}"
+                },
+                "url": "{{baseUrl}}/location/locations/1"
+              }
+            },
+            {
+              "name": "Reorder locations",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/location/locations/reorder"
+              }
+            },
+            {
+              "name": "Delete location",
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/location/locations/1"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Supplier",
       "item": [
         {

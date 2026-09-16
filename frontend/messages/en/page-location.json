@@ -1,0 +1,10 @@
+{
+  "page": {
+    "locationLocation": {
+      "title": "Location",
+      "description": "Manage named locations used across the system",
+      "viewDescription": "Location detail",
+      "comingSoon": "Coming soon"
+    }
+  }
+}

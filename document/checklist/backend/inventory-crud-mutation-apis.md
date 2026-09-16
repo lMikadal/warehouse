@@ -13,7 +13,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `admin_role` | `/admin/roles` | active | [x] | Partial `PATCH` with `{ "is_active" }` |
 | `admin_user` | `/admin/users` | — | [x] | Uses **`status`** enum — `?status=` + `PATCH { "status" }`, not `is_active` |
 | `admin_user_session` | — | — | — | Internal auth; no public toggle |
-| `location_location` | TBD | active, reorder | [ ] | |
+| `location_location` | `/location/locations` | active, reorder | [x] | Sidebar inject is frontend-only |
 | `member_tier` | TBD | active, move | [ ] | Tree |
 | `member_user` | TBD | active | [ ] | |
 | `member_discount` | TBD | active | [ ] | |
@@ -43,7 +43,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 
 | Table | Reorder scope | Status | Notes |
 |-------|---------------|--------|-------|
-| `location_location` | global | [ ] | |
+| `location_location` | global | [x] | |
 | `setting_bank` | global | [x] | |
 | `setting_code` | global | [x] | |
 | `setting_claim_reason` | global | [x] | |
