@@ -25,7 +25,7 @@ CRUD mockup pages for sidebar **ตั้งค่า** → seven leaves (`setti
 - [x] Staff role seed has no `setting.*.view` permissions (Settings group hidden for `staff`/`staff`)
 - [x] VAT page: single row, no Add/Export/Delete; edit modal works
 - [x] Other setting pages: no Export/Import header buttons
-- [x] Permission seed: no `setting.*.import` / `setting.*.export`; `setting_vat` has no create/delete
+- [x] Permission seed: no `setting.*.import` / `setting.*.export`; `setting_vat` has view + update only (Postgres init + design seed aligned)
 - [x] `setting_vat`: no `sort_order` in schema → `sortable: false` (global rule in `.cursor/rules/tables.mdc`)
 
 ## Out of scope

@@ -223,6 +223,29 @@ export function buildPermissionCatalog(): {
   let nextId = 25;
 
   for (const page of PERM_PAGES) {
+    if (page.type === "setting_vat") {
+      const vatPairs: { action: PermAction; id: number }[] = [
+        { action: "view", id: 61 },
+        { action: "update", id: 63 },
+      ];
+      for (const { action, id } of vatPairs) {
+        const code = `${page.permModule}.${page.type}.${action}`;
+        rows.push({
+          id,
+          code,
+          module: page.permModule,
+          type: page.type,
+          action,
+          resource: page.resource,
+          method: PERM_METHOD[action],
+          is_active: !GLOBAL_INACTIVE[action],
+        });
+        codeToId.set(code, id);
+      }
+      nextId = 67;
+      continue;
+    }
+
     const waveKey = `${page.permModule}.${page.type}`;
     let startId = WAVE_START_ID[waveKey];
     if (startId == null) {

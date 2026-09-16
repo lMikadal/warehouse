@@ -1136,6 +1136,7 @@
     sortable: false,
     showSearch: false,
     showPagination: false,
+    statusSwitch: true,
     columns: [
       {
         id: "vat_type",
@@ -1145,6 +1146,13 @@
         },
       },
       { id: "rate", labelKey: "col.rate" },
+      {
+        id: "is_active",
+        labelKey: "col.status",
+        render: function (row) {
+          return statusSwitchHtml(row);
+        },
+      },
       updatedAtColumn,
     ],
     listRows: function () {
@@ -1176,11 +1184,16 @@
         },
       },
       { key: "rate", labelKey: "col.rate", type: "number", required: true },
+      { key: "is_active", labelKey: "col.status", type: "switch" },
     ],
     getFormValues: function (id) {
-      if (!id) return { vat_type: "exclude", rate: "7" };
+      if (!id) return { vat_type: "exclude", rate: "7", is_active: true };
       var r = global.store.getById("setting_vat", id);
-      return { vat_type: r.vat_type, rate: String(r.rate) };
+      return {
+        vat_type: r.vat_type,
+        rate: String(r.rate),
+        is_active: r.is_active !== false,
+      };
     },
     validate: function (values) {
       return requiredValidate(values, REGISTRY.setting_vat.formFields);
@@ -1190,6 +1203,7 @@
       global.store.update("setting_vat", id, {
         vat_type: values.vat_type,
         rate: Number(values.rate),
+        is_active: !!values.is_active,
         updated_at: now(),
       });
     },

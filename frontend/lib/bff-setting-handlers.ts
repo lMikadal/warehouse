@@ -111,6 +111,6 @@ export async function handleSettingVatPatch(
   if (!parsed.ok) return parsed.response;
   return proxyAuthedBackendJson(request, `/v1/setting/vat/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(parsed.body),
+    body: parsed.body,
   });
 }

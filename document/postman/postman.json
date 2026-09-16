@@ -690,7 +690,7 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"vat_type\": \"exclude\",\n  \"rate\": 7\n}"
+                  "raw": "{\n  \"vat_type\": \"exclude\",\n  \"rate\": 7,\n  \"is_active\": true\n}"
                 },
                 "url": "{{baseUrl}}/setting/vat/1"
               }

@@ -51,26 +51,35 @@
   var codeToId = {};
   var nextPermId = 1;
 
+  function pushPermRow(page, action, id) {
+    var code = page.permModule + "." + page.type + "." + action;
+    rows.push({
+      id: id,
+      code: code,
+      module: page.permModule,
+      type: page.type,
+      action: action,
+      resource: page.resource,
+      method: METHOD[action],
+      is_active: !GLOBAL_INACTIVE[action],
+      created_at: TS,
+      updated_at: TS,
+      deleted_at: null,
+      created_by: 1,
+      updated_by: 1,
+    });
+    codeToId[code] = id;
+  }
+
   PERM_PAGES.forEach(function (page) {
+    if (page.type === "setting_vat") {
+      pushPermRow(page, "view", 61);
+      pushPermRow(page, "update", 63);
+      nextPermId = 67;
+      return;
+    }
     ACTIONS.forEach(function (action) {
-      var code = page.permModule + "." + page.type + "." + action;
-      var row = {
-        id: nextPermId,
-        code: code,
-        module: page.permModule,
-        type: page.type,
-        action: action,
-        resource: page.resource,
-        method: METHOD[action],
-        is_active: !GLOBAL_INACTIVE[action],
-        created_at: TS,
-        updated_at: TS,
-        deleted_at: null,
-        created_by: 1,
-        updated_by: 1,
-      };
-      rows.push(row);
-      codeToId[code] = nextPermId;
+      pushPermRow(page, action, nextPermId);
       nextPermId += 1;
     });
   });

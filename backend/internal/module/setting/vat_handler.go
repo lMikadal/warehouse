@@ -22,6 +22,7 @@ type vatItem struct {
 	ID        int64     `json:"id"`
 	VatType   string    `json:"vat_type"`
 	Rate      float64   `json:"rate"`
+	IsActive  bool      `json:"is_active"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
@@ -43,13 +44,14 @@ func (h *VatHandler) patch(c *echo.Context) error {
 		return err
 	}
 	var body struct {
-		VatType *string  `json:"vat_type"`
-		Rate    *float64 `json:"rate"`
+		VatType  *string  `json:"vat_type"`
+		Rate     *float64 `json:"rate"`
+		IsActive *bool    `json:"is_active"`
 	}
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	err = h.repo.Update(c.Request().Context(), id, body.VatType, body.Rate, actorID(c))
+	err = h.repo.Update(c.Request().Context(), id, body.VatType, body.Rate, body.IsActive, actorID(c))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})

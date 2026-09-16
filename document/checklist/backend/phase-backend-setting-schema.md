@@ -8,6 +8,7 @@ Goose schema for sidebar **ตั้งค่า** (7 leaves) and central upload
 - [x] MinIO in compose + `S3_*` env for backend
 - [x] Goose: `20260317100000_system_file.sql`
 - [x] Goose: `20260317110000_setting_module.sql` (deferred FK on `setting_sale_channel.member_setting_relation_id`)
+- [x] Goose: `20260916100000_setting_vat_is_active.sql` (`setting_vat.is_active`)
 
 ## Required checklist
 

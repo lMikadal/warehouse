@@ -1,9 +1,9 @@
 import { routing } from "@/i18n/routing";
 
-import { SettingVatPanel } from "../_shared/setting-vat-panel";
+import { SettingVatList } from "../_shared/setting-vat-list";
 
 export default function SettingVatPage() {
-  return <SettingVatPanel />;
+  return <SettingVatList />;
 }
 
 export function generateStaticParams() {

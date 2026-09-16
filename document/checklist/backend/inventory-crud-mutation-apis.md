@@ -33,6 +33,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `setting_payment_method` | `/setting/payment-methods` | active, reorder | [x] | Extra switches `is_sale` / `is_purchase` |
 | `setting_prefix` | `/setting/prefixes` | active, reorder | [x] | Reorder scoped by `type` |
 | `setting_sale_channel` | `/setting/sale-channels` | active, reorder | [x] | |
+| `setting_vat` | `/setting/vat` | active only | [x] | Singleton; partial `PATCH` includes `is_active` (no list filter) |
 | `system_country` | TBD | active, reorder | [x] | Geo root |
 | `system_province` | TBD | active, reorder | [x] | Scope: `system_country_id` |
 | `system_district` | TBD | active, reorder | [x] | Scope: `system_province_id` |

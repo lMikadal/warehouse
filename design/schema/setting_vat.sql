@@ -7,6 +7,7 @@ CREATE TABLE setting_vat (
     id          BIGSERIAL        PRIMARY KEY,              -- surrogate PK
     vat_type    setting_vat_type NOT NULL DEFAULT 'exclude', -- price includes VAT or not
     rate        NUMERIC(5,2)     NOT NULL DEFAULT 0,       -- VAT percentage e.g. 7.00
+    is_active   BOOLEAN          NOT NULL DEFAULT TRUE,
     deleted_at  TIMESTAMPTZ,
     created_at  TIMESTAMPTZ      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMPTZ      NOT NULL DEFAULT CURRENT_TIMESTAMP,

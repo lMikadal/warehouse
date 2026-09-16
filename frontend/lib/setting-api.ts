@@ -45,6 +45,7 @@ export type SettingVatItem = {
   id: number;
   vat_type: "exclude" | "include";
   rate: number;
+  is_active: boolean;
   updated_at: string;
 };
 
@@ -189,7 +190,7 @@ export async function fetchSettingVat(locale: string) {
 export async function patchSettingVat(
   locale: string,
   id: number,
-  body: Partial<{ vat_type: string; rate: number }>
+  body: Partial<{ vat_type: string; rate: number; is_active: boolean }>
 ) {
   const res = await authFetch(`/api/v1/auth/proxy/setting/vat/${id}`, {
     method: "PATCH",

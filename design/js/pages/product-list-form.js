@@ -2354,7 +2354,7 @@
   function activeSettingVat() {
     if (!global.store) return { vat_type: "exclude", rate: 0 };
     var rows = global.store.getAll("setting_vat").filter(function (r) {
-      return r.deleted_at == null;
+      return r.deleted_at == null && r.is_active !== false;
     });
     if (!rows.length) return { vat_type: "exclude", rate: 0 };
     rows.sort(function (a, b) {
