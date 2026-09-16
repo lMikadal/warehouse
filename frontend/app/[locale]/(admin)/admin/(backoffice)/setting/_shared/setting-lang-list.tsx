@@ -311,8 +311,8 @@ export function SettingLangList({ config }: Props) {
         description={tPage(`${config.pageKey}.description`)}
         actions={
           perms.create ? (
-            <Button type="button" onClick={openCreate}>
-              <Plus className="text-current" />
+            <Button type="button" size="lg" onClick={openCreate}>
+              <Plus className="size-4" aria-hidden />
               {tCrud("btn.create")}
             </Button>
           ) : null

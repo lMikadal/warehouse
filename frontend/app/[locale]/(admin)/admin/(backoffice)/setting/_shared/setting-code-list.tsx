@@ -161,6 +161,7 @@ export function SettingCodeList() {
           perms.create ? (
             <Button
               type="button"
+              size="lg"
               onClick={() => {
                 setCode("");
                 setValue("");
@@ -168,7 +169,7 @@ export function SettingCodeList() {
                 setEditId("new");
               }}
             >
-              <Plus className="text-current" />
+              <Plus className="size-4" aria-hidden />
               {tCrud("btn.create")}
             </Button>
           ) : null
