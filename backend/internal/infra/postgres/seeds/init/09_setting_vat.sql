@@ -1,4 +1,5 @@
--- Dev re-run of VAT singleton (keep in sync with init/09_setting_vat.sql).
+-- Init VAT singleton baseline (idempotent).
+-- Requires: migration 20260317110000_setting_module.sql.
 
 INSERT INTO setting_vat (id, vat_type, rate, created_at, updated_at)
 VALUES (1, 'exclude', 7.00, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')

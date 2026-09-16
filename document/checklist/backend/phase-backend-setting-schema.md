@@ -14,9 +14,9 @@ Goose schema for sidebar **ตั้งค่า** (7 leaves) and central upload
 - [x] `make backend-migrate-up` applies on clean DB after prior waves
 - [x] `make backend-test` passes
 - [x] Setting CRUD handlers + Postman (CRUD wave)
+- [x] Postgres seeds: init `09_setting_vat.sql`; dev `09_setting_vat.sql` + `10_setting_catalog.sql`
 
 ## Out of scope (this phase)
 
 - Go upload API → MinIO
 - Production frontend `/admin/setting/*` (see `phase-frontend-setting-crud.md`)
-- Postgres dev seed rows for setting lists (design seeds remain mockup source)

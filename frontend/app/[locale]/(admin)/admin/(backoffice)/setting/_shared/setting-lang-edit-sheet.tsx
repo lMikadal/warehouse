@@ -164,11 +164,15 @@ function SettingLangEditForm({
 
   return (
     <CrudFormSheet open onOpenChange={(o) => !o && onClose()}>
-      <form onSubmit={submit}>
+      <form
+        className="flex min-h-0 flex-1 flex-col"
+        onSubmit={submit}
+        noValidate
+      >
         <CrudFormSheetHeader
           title={mode === "edit" ? pageTitle : tCrud("btn.create")}
         />
-        <CrudFormSheetBody>
+        <CrudFormSheetBody className="space-y-4">
           {config.prefixTypeFilter && mode === "create" && (
             <Field className="gap-1.5">
               <FieldLabel>{tCol("type")}</FieldLabel>

@@ -4,7 +4,7 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ComponentProps, useCallback, useEffect, useState } from "react";
+import { type ComponentProps, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
@@ -60,7 +60,6 @@ export function SettingCodeList() {
   const tPage = useTranslations("page");
   const tCol = useTranslations("col");
   const tCrud = useTranslations("crud");
-  const tError = useTranslations("error");
   const t = useTranslations();
   const perms = useResourcePermissions("setting", "setting_code");
   const listQuery = useCrudListQuery();
@@ -76,14 +75,36 @@ export function SettingCodeList() {
   const [isActive, setIsActive] = useState(true);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
+  const { sort, order } = listQuery.sortParamsForFetch;
+  const listFetchKey = useMemo(
+    () =>
+      [
+        locale,
+        listQuery.page,
+        listQuery.pageSize,
+        listQuery.debouncedQuery,
+        listQuery.isActiveFromStatus ?? "",
+        sort ?? "",
+        order ?? "",
+      ].join("|"),
+    [
+      locale,
+      listQuery.page,
+      listQuery.pageSize,
+      listQuery.debouncedQuery,
+      listQuery.isActiveFromStatus,
+      sort,
+      order,
+    ]
+  );
+
+  const load = async () => {
     setLoading(true);
     try {
-      const { sort, order } = listQuery.sortParamsForFetch;
       const res = await fetchSettingCodes(locale, {
         page: listQuery.page,
         limit: listQuery.pageSize,
-        search: listQuery.debouncedQuery,
+        search: listQuery.debouncedQuery.trim() || undefined,
         isActive: listQuery.isActiveFromStatus,
         sort: sort ?? undefined,
         order: order ?? undefined,
@@ -95,13 +116,22 @@ export function SettingCodeList() {
     } finally {
       setLoading(false);
     }
-  }, [listQuery, locale, t]);
+  };
 
   useEffect(() => {
+    let cancelled = false;
     queueMicrotask(() => {
-      void load();
+      void (async () => {
+        if (cancelled) return;
+        await load();
+      })();
     });
-  }, [load]);
+    return () => {
+      cancelled = true;
+    };
+    // listFetchKey encodes all list query inputs; load is not stable and must not be a dep
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [listFetchKey]);
 
   const openEdit = async (row: SettingCodeItem) => {
     const full = await fetchSettingCodeById(locale, row.id);
@@ -254,6 +284,8 @@ export function SettingCodeList() {
       {editId != null && (
         <CrudFormSheet open onOpenChange={(o) => !o && setEditId(null)}>
           <form
+            className="flex min-h-0 flex-1 flex-col"
+            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               void save();
