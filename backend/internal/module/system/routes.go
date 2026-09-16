@@ -2,6 +2,12 @@ package system
 
 import "github.com/labstack/echo/v5"
 
+func RegisterFileRoutes(g *echo.Group, fh *FileHandler) {
+	g.POST("/system/files", fh.upload)
+	g.GET("/system/files/:id", fh.get)
+	g.DELETE("/system/files/:id", fh.delete)
+}
+
 func RegisterRoutes(g *echo.Group, menuSvc *MenuService, menuPerm *MenuPermissionRepository, permSvc *PermissionService, langHandler *LanguageHandler, geoRepo *AddressGeoRepository) {
 	mh := newMenuHandler(menuSvc, menuPerm)
 	ph := newPermissionHandler(permSvc)

@@ -10,6 +10,8 @@ export type StatusSwitchFieldProps = {
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
+  /** When set, shows label on the left and switch on the right (form sheets). */
+  labelKey?: string;
 };
 
 export function StatusSwitchField({
@@ -17,17 +19,30 @@ export function StatusSwitchField({
   onCheckedChange,
   disabled,
   className,
+  labelKey,
 }: StatusSwitchFieldProps) {
-  const t = useTranslations("col");
-  const ariaLabel = t("status");
+  const tCol = useTranslations("col");
+  const t = useTranslations();
+  const ariaLabel = labelKey ? t(labelKey) : tCol("status");
 
-  return (
+  const switchEl = (
     <Switch
       checked={checked}
       onCheckedChange={onCheckedChange}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={cn(className)}
+      className={cn(labelKey ? undefined : className)}
     />
+  );
+
+  if (!labelKey) {
+    return switchEl;
+  }
+
+  return (
+    <div className={cn("flex items-center justify-between gap-4 pt-1", className)}>
+      <span className="text-sm font-medium">{t(labelKey)}</span>
+      {switchEl}
+    </div>
   );
 }

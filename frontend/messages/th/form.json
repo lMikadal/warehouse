@@ -19,6 +19,18 @@
     "password": {
       "hide": "ซ่อนรหัสผ่าน",
       "show": "แสดงรหัสผ่าน"
+    },
+    "upload": {
+      "hint": "อัปโหลดรูป",
+      "change": "เปลี่ยนรูป",
+      "cover": "ปก",
+      "remove": "ลบรูป",
+      "view": "ดูรูป",
+      "reorder": "ลากเพื่อเรียงลำดับ",
+      "limits": "JPEG, PNG, WebP, GIF สูงสุด 5 MB",
+      "invalidType": "ชนิดไฟล์ไม่รองรับ",
+      "tooLarge": "ไฟล์ใหญ่เกิน 5 MB",
+      "maxFiles": "อัปโหลดได้ไม่เกิน {max} รูป"
     }
   },
   "search": {

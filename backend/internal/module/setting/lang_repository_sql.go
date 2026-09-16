@@ -9,6 +9,8 @@ import (
 
 func langListExtraSelect(k LangKind) string {
 	switch k {
+	case LangBank:
+		return ", t.system_file_id"
 	case LangPaymentMethod:
 		return ", t.is_sale, t.is_purchase"
 	case LangSaleChannel:
@@ -77,6 +79,13 @@ func scanLangListRow(rows *sql.Rows, k LangKind) (LangRow, error) {
 	var row LangRow
 	var err error
 	switch k {
+	case LangBank:
+		var fileID sql.NullInt64
+		err = rows.Scan(&row.ID, &row.Name, &row.SortOrder, &row.IsActive, &row.UpdatedAt, &fileID)
+		if fileID.Valid {
+			v := fileID.Int64
+			row.SystemFileID = &v
+		}
 	case LangPaymentMethod:
 		err = rows.Scan(&row.ID, &row.Name, &row.SortOrder, &row.IsActive, &row.UpdatedAt, &row.IsSale, &row.IsPurchase)
 	case LangSaleChannel:
@@ -104,6 +113,13 @@ func scanLangListRowSingle(row *sql.Row, k LangKind) (LangRow, error) {
 	var r LangRow
 	var err error
 	switch k {
+	case LangBank:
+		var fileID sql.NullInt64
+		err = row.Scan(&r.ID, &r.Name, &r.SortOrder, &r.IsActive, &r.UpdatedAt, &fileID)
+		if fileID.Valid {
+			v := fileID.Int64
+			r.SystemFileID = &v
+		}
 	case LangPaymentMethod:
 		err = row.Scan(&r.ID, &r.Name, &r.SortOrder, &r.IsActive, &r.UpdatedAt, &r.IsSale, &r.IsPurchase)
 	case LangSaleChannel:
@@ -232,7 +248,7 @@ func langUpdateBase(ctx context.Context, tx *sql.Tx, k LangKind, id int64, p Lan
 			args = append(args, *p.IsDefault)
 			n++
 		}
-		if p.SystemFileID != nil {
+		if p.SystemFileIDSet {
 			sets = append(sets, fmt.Sprintf("system_file_id = $%d", n))
 			args = append(args, nullInt64Ptr(p.SystemFileID))
 			n++
@@ -277,7 +293,7 @@ func langUpdateBase(ctx context.Context, tx *sql.Tx, k LangKind, id int64, p Lan
 			n++
 		}
 	case LangBank:
-		if p.SystemFileID != nil {
+		if p.SystemFileIDSet {
 			sets = append(sets, fmt.Sprintf("system_file_id = $%d", n))
 			args = append(args, nullInt64Ptr(p.SystemFileID))
 			n++

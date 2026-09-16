@@ -6,12 +6,12 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func RegisterRoutes(g *echo.Group, db *sql.DB) {
+func RegisterRoutes(g *echo.Group, db *sql.DB, purger FilePurger) {
 	langRepo := NewLangRepository(db)
 	codeRepo := NewCodeRepository(db)
 	vatRepo := NewVatRepository(db)
 
-	bank := NewLangHandler(LangBank, langRepo)
+	bank := NewLangHandler(LangBank, langRepo, purger)
 	g.GET("/banks", bank.list)
 	g.GET("/banks/:id", bank.get)
 	g.POST("/banks", bank.create)
@@ -19,7 +19,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	g.PATCH("/banks/:id", bank.patch)
 	g.DELETE("/banks/:id", bank.delete)
 
-	pay := NewLangHandler(LangPaymentMethod, langRepo)
+	pay := NewLangHandler(LangPaymentMethod, langRepo, nil)
 	g.GET("/payment-methods", pay.list)
 	g.GET("/payment-methods/:id", pay.get)
 	g.POST("/payment-methods", pay.create)
@@ -27,7 +27,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	g.PATCH("/payment-methods/:id", pay.patch)
 	g.DELETE("/payment-methods/:id", pay.delete)
 
-	sale := NewLangHandler(LangSaleChannel, langRepo)
+	sale := NewLangHandler(LangSaleChannel, langRepo, purger)
 	g.GET("/sale-channels", sale.list)
 	g.GET("/sale-channels/:id", sale.get)
 	g.POST("/sale-channels", sale.create)
@@ -35,7 +35,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	g.PATCH("/sale-channels/:id", sale.patch)
 	g.DELETE("/sale-channels/:id", sale.delete)
 
-	claim := NewLangHandler(LangClaimReason, langRepo)
+	claim := NewLangHandler(LangClaimReason, langRepo, nil)
 	g.GET("/claim-reasons", claim.list)
 	g.GET("/claim-reasons/:id", claim.get)
 	g.POST("/claim-reasons", claim.create)
@@ -43,7 +43,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	g.PATCH("/claim-reasons/:id", claim.patch)
 	g.DELETE("/claim-reasons/:id", claim.delete)
 
-	prefix := NewLangHandler(LangPrefix, langRepo)
+	prefix := NewLangHandler(LangPrefix, langRepo, nil)
 	g.GET("/prefixes", prefix.list)
 	g.GET("/prefixes/:id", prefix.get)
 	g.POST("/prefixes", prefix.create)

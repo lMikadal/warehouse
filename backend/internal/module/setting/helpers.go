@@ -2,6 +2,7 @@ package setting
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -10,6 +11,26 @@ import (
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 )
+
+// optionalInt64 distinguishes JSON omit (Set false) from explicit null or number.
+type optionalInt64 struct {
+	Set   bool
+	Value *int64
+}
+
+func (o *optionalInt64) UnmarshalJSON(b []byte) error {
+	o.Set = true
+	if string(b) == "null" {
+		o.Value = nil
+		return nil
+	}
+	var v int64
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	o.Value = &v
+	return nil
+}
 
 var ErrNotFound = errors.New("not found")
 var ErrValidation = errors.New("validation")

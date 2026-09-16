@@ -1,7 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { type FormEvent, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import type { SettingLangListConfig } from "./setting-config";
 import {
@@ -11,6 +11,7 @@ import {
   CrudFormSheetHeader,
 } from "@/components/molecules/crud-form-sheet";
 import { FormField } from "@/components/molecules/form-field";
+import { ImageUploadField } from "@/components/molecules/image-upload-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
   Select,
@@ -21,6 +22,11 @@ import {
 } from "@/components/ui/select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import type { SettingLangItem } from "@/lib/setting-api";
+import {
+  fetchSystemFile,
+  revokeImageUploadItems,
+  type ImageUploadItem,
+} from "@/lib/system-file-api";
 
 export type SettingLangEditPayload = {
   nameTh: string;
@@ -33,6 +39,8 @@ export type SettingLangEditPayload = {
   isReturn: boolean;
   prefixType: string;
   code: string;
+  logoItems?: ImageUploadItem[];
+  initialLogoRemoteId?: number | null;
 };
 
 export type SettingLangSheetState =
@@ -60,6 +68,7 @@ function defaults(config: SettingLangListConfig, state: SettingLangSheetState): 
       isReturn: state.row.is_return ?? false,
       prefixType: state.row.type ?? "person",
       code: state.row.code ?? "",
+      initialLogoRemoteId: state.row.system_file_id ?? null,
     };
   }
   return {
@@ -73,6 +82,7 @@ function defaults(config: SettingLangListConfig, state: SettingLangSheetState): 
     isReturn: false,
     prefixType: state.prefixType ?? "person",
     code: "",
+    initialLogoRemoteId: null,
   };
 }
 
@@ -124,6 +134,7 @@ function SettingLangEditForm({
   const tForm = useTranslations("form");
   const tPage = useTranslations("page");
   const t = useTranslations();
+  const locale = useLocale();
 
   const [nameTh, setNameTh] = useState(initial.nameTh);
   const [nameEn, setNameEn] = useState(initial.nameEn);
@@ -136,8 +147,40 @@ function SettingLangEditForm({
   const [prefixType, setPrefixType] = useState(initial.prefixType);
   const [code, setCode] = useState(initial.code);
   const [invalid, setInvalid] = useState<Record<string, boolean>>({});
+  const [logoFiles, setLogoFiles] = useState<ImageUploadItem[]>([]);
+  const logoFilesRef = useRef(logoFiles);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    logoFilesRef.current = logoFiles;
+  }, [logoFiles]);
 
   const pageTitle = tPage(`${config.pageKey}.title`);
+
+  useEffect(() => {
+    if (!config.logoPurpose) return;
+    let cancelled = false;
+    (async () => {
+      const id = initial.initialLogoRemoteId;
+      if (id == null) {
+        if (!cancelled) setLogoFiles([]);
+        return;
+      }
+      try {
+        const item = await fetchSystemFile(locale, id);
+        if (!cancelled) setLogoFiles([item]);
+      } catch {
+        if (!cancelled) setLogoFiles([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [config.logoPurpose, initial.initialLogoRemoteId, locale]);
+
+  useEffect(() => {
+    return () => revokeImageUploadItems(logoFilesRef.current);
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -148,18 +191,27 @@ function SettingLangEditForm({
     if (config.claimFlags && !isClaim && !isReturn) next.claim = true;
     setInvalid(next);
     if (Object.keys(next).length > 0) return;
-    await onSave(editId, {
-      nameTh,
-      nameEn,
-      isActive,
-      isSale,
-      isPurchase,
-      isDefault,
-      isClaim,
-      isReturn,
-      prefixType,
-      code,
-    });
+    setSaving(true);
+    try {
+      await onSave(editId, {
+        nameTh,
+        nameEn,
+        isActive,
+        isSale,
+        isPurchase,
+        isDefault,
+        isClaim,
+        isReturn,
+        prefixType,
+        code,
+        logoItems: config.logoPurpose ? logoFiles : undefined,
+        initialLogoRemoteId: config.logoPurpose
+          ? initial.initialLogoRemoteId
+          : undefined,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -203,6 +255,19 @@ function SettingLangEditForm({
               onClearInvalid={() => setInvalid((p) => ({ ...p, code: false }))}
             />
           )}
+          {config.logoPurpose ? (
+            <ImageUploadField
+              id="setting-logo"
+              labelKey="col.logo"
+              purpose={config.logoPurpose}
+              value={logoFiles}
+              onChange={setLogoFiles}
+              maxFiles={1}
+              showLabel={false}
+              fullWidth
+              disabled={!canSave || saving}
+            />
+          ) : null}
           <FormField
             id="setting-name-th"
             labelKey="col.nameTh"
@@ -223,14 +288,30 @@ function SettingLangEditForm({
           />
           {config.paymentFilters && (
             <>
-              <StatusSwitchField checked={isSale} onCheckedChange={setIsSale} />
-              <StatusSwitchField checked={isPurchase} onCheckedChange={setIsPurchase} />
+              <StatusSwitchField
+                labelKey="col.sale"
+                checked={isSale}
+                onCheckedChange={setIsSale}
+              />
+              <StatusSwitchField
+                labelKey="col.purchase"
+                checked={isPurchase}
+                onCheckedChange={setIsPurchase}
+              />
             </>
           )}
           {config.claimFlags && (
             <>
-              <StatusSwitchField checked={isClaim} onCheckedChange={setIsClaim} />
-              <StatusSwitchField checked={isReturn} onCheckedChange={setIsReturn} />
+              <StatusSwitchField
+                labelKey="col.claim"
+                checked={isClaim}
+                onCheckedChange={setIsClaim}
+              />
+              <StatusSwitchField
+                labelKey="col.return"
+                checked={isReturn}
+                onCheckedChange={setIsReturn}
+              />
               {invalid.claim ? (
                 <p className="text-sm text-destructive" role="alert">
                   {t("error.required")}
@@ -239,15 +320,24 @@ function SettingLangEditForm({
             </>
           )}
           {config.saleDefault && (
-            <StatusSwitchField checked={isDefault} onCheckedChange={setIsDefault} />
+            <StatusSwitchField
+              labelKey="col.default"
+              checked={isDefault}
+              onCheckedChange={setIsDefault}
+            />
           )}
-          <StatusSwitchField checked={isActive} onCheckedChange={setIsActive} />
+          <StatusSwitchField
+            labelKey="col.status"
+            checked={isActive}
+            onCheckedChange={setIsActive}
+          />
         </CrudFormSheetBody>
         <CrudFormSheetFooter
           dismissLabel={
             mode === "edit" ? tCrud("btn.cancel") : tCrud("btn.back")
           }
           showSave={canSave}
+          saveDisabled={saving}
         />
       </form>
     </CrudFormSheet>

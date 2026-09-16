@@ -219,10 +219,13 @@ Helpers: [`internal/tree`](../../backend/internal/tree/) (`ApplyDrop`, `ReorderS
 | `make backend-run` | `go run ./cmd/server` |
 | `make backend-dev` | air |
 | `make backend-test` | `go test ./...` |
+| `make backend-file-cleanup` | `go run ./cmd/file-cleanup` — soft-delete unreferenced `system_file` rows + remove MinIO objects (default grace 1h; `-grace` flag) |
 
 Wave 1 schema: shared enums, locale registry (`system_language` after rename), `system_*` menu/permission, `admin_*` identity/RBAC, `admin_user_session`.
 
-**Object storage (dev):** Compose runs MinIO; backend receives `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_USE_SSL` (see [`infrastructure/env.example`](../../infrastructure/env.example)). Upload APIs are not wired yet — `system_file` rows store `bucket` + `object_key` for future S3 writes.
+**Object storage (dev):** Compose runs MinIO; backend receives `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_USE_SSL`, `S3_PUBLIC_BASE_URL` (browser URL for `<img src>`, e.g. `http://localhost:9002`; see [`infrastructure/env.example`](../../infrastructure/env.example)).
+
+**Upload API:** `internal/module/system` — authed routes (Bearer only, no RBAC catalog row): `POST /api/v1/system/files` (multipart `file` + `purpose`), `GET/DELETE /api/v1/system/files/:id`. Images only (jpeg/png/webp/gif, max 5MB); writes MinIO then inserts `system_file`. Response includes public `url`. Delete soft-deletes metadata and removes object when not referenced (`409` if still linked from setting bank/sale channel). **`DeleteIfUnreferenced`** — same as delete when nothing references the id (used after setting bank/sale-channel **DELETE** or **PATCH** that clears/changes `system_file_id`). **`CleanupOrphans`** / **`make backend-file-cleanup`** — removes active `system_file` rows with no FK from `IsReferenced` and `created_at` older than grace (orphans from pre-deferred upload or abandoned drafts).
 
 **Setting module:** goose migrations add `system_file` then `setting_*` tables. **CRUD:** `internal/module/setting` on RBAC group `/api/v1/setting` — lang resources (`banks`, `payment-methods`, `sale-channels`, `claim-reasons`, `prefixes`) with th/en `names`, flat `codes`, singleton `GET/PATCH /vat` (no POST/DELETE). Prefix reorder requires `type` in body or query. Postgres seeds: init `seeds/init/09_setting_vat.sql` (singleton VAT only). Dev fixtures (mirrors `design/js/seed/setting_*.js`): `seeds/dev/09_setting_vat.sql` + `seeds/dev/10_setting_catalog.sql` (all other `setting_*` tables). Postman folder **Setting** in `document/postman/postman.json`.
 

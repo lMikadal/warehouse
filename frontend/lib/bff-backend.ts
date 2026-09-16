@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { backendFetch, parseApiError } from "@/lib/api-server";
+import { apiBaseUrl, backendFetch, parseApiError } from "@/lib/api-server";
 import {
   getValidAccessToken,
   refreshAccessTokenFromCookies,
@@ -28,6 +28,64 @@ export async function authedBackendFetch(
   { method = "GET", body, locale, token }: AuthedFetchOptions
 ): Promise<Response> {
   return backendFetch(path, { method, body, accessToken: token, locale });
+}
+
+type AuthedFormOptions = {
+  method?: string;
+  body: FormData;
+  locale: string;
+  token: string;
+};
+
+export async function authedBackendForm(
+  path: string,
+  { method = "POST", body, locale, token }: AuthedFormOptions
+): Promise<Response> {
+  const segment = path.replace(/^\//, "").replace(/^v1\//, "");
+  const url = `${apiBaseUrl()}/v1/${segment}`;
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Accept-Language": locale,
+    Authorization: `Bearer ${token}`,
+  };
+  return fetch(url, { method, headers, body, cache: "no-store" });
+}
+
+export async function proxyAuthedBackendForm(
+  request: Request,
+  path: string,
+  init: { method?: string; body: FormData } = { body: new FormData() }
+): Promise<NextResponse> {
+  const locale = localeFromRequest(request);
+  let token = await getValidAccessToken();
+  if (!token) {
+    return unauthorizedJson();
+  }
+
+  let res = await authedBackendForm(path, {
+    method: init.method ?? "POST",
+    body: init.body,
+    locale,
+    token,
+  });
+
+  if (res.status === 401) {
+    token = await refreshAccessTokenFromCookies();
+    if (!token) {
+      return unauthorizedJson();
+    }
+    res = await authedBackendForm(path, {
+      method: init.method ?? "POST",
+      body: init.body,
+      locale,
+      token,
+    });
+  }
+
+  if (!res.ok) {
+    return proxyErrorJson(res);
+  }
+  return proxyJsonResponse(res);
 }
 
 export async function proxyJsonResponse(res: Response): Promise<NextResponse> {

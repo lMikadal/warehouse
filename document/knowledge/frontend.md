@@ -67,6 +67,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `FormCard` | shadcn `Card` with form panel surface (border, shadow); re-exports header/content subcomponents |
 | `LocaleThemeToolbar` | Header locale + light/dark icon buttons (admin shell); Storybook **Molecules/LocaleThemeToolbar** |
 | `RemoteComboboxField` | API-backed searchable combobox (debounced list `search`, pinned/resolved selected label); Storybook **Molecules/RemoteComboboxField** — see [combobox.mdc](../../.cursor/rules/combobox.mdc) |
+| `ImageUploadField` | Image upload with preview (single logo or multi-image gallery + DnD reorder); default **`uploadTiming="deferred"`** — local blob preview until save, then `uploadSystemFile` via BFF → `POST /system/files`; Storybook uses **`uploadTiming="immediate"`**; state type `ImageUploadItem` (`remote` \| `local`) in [`lib/system-file-api.ts`](../../frontend/lib/system-file-api.ts); setting bank/sale-channel logos upload on save via `resolveSettingLogoFileId` |
 
 **App chrome** (files under `components/` root, Storybook titles under **Molecules/**): `LocaleSwitch` (th/en segmented control — **Molecules/LocaleSwitch**), `ThemeModeSwitch` (light/dark/system — **Molecules/ThemeModeSwitch**). `ThemeDocumentSync` and `theme-provider` are layout-only — no separate stories.
 

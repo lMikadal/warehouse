@@ -15,6 +15,7 @@ import (
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 	"github.com/lMikadal/warehouse/backend/internal/module/admin"
 	authmod "github.com/lMikadal/warehouse/backend/internal/module/auth"
+	"github.com/lMikadal/warehouse/backend/internal/infra/s3"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
@@ -82,13 +83,23 @@ func main() {
 	authed := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac))
 	authmod.RegisterAuthedRoutes(authed, authHandler)
 
+	objectStore, err := s3.NewMinioStore(cfg)
+	if err != nil {
+		slog.Error("failed to init object storage", "error", err)
+		os.Exit(1)
+	}
+	fileRepo := system.NewFileRepository(deps.DB)
+	fileSvc := system.NewFileService(fileRepo, objectStore, cfg)
+	fileHandler := system.NewFileHandler(fileSvc)
+	system.RegisterFileRoutes(authed, fileHandler)
+
 	rbacProtected := v1.Group("", pkgauth.BearerMiddleware(issuer, rbac), pkgauth.RequirePermission(rbac))
 	langRepo := system.NewLanguageRepository(deps.DB)
 	langHandler := system.NewLanguageHandler(langRepo)
 	geoRepo := system.NewAddressGeoRepository(deps.DB)
 	system.RegisterRoutes(rbacProtected, menuSvc, menuPermRepo, permSvc, langHandler, geoRepo)
 	admin.RegisterRoutes(rbacProtected.Group("/admin"), roleHandler, userHandler)
-	setting.RegisterRoutes(rbacProtected.Group("/setting"), deps.DB)
+	setting.RegisterRoutes(rbacProtected.Group("/setting"), deps.DB, fileSvc)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

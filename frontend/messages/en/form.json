@@ -19,6 +19,18 @@
     "password": {
       "hide": "Hide password",
       "show": "Show password"
+    },
+    "upload": {
+      "hint": "Upload image",
+      "change": "Change image",
+      "cover": "Cover",
+      "remove": "Remove image",
+      "view": "View image",
+      "reorder": "Drag to reorder",
+      "limits": "JPEG, PNG, WebP, GIF up to 5 MB",
+      "invalidType": "File type not supported",
+      "tooLarge": "File exceeds 5 MB",
+      "maxFiles": "You can upload up to {max} images"
     }
   },
   "search": {

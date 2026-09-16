@@ -63,6 +63,7 @@ type LangPatch struct {
 	IsDefault               *bool
 	IsClaim                 *bool
 	IsReturn                *bool
+	SystemFileIDSet         bool
 	SystemFileID            *int64
 	MemberSettingRelationID *int64
 	Code                    *string

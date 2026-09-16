@@ -1,8 +1,10 @@
+import type { SystemFilePurpose } from "@/lib/system-file-api";
 import type { SettingLangSegment } from "@/lib/setting-api";
 
 export type SettingLangListConfig = {
   segment: SettingLangSegment;
   permType: string;
+  logoPurpose?: SystemFilePurpose;
   pageKey:
     | "settingBank"
     | "settingPaymentMethod"
@@ -20,6 +22,7 @@ export const SETTING_BANK_CONFIG: SettingLangListConfig = {
   segment: "banks",
   permType: "setting_bank",
   pageKey: "settingBank",
+  logoPurpose: "setting_bank_logo",
 };
 
 export const SETTING_PAYMENT_CONFIG: SettingLangListConfig = {
@@ -34,6 +37,7 @@ export const SETTING_SALE_CONFIG: SettingLangListConfig = {
   permType: "setting_sale_channel",
   pageKey: "settingSaleChannel",
   saleDefault: true,
+  logoPurpose: "setting_sale_channel_logo",
 };
 
 export const SETTING_CLAIM_CONFIG: SettingLangListConfig = {

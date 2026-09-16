@@ -96,19 +96,28 @@ async function refreshAccessTokenFromCookiesOnce(): Promise<string | null> {
     return null;
   }
 
-  const res = await backendFetch("/v1/auth/refresh", {
-    method: "POST",
-    body: { refresh_token: refresh },
-  });
+  let res: Response;
+  try {
+    res = await backendFetch("/v1/auth/refresh", {
+      method: "POST",
+      body: { refresh_token: refresh },
+    });
+  } catch {
+    return null;
+  }
 
   if (!res.ok) {
     await clearAuthCookies();
     return null;
   }
 
-  const pair = (await res.json()) as AuthTokenPair;
-  await applyTokenPairToCookies(pair);
-  return pair.access_token;
+  try {
+    const pair = (await res.json()) as AuthTokenPair;
+    await applyTokenPairToCookies(pair);
+    return pair.access_token;
+  } catch {
+    return null;
+  }
 }
 
 /** Deduped — Go rotates refresh tokens on each call. */

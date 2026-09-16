@@ -36,7 +36,7 @@ TLS is out of scope for now (HTTP `:80` only).
 | frontend | `3000` | Next.js + bun hot reload |
 | design | `8080` | Static prototype (`nginx:alpine`) |
 | postgres | `5432` | Persistent volume `postgres_data` |
-| minio | `9002` API, `9003` console | S3-compatible storage for `system_file` (`minio_data` volume); bucket `warehouse-files` via one-shot `minio-init` |
+| minio | `9002` API, `9003` console | S3-compatible storage for `system_file` (`minio_data` volume); bucket `warehouse-files` via one-shot `minio-init`; set backend `S3_PUBLIC_BASE_URL=http://localhost:9002` so API `url` fields work in the browser. After upload testing, prune orphans with `make backend-file-cleanup` (loads `DATABASE_URL` + `S3_*` from env — e.g. `infrastructure/.env`); inspect objects in MinIO console `:9003`. Do not rely on MinIO bucket lifecycle alone — DB metadata must stay in sync |
 | redis | `6379` | Present for future cache wiring |
 | pgAdmin | `5050` | Dev profile only |
 | redis-commander | `8081` | Dev profile only |

@@ -7,7 +7,8 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:1323/api/v1" },
     { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" }
+    { "key": "refreshToken", "value": "" },
+    { "key": "systemFileId", "value": "1" }
   ],
   "auth": {
     "type": "bearer",
@@ -559,6 +560,73 @@
                   "raw": "{\n  \"system_district_id\": 1,\n  \"postcode\": \"10110\",\n  \"is_active\": true,\n  \"names\": { \"th\": \"คลองตัน\", \"en\": \"Khlong Tan\" }\n}"
                 },
                 "url": "{{baseUrl}}/system/sub-districts"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "System files",
+      "item": [
+        {
+          "name": "Upload file",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept-Language", "value": "th" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "purpose", "value": "setting_bank_logo", "type": "text" },
+                { "key": "file", "type": "file", "src": [] }
+              ]
+            },
+            "url": "{{baseUrl}}/system/files"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "var j = pm.response.json();",
+                  "if (j.id) pm.collectionVariables.set('systemFileId', String(j.id));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get file by id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept-Language", "value": "th" }],
+            "url": "{{baseUrl}}/system/files/{{systemFileId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete file",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept-Language", "value": "th" }],
+            "url": "{{baseUrl}}/system/files/{{systemFileId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('status 204', () => pm.response.to.have.status(204));"],
+                "type": "text/javascript"
               }
             }
           ]

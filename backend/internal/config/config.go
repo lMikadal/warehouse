@@ -16,10 +16,18 @@ type Config struct {
 	LogLevel      string `env:"LOG_LEVEL" envDefault:"info"`
 	// AutoMigrate: empty = derive from AppEnv; true/false overrides.
 	AutoMigrate string `env:"AUTO_MIGRATE"`
-	JWTSecret   string        `env:"JWT_SECRET,required"`
+	JWTSecret     string        `env:"JWT_SECRET,required"`
 	JWTAccessTTL  time.Duration `env:"JWT_ACCESS_TTL" envDefault:"15m"`
 	JWTRefreshTTL time.Duration `env:"JWT_REFRESH_TTL" envDefault:"168h"`
 	APIV1Prefix   string        `env:"API_V1_PREFIX" envDefault:"/api/v1"`
+
+	S3Endpoint      string `env:"S3_ENDPOINT" envDefault:"http://127.0.0.1:9000"`
+	S3AccessKey     string `env:"S3_ACCESS_KEY"`
+	S3SecretKey     string `env:"S3_SECRET_KEY"`
+	S3Bucket        string `env:"S3_BUCKET" envDefault:"warehouse-files"`
+	S3Region        string `env:"S3_REGION" envDefault:"us-east-1"`
+	S3UseSSL        bool   `env:"S3_USE_SSL" envDefault:"false"`
+	S3PublicBaseURL string `env:"S3_PUBLIC_BASE_URL" envDefault:"http://localhost:9002"`
 }
 
 func Load() (Config, error) {
@@ -41,4 +49,10 @@ func (c Config) ShouldAutoMigrate() bool {
 	default:
 		return c.AppEnv == "development"
 	}
+}
+
+func (c Config) PublicObjectURL(objectKey string) string {
+	base := strings.TrimRight(c.S3PublicBaseURL, "/")
+	key := strings.TrimPrefix(objectKey, "/")
+	return base + "/" + c.S3Bucket + "/" + key
 }

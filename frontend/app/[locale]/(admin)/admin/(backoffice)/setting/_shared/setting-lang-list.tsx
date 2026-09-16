@@ -2,7 +2,7 @@
 
 import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical, Image as ImageIcon, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ComponentProps, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +25,12 @@ import {
 } from "@/components/molecules/table-icon-actions";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { sortableIndicesFromSource } from "@/lib/crud-list-rows";
 import {
@@ -54,8 +60,114 @@ import {
   SettingApiError,
   type SettingLangItem,
 } from "@/lib/setting-api";
+import { fetchSystemFile, resolveSettingLogoFileId } from "@/lib/system-file-api";
 
 type TriFilter = "" | "yes" | "no";
+
+function settingLangTableColumnCount(config: SettingLangListConfig): number {
+  let n = 1;
+  if (config.logoPurpose) n += 1;
+  n += 1;
+  if (config.showCodeColumn) n += 1;
+  if (config.paymentFilters) n += 2;
+  if (config.saleDefault) n += 1;
+  if (config.claimFlags) n += 2;
+  n += 3;
+  return n;
+}
+
+function SettingLangLogoPlaceholder() {
+  return (
+    <div
+      className="mx-auto flex size-10 items-center justify-center rounded-md border border-dashed border-border bg-muted/30"
+      aria-hidden
+    >
+      <ImageIcon className="size-5 text-muted-foreground" aria-hidden />
+    </div>
+  );
+}
+
+function SettingLangLogoCellLoaded({
+  fileId,
+  locale,
+}: {
+  fileId: number;
+  locale: string;
+}) {
+  const t = useTranslations();
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSystemFile(locale, fileId)
+      .then((item) => {
+        if (!cancelled) setUrl(item.url);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileId, locale]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex size-10 items-center justify-center">
+        <Spinner className="size-5" />
+      </div>
+    );
+  }
+  if (failed || !url) {
+    return <SettingLangLogoPlaceholder />;
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="mx-auto block size-10 overflow-hidden rounded-md border border-border"
+        onClick={() => setPreviewOpen(true)}
+        aria-label={t("form.upload.view")}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" className="size-full object-cover" />
+      </button>
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-lg p-2">
+          <DialogTitle className="sr-only">{t("form.upload.view")}</DialogTitle>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt=""
+            className="max-h-[70vh] w-full rounded-md object-contain"
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function SettingLangLogoCell({
+  fileId,
+  locale,
+}: {
+  fileId: number | null | undefined;
+  locale: string;
+}) {
+  if (fileId == null) {
+    return <SettingLangLogoPlaceholder />;
+  }
+  return (
+    <SettingLangLogoCellLoaded key={fileId} fileId={fileId} locale={locale} />
+  );
+}
 
 function BoolTriFilter({
   value,
@@ -232,6 +344,17 @@ export function SettingLangList({ config }: Props) {
   const onSave = async (id: number | null, payload: SettingLangEditPayload) => {
     try {
       const body = buildBody(payload);
+      if (config.logoPurpose) {
+        const fileId = await resolveSettingLogoFileId(
+          locale,
+          config.logoPurpose,
+          payload.logoItems ?? [],
+          payload.initialLogoRemoteId ?? null
+        );
+        if (fileId !== undefined) {
+          body.system_file_id = fileId;
+        }
+      }
       if (id == null) {
         await createSettingLang(locale, config.segment, body);
         toast.success(tCrud("toast.saved"));
@@ -304,6 +427,8 @@ export function SettingLangList({ config }: Props) {
       });
   };
 
+  const tableColCount = settingLangTableColumnCount(config);
+
   return (
     <>
       <CrudPageHeader
@@ -371,6 +496,9 @@ export function SettingLangList({ config }: Props) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10" aria-hidden />
+              {config.logoPurpose ? (
+                <TableHead className="w-14 text-center">{tCol("logo")}</TableHead>
+              ) : null}
               <TableHead>{tCol("name")}</TableHead>
               {config.showCodeColumn && <TableHead>{tCol("settingCode")}</TableHead>}
               {config.paymentFilters && (
@@ -398,13 +526,13 @@ export function SettingLangList({ config }: Props) {
           <TableBody key={dragEnabled ? sortableEpoch : "static"}>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center">
+                <TableCell colSpan={tableColCount} className="text-center">
                   …
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center">
+                <TableCell colSpan={tableColCount} className="text-center">
                   {tError("noData")}
                 </TableCell>
               </TableRow>
@@ -526,6 +654,11 @@ function SettingLangRowCells({
           <GripVertical className="text-current" />
         </ButtonIcon>
       </TableCell>
+      {config.logoPurpose ? (
+        <TableCell className="text-center">
+          <SettingLangLogoCell fileId={row.system_file_id} locale={locale} />
+        </TableCell>
+      ) : null}
       <TableCell>{row.name}</TableCell>
       {config.showCodeColumn && <TableCell>{row.code}</TableCell>}
       {config.paymentFilters && (

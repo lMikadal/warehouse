@@ -29,6 +29,7 @@ export type SettingLangItem = {
   is_return?: boolean;
   type?: string;
   code?: string;
+  system_file_id?: number | null;
 };
 
 export type SettingCodeItem = {

@@ -1,6 +1,6 @@
 # Phase: Setting CRUD (backoffice)
 
-Production UI for sidebar **ตั้งค่า** (7 leaves). Out of scope: file upload / MinIO, `member_setting_relation_id` picker, import/export.
+Production UI for sidebar **ตั้งค่า** (7 leaves). Bank/sale-channel logos: see [`phase-frontend-image-upload.md`](phase-frontend-image-upload.md). Out of scope: `member_setting_relation_id` picker, import/export.
 
 ## Phase checklist
 

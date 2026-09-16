@@ -51,6 +51,26 @@ export const DisabledOn: Story = {
   ),
 };
 
+export const WithLabel: Story = {
+  args: {
+    checked: true,
+    onCheckedChange: () => {},
+    labelKey: "col.status",
+  },
+  render: function Render() {
+    const [checked, setChecked] = useState(true);
+    return (
+      <div className="w-80">
+        <StatusSwitchField
+          labelKey="col.status"
+          checked={checked}
+          onCheckedChange={setChecked}
+        />
+      </div>
+    );
+  },
+};
+
 export const DisabledOff: Story = {
   name: "Disabled (off)",
   args: {

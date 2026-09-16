@@ -1,7 +1,9 @@
 package setting
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -12,12 +14,36 @@ import (
 )
 
 type LangHandler struct {
-	k    LangKind
-	repo *LangRepository
+	k      LangKind
+	repo   *LangRepository
+	purger FilePurger
 }
 
-func NewLangHandler(k LangKind, repo *LangRepository) *LangHandler {
-	return &LangHandler{k: k, repo: repo}
+func NewLangHandler(k LangKind, repo *LangRepository, purger FilePurger) *LangHandler {
+	return &LangHandler{k: k, repo: repo, purger: purger}
+}
+
+func langHasLogo(k LangKind) bool {
+	return k == LangBank || k == LangSaleChannel
+}
+
+func int64PtrEqual(a, b *int64) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func (h *LangHandler) purgeFileIfUnreferenced(ctx context.Context, fileID *int64, actorID int64) {
+	if h.purger == nil || fileID == nil || *fileID <= 0 || !langHasLogo(h.k) {
+		return
+	}
+	if err := h.purger.DeleteIfUnreferenced(ctx, *fileID, actorID); err != nil {
+		slog.Warn("purge system file after setting change", "file_id", *fileID, "error", err)
+	}
 }
 
 type langItem struct {
@@ -157,9 +183,9 @@ type langPatchBody struct {
 	IsDefault               *bool      `json:"is_default"`
 	IsClaim                 *bool      `json:"is_claim"`
 	IsReturn                *bool      `json:"is_return"`
-	SystemFileID            *int64     `json:"system_file_id"`
-	MemberSettingRelationID *int64     `json:"member_setting_relation_id"`
-	Code                    *string    `json:"code"`
+	SystemFileID            optionalInt64 `json:"system_file_id"`
+	MemberSettingRelationID *int64        `json:"member_setting_relation_id"`
+	Code                    *string       `json:"code"`
 }
 
 func (h *LangHandler) patch(c *echo.Context) error {
@@ -176,9 +202,22 @@ func (h *LangHandler) patch(c *echo.Context) error {
 	if body.Names != nil {
 		patch.Names = namesFromBody(body.Names.Th, body.Names.En)
 	}
-	patch.SystemFileID = body.SystemFileID
+	if body.SystemFileID.Set {
+		patch.SystemFileIDSet = true
+		patch.SystemFileID = body.SystemFileID.Value
+	}
 	patch.MemberSettingRelationID = body.MemberSettingRelationID
-	err = h.repo.Update(c.Request().Context(), h.k, id, patch)
+
+	ctx := c.Request().Context()
+	var oldFileID *int64
+	if patch.SystemFileIDSet && langHasLogo(h.k) {
+		row, getErr := h.repo.Get(ctx, h.k, id, "")
+		if getErr == nil && row != nil {
+			oldFileID = row.SystemFileID
+		}
+	}
+
+	err = h.repo.Update(ctx, h.k, id, patch)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
@@ -192,6 +231,9 @@ func (h *LangHandler) patch(c *echo.Context) error {
 		applog.HTTPError(c, "patch setting lang", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
 	}
+	if patch.SystemFileIDSet && !int64PtrEqual(oldFileID, patch.SystemFileID) {
+		h.purgeFileIfUnreferenced(ctx, oldFileID, actorID(c))
+	}
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -200,13 +242,22 @@ func (h *LangHandler) delete(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := h.repo.SoftDelete(c.Request().Context(), h.k, id, actorID(c)); err != nil {
+	ctx := c.Request().Context()
+	var oldFileID *int64
+	if langHasLogo(h.k) {
+		row, getErr := h.repo.Get(ctx, h.k, id, "")
+		if getErr == nil && row != nil {
+			oldFileID = row.SystemFileID
+		}
+	}
+	if err := h.repo.SoftDelete(ctx, h.k, id, actorID(c)); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 		}
 		applog.HTTPError(c, "delete setting lang", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "delete failed"})
 	}
+	h.purgeFileIfUnreferenced(ctx, oldFileID, actorID(c))
 	return c.NoContent(http.StatusNoContent)
 }
 

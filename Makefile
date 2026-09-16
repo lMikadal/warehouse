@@ -21,7 +21,7 @@ endef
 	design-schema-check design-serve \
 	frontend-bootstrap frontend-install frontend-dev frontend-build frontend-lint frontend-shadcn-add \
 	frontend-storybook frontend-storybook-build \
-	backend-dev backend-run backend-test \
+	backend-dev backend-run backend-test backend-file-cleanup \
 	backend-migrate-up backend-migrate-down backend-migrate-status \
 	backend-seed-init backend-seed-bootstrap backend-seed-dev \
 	docker-up docker-up-d docker-down docker-build docker-logs docker-prod-up docker-prod-down
@@ -101,6 +101,11 @@ backend-run:
 backend-test:
 	$(call require_dir,$(BACKEND_DIR))
 	cd $(BACKEND_DIR) && go test ./...
+
+## backend-file-cleanup: Remove unreferenced system_file rows + MinIO objects (needs DATABASE_URL + S3_*; default grace 1h)
+backend-file-cleanup:
+	$(call require_dir,$(BACKEND_DIR))
+	cd $(BACKEND_DIR) && go run ./cmd/file-cleanup
 
 ## backend-migrate-up: Apply goose migrations (needs DATABASE_URL)
 backend-migrate-up:
