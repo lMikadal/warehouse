@@ -1235,7 +1235,6 @@
       {
         key: "is_sale",
         labelKey: "col.sale",
-        ui: "buttonGroup",
         optionValues: [true, false],
         optionLabel: function (val) {
           return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");
@@ -1244,7 +1243,6 @@
       {
         key: "is_purchase",
         labelKey: "col.purchase",
-        ui: "buttonGroup",
         optionValues: [true, false],
         optionLabel: function (val) {
           return global.i18n.t(val === true || val === "true" ? "col.yes" : "col.no");

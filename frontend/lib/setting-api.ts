@@ -64,6 +64,8 @@ const codeClient = createBffCrudClient("/api/v1/auth/proxy/setting/codes");
 export type SettingLangListParams = BffStandardListParams & {
   isSale?: boolean;
   isPurchase?: boolean;
+  isClaim?: boolean;
+  isReturn?: boolean;
   prefixType?: string;
 };
 
@@ -72,6 +74,10 @@ function langListAppend(params: SettingLangListParams): AppendListQuery {
     if (params.isSale !== undefined) qs.set("is_sale", params.isSale ? "true" : "false");
     if (params.isPurchase !== undefined) {
       qs.set("is_purchase", params.isPurchase ? "true" : "false");
+    }
+    if (params.isClaim !== undefined) qs.set("is_claim", params.isClaim ? "true" : "false");
+    if (params.isReturn !== undefined) {
+      qs.set("is_return", params.isReturn ? "true" : "false");
     }
     if (params.prefixType) qs.set("type", params.prefixType);
   };

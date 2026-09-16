@@ -4,7 +4,13 @@ import { DragDropProvider } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { GripVertical, Image as ImageIcon, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ComponentProps, useCallback, useEffect, useState } from "react";
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 import type { SettingLangListConfig } from "./setting-config";
@@ -17,6 +23,7 @@ import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-conf
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
@@ -169,54 +176,57 @@ function SettingLangLogoCell({
   );
 }
 
-function BoolTriFilter({
+function BoolColumnFilterField({
+  id,
+  label,
   value,
   onChange,
-  ariaLabel,
-  labelAll,
+  placeholder,
+  emptyLabel,
   labelYes,
   labelNo,
 }: {
+  id: string;
+  label: string;
   value: TriFilter;
   onChange: (v: TriFilter) => void;
-  ariaLabel: string;
-  labelAll: string;
+  placeholder: string;
+  emptyLabel: string;
   labelYes: string;
   labelNo: string;
 }) {
-  const options: { value: TriFilter; label: string }[] = [
-    { value: "", label: labelAll },
-    { value: "yes", label: labelYes },
-    { value: "no", label: labelNo },
-  ];
+  const options = useMemo(
+    () => [
+      { value: "yes" as const, label: labelYes },
+      { value: "no" as const, label: labelNo },
+    ],
+    [labelYes, labelNo]
+  );
+
   return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      className="inline-flex overflow-hidden rounded-lg border border-border"
-    >
-      {options.map((opt, index) => {
-        const active = value === opt.value;
-        return (
-          <Button
-            key={opt.value || "all"}
-            type="button"
-            variant="ghost"
-            size="lg"
-            aria-pressed={active}
-            className={cn(
-              "rounded-none border-0 px-3 shadow-none",
-              index > 0 && "border-l border-border",
-              active &&
-                "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-            )}
-            onClick={() => onChange(opt.value)}
-          >
-            {opt.label}
-          </Button>
+    <RemoteComboboxField
+      id={id}
+      label={label}
+      value={value}
+      onValueChange={(v) =>
+        onChange(v === "yes" || v === "no" ? v : "")
+      }
+      placeholder={placeholder}
+      emptyLabel={emptyLabel}
+      inputClassName="w-[min(100%,14rem)]"
+      showClear
+      onLoadOptions={async ({ search, signal }) => {
+        signal.throwIfAborted();
+        const q = search.trim().toLowerCase();
+        return options.filter(
+          (o) => !q || o.label.toLowerCase().includes(q)
         );
-      })}
-    </div>
+      }}
+      resolveSelectedLabel={async (v) => {
+        const found = options.find((o) => o.value === v);
+        return found?.label ?? null;
+      }}
+    />
   );
 }
 
@@ -239,12 +249,17 @@ export function SettingLangList({ config }: Props) {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saleFilter, setSaleFilter] = useState<TriFilter>("");
   const [purchaseFilter, setPurchaseFilter] = useState<TriFilter>("");
+  const [claimFilter, setClaimFilter] = useState<TriFilter>("");
+  const [returnFilter, setReturnFilter] = useState<TriFilter>("");
   const [prefixType, setPrefixType] = useState<"" | "person" | "company">("");
   const [sortableEpoch, setSortableEpoch] = useState(0);
+
+  const tComboboxEmpty = useTranslations("form.combobox");
 
   const filtersActive =
     (config.paymentFilters &&
       (saleFilter !== "" || purchaseFilter !== "")) ||
+    (config.claimFlags && (claimFilter !== "" || returnFilter !== "")) ||
     (config.prefixTypeFilter && prefixType !== "");
 
   const listQuery = useCrudListQuery({ extraFiltered: filtersActive });
@@ -268,6 +283,10 @@ export function SettingLangList({ config }: Props) {
           saleFilter === "" ? undefined : saleFilter === "yes",
         isPurchase:
           purchaseFilter === "" ? undefined : purchaseFilter === "yes",
+        isClaim:
+          claimFilter === "" ? undefined : claimFilter === "yes",
+        isReturn:
+          returnFilter === "" ? undefined : returnFilter === "yes",
         prefixType: prefixType || undefined,
       });
       setRows(res.items);
@@ -285,8 +304,10 @@ export function SettingLangList({ config }: Props) {
     listQuery.pageSize,
     listQuery.sortParamsForFetch,
     locale,
+    claimFilter,
     prefixType,
     purchaseFilter,
+    returnFilter,
     saleFilter,
     t,
   ]);
@@ -379,6 +400,18 @@ export function SettingLangList({ config }: Props) {
     }
   };
 
+  const patchRowBool = async (
+    rowId: number,
+    body: Record<string, boolean>
+  ) => {
+    try {
+      await patchSettingLang(locale, config.segment, rowId, body);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof SettingApiError ? e.message : t("error.generic"));
+    }
+  };
+
   const onDelete = async () => {
     if (deleteId == null) return;
     try {
@@ -445,31 +478,61 @@ export function SettingLangList({ config }: Props) {
       />
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <CrudSearchField value={listQuery.query} onChange={listQuery.setQuery} />
-        <StatusFilterGroup
-          value={listQuery.statusFilter}
-          onChange={listQuery.setStatusFilter}
-        />
         {config.paymentFilters && (
           <>
-            <BoolTriFilter
+            <BoolColumnFilterField
+              id="setting-payment-filter-sale"
+              label={tCol("sale")}
               value={saleFilter}
               onChange={(v) => {
                 setSaleFilter(v);
                 listQuery.setPage(1);
               }}
-              ariaLabel={tCol("sale")}
-              labelAll={tCrud("filter.all")}
+              placeholder={tCrud("filter.select", { label: tCol("sale") })}
+              emptyLabel={tComboboxEmpty("noResults")}
               labelYes={tCol("yes")}
               labelNo={tCol("no")}
             />
-            <BoolTriFilter
+            <BoolColumnFilterField
+              id="setting-payment-filter-purchase"
+              label={tCol("purchase")}
               value={purchaseFilter}
               onChange={(v) => {
                 setPurchaseFilter(v);
                 listQuery.setPage(1);
               }}
-              ariaLabel={tCol("purchase")}
-              labelAll={tCrud("filter.all")}
+              placeholder={tCrud("filter.select", { label: tCol("purchase") })}
+              emptyLabel={tComboboxEmpty("noResults")}
+              labelYes={tCol("yes")}
+              labelNo={tCol("no")}
+            />
+          </>
+        )}
+        {config.claimFlags && (
+          <>
+            <BoolColumnFilterField
+              id="setting-claim-filter-claim"
+              label={tCol("claim")}
+              value={claimFilter}
+              onChange={(v) => {
+                setClaimFilter(v);
+                listQuery.setPage(1);
+              }}
+              placeholder={tCrud("filter.select", { label: tCol("claim") })}
+              emptyLabel={tComboboxEmpty("noResults")}
+              labelYes={tCol("yes")}
+              labelNo={tCol("no")}
+            />
+            <BoolColumnFilterField
+              id="setting-claim-filter-return"
+              label={tCol("return")}
+              value={returnFilter}
+              onChange={(v) => {
+                setReturnFilter(v);
+                listQuery.setPage(1);
+              }}
+              placeholder={tCrud("filter.select", { label: tCol("return") })}
+              emptyLabel={tComboboxEmpty("noResults")}
               labelYes={tCol("yes")}
               labelNo={tCol("no")}
             />
@@ -489,6 +552,10 @@ export function SettingLangList({ config }: Props) {
             <option value="company">{t("prefixType.company")}</option>
           </select>
         )}
+        <StatusFilterGroup
+          value={listQuery.statusFilter}
+          onChange={listQuery.setStatusFilter}
+        />
       </div>
       <div className="rounded-md border">
         <DragDropProvider onDragEnd={handleDragEnd}>
@@ -552,10 +619,9 @@ export function SettingLangList({ config }: Props) {
                     onDelete={() => setDeleteId(row.id)}
                     rowActions={rowActions(row)}
                     onDefaultToggle={(v) =>
-                      void patchSettingLang(locale, config.segment, row.id, {
-                        is_default: v,
-                      }).then(load)
+                      void patchRowBool(row.id, { is_default: v })
                     }
+                    onPatchBool={(body) => void patchRowBool(row.id, body)}
                   />
                 ) : (
                   <SettingLangStaticRow
@@ -569,10 +635,9 @@ export function SettingLangList({ config }: Props) {
                     onDelete={() => setDeleteId(row.id)}
                     rowActions={rowActions(row)}
                     onDefaultToggle={(v) =>
-                      void patchSettingLang(locale, config.segment, row.id, {
-                        is_default: v,
-                      }).then(load)
+                      void patchRowBool(row.id, { is_default: v })
                     }
+                    onPatchBool={(body) => void patchRowBool(row.id, body)}
                   />
                 )
               )
@@ -620,6 +685,7 @@ function SettingLangRowCells({
   onDelete,
   rowActions,
   onDefaultToggle,
+  onPatchBool,
 }: {
   row: SettingLangItem;
   locale: DisplayLocale;
@@ -633,6 +699,7 @@ function SettingLangRowCells({
   onDelete: () => void;
   rowActions: TableIconActionKey[];
   onDefaultToggle: (v: boolean) => void;
+  onPatchBool: (body: Record<string, boolean>) => void;
 }) {
   const tCrud = useTranslations("crud");
 
@@ -664,10 +731,18 @@ function SettingLangRowCells({
       {config.paymentFilters && (
         <>
           <TableCell className="text-center">
-            {row.is_sale ? tCol("yes") : tCol("no")}
+            <StatusSwitchField
+              checked={row.is_sale ?? false}
+              disabled={!perms.update}
+              onCheckedChange={(v) => onPatchBool({ is_sale: v })}
+            />
           </TableCell>
           <TableCell className="text-center">
-            {row.is_purchase ? tCol("yes") : tCol("no")}
+            <StatusSwitchField
+              checked={row.is_purchase ?? false}
+              disabled={!perms.update}
+              onCheckedChange={(v) => onPatchBool({ is_purchase: v })}
+            />
           </TableCell>
         </>
       )}
@@ -683,10 +758,18 @@ function SettingLangRowCells({
       {config.claimFlags && (
         <>
           <TableCell className="text-center">
-            {row.is_claim ? tCol("yes") : tCol("no")}
+            <StatusSwitchField
+              checked={row.is_claim ?? false}
+              disabled={!perms.update}
+              onCheckedChange={(v) => onPatchBool({ is_claim: v })}
+            />
           </TableCell>
           <TableCell className="text-center">
-            {row.is_return ? tCol("yes") : tCol("no")}
+            <StatusSwitchField
+              checked={row.is_return ?? false}
+              disabled={!perms.update}
+              onCheckedChange={(v) => onPatchBool({ is_return: v })}
+            />
           </TableCell>
         </>
       )}
@@ -723,6 +806,7 @@ function SettingLangSortableRow({
   onDelete,
   rowActions,
   onDefaultToggle,
+  onPatchBool,
 }: {
   row: SettingLangItem;
   index: number;
@@ -735,6 +819,7 @@ function SettingLangSortableRow({
   onDelete: () => void;
   rowActions: TableIconActionKey[];
   onDefaultToggle: (v: boolean) => void;
+  onPatchBool: (body: Record<string, boolean>) => void;
 }) {
   const tCol = useTranslations("col");
   const { ref, handleRef, isDragging } = useSortable({
@@ -758,6 +843,7 @@ function SettingLangSortableRow({
         onDelete={onDelete}
         rowActions={rowActions}
         onDefaultToggle={onDefaultToggle}
+        onPatchBool={onPatchBool}
       />
     </TableRow>
   );
@@ -773,6 +859,7 @@ function SettingLangStaticRow({
   onDelete,
   rowActions,
   onDefaultToggle,
+  onPatchBool,
 }: {
   row: SettingLangItem;
   locale: DisplayLocale;
@@ -783,6 +870,7 @@ function SettingLangStaticRow({
   onDelete: () => void;
   rowActions: TableIconActionKey[];
   onDefaultToggle: (v: boolean) => void;
+  onPatchBool: (body: Record<string, boolean>) => void;
 }) {
   const tCol = useTranslations("col");
 
@@ -800,6 +888,7 @@ function SettingLangStaticRow({
         onDelete={onDelete}
         rowActions={rowActions}
         onDefaultToggle={onDefaultToggle}
+        onPatchBool={onPatchBool}
       />
     </TableRow>
   );

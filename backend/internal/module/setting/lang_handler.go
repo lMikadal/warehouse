@@ -103,6 +103,14 @@ func (h *LangHandler) list(c *echo.Context) error {
 		b := v == "true" || v == "1"
 		f.IsPurchase = &b
 	}
+	if v := strings.TrimSpace(c.QueryParam("is_claim")); v != "" {
+		b := v == "true" || v == "1"
+		f.IsClaim = &b
+	}
+	if v := strings.TrimSpace(c.QueryParam("is_return")); v != "" {
+		b := v == "true" || v == "1"
+		f.IsReturn = &b
+	}
 	f.PrefixType = strings.TrimSpace(c.QueryParam("type"))
 	f.Sort = strings.TrimSpace(c.QueryParam("sort"))
 	f.Order = strings.ToLower(strings.TrimSpace(c.QueryParam("order")))

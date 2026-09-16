@@ -36,6 +36,8 @@ type LangListFilter struct {
 	Sort, Order    string
 	IsSale         *bool
 	IsPurchase     *bool
+	IsClaim        *bool
+	IsReturn       *bool
 	PrefixType     string
 }
 

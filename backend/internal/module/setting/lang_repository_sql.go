@@ -50,6 +50,18 @@ func langListWhere(k LangKind, f LangListFilter, locale string) (string, []any) 
 			n++
 		}
 	}
+	if k == LangClaimReason {
+		if f.IsClaim != nil {
+			clauses = append(clauses, fmt.Sprintf("t.is_claim = $%d", n))
+			args = append(args, *f.IsClaim)
+			n++
+		}
+		if f.IsReturn != nil {
+			clauses = append(clauses, fmt.Sprintf("t.is_return = $%d", n))
+			args = append(args, *f.IsReturn)
+			n++
+		}
+	}
 	if k == LangPrefix && f.PrefixType != "" {
 		clauses = append(clauses, fmt.Sprintf("t.type = $%d::setting_prefix_type", n))
 		args = append(args, f.PrefixType)

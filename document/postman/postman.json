@@ -706,6 +706,13 @@
                 "method": "GET",
                 "url": "{{baseUrl}}/setting/payment-methods?page=1&limit=10"
               }
+            },
+            {
+              "name": "List payment methods (filter sale/purchase)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/payment-methods?page=1&limit=10&is_sale=true&is_purchase=false"
+              }
             }
           ]
         },
@@ -753,6 +760,13 @@
               "request": {
                 "method": "GET",
                 "url": "{{baseUrl}}/setting/claim-reasons?page=1&limit=10"
+              }
+            },
+            {
+              "name": "List claim reasons (filter claim/return)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/claim-reasons?page=1&limit=10&is_claim=true&is_return=false"
               }
             }
           ]

@@ -9,7 +9,8 @@ Production UI for sidebar **ตั้งค่า** (7 leaves). Bank/sale-channe
 - [x] Routes: `/admin/setting/{bank,vat,payment-method,sale-channel,code,claim-reason,prefix}`
 - [x] i18n `page-setting.json` (th/en) + col keys
 - [x] List DnD reorder when unfiltered (prefix reorder when type filter selected)
-- [x] Payment method toolbar filters `is_sale` / `is_purchase`
+- [x] Payment method toolbar filters `is_sale` / `is_purchase` (select combobox); inline switches on sale/purchase columns
+- [x] Claim reason toolbar filters `is_claim` / `is_return` (select combobox); inline switches on claim/return columns
 - [x] `make frontend-build` + `make frontend-lint`
 
 ## Required checklist
