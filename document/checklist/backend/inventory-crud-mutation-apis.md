@@ -27,12 +27,12 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `supplier_user` | TBD | active | [ ] | No list `sort_order` |
 | `supplier_bank` | TBD | active | [ ] | Reorder parent-scoped — see §D |
 | `warehouse_list` | TBD | active, move | [ ] | Tree |
-| `setting_bank` | TBD | active, reorder | [ ] | |
-| `setting_code` | TBD | active, reorder | [ ] | |
-| `setting_claim_reason` | TBD | active, reorder | [ ] | Extra switches `is_claim` / `is_return` on same row |
-| `setting_payment_method` | TBD | active, reorder | [ ] | Extra switches `is_sale` / `is_purchase` |
-| `setting_prefix` | TBD | active, reorder | [ ] | Reorder scoped by `type` |
-| `setting_sale_channel` | TBD | active, reorder | [ ] | |
+| `setting_bank` | `/setting/banks` | active, reorder | [x] | |
+| `setting_code` | `/setting/codes` | active, reorder | [x] | |
+| `setting_claim_reason` | `/setting/claim-reasons` | active, reorder | [x] | Extra switches `is_claim` / `is_return` on same row |
+| `setting_payment_method` | `/setting/payment-methods` | active, reorder | [x] | Extra switches `is_sale` / `is_purchase` |
+| `setting_prefix` | `/setting/prefixes` | active, reorder | [x] | Reorder scoped by `type` |
+| `setting_sale_channel` | `/setting/sale-channels` | active, reorder | [x] | |
 | `system_country` | TBD | active, reorder | [x] | Geo root |
 | `system_province` | TBD | active, reorder | [x] | Scope: `system_country_id` |
 | `system_district` | TBD | active, reorder | [x] | Scope: `system_province_id` |
@@ -43,12 +43,12 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | Table | Reorder scope | Status | Notes |
 |-------|---------------|--------|-------|
 | `location_location` | global | [ ] | |
-| `setting_bank` | global | [ ] | |
-| `setting_code` | global | [ ] | |
-| `setting_claim_reason` | global | [ ] | |
-| `setting_payment_method` | global | [ ] | |
-| `setting_prefix` | per `type` | [ ] | |
-| `setting_sale_channel` | global | [ ] | |
+| `setting_bank` | global | [x] | |
+| `setting_code` | global | [x] | |
+| `setting_claim_reason` | global | [x] | |
+| `setting_payment_method` | global | [x] | |
+| `setting_prefix` | per `type` | [x] | |
+| `setting_sale_channel` | global | [x] | |
 | `system_country` | global | [x] | |
 | `system_province` | `system_country_id` | [x] | |
 | `system_district` | `system_province_id` | [x] | |

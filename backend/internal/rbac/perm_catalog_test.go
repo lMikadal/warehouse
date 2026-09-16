@@ -45,4 +45,16 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "system.system_menu.view" {
 		t.Fatalf("permission matrix: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/setting/banks/1")
+	if !ok || code != "setting.setting_bank.view" {
+		t.Fatalf("setting bank get: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("PATCH", "/api/v1/setting/banks/reorder")
+	if !ok || code != "setting.setting_bank.update" {
+		t.Fatalf("setting bank reorder: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("PATCH", "/api/v1/setting/vat/1")
+	if !ok || code != "setting.setting_vat.update" {
+		t.Fatalf("setting vat patch: got %q %v", code, ok)
+	}
 }

@@ -28,6 +28,16 @@
     "approvalDiscountPinConfirm": "Confirm discount approval PIN",
     "nameTh": "Name (Thai)",
     "nameEn": "Name (English)",
-    "lastLogin": "Last login"
+    "lastLogin": "Last login",
+    "settingCode": "Code",
+    "value": "Value",
+    "vatType": "VAT type",
+    "rate": "Rate",
+    "sale": "Sale",
+    "purchase": "Purchase",
+    "claim": "Claim",
+    "return": "Return",
+    "yes": "Yes",
+    "no": "No"
   }
 }

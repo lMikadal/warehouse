@@ -1,0 +1,40 @@
+{
+  "page": {
+    "settingBank": {
+      "title": "ธนาคาร",
+      "description": "จัดการรายชื่อธนาคารสำหรับใช้ในระบบ"
+    },
+    "settingVat": {
+      "title": "VAT",
+      "description": "กำหนดอัตราและประเภท VAT"
+    },
+    "settingPaymentMethod": {
+      "title": "ช่องทางชำระ",
+      "description": "จัดการช่องทางชำระเงินฝั่งขายและจัดซื้อ"
+    },
+    "settingSaleChannel": {
+      "title": "ช่องทางขาย",
+      "description": "จัดการช่องทางการขายและช่องทางค่าเริ่มต้น"
+    },
+    "settingCode": {
+      "title": "รหัส",
+      "description": "จัดการรหัสและค่าอ้างอิงภายในระบบ"
+    },
+    "settingClaimReason": {
+      "title": "เหตุผลเคลม",
+      "description": "จัดการเหตุผลสำหรับเคลมและคืนสินค้า"
+    },
+    "settingPrefix": {
+      "title": "คำนำหน้า",
+      "description": "จัดการคำนำหน้าชื่อบุคคลและนิติบุคคล"
+    }
+  },
+  "vatType": {
+    "exclude": "ไม่รวม VAT",
+    "include": "รวม VAT"
+  },
+  "prefixType": {
+    "person": "บุคคล",
+    "company": "นิติบุคคล"
+  }
+}

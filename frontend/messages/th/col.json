@@ -28,6 +28,16 @@
     "approvalDiscountPinConfirm": "ยืนยัน PIN อนุมัติส่วนลด",
     "nameTh": "ชื่อ (ไทย)",
     "nameEn": "ชื่อ (อังกฤษ)",
-    "lastLogin": "เข้าสู่ระบบล่าสุด"
+    "lastLogin": "เข้าสู่ระบบล่าสุด",
+    "settingCode": "รหัส",
+    "value": "ค่า",
+    "vatType": "ประเภท VAT",
+    "rate": "อัตรา",
+    "sale": "ขาย",
+    "purchase": "จัดซื้อ",
+    "claim": "เคลม",
+    "return": "คืน",
+    "yes": "ใช่",
+    "no": "ไม่"
   }
 }

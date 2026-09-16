@@ -23,6 +23,13 @@ var CatalogPermPages = []PermPage{
 	{Module: "admin", Type: "system_province", Resource: "/api/v1/system/provinces"},
 	{Module: "admin", Type: "system_district", Resource: "/api/v1/system/districts"},
 	{Module: "admin", Type: "system_sub_district", Resource: "/api/v1/system/sub-districts"},
+	{Module: "setting", Type: "setting_bank", Resource: "/api/v1/setting/banks"},
+	{Module: "setting", Type: "setting_vat", Resource: "/api/v1/setting/vat"},
+	{Module: "setting", Type: "setting_payment_method", Resource: "/api/v1/setting/payment-methods"},
+	{Module: "setting", Type: "setting_sale_channel", Resource: "/api/v1/setting/sale-channels"},
+	{Module: "setting", Type: "setting_code", Resource: "/api/v1/setting/codes"},
+	{Module: "setting", Type: "setting_claim_reason", Resource: "/api/v1/setting/claim-reasons"},
+	{Module: "setting", Type: "setting_prefix", Resource: "/api/v1/setting/prefixes"},
 }
 
 func routePermPages() []PermPage {

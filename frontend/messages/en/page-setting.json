@@ -1,0 +1,40 @@
+{
+  "page": {
+    "settingBank": {
+      "title": "Banks",
+      "description": "Manage bank names used across the system"
+    },
+    "settingVat": {
+      "title": "VAT",
+      "description": "Configure VAT rate and price type"
+    },
+    "settingPaymentMethod": {
+      "title": "Payment methods",
+      "description": "Manage sale and purchase payment methods"
+    },
+    "settingSaleChannel": {
+      "title": "Sale channels",
+      "description": "Manage sales channels and default channels"
+    },
+    "settingCode": {
+      "title": "Codes",
+      "description": "Manage external codes and internal values"
+    },
+    "settingClaimReason": {
+      "title": "Claim reasons",
+      "description": "Manage reasons for claims and returns"
+    },
+    "settingPrefix": {
+      "title": "Prefixes",
+      "description": "Manage person and company name prefixes"
+    }
+  },
+  "vatType": {
+    "exclude": "Exclude VAT",
+    "include": "Include VAT"
+  },
+  "prefixType": {
+    "person": "Person",
+    "company": "Company"
+  }
+}

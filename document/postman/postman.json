@@ -564,6 +564,156 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Setting",
+      "item": [
+        {
+          "name": "Banks",
+          "item": [
+            {
+              "name": "List banks",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/setting/banks?page=1&limit=10"
+              }
+            },
+            {
+              "name": "Create bank",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"names\": { \"th\": \"ธนาคารทดสอบ\", \"en\": \"Test Bank\" }\n}"
+                },
+                "url": "{{baseUrl}}/setting/banks"
+              }
+            },
+            {
+              "name": "Reorder banks",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/setting/banks/reorder"
+              }
+            }
+          ]
+        },
+        {
+          "name": "VAT",
+          "item": [
+            {
+              "name": "Get VAT",
+              "request": { "method": "GET", "url": "{{baseUrl}}/setting/vat" }
+            },
+            {
+              "name": "Patch VAT",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vat_type\": \"exclude\",\n  \"rate\": 7\n}"
+                },
+                "url": "{{baseUrl}}/setting/vat/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment methods",
+          "item": [
+            {
+              "name": "List payment methods",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/payment-methods?page=1&limit=10"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sale channels",
+          "item": [
+            {
+              "name": "List sale channels",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/sale-channels?page=1&limit=10"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Codes",
+          "item": [
+            {
+              "name": "List codes",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/codes?page=1&limit=10"
+              }
+            },
+            {
+              "name": "Create code",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"EXT-1\",\n  \"value\": \"internal-1\",\n  \"is_active\": true\n}"
+                },
+                "url": "{{baseUrl}}/setting/codes"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Claim reasons",
+          "item": [
+            {
+              "name": "List claim reasons",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/claim-reasons?page=1&limit=10"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prefixes",
+          "item": [
+            {
+              "name": "List prefixes",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/setting/prefixes?page=1&limit=10&type=person"
+              }
+            },
+            {
+              "name": "Reorder prefixes (scoped by type)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1,\n  \"type\": \"person\"\n}"
+                },
+                "url": "{{baseUrl}}/setting/prefixes/reorder"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

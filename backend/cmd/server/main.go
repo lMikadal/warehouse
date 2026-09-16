@@ -16,6 +16,7 @@ import (
 	"github.com/lMikadal/warehouse/backend/internal/module/admin"
 	authmod "github.com/lMikadal/warehouse/backend/internal/module/auth"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	"github.com/lMikadal/warehouse/backend/internal/server"
 )
@@ -87,6 +88,7 @@ func main() {
 	geoRepo := system.NewAddressGeoRepository(deps.DB)
 	system.RegisterRoutes(rbacProtected, menuSvc, menuPermRepo, permSvc, langHandler, geoRepo)
 	admin.RegisterRoutes(rbacProtected.Group("/admin"), roleHandler, userHandler)
+	setting.RegisterRoutes(rbacProtected.Group("/setting"), deps.DB)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

@@ -224,7 +224,7 @@ Wave 1 schema: shared enums, locale registry (`system_language` after rename), `
 
 **Object storage (dev):** Compose runs MinIO; backend receives `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_USE_SSL` (see [`infrastructure/env.example`](../../infrastructure/env.example)). Upload APIs are not wired yet — `system_file` rows store `bucket` + `object_key` for future S3 writes.
 
-**Setting module schema:** goose migrations add `system_file` then `setting_*` tables (12 tables + enums); CRUD handlers are a follow-up wave.
+**Setting module:** goose migrations add `system_file` then `setting_*` tables. **CRUD:** `internal/module/setting` on RBAC group `/api/v1/setting` — lang resources (`banks`, `payment-methods`, `sale-channels`, `claim-reasons`, `prefixes`) with th/en `names`, flat `codes`, singleton `GET/PATCH /vat` (no POST/DELETE). Prefix reorder requires `type` in body or query. Dev VAT row: `seeds/dev/09_setting_vat.sql`. Postman folder **Setting** in `document/postman/postman.json`.
 
 Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction), `08_system_address_geo.sql` (TH/SG geo demo — same IDs as `design/js/seed/system_*`; idempotent upserts).
 
