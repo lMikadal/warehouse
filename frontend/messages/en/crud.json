@@ -9,6 +9,7 @@
       "save": "Save"
     },
     "deleteConfirm": "Delete this record?",
+    "loading": "Loading…",
     "filter": {
       "all": "All",
       "select": "Filter {label}",

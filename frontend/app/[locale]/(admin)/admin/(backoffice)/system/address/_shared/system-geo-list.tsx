@@ -21,6 +21,7 @@ import {
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import type { SystemGeoListConfig } from "./system-geo-config";
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -678,11 +679,11 @@ export function SystemGeoList({ config }: { config: SystemGeoListConfig }) {
             </TableHeader>
             <TableBody key={sortableEpoch}>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={colSpan} className="text-center">
-                    …
-                  </TableCell>
-                </TableRow>
+                <CrudListTableSkeleton
+                  columnCount={colSpan}
+                  rowCount={10}
+                  showDragColumn
+                />
               ) : !perm.view ? (
                 <TableRow>
                   <TableCell colSpan={colSpan} className="text-center">

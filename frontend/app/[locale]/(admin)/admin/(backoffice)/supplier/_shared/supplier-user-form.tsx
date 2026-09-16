@@ -11,6 +11,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { CrudTabbedFormPageSkeleton } from "@/components/molecules/crud-tabbed-form-page-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import {
   FormCard,
@@ -868,7 +869,7 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
   };
 
   if (loading) {
-    return <p className="text-muted-foreground text-sm">…</p>;
+    return <CrudTabbedFormPageSkeleton />;
   }
 
   return (

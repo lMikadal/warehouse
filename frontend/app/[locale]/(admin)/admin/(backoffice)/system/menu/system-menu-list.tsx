@@ -21,6 +21,7 @@ import {
   type SystemMenuSheetState,
 } from "./system-menu-edit-sheet";
 // import { Button } from "@/components/ui/button";
+import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -758,11 +759,11 @@ export function SystemMenuList() {
             </TableHeader>
             <TableBody key={dragEnabled ? sortableEpoch : "header-sort"}>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={COLUMN_COUNT} className="text-center">
-                    …
-                  </TableCell>
-                </TableRow>
+                <CrudListTableSkeleton
+                  columnCount={COLUMN_COUNT - 1}
+                  rowCount={10}
+                  showDragColumn
+                />
               ) : pageRowViews.length ? (
                 pageRowViews.map((row, index) =>
                   dragEnabled ? (

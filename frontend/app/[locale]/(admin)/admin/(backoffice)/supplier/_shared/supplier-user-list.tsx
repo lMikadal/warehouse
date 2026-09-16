@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -265,11 +266,7 @@ export function SupplierUserList() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={COLUMN_COUNT} className="text-center">
-                  …
-                </TableCell>
-              </TableRow>
+              <CrudListTableSkeleton columnCount={COLUMN_COUNT} rowCount={10} />
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={COLUMN_COUNT} className="text-center">

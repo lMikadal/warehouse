@@ -29,6 +29,7 @@ Warehouse app production UI in `frontend/` — App Router, bun, Tailwind v4, sha
 | Date display | [`.cursor/rules/dates.mdc`](../../rules/dates.mdc) |
 | i18n / message keys | [`.cursor/rules/i18n-frontend.mdc`](../../rules/i18n-frontend.mdc) |
 | Icons | [`.cursor/rules/icons.mdc`](../../rules/icons.mdc) |
+| Admin loading skeletons | [`.cursor/rules/skeleton.mdc`](../../rules/skeleton.mdc) |
 | Docs sync | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |
 | Commands | [`.cursor/rules/makefile.mdc`](../../rules/makefile.mdc) |
 

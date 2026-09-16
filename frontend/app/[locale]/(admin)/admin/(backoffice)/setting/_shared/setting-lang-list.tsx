@@ -20,6 +20,7 @@ import {
   type SettingLangSheetState,
 } from "./setting-lang-edit-sheet";
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -698,11 +699,11 @@ export function SettingLangList({ config }: Props) {
           </TableHeader>
           <TableBody key={dragEnabled ? sortableEpoch : "static"}>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={tableColCount} className="text-center">
-                  …
-                </TableCell>
-              </TableRow>
+              <CrudListTableSkeleton
+                columnCount={tableColCount - 1}
+                rowCount={10}
+                showDragColumn
+              />
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={tableColCount} className="text-center">

@@ -1,0 +1,39 @@
+---
+description: Admin route loading skeletons — loading.tsx on every (admin) page; table/form skeletons during client fetch; keep skeleton layout in sync with page layout.
+globs: frontend/app/**/(admin)/**,frontend/components/molecules/*skeleton*
+alwaysApply: false
+---
+
+# Admin loading skeletons
+
+Applies to route pages under `frontend/app/[locale]/(admin)/` and shared skeleton molecules in `frontend/components/molecules/`.
+
+## Route segments (`loading.tsx`)
+
+- **Every new route** under `(admin)` must ship a co-located `loading.tsx` in the same change as `page.tsx`.
+- **Backoffice lists:** default parent [`admin/(backoffice)/loading.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/loading.tsx) uses [`CrudListPageSkeleton`](../../frontend/components/molecules/crud-list-page-skeleton.tsx) unless the page layout differs materially — then add a segment override (e.g. extra toolbar filters, tabbed form, login card).
+- **Full-page form routes** (e.g. supplier create/edit): `CrudTabbedFormPageSkeleton` in `new/loading.tsx` and `[id]/loading.tsx`.
+- **Login:** [`LoginFormSkeleton`](../../frontend/components/molecules/login-form-skeleton.tsx) in `(auth)/login/loading.tsx`.
+
+`loading.tsx` covers **App Router navigation** while the segment resolves. It does not replace in-component fetch loading.
+
+## Client fetch (lists and forms)
+
+- **Lists:** keep real [`CrudPageHeader`](../../frontend/components/molecules/crud-page-header.tsx) and toolbar while data loads; render [`CrudListTableSkeleton`](../../frontend/components/molecules/crud-list-table-skeleton.tsx) inside `<TableBody>` when `loading` is true. Do **not** use a single ellipsis row as the only loading UI.
+- **Refetch** (search, filter, pagination, reorder refresh): **table body skeleton only** — do not swap the whole page to `CrudListPageSkeleton` (avoids header/toolbar flicker).
+- **Full-page forms** with an initial detail fetch (e.g. supplier edit): return `CrudTabbedFormPageSkeleton` until the first load completes.
+- **Accessibility:** skeleton wrappers use `aria-busy="true"` and `crud.loading` for `aria-label` (see `frontend/messages/*/crud.json`).
+
+## Layout parity (mandatory)
+
+When you **add or change** admin page layout (header, toolbar, column set, tabs, form cards, fixed footer):
+
+1. Update the matching shared skeleton molecule (`CrudListPageSkeleton`, `CrudListTableSkeleton`, `CrudTabbedFormPageSkeleton`, or `LoginFormSkeleton`) in the **same change**.
+2. Adjust segment `loading.tsx` props (`tableColumns`, `showDragColumn`, `toolbarFilterSlots`, etc.) when the route-level chrome changes.
+3. Update co-located Storybook stories when skeleton props or structure change.
+
+## References
+
+- UI primitive: [`components/ui/skeleton.tsx`](../../frontend/components/ui/skeleton.tsx)
+- Storybook: **Molecules/CrudListPageSkeleton**, **CrudListTableSkeleton**, **CrudTabbedFormPageSkeleton**, **LoginFormSkeleton**
+- List/table UX: [tables.mdc](tables.mdc); route pages: [storybook.mdc](storybook.mdc)

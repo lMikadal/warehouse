@@ -8,6 +8,7 @@ import { type ComponentProps, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -227,11 +228,11 @@ export function SettingCodeList() {
           </TableHeader>
           <TableBody key={dragEnabled ? sortableEpoch : "static"}>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">
-                  …
-                </TableCell>
-              </TableRow>
+              <CrudListTableSkeleton
+                columnCount={5}
+                rowCount={10}
+                showDragColumn
+              />
             ) : (
               rows.map((row, index) =>
                 dragEnabled ? (

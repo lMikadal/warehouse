@@ -23,7 +23,7 @@ With `useTranslations("crud")`, the argument is a path **inside** the `crud` obj
 | `crud.actions` | `tCrud("table.actions")` |
 | `crud.sortAsc` / sort helpers | `tCrud("sort.asc")`, `sort.desc`, `sort.none` |
 
-There is **no** `crud.add`, `crud.loading`, or top-level `crud.save` in production JSON — using them triggers `MISSING_MESSAGE` at runtime (often first seen on locale `th`).
+There is **no** `crud.add` or top-level `crud.save` in production JSON — using them triggers `MISSING_MESSAGE` at runtime (often first seen on locale `th`). Use `crud.loading` for skeleton screen-reader labels only.
 
 ## Before adding `t("…")` or `tCrud("…")`
 
@@ -41,9 +41,9 @@ There is **no** `crud.add`, `crud.loading`, or top-level `crud.save` in producti
 
 Module-specific copy belongs in a dedicated fragment (e.g. `supplier.json`) registered in `load-messages.ts`, not duplicated under `crud`.
 
-## List loading row
+## List loading UI
 
-Other lists use an ellipsis (`…`) in the loading table cell, not an i18n key. Empty state uses `error.noData`.
+Admin list fetch loading uses shared table skeleton molecules (`CrudListTableSkeleton`) — see [skeleton.mdc](skeleton.mdc). Screen-reader label: `crud.loading`. Empty state uses `error.noData`.
 
 ## Checklist when porting from design
 

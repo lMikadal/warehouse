@@ -8,6 +8,7 @@ import {
   SettingVatEditSheet,
   type SettingVatEditPayload,
 } from "./setting-vat-edit-sheet";
+import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import {
@@ -124,11 +125,7 @@ export function SettingVatList() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={colCount} className="text-center">
-                  …
-                </TableCell>
-              </TableRow>
+              <CrudListTableSkeleton columnCount={colCount} rowCount={3} />
             ) : row == null ? (
               <TableRow>
                 <TableCell colSpan={colCount} className="text-center">
