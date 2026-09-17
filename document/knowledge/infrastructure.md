@@ -79,6 +79,8 @@ App, postgres, and redis ports are **not** published — containers talk on `war
 
 Compose `frontend` defaults `NEXT_PUBLIC_API_URL` to `http://backend:1323/api`; BFF builds Go URLs as `{base}/v1/…`. Host `make frontend-dev` uses `http://localhost:1323/api` from `frontend/env.example`.
 
+**Backend crash loop:** If `warehouse-backend` is **unhealthy** / connection reset on `:1323`, check `docker logs warehouse-backend` — startup runs goose migrations; invalid SQL (e.g. GIST index must be `CREATE INDEX … ON table USING GIST (col)`, not `… USING GIST ON table`) exits the process and breaks admin login (BFF `POST /api/v1/auth/login` → 503/500). Fix migration SQL, ensure DB version, then `docker restart warehouse-backend` or `make backend-migrate-up` + restart.
+
 Prod overlay hardcodes `NEXT_PUBLIC_API_URL=/api/v1` (build arg + runtime).
 
 ## Migrations

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { BreadcrumbNav, type BreadcrumbSegment } from "@/components/molecules/breadcrumb-nav";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
@@ -49,9 +50,19 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useLocalizedPathname } from "@/hooks/use-localized-pathname";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { logoutAndRedirectToLogin } from "@/lib/auth-client";
+import { fetchWarehouseList } from "@/lib/warehouse-api";
 import {
   adminNavLabel,
   breadcrumbFromNavTree,
@@ -128,6 +139,7 @@ type NavRenderContext = {
   locale: string;
   depth: number;
   navSearchActive: boolean;
+  onDialogNav?: (node: AdminNavNode) => void;
 };
 
 function AdminNavCollapsible({
@@ -263,6 +275,19 @@ function AdminNavNodeView({
     );
   }
 
+  if (node.isDialog) {
+    return (
+      <SidebarMenuSubItem>
+        <SidebarMenuSubButton
+          size="md"
+          onClick={() => ctx.onDialogNav?.(node)}
+        >
+          <span>{label}</span>
+        </SidebarMenuSubButton>
+      </SidebarMenuSubItem>
+    );
+  }
+
   if (ctx.depth === 0) {
     return (
       <SidebarMenuItem>
@@ -285,7 +310,7 @@ function AdminNavNodeView({
         isActive={active}
         size="md"
         aria-disabled={!node.href}
-        className={cn(!node.href && "pointer-events-none opacity-60")}
+        className={cn(!node.href && !node.isDialog && "pointer-events-none opacity-60")}
         render={node.href ? <Link href={node.href} /> : undefined}
       >
         <span>{label}</span>
@@ -301,9 +326,15 @@ export function AdminBackofficeShell({
   breadcrumbSegments,
 }: AdminBackofficeShellProps) {
   const t = useTranslations();
+  const tCrud = useTranslations("crud");
+  const tWh = useTranslations("warehouse");
+  const tForm = useTranslations("form");
   const locale = useLocale();
   const pathname = useLocalizedPathname();
+  const router = useRouter();
   const [navQuery, setNavQuery] = useState("");
+  const [mgmtPickerOpen, setMgmtPickerOpen] = useState(false);
+  const [pickerWarehouseId, setPickerWarehouseId] = useState("");
 
   const filteredTree = useMemo(
     () => filterAdminNavTree(navTree, navQuery, locale),
@@ -325,11 +356,61 @@ export function AdminBackofficeShell({
     locale,
     depth: 0,
     navSearchActive,
+    onDialogNav: () => setMgmtPickerOpen(true),
   };
 
   const initial = userInitial(user.username);
 
   return (
+    <>
+    <Dialog open={mgmtPickerOpen} onOpenChange={setMgmtPickerOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{tWh("managementDialogTitle")}</DialogTitle>
+        </DialogHeader>
+        <RemoteComboboxField
+          label={tWh("selectWarehouse")}
+          value={pickerWarehouseId}
+          onValueChange={setPickerWarehouseId}
+          placeholder={tForm("placeholder.select", {
+            label: tWh("selectWarehouse"),
+          })}
+          emptyLabel={tForm("combobox.noResults")}
+          inputClassName="w-full"
+          onLoadOptions={async ({ search }) => {
+            const { items } = await fetchWarehouseList(locale, {
+              page: 1,
+              limit: 50,
+              search,
+              type: "warehouse",
+              isActive: true,
+            });
+            return items.map((w) => ({
+              value: String(w.id),
+              label: w.name || w.sku,
+            }));
+          }}
+        />
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button type="button" variant="outline" onClick={() => setMgmtPickerOpen(false)}>
+            {tCrud("btn.cancel")}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              if (!pickerWarehouseId) {
+                toast.error(tWh("selectWarehouseRequired"));
+                return;
+              }
+              setMgmtPickerOpen(false);
+              router.push(`/admin/warehouse/list/view?id=${pickerWarehouseId}`);
+            }}
+          >
+            {tCrud("btn.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <SidebarProvider>
       <Sidebar
         collapsible="offcanvas"
@@ -407,5 +488,6 @@ export function AdminBackofficeShell({
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </>
   );
 }

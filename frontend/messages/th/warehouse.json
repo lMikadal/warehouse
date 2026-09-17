@@ -1,0 +1,32 @@
+{
+  "warehouse": {
+    "managementDialogTitle": "การจัดการคลังสินค้า",
+    "selectWarehouse": "คลังสินค้า",
+    "selectWarehouseRequired": "กรุณาเลือกคลังสินค้า",
+    "warehouseCol": "คลังสินค้า",
+    "skuCol": "รหัส",
+    "remainCol": "คงเหลือ",
+    "zoneCol": "โซน",
+    "pieces": "ชิ้น",
+    "zonesUnit": "โซน",
+    "noZones": "ไม่มีโซนในคลังนี้",
+    "addZone": "เพิ่มโซน",
+    "addWarehouse": "เพิ่มคลังสินค้า",
+    "editWarehouse": "แก้ไขคลังสินค้า",
+    "editZone": "แก้ไขโซน",
+    "typeShelf": "ชั้นวาง",
+    "typeRack": "แร็ค",
+    "typeBin": "กล่อง",
+    "amountMax": "จำนวนสูงสุด",
+    "amountActive": "ใช้งาน",
+    "amountInactive": "ไม่ใช้งาน",
+    "capacityShort": "ความจุ {used}/{total}",
+    "statTotalZones": "โซนทั้งหมด",
+    "statTotalShelves": "ชั้นวางทั้งหมด",
+    "statTotalRacks": "แร็คทั้งหมด",
+    "statTotalBins": "กล่องทั้งหมด",
+    "statCapacityUsed": "ใช้ความจุ",
+    "details": "รายละเอียด",
+    "deleteHasStock": "ลบไม่ได้: ยังมีสต็อกคงเหลือในกล่องภายใต้คลัง/โซนนี้"
+  }
+}

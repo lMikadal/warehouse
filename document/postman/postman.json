@@ -881,6 +881,140 @@
       ]
     },
     {
+      "name": "Warehouse",
+      "item": [
+        {
+          "name": "Lists",
+          "item": [
+            {
+              "name": "List warehouses",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/warehouse/lists?type=warehouse&page=1&limit=10&include=stats"
+              }
+            },
+            {
+              "name": "List zones under warehouse",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/warehouse/lists?type=zone&parent_id=1&page=1&limit=100"
+              }
+            },
+            {
+              "name": "Create warehouse",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"warehouse\",\n  \"sku\": \"WH-TEST\",\n  \"capacity\": 0,\n  \"is_active\": true,\n  \"names\": { \"th\": \"คลังทดสอบ\", \"en\": \"Test WH\" }\n}"
+                },
+                "url": "{{baseUrl}}/warehouse/lists"
+              }
+            },
+            {
+              "name": "Create zone with conditions",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"zone\",\n  \"sku\": \"ZONE-TEST\",\n  \"parent_id\": 1,\n  \"capacity\": 0,\n  \"is_active\": true,\n  \"names\": { \"th\": \"โซนทดสอบ\", \"en\": \"Test zone\" },\n  \"shelf\": { \"amount\": 10, \"amount_active\": 5 },\n  \"rack\": { \"amount\": 15, \"amount_active\": 10 },\n  \"bin\": { \"amount\": 5, \"amount_active\": 1 }\n}"
+                },
+                "url": "{{baseUrl}}/warehouse/lists"
+              }
+            },
+            {
+              "name": "Get node",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/warehouse/lists/1"
+              }
+            },
+            {
+              "name": "Warehouse stats",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/warehouse/lists/1/stats"
+              }
+            },
+            {
+              "name": "Warehouse tree",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/warehouse/lists/1/tree"
+              }
+            },
+            {
+              "name": "Patch node",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true\n}"
+                },
+                "url": "{{baseUrl}}/warehouse/lists/1"
+              }
+            },
+            {
+              "name": "Patch zone conditions",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"shelf\": { \"amount\": 2, \"amount_active\": 2 },\n  \"rack\": { \"amount\": 3, \"amount_active\": 2 },\n  \"bin\": { \"amount\": 4, \"amount_active\": 3 }\n}"
+                },
+                "url": "{{baseUrl}}/warehouse/lists/4/conditions"
+              }
+            },
+            {
+              "name": "Reorder siblings",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/warehouse/lists/reorder"
+              }
+            },
+            {
+              "name": "Move node",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 22,\n  \"target_id\": 21,\n  \"zone\": \"after\"\n}"
+                },
+                "url": "{{baseUrl}}/warehouse/lists/move"
+              }
+            },
+            {
+              "name": "Delete node",
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/warehouse/lists/99"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Supplier",
       "item": [
         {

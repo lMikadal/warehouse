@@ -1,0 +1,32 @@
+{
+  "warehouse": {
+    "managementDialogTitle": "Warehouse management",
+    "selectWarehouse": "Warehouse",
+    "selectWarehouseRequired": "Please select a warehouse",
+    "warehouseCol": "Warehouse",
+    "skuCol": "Warehouse code",
+    "remainCol": "Remaining stock",
+    "zoneCol": "Zones",
+    "pieces": "pcs",
+    "zonesUnit": "zones",
+    "noZones": "No zones in this warehouse",
+    "addZone": "Add zone",
+    "addWarehouse": "Add warehouse",
+    "editWarehouse": "Edit warehouse",
+    "editZone": "Edit zone",
+    "typeShelf": "Shelf",
+    "typeRack": "Rack",
+    "typeBin": "Bin",
+    "amountMax": "Max quantity",
+    "amountActive": "Active",
+    "amountInactive": "Inactive",
+    "capacityShort": "Capacity {used}/{total}",
+    "statTotalZones": "Total zones",
+    "statTotalShelves": "Total shelves",
+    "statTotalRacks": "Total racks",
+    "statTotalBins": "Total bins",
+    "statCapacityUsed": "Capacity used",
+    "details": "Details",
+    "deleteHasStock": "Cannot delete: bins under this location still have remaining stock."
+  }
+}

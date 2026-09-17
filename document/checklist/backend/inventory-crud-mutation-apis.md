@@ -26,7 +26,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `product_attribute` | TBD | active, move | [ ] | Tree; attribute UI may restrict drag scope |
 | `supplier_user` | `/supplier/users` | active | [x] | No list `sort_order` |
 | `supplier_bank` | TBD | active | [ ] | Reorder parent-scoped — see §D |
-| `warehouse_list` | TBD | active, move | [ ] | Tree |
+| `warehouse_list` | `/warehouse/lists` | active, move | [x] | Tree |
 | `setting_bank` | `/setting/banks` | active, reorder | [x] | |
 | `setting_code` | `/setting/codes` | active, reorder | [x] | |
 | `setting_claim_reason` | `/setting/claim-reasons` | active, reorder | [x] | Extra switches `is_claim` / `is_return` on same row |
@@ -56,7 +56,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `system_sub_district` | `system_district_id` | [x] | |
 | `system_language` | global | [x] | `is_active` + **`is_default`** exclusive + `/reorder` |
 | `system_menu` | tree | [x] | Use **`/move`**, not `/reorder` |
-| `warehouse_list` | tree | [ ] | Use **`/move`** |
+| `warehouse_list` | tree | [x] | Use **`/move`** |
 | `product_attribute` | tree | [ ] | Use **`/move`** (sibling-only for some types in design) |
 | `member_tier` | tree | [ ] | Use **`/move`** |
 
@@ -65,7 +65,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | Table | Status |
 |-------|--------|
 | `system_menu` | [x] |
-| `warehouse_list` | [ ] |
+| `warehouse_list` | [x] |
 | `product_attribute` | [ ] |
 | `member_tier` | [ ] |
 

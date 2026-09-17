@@ -5,7 +5,6 @@ import { getLocale } from "next-intl/server";
 
 import { AdminBackofficeShell } from "@/components/organisms/admin-backoffice-shell";
 import { AdminBackofficeActorProvider } from "@/lib/admin-backoffice-actor-context";
-import { redirect } from "@/i18n/navigation";
 import { mergeLocationNavNodes } from "@/lib/admin-nav-api";
 import { SSR_REFRESH_TRIED_COOKIE } from "@/lib/auth-cookies";
 import {
@@ -27,6 +26,10 @@ function refreshRedirectUrl(returnPath: string): string {
   return `/api/v1/auth/refresh-redirect?return=${encodeURIComponent(returnPath)}`;
 }
 
+function clearSessionLoginUrl(): string {
+  return `/api/v1/auth/clear-session?return=${encodeURIComponent("/admin/login")}`;
+}
+
 export default async function BackofficeLayout({ children }: Props) {
   const locale = await getLocale();
   const headerStore = await headers();
@@ -38,7 +41,7 @@ export default async function BackofficeLayout({ children }: Props) {
     if (await getRefreshToken()) {
       nextRedirect(refreshRedirectUrl(returnPath));
     }
-    redirect({ href: "/admin/login", locale });
+    nextRedirect(clearSessionLoginUrl());
     return null;
   }
 
@@ -52,10 +55,11 @@ export default async function BackofficeLayout({ children }: Props) {
     const jar = await cookies();
     const ssrRefreshTried =
       jar.get(SSR_REFRESH_TRIED_COOKIE)?.value === "1";
-    if ((await getRefreshToken()) && !ssrRefreshTried) {
+    const hasRefresh = Boolean(await getRefreshToken());
+    if (hasRefresh && !ssrRefreshTried) {
       nextRedirect(refreshRedirectUrl(returnPath));
     }
-    redirect({ href: "/admin/login", locale });
+    nextRedirect(clearSessionLoginUrl());
     return null;
   }
 

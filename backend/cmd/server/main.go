@@ -18,6 +18,7 @@ import (
 	"github.com/lMikadal/warehouse/backend/internal/infra/s3"
 	"github.com/lMikadal/warehouse/backend/internal/module/health"
 	"github.com/lMikadal/warehouse/backend/internal/module/location"
+	"github.com/lMikadal/warehouse/backend/internal/module/warehouse"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/supplier"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
@@ -104,6 +105,7 @@ func main() {
 	setting.RegisterRoutes(rbacProtected.Group("/setting"), deps.DB, fileSvc)
 	supplier.RegisterRoutes(rbacProtected.Group("/supplier"), deps.DB)
 	location.RegisterRoutes(rbacProtected.Group("/location"), deps.DB)
+	warehouse.RegisterRoutes(rbacProtected.Group("/warehouse"), deps.DB)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)

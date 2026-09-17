@@ -23,6 +23,8 @@ export type AdminNavNode = {
   labels: AdminNavLabels;
   href?: string;
   icon?: AdminNavIcon;
+  isDialog?: boolean;
+  dialogPath?: string;
   defaultOpen?: boolean;
   children?: AdminNavNode[];
 };
@@ -36,6 +38,7 @@ export type ApiNavNode = {
   id: number;
   icon?: string | null;
   path?: string | null;
+  is_dialog?: boolean;
   labels: Record<string, string>;
   children?: ApiNavNode[];
 };
@@ -86,6 +89,8 @@ export function apiNavTreeToAdminNodes(tree: ApiNavNode[]): AdminNavNode[] {
       labels: toLabels(n.labels),
       href,
       icon: toNavIcon(n.icon),
+      isDialog: n.is_dialog === true,
+      dialogPath: n.is_dialog && n.path ? n.path.trim() : undefined,
       children,
     };
   });

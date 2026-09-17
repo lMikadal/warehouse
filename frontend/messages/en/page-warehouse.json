@@ -1,0 +1,13 @@
+{
+  "page": {
+    "warehouseList": {
+      "title": "Warehouse list",
+      "desc": "Manage warehouses and zones",
+      "add": "Add warehouse"
+    },
+    "warehouseView": {
+      "title": "Warehouse management",
+      "desc": "Layout and capacity by zone"
+    }
+  }
+}

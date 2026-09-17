@@ -1,0 +1,272 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+import { type FormEvent, useState } from "react";
+
+import {
+  CrudFormSheet,
+  CrudFormSheetBody,
+  CrudFormSheetFooter,
+  CrudFormSheetHeader,
+} from "@/components/molecules/crud-form-sheet";
+import { FormField } from "@/components/molecules/form-field";
+import { StatusSwitchField } from "@/components/molecules/status-switch-field";
+import type { WarehouseCondition } from "@/lib/warehouse-api";
+
+export type WarehouseSheetState =
+  | { kind: "warehouse"; id?: number }
+  | { kind: "zone"; warehouseId: number; id?: number };
+
+export type ZoneConditionValues = { amount: string; amountActive: string };
+
+export type ZoneConditionsForm = {
+  shelf: ZoneConditionValues;
+  rack: ZoneConditionValues;
+  bin: ZoneConditionValues;
+};
+
+const ZERO_COND: ZoneConditionValues = { amount: "0", amountActive: "0" };
+
+export const EMPTY_ZONE_CONDITIONS: ZoneConditionsForm = {
+  shelf: { ...ZERO_COND },
+  rack: { ...ZERO_COND },
+  bin: { ...ZERO_COND },
+};
+
+export function conditionsFromApi(
+  rows: WarehouseCondition[] | undefined
+): ZoneConditionsForm {
+  const form: ZoneConditionsForm = {
+    shelf: { ...ZERO_COND },
+    rack: { ...ZERO_COND },
+    bin: { ...ZERO_COND },
+  };
+  for (const type of ["shelf", "rack", "bin"] as const) {
+    const c = rows?.find((r) => r.type === type);
+    if (c) {
+      form[type] = {
+        amount: String(c.amount ?? 0),
+        amountActive: String(c.amount_active ?? 0),
+      };
+    }
+  }
+  return form;
+}
+
+export function conditionsToPatchBody(form: ZoneConditionsForm) {
+  const n = (s: string) => Number(s) || 0;
+  return {
+    shelf: { amount: n(form.shelf.amount), amount_active: n(form.shelf.amountActive) },
+    rack: { amount: n(form.rack.amount), amount_active: n(form.rack.amountActive) },
+    bin: { amount: n(form.bin.amount), amount_active: n(form.bin.amountActive) },
+  };
+}
+
+export type WarehouseNodeFormInitial = {
+  sku: string;
+  nameTh: string;
+  nameEn: string;
+  isActive: boolean;
+  conditions?: ZoneConditionsForm;
+};
+
+export type WarehouseNodeSavePayload = {
+  sku: string;
+  nameTh: string;
+  nameEn: string;
+  isActive: boolean;
+  conditions?: ZoneConditionsForm;
+};
+
+type Props = {
+  state: WarehouseSheetState | null;
+  initial: WarehouseNodeFormInitial;
+  canSave?: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (payload: WarehouseNodeSavePayload) => void | Promise<void>;
+};
+
+const CONDITION_TYPES = [
+  { key: "shelf" as const, legendKey: "typeShelf" },
+  { key: "rack" as const, legendKey: "typeRack" },
+  { key: "bin" as const, legendKey: "typeBin" },
+];
+
+export function WarehouseNodeEditSheet({
+  state,
+  initial,
+  canSave = true,
+  onOpenChange,
+  onSave,
+}: Props) {
+  if (!state) return null;
+
+  const formKey =
+    state.kind === "warehouse"
+      ? state.id
+        ? `warehouse-edit-${state.id}`
+        : "warehouse-create"
+      : state.id
+        ? `zone-edit-${state.id}`
+        : `zone-create-${state.warehouseId}`;
+
+  return (
+    <WarehouseNodeEditForm
+      key={formKey}
+      state={state}
+      initial={initial}
+      canSave={canSave}
+      onClose={() => onOpenChange(false)}
+      onSave={onSave}
+    />
+  );
+}
+
+function WarehouseNodeEditForm({
+  state,
+  initial,
+  canSave,
+  onClose,
+  onSave,
+}: {
+  state: WarehouseSheetState;
+  initial: WarehouseNodeFormInitial;
+  canSave: boolean;
+  onClose: () => void;
+  onSave: Props["onSave"];
+}) {
+  const tCrud = useTranslations("crud");
+  const tWh = useTranslations("warehouse");
+
+  const [sku, setSku] = useState(initial.sku);
+  const [nameTh, setNameTh] = useState(initial.nameTh);
+  const [nameEn, setNameEn] = useState(initial.nameEn);
+  const [isActive, setIsActive] = useState(initial.isActive);
+  const [conditions, setConditions] = useState<ZoneConditionsForm>(
+    initial.conditions ?? EMPTY_ZONE_CONDITIONS
+  );
+  const [invalid, setInvalid] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState(false);
+
+  const title =
+    state.kind === "zone"
+      ? state.id
+        ? tWh("editZone")
+        : tWh("addZone")
+      : state.id
+        ? tWh("editWarehouse")
+        : tWh("addWarehouse");
+
+  const setCond = (
+    type: keyof ZoneConditionsForm,
+    field: keyof ZoneConditionValues,
+    value: string
+  ) => {
+    setConditions((prev) => ({
+      ...prev,
+      [type]: { ...prev[type], [field]: value },
+    }));
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const next: Record<string, boolean> = {};
+    if (!sku.trim()) next.sku = true;
+    if (!nameTh.trim()) next.nameTh = true;
+    if (!nameEn.trim()) next.nameEn = true;
+    setInvalid(next);
+    if (Object.keys(next).length > 0) return;
+    setSaving(true);
+    try {
+      await onSave({
+        sku: sku.trim(),
+        nameTh: nameTh.trim(),
+        nameEn: nameEn.trim(),
+        isActive,
+        ...(state.kind === "zone" ? { conditions } : {}),
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <CrudFormSheet open onOpenChange={(o) => !o && onClose()}>
+      <form
+        className="flex min-h-0 flex-1 flex-col"
+        onSubmit={(e) => void submit(e)}
+        noValidate
+      >
+        <CrudFormSheetHeader title={title} />
+        <CrudFormSheetBody className="space-y-4">
+          <FormField
+            id="wh-sku"
+            labelKey="warehouse.skuCol"
+            required
+            value={sku}
+            onChange={setSku}
+            invalid={invalid.sku}
+            onClearInvalid={() => setInvalid((p) => ({ ...p, sku: false }))}
+          />
+          <FormField
+            id="wh-name-th"
+            labelKey="col.nameTh"
+            required
+            value={nameTh}
+            onChange={setNameTh}
+            invalid={invalid.nameTh}
+            onClearInvalid={() => setInvalid((p) => ({ ...p, nameTh: false }))}
+          />
+          <FormField
+            id="wh-name-en"
+            labelKey="col.nameEn"
+            required
+            value={nameEn}
+            onChange={setNameEn}
+            invalid={invalid.nameEn}
+            onClearInvalid={() => setInvalid((p) => ({ ...p, nameEn: false }))}
+          />
+          {state.kind === "zone"
+            ? CONDITION_TYPES.map(({ key, legendKey }) => (
+                <fieldset
+                  key={key}
+                  className="space-y-3 rounded-lg border border-border p-3"
+                >
+                  <legend className="px-1 text-sm font-semibold">
+                    {tWh(legendKey)}
+                  </legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <FormField
+                      id={`wh-cond-${key}-amount`}
+                      labelKey="warehouse.amountMax"
+                      type="number"
+                      value={conditions[key].amount}
+                      onChange={(v) => setCond(key, "amount", v)}
+                    />
+                    <FormField
+                      id={`wh-cond-${key}-active`}
+                      labelKey="warehouse.amountActive"
+                      type="number"
+                      value={conditions[key].amountActive}
+                      onChange={(v) => setCond(key, "amountActive", v)}
+                    />
+                  </div>
+                </fieldset>
+              ))
+            : null}
+          <StatusSwitchField
+            labelKey="col.active"
+            checked={isActive}
+            onCheckedChange={setIsActive}
+          />
+        </CrudFormSheetBody>
+        <CrudFormSheetFooter
+          dismissLabel={tCrud("btn.cancel")}
+          showSave={canSave}
+          saveDisabled={!canSave || saving}
+        />
+      </form>
+    </CrudFormSheet>
+  );
+}

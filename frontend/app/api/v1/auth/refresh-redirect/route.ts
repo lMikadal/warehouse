@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { SSR_REFRESH_TRIED_COOKIE } from "@/lib/auth-cookies";
+import {
+  ACCESS_TOKEN_COOKIE,
+  LANDING_PATH_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  SSR_REFRESH_TRIED_COOKIE,
+} from "@/lib/auth-cookies";
 import {
   authCookieOptions,
   getLandingPathCookie,
@@ -23,7 +28,14 @@ export async function GET(request: Request) {
   const access = await refreshAccessTokenFromCookies();
   if (!access) {
     const login = NextResponse.redirect(new URL("/admin/login", request.url));
-    login.cookies.delete(SSR_REFRESH_TRIED_COOKIE);
+    for (const name of [
+      ACCESS_TOKEN_COOKIE,
+      REFRESH_TOKEN_COOKIE,
+      LANDING_PATH_COOKIE,
+      SSR_REFRESH_TRIED_COOKIE,
+    ]) {
+      login.cookies.delete(name);
+    }
     return login;
   }
 

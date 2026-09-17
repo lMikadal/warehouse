@@ -11,6 +11,7 @@ type NavNode struct {
 	ID       int64             `json:"id"`
 	Icon     *string           `json:"icon,omitempty"`
 	Path     *string           `json:"path,omitempty"`
+	IsDialog bool              `json:"is_dialog,omitempty"`
 	Labels   map[string]string `json:"labels"`
 	Children []NavNode         `json:"children,omitempty"`
 }
@@ -123,6 +124,10 @@ func filterNavNodes(ctx context.Context, rbac permissionChecker, p pkgauth.Princ
 			if !menuViewAllowed(ctx, rbac, p, n.row.ID, viewCodes) {
 				continue
 			}
+		} else if n.row.IsDialog {
+			if !menuViewAllowed(ctx, rbac, p, n.row.ID, viewCodes) {
+				continue
+			}
 		} else if len(children) == 0 {
 			continue
 		}
@@ -180,13 +185,14 @@ func toNavNodes(nodes []navTreeNode) []NavNode {
 			labels["en"] = n.row.Names["en"]
 		}
 		var path *string
-		if isNavigablePath(n.row.Path) {
+		if isNavigablePath(n.row.Path) && !n.row.IsDialog {
 			path = n.row.Path
 		}
 		out[i] = NavNode{
 			ID:       n.row.ID,
 			Icon:     n.row.Icon,
 			Path:     path,
+			IsDialog: n.row.IsDialog,
 			Labels:   labels,
 			Children: toNavNodes(n.children),
 		}

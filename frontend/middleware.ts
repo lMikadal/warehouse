@@ -5,6 +5,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   LANDING_PATH_COOKIE,
   REFRESH_TOKEN_COOKIE,
+  SSR_REFRESH_TRIED_COOKIE,
 } from "./lib/auth-cookies";
 import {
   localePrefixForRequest,
@@ -34,6 +35,8 @@ export default function middleware(request: NextRequest) {
   });
   const access = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refresh = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  const ssrRefreshTried =
+    request.cookies.get(SSR_REFRESH_TRIED_COOKIE)?.value === "1";
   const hasSession = Boolean(access || refresh);
   const landing =
     request.cookies.get(LANDING_PATH_COOKIE)?.value || "/admin/system/menu";
@@ -46,7 +49,18 @@ export default function middleware(request: NextRequest) {
       }
       return NextResponse.redirect(loginUrl);
     }
-    if (hasSession && isAdminLogin) {
+    if (isAdminLogin && ssrRefreshTried) {
+      const response = handleI18nRouting(intlRequest);
+      for (const name of [
+        ACCESS_TOKEN_COOKIE,
+        REFRESH_TOKEN_COOKIE,
+        SSR_REFRESH_TRIED_COOKIE,
+      ]) {
+        response.cookies.delete(name);
+      }
+      return response;
+    }
+    if (access && isAdminLogin) {
       return NextResponse.redirect(adminRedirectUrl(request, landing));
     }
   }

@@ -61,4 +61,8 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "location.location_location.view" {
 		t.Fatalf("location get: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("PATCH", "/api/v1/warehouse/lists/move")
+	if !ok || code != "warehouse.warehouse_list.update" {
+		t.Fatalf("warehouse move: got %q %v", code, ok)
+	}
 }

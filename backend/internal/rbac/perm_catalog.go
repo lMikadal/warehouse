@@ -32,6 +32,7 @@ var CatalogPermPages = []PermPage{
 	{Module: "setting", Type: "setting_prefix", Resource: "/api/v1/setting/prefixes"},
 	{Module: "supplier", Type: "supplier_user", Resource: "/api/v1/supplier/users"},
 	{Module: "location", Type: "location_location", Resource: "/api/v1/location/locations"},
+	{Module: "warehouse", Type: "warehouse_list", Resource: "/api/v1/warehouse/lists"},
 }
 
 func routePermPages() []PermPage {

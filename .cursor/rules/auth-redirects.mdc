@@ -1,0 +1,27 @@
+---
+description: Admin auth guard and SSR refresh — avoid redirect loops between middleware, backoffice layout, and login.
+globs:
+  - frontend/middleware.ts
+  - frontend/app/**/admin/**/layout.tsx
+  - frontend/app/api/v1/auth/**
+  - frontend/lib/auth-*.ts
+---
+
+# Admin auth redirects (no loops)
+
+## Layers
+
+1. **`middleware.ts`** — coarse gate: admin routes (except login) need **access or refresh** cookie; neither → login with `callbackUrl`. Login page: auto-redirect to `warehouse_landing` **only when an access cookie is present** (not refresh-only). If `warehouse_ssr_refresh_tried=1` on login, **do not** bounce to landing — clear auth + tried cookies and render login.
+2. **`(backoffice)/layout.tsx`** — SSR auth: missing access + refresh → `GET /api/v1/auth/refresh-redirect`; `/auth/me` or `/auth/nav` fail → one refresh round via `refresh-redirect` (sets `warehouse_ssr_refresh_tried`), then **`GET /api/v1/auth/clear-session?return=/admin/login`** (never i18n `redirect` to login while stale cookies remain).
+3. **`refresh-redirect`** — Route Handler sets new cookies; on refresh failure redirect login and **delete all auth cookies** on the response.
+4. **`clear-session`** — Deletes access, refresh, landing, and SSR-tried cookies, then redirects to a safe `/admin/*` path (default login).
+
+## Invariants
+
+- Never send the user to `/admin/login` from SSR while httpOnly session cookies still exist unless going through **`clear-session`** or **`refresh-redirect` failure** (which clears cookies).
+- **`warehouse_ssr_refresh_tried`** allows at most **one** layout → refresh-redirect → admin path round trip per expiry window; after that, clear session and show login.
+- Middleware must not treat “refresh cookie only” on the login page as “already logged in” (no auto-redirect without access).
+
+## When changing auth
+
+Update `document/knowledge/frontend.md` (Session + Guard rows) if behavior changes.

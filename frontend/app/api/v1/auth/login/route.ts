@@ -29,14 +29,22 @@ export async function POST(request: Request) {
   const locale =
     request.headers.get("accept-language")?.split(",")[0]?.slice(0, 2) ?? "th";
 
-  const res = await backendFetch("/v1/auth/login", {
-    method: "POST",
-    body: {
-      username: body.username ?? "",
-      password: body.password ?? "",
-    },
-    locale,
-  });
+  let res: Response;
+  try {
+    res = await backendFetch("/v1/auth/login", {
+      method: "POST",
+      body: {
+        username: body.username ?? "",
+        password: body.password ?? "",
+      },
+      locale,
+    });
+  } catch {
+    return NextResponse.json(
+      { code: "service_unavailable", message: "backend unreachable" },
+      { status: 503 }
+    );
+  }
 
   if (!res.ok) {
     const err = await parseApiError(res);
