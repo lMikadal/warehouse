@@ -274,6 +274,21 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Guard | [`middleware.ts`](../../frontend/middleware.ts) — `/admin/*` (except login) requires **access or refresh** cookie; neither → `/admin/login`; login page auto-redirects to `warehouse_landing` **only when access cookie is present** (refresh-only does not skip login). If `warehouse_ssr_refresh_tried=1` on login, clear session cookies and show login (no landing bounce). Sets request header `x-warehouse-admin-path` for SSR refresh return URL. Locale stripping / redirect prefix: [`lib/locale-path.ts`](../../frontend/lib/locale-path.ts). |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
 
+### Product list (item browse + aggregate form)
+
+| Item | Detail |
+|------|--------|
+| Design | [`design/pages/product-list.html`](../../design/pages/product-list.html), [`product-list-form.html`](../../design/pages/product-list-form.html) |
+| Routes | `/admin/product/list` (full-width table), `/admin/product/list/new`, `/admin/product/list/[id]` + `loading.tsx` |
+| BFF / API | [`lib/bff-product-list-handlers.ts`](../../frontend/lib/bff-product-list-handlers.ts) → [`app/api/v1/auth/proxy/product/items/`](../../frontend/app/api/v1/auth/proxy/product/items/) and [`…/lists/`](../../frontend/app/api/v1/auth/proxy/product/lists/); client [`lib/product-list-api.ts`](../../frontend/lib/product-list-api.ts) |
+| List UI | [`product-list-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/product/_shared/product-list-page.tsx), [`product-list-table.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/product/_shared/product-list-table.tsx), [`product-list-selection-bar.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/product/_shared/product-list-selection-bar.tsx) (sticky bulk bar when rows selected: delete, `PATCH is_stopped` open/close sales); row checkboxes when user has delete or update; product badges include red **`salesStopped`** when `is_stopped`; car/warehouse modals; filters: search, category/brand combobox, status + `is_new` |
+| Form UI | Tabbed [`product-list-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/product/_shared/product-list-form.tsx): data (info, details, codes, partners, cars), pricing (variants, channel prices from active sale channels, bin placement), history stub UI; sidebar status/note on data tab only; per-variant save → `PATCH /product/items/:id` when editing |
+| Cars sub-form | [`product-list-form-cars.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/product/_shared/product-list-form-cars.tsx) — brand/model/engine combobox cascade |
+| Category pick | Indented tree labels via [`lib/product-category-combobox.ts`](../../frontend/lib/product-category-combobox.ts) (design overlay cascade picker not ported — same leaf selection UX) |
+| i18n | [`messages/{th,en}/product-list.json`](../../frontend/messages/en/product-list.json) (`productList`, `productListForm`); page titles in `page-product.json` |
+| RBAC | `useResourcePermissions("product", "product_list")` |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-product-list.md`](../checklist/frontend/phase-frontend-product-list.md) |
+
 ### Login route (admin)
 
 | Item | Detail |

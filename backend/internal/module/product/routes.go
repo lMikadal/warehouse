@@ -11,6 +11,26 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	registerResource(g.Group("/categories"), repo, "category", true)
 	registerResource(g.Group("/brands"), repo, "brand", false)
 	registerResource(g.Group("/cars"), repo, "car", true)
+
+	itemRepo := NewItemRepository(db)
+	listRepo := NewListRepository(db)
+	itemH := NewItemHandler(itemRepo, listRepo)
+	listH := NewListHandler(itemRepo, listRepo)
+
+	items := g.Group("/items")
+	items.GET("", itemH.listBrowse)
+	items.PATCH("/:id", itemH.patch)
+	items.DELETE("/:id", itemH.delete)
+	items.GET("/:id/warehouse-placements", itemH.warehousePlacements)
+	items.GET("/:id/history/purchase", itemH.historyPurchase)
+	items.GET("/:id/history/sales", itemH.historySales)
+
+	lists := g.Group("/lists")
+	lists.POST("", listH.create)
+	lists.GET("/:id", listH.get)
+	lists.PATCH("/:id", listH.patch)
+	lists.DELETE("/:id", listH.delete)
+	lists.GET("/:id/cars", listH.listCars)
 }
 
 func registerResource(g *echo.Group, repo *Repository, attrType string, allowMove bool) {

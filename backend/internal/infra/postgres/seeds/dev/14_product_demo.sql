@@ -125,6 +125,22 @@ ON CONFLICT (product_list_id, locale) DO UPDATE SET
   sub_name = EXCLUDED.sub_name,
   updated_at = EXCLUDED.updated_at;
 
+INSERT INTO product_list_car (id, product_list_id, product_attribute_brand_id, product_attribute_model_id, product_attribute_engine_id, gear_type, year_start, year_end, created_by, updated_by, created_at, updated_at)
+VALUES
+  (1, 1, 5, 6, 7, 'auto', 2018, 2022, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, 1, 8, 9, 7, 'manual', 2016, 2020, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (3, 2, 5, 6, 7, 'auto', 2019, 2023, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+ON CONFLICT (id) DO UPDATE SET
+  product_list_id = EXCLUDED.product_list_id,
+  product_attribute_brand_id = EXCLUDED.product_attribute_brand_id,
+  product_attribute_model_id = EXCLUDED.product_attribute_model_id,
+  product_attribute_engine_id = EXCLUDED.product_attribute_engine_id,
+  gear_type = EXCLUDED.gear_type,
+  year_start = EXCLUDED.year_start,
+  year_end = EXCLUDED.year_end,
+  deleted_at = NULL,
+  updated_at = EXCLUDED.updated_at;
+
 INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_fake, is_active, created_by, updated_by, created_at, updated_at)
 VALUES
   (1, 1, 'P-ITEM-001-A', '8851234567890', 'P-ITEM-001-A', 450, 400, 7, 'ส่วนลด 10% เดือนมีนาคม (ตัวอย่าง)', 'manual', 'piece', 1, 0.45, 10, 10, 15, 5, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
@@ -177,6 +193,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 SELECT setval(pg_get_serial_sequence('product_attribute', 'id'), GREATEST((SELECT MAX(id) FROM product_attribute), 1));
 SELECT setval(pg_get_serial_sequence('product_list', 'id'), GREATEST((SELECT MAX(id) FROM product_list), 1));
+SELECT setval(pg_get_serial_sequence('product_list_car', 'id'), GREATEST((SELECT MAX(id) FROM product_list_car), 1));
 SELECT setval(pg_get_serial_sequence('product_item', 'id'), GREATEST((SELECT MAX(id) FROM product_item), 1));
 SELECT setval(pg_get_serial_sequence('product_item_warehouse', 'id'), GREATEST((SELECT MAX(id) FROM product_item_warehouse), 1));
 SELECT setval(pg_get_serial_sequence('product_item_stock', 'id'), GREATEST((SELECT MAX(id) FROM product_item_stock), 1));

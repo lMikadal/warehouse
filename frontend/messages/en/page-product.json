@@ -11,6 +11,14 @@
     "productCar": {
       "title": "Car categories",
       "desc": "Manage car brand, model, and engine"
+    },
+    "productList": {
+      "title": "Products",
+      "desc": "Manage products, stock, and sale status"
+    },
+    "productListForm": {
+      "title": "Product form",
+      "desc": "Create or edit products and variants"
     }
   }
 }

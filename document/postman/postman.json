@@ -1174,6 +1174,110 @@
               }
             }
           ]
+        },
+        {
+          "name": "Items (browse)",
+          "item": [
+            {
+              "name": "List product items",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items?page=1&limit=10",
+                "description": "Browse rows include aggregates: total_stock, low_stock, warehouse_root_count, car_count, car_summary, and optional cover_system_file_id (first product_item_file for the item)."
+              }
+            },
+            {
+              "name": "Patch item active",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_active\": false\n}" },
+                "url": "{{baseUrl}}/product/items/1"
+              }
+            },
+            {
+              "name": "Patch item stopped (sales)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_stopped\": true\n}" },
+                "url": "{{baseUrl}}/product/items/1",
+                "description": "Bulk bar uses is_stopped: false to resume sales."
+              }
+            },
+            {
+              "name": "Item warehouse placements",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items/1/warehouse-placements"
+              }
+            },
+            {
+              "name": "Item history purchase (stub)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/product/items/1/history/purchase?page=1&limit=10"
+              }
+            },
+            {
+              "name": "Delete item",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/product/items/99" }
+            }
+          ]
+        },
+        {
+          "name": "Lists (aggregate)",
+          "item": [
+            {
+              "name": "Get product list",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/lists/1"
+              }
+            },
+            {
+              "name": "List cars for product list",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/lists/1/cars"
+              }
+            },
+            {
+              "name": "Create product list",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sku\": \"PL-DEMO-1\",\n  \"is_active\": true,\n  \"is_new\": false,\n  \"product_brand_id\": 1,\n  \"product_category_id\": 3,\n  \"languages\": {\n    \"th\": { \"name\": \"สินค้าทดสอบ\", \"sub_name\": \"\", \"description\": \"\" },\n    \"en\": { \"name\": \"Demo product\", \"sub_name\": \"\", \"description\": \"\" }\n  },\n  \"factory_codes\": [],\n  \"other_codes\": [],\n  \"supplier_ids\": [],\n  \"cars\": [],\n  \"items\": [\n    {\n      \"price\": 100,\n      \"price_wholesale\": 0,\n      \"type_price\": \"manual\",\n      \"unit\": \"piece\",\n      \"qty_per_unit\": 1,\n      \"minimum_stock\": 0,\n      \"is_active\": true,\n      \"is_stopped\": false,\n      \"is_fake\": false,\n      \"names\": { \"th\": \"ตัวเลือก 1\", \"en\": \"Variant 1\" },\n      \"channel_prices\": [],\n      \"suppliers\": [],\n      \"warehouse_placements\": []\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/product/lists"
+              }
+            },
+            {
+              "name": "Patch product list",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"note\": \"Updated via Postman\"\n}"
+                },
+                "url": "{{baseUrl}}/product/lists/1"
+              }
+            },
+            {
+              "name": "Delete product list",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/product/lists/99" }
+            }
+          ]
         }
       ]
     },

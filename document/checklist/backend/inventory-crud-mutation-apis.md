@@ -21,8 +21,8 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `member_setting_credit` | TBD | active | [ ] | |
 | `member_setting_group` | TBD | active | [ ] | |
 | `member_setting_relation` | TBD | active | [ ] | |
-| `product_list` | TBD | active | [ ] | No `sort_order` |
-| `product_item` | TBD | active | [ ] | |
+| `product_list` | `/product/lists` | active | [x] | Aggregate GET/POST/PATCH; list-level `is_active` on aggregate body; no `sort_order` |
+| `product_item` | `/product/items` | active | [x] | Browse list + `PATCH { "is_active" }`; extended item `PATCH` from pricing tab |
 | `product_attribute` | `/product/categories`, `/brands`, `/cars` | active, reorder, move (categories + cars) | [x] | Three APIs; same table; type fixed per route |
 | `supplier_user` | `/supplier/users` | active | [x] | No list `sort_order` |
 | `supplier_bank` | TBD | active | [ ] | Reorder parent-scoped — see §D |

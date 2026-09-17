@@ -11,6 +11,7 @@ import enPageLocation from "./en/page-location.json";
 import enPageProduct from "./en/page-product.json";
 import enPageWarehouse from "./en/page-warehouse.json";
 import enProductAttribute from "./en/product-attribute.json";
+import enProductList from "./en/product-list.json";
 import enPageSupplier from "./en/page-supplier.json";
 import enWarehouse from "./en/warehouse.json";
 import enPageSystem from "./en/page-system.json";
@@ -29,6 +30,7 @@ import thPageLocation from "./th/page-location.json";
 import thPageProduct from "./th/page-product.json";
 import thPageWarehouse from "./th/page-warehouse.json";
 import thProductAttribute from "./th/product-attribute.json";
+import thProductList from "./th/product-list.json";
 import thPageSupplier from "./th/page-supplier.json";
 import thWarehouse from "./th/warehouse.json";
 import thPageSystem from "./th/page-system.json";
@@ -75,6 +77,7 @@ const FRAGMENTS: MessageTree[] = [
   thPageWarehouse,
   thPageProduct,
   thProductAttribute,
+  thProductList,
   thPageSupplier,
   thWarehouse,
   thSupplier,
@@ -96,6 +99,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageWarehouse,
   enPageProduct,
   enProductAttribute,
+  enProductList,
   enPageSupplier,
   enWarehouse,
   enSupplier,

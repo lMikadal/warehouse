@@ -238,6 +238,21 @@ Wave 1 schema: shared enums, locale registry (`system_language` after rename), `
 
 **Product attributes module:** table `product_attribute` (+ `product_attribute_language`, `product_attribute_relation` for category↔brand links). Handlers: [`internal/module/product`](../../backend/internal/module/product/) on RBAC group `/api/v1/product` — three resources **`/categories`**, **`/brands`**, **`/cars`** (each fixes `type` enum); list returns rows in tree DFS order with `page`/`limit` and `tree_path` on each item for UI indent; category and car **`PATCH /move`** (before/after/child zones; category unlimited depth with cycle/subtree validation only; car validates brand/model/engine parent rules); brand and car also **`PATCH /reorder`** (sibling-only). Category create/update accepts `brand_ids`. Permissions: `product.product_category.*`, `product.product_brand.*`, `product.product_car.*`. Dev demo attributes: `seeds/dev/14_product_demo.sql`. Postman folder **Product**.
 
+**Product list module:** tables `product_list*` / `product_item*` (migration `20260918140000_product_module.sql`). Same RBAC module as list admin: **`product.product_list.*`** (resource prefix `/api/v1/product/lists` and `/api/v1/product/items` via catalog prefix match).
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /product/items` | Item browse (one row = `product_item` + list joins); filters `search`, `product_category_id`, `product_brand_id`, `is_active` (item), `is_new` (list); fields include `is_stopped`, aggregates stock, warehouse roots, car summary; optional `cover_system_file_id` (first `product_item_file` by `sort_order`) for list thumbnails |
+| `PATCH/DELETE /product/items/:id` | Item **`PATCH`** with `{ "is_active" }` or `{ "is_stopped" }` only (list toggle / bulk sales); soft-delete; full variant body for pricing-tab saves |
+| `GET /product/items/:id/warehouse-placements` | Warehouse modal rows (bin path + qty) |
+| `GET /product/items/:id/history/purchase` · `…/history/sales` | **Stub** — `{ summary, groups, meta }` with empty `groups` until PO/order modules exist |
+| `GET/POST/PATCH/DELETE /product/lists/:id` | Aggregate graph (languages, codes, suppliers, cars, items with prices/suppliers/bin placements); create/update in one transaction; VAT rate snapshot from `setting_vat` on save |
+| `GET /product/lists/:id/cars` | Car fitment modal table |
+
+Validation: SKU uniqueness, bin-only placements, one-bin-one-item among active placements. Postman: **Product → Items (browse)** and **Lists (aggregate)**.
+
+List UI car fitment chips read `car_count` / `car_summary` from `GET /product/items`; demo rows live in dev seed [`seeds/dev/14_product_demo.sql`](../../backend/internal/infra/postgres/seeds/dev/14_product_demo.sql) (`product_list_car`). After pulling seed changes, re-run `make backend-seed-dev` (requires `DATABASE_URL`, e.g. host `localhost:5432` when Postgres is published from compose).
+
 **Setting module:** goose migrations add `system_file` then `setting_*` tables. **CRUD:** `internal/module/setting` on RBAC group `/api/v1/setting` — lang resources (`banks`, `payment-methods`, `sale-channels`, `claim-reasons`, `prefixes`) with th/en `names`, flat `codes`, singleton `GET/PATCH /vat`; list filters — `payment-methods`: `is_sale`, `is_purchase`; `claim-reasons`: `is_claim`, `is_return`; `prefixes`: `is_person`, `is_company` (CHECK: at least one true; no `code`/`type` columns). RBAC catalog: **`setting.setting_vat.view`** (id 61) and **`setting.setting_vat.update`** (id 63) only — no create/delete/import/export rows; dev trim: `seeds/dev/10_setting_vat_permissions.sql`. Prefix reorder requires exactly one scope flag (`is_person` or `is_company` true) in body or query. Prefix list default sort (no column sort): `is_person DESC`, `is_company ASC`, `sort_order`, `id` — groups person vs company rows for display/reorder. Postgres seeds: init `seeds/init/09_setting_vat.sql` (singleton VAT only). Dev fixtures (mirrors `design/js/seed/setting_*.js`): `seeds/dev/09_setting_vat.sql` + `seeds/dev/10_setting_catalog.sql` (all other `setting_*` tables). Postman folder **Setting** in `document/postman/postman.json`.
 
 Init seeds: `01_system_language.sql`, then `02`–`05` (`system_permission` wave 1, ids 1–24), `06_system_permission_catalog.sql` (remaining catalog ids ≥ 25), `07_system_menu.sql` (nav tree + languages + **`system_menu_permission`** junction), `08_system_address_geo.sql` (TH/SG geo demo — same IDs as `design/js/seed/system_*`; idempotent upserts).
@@ -266,7 +281,7 @@ Test: `01_admin_bootstrap.sql` (demo users/roles).
 
 ## Postman
 
-`document/postman/postman.json` — folders: Health, Auth, System, Admin, Website, Setting, Location, Warehouse, Supplier. `baseUrl` = `http://localhost:1323/api/v1`.
+`document/postman/postman.json` — folders: Health, Auth, System, Admin, Website, Setting, Location, Warehouse, Product (attributes + items + lists), Supplier. `baseUrl` = `http://localhost:1323/api/v1`.
 
 ## Docs
 

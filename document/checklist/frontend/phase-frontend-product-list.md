@@ -1,0 +1,27 @@
+# Phase: Product list (browse + form)
+
+Production **สินค้า → รายการ** — parity with design `product-list.js` / `product-list-form.js`.
+
+## Phase checklist
+
+- [x] Routes `/admin/product/list`, `/list/new`, `/list/[id]` + `loading.tsx`
+- [x] BFF proxies + [`product-list-api.ts`](../../../frontend/lib/product-list-api.ts)
+- [x] List page: toolbar filters, server pagination/sort, car + warehouse modals, row selection + sticky bulk bar (`is_stopped`, bulk delete)
+- [x] Tabbed form: data + pricing + history tabs; aggregate POST/PATCH + item PATCH
+- [x] i18n `product-list.json`, `page.productList` / `page.productListForm`
+
+## Required checklist
+
+- [x] RBAC `product.product_list.*` via `useResourcePermissions`
+- [x] List grain = `product_item`; no DnD column
+- [x] Forms: placeholders, required asterisk fields, create vs edit leave labels
+- [x] History tab wired to stub APIs; export → coming-soon toast
+- [ ] Manual QA th/en with `make backend-seed-dev` + `14_product_demo.sql`
+
+## Known gaps vs design (documented)
+
+- List product cell **car fitment chip** (pill under SKU, opens modal) + dev seed `product_list_car` — done
+- Category **overlay cascade** picker → flat searchable combobox with tree indent
+- Warehouse **bin cascade** picker → bin-type warehouse list combobox
+- Pricing tab: full five expandable sections (images, storefront, supply table, lot dialogs) — core variant + channel + bin fields shipped
+- History grouped tables populate when purchase/order modules migrate

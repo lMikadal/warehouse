@@ -1,0 +1,837 @@
+package product
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"strings"
+)
+
+type ListRepository struct {
+	db *sql.DB
+}
+
+func NewListRepository(db *sql.DB) *ListRepository {
+	return &ListRepository{db: db}
+}
+
+type localeBlock struct {
+	Name        string `json:"name"`
+	SubName     string `json:"sub_name,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type listLangBody struct {
+	Th localeBlock `json:"th"`
+	En localeBlock `json:"en"`
+}
+
+type listCarBody struct {
+	ID       *int64  `json:"id,omitempty"`
+	BrandID  *int64  `json:"product_attribute_brand_id,omitempty"`
+	ModelID  *int64  `json:"product_attribute_model_id,omitempty"`
+	EngineID int64   `json:"product_attribute_engine_id"`
+	GearType *string `json:"gear_type,omitempty"`
+	YearStart *int  `json:"year_start,omitempty"`
+	YearEnd   *int  `json:"year_end,omitempty"`
+}
+
+type itemLangNames struct {
+	Th string `json:"th"`
+	En string `json:"en"`
+}
+
+type itemChannelPriceBody struct {
+	SettingSaleChannelID int64   `json:"setting_sale_channel_id"`
+	Price                float64 `json:"price"`
+}
+
+type itemSupplierBody struct {
+	SupplierUserID int64   `json:"supplier_user_id"`
+	CostPrice      float64 `json:"cost_price"`
+	Discount       float64 `json:"discount"`
+	DiscountType   string  `json:"discount_type"`
+}
+
+type itemWarehouseBody struct {
+	ID    *int64 `json:"id,omitempty"`
+	BinID int64  `json:"bin_id"`
+}
+
+type listItemBody struct {
+	ID            *int64                  `json:"id,omitempty"`
+	SKU           string                  `json:"sku,omitempty"`
+	Barcode       string                  `json:"barcode,omitempty"`
+	Qrcode        string                  `json:"qrcode,omitempty"`
+	Price         float64                 `json:"price"`
+	PriceWholesale float64                `json:"price_wholesale"`
+	TypePrice     string                  `json:"type_price"`
+	Unit          string                  `json:"unit"`
+	QtyPerUnit    int                     `json:"qty_per_unit"`
+	Weight        *float64                `json:"weight,omitempty"`
+	Width         *float64                `json:"width,omitempty"`
+	Length        *float64                `json:"length,omitempty"`
+	Height        *float64                `json:"height,omitempty"`
+	MinimumStock  int                     `json:"minimum_stock"`
+	IsActive      bool                    `json:"is_active"`
+	IsStopped     bool                    `json:"is_stopped"`
+	IsFake        bool                    `json:"is_fake"`
+	Promotion     string                  `json:"promotion,omitempty"`
+	Names         itemLangNames           `json:"names"`
+	ChannelPrices []itemChannelPriceBody  `json:"channel_prices,omitempty"`
+	Suppliers     []itemSupplierBody      `json:"suppliers,omitempty"`
+	Warehouses    []itemWarehouseBody     `json:"warehouse_placements,omitempty"`
+}
+
+type listAggregateBody struct {
+	SKU               string         `json:"sku"`
+	SupplierSKU       string         `json:"supplier_sku,omitempty"`
+	Tag               string         `json:"tag,omitempty"`
+	Note              string         `json:"note,omitempty"`
+	IsActive          bool           `json:"is_active"`
+	IsNew             bool           `json:"is_new"`
+	ProductBrandID    *int64         `json:"product_brand_id,omitempty"`
+	ProductCategoryID *int64         `json:"product_category_id,omitempty"`
+	Languages         listLangBody   `json:"languages"`
+	FactoryCodes      []string       `json:"factory_codes,omitempty"`
+	OtherCodes        []string       `json:"other_codes,omitempty"`
+	SupplierIDs       []int64        `json:"supplier_ids,omitempty"`
+	Cars              []listCarBody  `json:"cars,omitempty"`
+	Items             []listItemBody `json:"items"`
+}
+
+type listAggregateResponse struct {
+	ID                int64          `json:"id"`
+	SKU               string         `json:"sku"`
+	SupplierSKU       string         `json:"supplier_sku"`
+	Tag               string         `json:"tag"`
+	Note              string         `json:"note"`
+	IsActive          bool           `json:"is_active"`
+	IsNew             bool           `json:"is_new"`
+	ProductBrandID    *int64         `json:"product_brand_id,omitempty"`
+	ProductCategoryID *int64         `json:"product_category_id,omitempty"`
+	Languages         listLangBody   `json:"languages"`
+	FactoryCodes      []string       `json:"factory_codes"`
+	OtherCodes        []string       `json:"other_codes"`
+	SupplierIDs       []int64        `json:"supplier_ids"`
+	Cars              []listCarBody  `json:"cars"`
+	Items             []listItemBody `json:"items"`
+}
+
+func validateListAggregate(b listAggregateBody) error {
+	if strings.TrimSpace(b.SKU) == "" {
+		return ErrValidation
+	}
+	if strings.TrimSpace(b.Languages.Th.Name) == "" || strings.TrimSpace(b.Languages.En.Name) == "" {
+		return ErrValidation
+	}
+	if len(b.Items) == 0 {
+		return ErrValidation
+	}
+	return nil
+}
+
+func (r *ListRepository) currentVatRate(ctx context.Context) (float64, error) {
+	var rate sql.NullFloat64
+	err := r.db.QueryRowContext(ctx, `
+SELECT rate FROM setting_vat WHERE deleted_at IS NULL AND is_active = TRUE ORDER BY id LIMIT 1`).Scan(&rate)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if rate.Valid {
+		return rate.Float64, nil
+	}
+	return 0, nil
+}
+
+func (r *ListRepository) GetAggregate(ctx context.Context, id int64, locale string) (*listAggregateResponse, error) {
+	var row struct {
+		sku, tag, note, supplierSKU string
+		isActive, isNew           bool
+		brandID, catID            sql.NullInt64
+	}
+	err := r.db.QueryRowContext(ctx, `
+SELECT sku, supplier_sku, tag, note, is_active, is_new, product_brand_id, product_category_id
+FROM product_list WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
+		&row.sku, &row.supplierSKU, &row.tag, &row.note, &row.isActive, &row.isNew, &row.brandID, &row.catID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	out := &listAggregateResponse{
+		ID: id, SKU: row.sku, SupplierSKU: row.supplierSKU, Tag: row.tag, Note: row.note,
+		IsActive: row.isActive, IsNew: row.isNew,
+	}
+	if row.brandID.Valid {
+		out.ProductBrandID = &row.brandID.Int64
+	}
+	if row.catID.Valid {
+		out.ProductCategoryID = &row.catID.Int64
+	}
+	out.Languages = loadListLang(ctx, r.db, id)
+	out.FactoryCodes = loadListCodes(ctx, r.db, id, "factory")
+	out.OtherCodes = loadListCodes(ctx, r.db, id, "other")
+	out.SupplierIDs = loadListSuppliers(ctx, r.db, id)
+	out.Cars = loadListCars(ctx, r.db, id)
+	items, err := loadListItems(ctx, r.db, id)
+	if err != nil {
+		return nil, err
+	}
+	out.Items = items
+	return out, nil
+}
+
+func loadListLang(ctx context.Context, db *sql.DB, listID int64) listLangBody {
+	var out listLangBody
+	for _, loc := range []struct {
+		key string
+		dst *localeBlock
+	}{
+		{"th", &out.Th},
+		{"en", &out.En},
+	} {
+		_ = db.QueryRowContext(ctx, `
+SELECT name, COALESCE(sub_name, ''), COALESCE(description, '')
+FROM product_list_language WHERE product_list_id = $1 AND locale = $2`, listID, loc.key).
+			Scan(&loc.dst.Name, &loc.dst.SubName, &loc.dst.Description)
+	}
+	return out
+}
+
+func loadListCodes(ctx context.Context, db *sql.DB, listID int64, codeType string) []string {
+	rows, err := db.QueryContext(ctx, `
+SELECT sku FROM product_list_code
+WHERE product_list_id = $1 AND code_type = $2::product_list_code_type AND deleted_at IS NULL
+ORDER BY id`, listID, codeType)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var s string
+		if rows.Scan(&s) == nil && strings.TrimSpace(s) != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func loadListSuppliers(ctx context.Context, db *sql.DB, listID int64) []int64 {
+	rows, err := db.QueryContext(ctx, `
+SELECT supplier_user_id FROM product_list_supplier WHERE product_list_id = $1`, listID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []int64
+	for rows.Next() {
+		var id int64
+		if rows.Scan(&id) == nil {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+func loadListCars(ctx context.Context, db *sql.DB, listID int64) []listCarBody {
+	rows, err := db.QueryContext(ctx, `
+SELECT id, product_attribute_brand_id, product_attribute_model_id, product_attribute_engine_id,
+       gear_type::text, year_start, year_end
+FROM product_list_car WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`, listID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []listCarBody
+	for rows.Next() {
+		var c listCarBody
+		var brand, model sql.NullInt64
+		var gear sql.NullString
+		var ys, ye sql.NullInt64
+		var carID int64
+		if err := rows.Scan(&carID, &brand, &model, &c.EngineID, &gear, &ys, &ye); err != nil {
+			continue
+		}
+		if brand.Valid {
+			c.BrandID = &brand.Int64
+		}
+		if model.Valid {
+			c.ModelID = &model.Int64
+		}
+		c.ID = &carID
+		if gear.Valid {
+			g := gear.String
+			c.GearType = &g
+		}
+		if ys.Valid {
+			v := int(ys.Int64)
+			c.YearStart = &v
+		}
+		if ye.Valid {
+			v := int(ye.Int64)
+			c.YearEnd = &v
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+func loadListItems(ctx context.Context, db *sql.DB, listID int64) ([]listItemBody, error) {
+	rows, err := db.QueryContext(ctx, `
+SELECT id, COALESCE(sku, ''), COALESCE(barcode, ''), COALESCE(qrcode, ''),
+       price::float8, price_wholesale::float8, type_price::text, unit::text, qty_per_unit,
+       weight::float8, width::float8, length::float8, height::float8,
+       minimum_stock, is_active, is_stopped, is_fake, promotion
+FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`, listID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []listItemBody
+	for rows.Next() {
+		var it listItemBody
+		var itemID int64
+		var w, wi, l, h sql.NullFloat64
+		if err := rows.Scan(&itemID, &it.SKU, &it.Barcode, &it.Qrcode, &it.Price, &it.PriceWholesale,
+			&it.TypePrice, &it.Unit, &it.QtyPerUnit, &w, &wi, &l, &h,
+			&it.MinimumStock, &it.IsActive, &it.IsStopped, &it.IsFake, &it.Promotion); err != nil {
+			return nil, err
+		}
+		if w.Valid {
+			it.Weight = &w.Float64
+		}
+		if wi.Valid {
+			it.Width = &wi.Float64
+		}
+		if l.Valid {
+			it.Length = &l.Float64
+		}
+		if h.Valid {
+			it.Height = &h.Float64
+		}
+		it.ID = &itemID
+		it.Names = loadItemNames(ctx, db, itemID)
+		it.ChannelPrices = loadItemChannelPrices(ctx, db, itemID)
+		it.Suppliers = loadItemSuppliers(ctx, db, itemID)
+		it.Warehouses = loadItemWarehouses(ctx, db, itemID)
+		out = append(out, it)
+	}
+	return out, rows.Err()
+}
+
+func loadItemNames(ctx context.Context, db *sql.DB, itemID int64) itemLangNames {
+	var n itemLangNames
+	_ = db.QueryRowContext(ctx, `SELECT name FROM product_item_language WHERE product_item_id = $1 AND locale = 'th'`, itemID).Scan(&n.Th)
+	_ = db.QueryRowContext(ctx, `SELECT name FROM product_item_language WHERE product_item_id = $1 AND locale = 'en'`, itemID).Scan(&n.En)
+	return n
+}
+
+func loadItemChannelPrices(ctx context.Context, db *sql.DB, itemID int64) []itemChannelPriceBody {
+	rows, _ := db.QueryContext(ctx, `
+SELECT setting_sale_channel_id, price::float8 FROM product_item_price WHERE product_item_id = $1`, itemID)
+	if rows == nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []itemChannelPriceBody
+	for rows.Next() {
+		var p itemChannelPriceBody
+		if rows.Scan(&p.SettingSaleChannelID, &p.Price) == nil {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func loadItemSuppliers(ctx context.Context, db *sql.DB, itemID int64) []itemSupplierBody {
+	rows, _ := db.QueryContext(ctx, `
+SELECT supplier_user_id, cost_price::float8, discount::float8, discount_type::text
+FROM product_item_supplier WHERE product_item_id = $1`, itemID)
+	if rows == nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []itemSupplierBody
+	for rows.Next() {
+		var s itemSupplierBody
+		if rows.Scan(&s.SupplierUserID, &s.CostPrice, &s.Discount, &s.DiscountType) == nil {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func loadItemWarehouses(ctx context.Context, db *sql.DB, itemID int64) []itemWarehouseBody {
+	rows, _ := db.QueryContext(ctx, `
+SELECT id, bin_id FROM product_item_warehouse WHERE product_item_id = $1 AND deleted_at IS NULL`, itemID)
+	if rows == nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []itemWarehouseBody
+	for rows.Next() {
+		var w itemWarehouseBody
+		if rows.Scan(&w.ID, &w.BinID) == nil {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+func (r *ListRepository) CreateAggregate(ctx context.Context, b listAggregateBody, actorID int64) (int64, error) {
+	if err := validateListAggregate(b); err != nil {
+		return 0, err
+	}
+	vat, err := r.currentVatRate(ctx)
+	if err != nil {
+		return 0, err
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	var listID int64
+	err = tx.QueryRowContext(ctx, `
+INSERT INTO product_list (sku, product_brand_id, product_category_id, tag, supplier_sku, note, is_new, is_active, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9) RETURNING id`,
+		strings.TrimSpace(b.SKU), b.ProductBrandID, b.ProductCategoryID,
+		strings.TrimSpace(b.Tag), strings.TrimSpace(b.SupplierSKU), strings.TrimSpace(b.Note),
+		b.IsNew, b.IsActive, nullActor(actorID)).Scan(&listID)
+	if err != nil {
+		return 0, err
+	}
+	if err := upsertListChildren(ctx, tx, listID, b, actorID, vat); err != nil {
+		return 0, err
+	}
+	return listID, tx.Commit()
+}
+
+func (r *ListRepository) UpdateAggregate(ctx context.Context, listID int64, b listAggregateBody, actorID int64) error {
+	if err := validateListAggregate(b); err != nil {
+		return ErrValidation
+	}
+	vat, err := r.currentVatRate(ctx)
+	if err != nil {
+		return err
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `
+UPDATE product_list SET sku = $2, product_brand_id = $3, product_category_id = $4, tag = $5,
+  supplier_sku = $6, note = $7, is_new = $8, is_active = $9, updated_at = NOW(), updated_by = $10
+WHERE id = $1 AND deleted_at IS NULL`, listID,
+		strings.TrimSpace(b.SKU), b.ProductBrandID, b.ProductCategoryID,
+		strings.TrimSpace(b.Tag), strings.TrimSpace(b.SupplierSKU), strings.TrimSpace(b.Note),
+		b.IsNew, b.IsActive, nullActor(actorID))
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	if err := upsertListChildren(ctx, tx, listID, b, actorID, vat); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func upsertListChildren(ctx context.Context, tx *sql.Tx, listID int64, b listAggregateBody, actorID int64, vat float64) error {
+	for _, loc := range []struct {
+		locale string
+		block  localeBlock
+	}{
+		{"th", b.Languages.Th},
+		{"en", b.Languages.En},
+	} {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_list_language (product_list_id, locale, name, sub_name, description)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (product_list_id, locale) DO UPDATE SET
+  name = EXCLUDED.name, sub_name = EXCLUDED.sub_name, description = EXCLUDED.description, updated_at = NOW()`,
+			listID, loc.locale, strings.TrimSpace(loc.block.Name), nullStr(loc.block.SubName), nullStr(loc.block.Description)); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM product_list_supplier WHERE product_list_id = $1`, listID); err != nil {
+		return err
+	}
+	for _, sid := range b.SupplierIDs {
+		if sid <= 0 {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_list_supplier (product_list_id, supplier_user_id) VALUES ($1, $2)
+ON CONFLICT DO NOTHING`, listID, sid); err != nil {
+			return err
+		}
+	}
+	if err := syncListCodes(ctx, tx, listID, "factory", b.FactoryCodes, actorID); err != nil {
+		return err
+	}
+	if err := syncListCodes(ctx, tx, listID, "other", b.OtherCodes, actorID); err != nil {
+		return err
+	}
+	if err := syncListCars(ctx, tx, listID, b.Cars, actorID); err != nil {
+		return err
+	}
+	return syncListItems(ctx, tx, listID, b.Items, actorID, vat)
+}
+
+func nullStr(s string) sql.NullString {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
+}
+
+func strOrNull(s string) any {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func syncListCodes(ctx context.Context, tx *sql.Tx, listID int64, codeType string, codes []string, actorID int64) error {
+	if _, err := tx.ExecContext(ctx, `
+UPDATE product_list_code SET deleted_at = NOW(), updated_at = NOW(), updated_by = $3
+WHERE product_list_id = $1 AND code_type = $2::product_list_code_type AND deleted_at IS NULL`,
+		listID, codeType, nullActor(actorID)); err != nil {
+		return err
+	}
+	for _, code := range codes {
+		code = strings.TrimSpace(code)
+		if code == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_list_code (product_list_id, code_type, sku, created_by, updated_by)
+VALUES ($1, $2::product_list_code_type, $3, $4, $4)`, listID, codeType, code, nullActor(actorID)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func syncListCars(ctx context.Context, tx *sql.Tx, listID int64, cars []listCarBody, actorID int64) error {
+	keep := map[int64]bool{}
+	for _, c := range cars {
+		if c.ID != nil && *c.ID > 0 {
+			keep[*c.ID] = true
+		}
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM product_list_car WHERE product_list_id = $1 AND deleted_at IS NULL`, listID)
+	if err != nil {
+		return err
+	}
+	var existing []int64
+	for rows.Next() {
+		var id int64
+		if rows.Scan(&id) == nil && !keep[id] {
+			existing = append(existing, id)
+		}
+	}
+	rows.Close()
+	for _, id := range existing {
+		if _, err := tx.ExecContext(ctx, `
+UPDATE product_list_car SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1`, id, nullActor(actorID)); err != nil {
+			return err
+		}
+	}
+	for _, c := range cars {
+		gear := c.GearType
+		if c.ID != nil && *c.ID > 0 {
+			_, err := tx.ExecContext(ctx, `
+UPDATE product_list_car SET product_attribute_brand_id = $2, product_attribute_model_id = $3,
+  product_attribute_engine_id = $4, gear_type = $5::product_list_car_gear_type, year_start = $6, year_end = $7,
+  updated_at = NOW(), updated_by = $8
+WHERE id = $1 AND product_list_id = $9 AND deleted_at IS NULL`,
+				*c.ID, c.BrandID, c.ModelID, c.EngineID, gear, c.YearStart, c.YearEnd, nullActor(actorID), listID)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		if c.EngineID <= 0 {
+			return ErrValidation
+		}
+		_, err := tx.ExecContext(ctx, `
+INSERT INTO product_list_car (product_list_id, product_attribute_brand_id, product_attribute_model_id,
+  product_attribute_engine_id, gear_type, year_start, year_end, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5::product_list_car_gear_type, $6, $7, $8, $8)`,
+			listID, c.BrandID, c.ModelID, c.EngineID, gear, c.YearStart, c.YearEnd, nullActor(actorID))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func syncListItems(ctx context.Context, tx *sql.Tx, listID int64, items []listItemBody, actorID int64, vat float64) error {
+	keep := map[int64]bool{}
+	for _, it := range items {
+		if it.ID != nil && *it.ID > 0 {
+			keep[*it.ID] = true
+		}
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL`, listID)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id int64
+		if rows.Scan(&id) == nil && !keep[id] {
+			if _, err := tx.ExecContext(ctx, `
+UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1`, id, nullActor(actorID)); err != nil {
+				rows.Close()
+				return err
+			}
+		}
+	}
+	rows.Close()
+
+	for _, it := range items {
+		tp := it.TypePrice
+		if tp != "stock" {
+			tp = "manual"
+		}
+		unit := it.Unit
+		if unit == "" {
+			unit = "piece"
+		}
+		if it.ID != nil && *it.ID > 0 {
+			if err := upsertOneItem(ctx, tx, listID, *it.ID, it, actorID, vat, true); err != nil {
+				return err
+			}
+			continue
+		}
+		var itemID int64
+		err := tx.QueryRowContext(ctx, `
+INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion,
+  type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_fake, is_active, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::product_item_type_price, $10::product_unit, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $20)
+RETURNING id`,
+			listID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
+			strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
+			it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsStopped, it.IsFake, it.IsActive, nullActor(actorID)).Scan(&itemID)
+		if err != nil {
+			return err
+		}
+		if err := upsertItemLang(ctx, tx, itemID, it.Names); err != nil {
+			return err
+		}
+		if err := syncItemExtras(ctx, tx, itemID, it, actorID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it listItemBody, actorID int64, vat float64, update bool) error {
+	tp := it.TypePrice
+	if tp != "stock" {
+		tp = "manual"
+	}
+	unit := it.Unit
+	if unit == "" {
+		unit = "piece"
+	}
+	res, err := tx.ExecContext(ctx, `
+UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, vat_rate = $7,
+  promotion = $8, type_price = $9::product_item_type_price, unit = $10::product_unit, qty_per_unit = $11,
+  weight = $12, width = $13, length = $14, height = $15, minimum_stock = $16, is_stopped = $17, is_fake = $18,
+  is_active = $19, updated_at = NOW(), updated_by = $20
+WHERE id = $1 AND product_list_id = $21 AND deleted_at IS NULL`,
+		itemID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
+		strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
+		it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsStopped, it.IsFake, it.IsActive,
+		nullActor(actorID), listID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	if err := upsertItemLang(ctx, tx, itemID, it.Names); err != nil {
+		return err
+	}
+	return syncItemExtras(ctx, tx, itemID, it, actorID)
+}
+
+func upsertItemLang(ctx context.Context, tx *sql.Tx, itemID int64, names itemLangNames) error {
+	for _, loc := range []struct {
+		locale, name string
+	}{
+		{"th", names.Th},
+		{"en", names.En},
+	} {
+		name := strings.TrimSpace(loc.name)
+		if name == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_language (product_item_id, locale, name)
+VALUES ($1, $2, $3)
+ON CONFLICT (product_item_id, locale) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()`,
+			itemID, loc.locale, name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func syncItemExtras(ctx context.Context, tx *sql.Tx, itemID int64, it listItemBody, actorID int64) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM product_item_price WHERE product_item_id = $1`, itemID); err != nil {
+		return err
+	}
+	for _, p := range it.ChannelPrices {
+		if p.SettingSaleChannelID <= 0 {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_price (product_item_id, setting_sale_channel_id, price)
+VALUES ($1, $2, $3)`, itemID, p.SettingSaleChannelID, p.Price); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM product_item_supplier WHERE product_item_id = $1`, itemID); err != nil {
+		return err
+	}
+	for _, s := range it.Suppliers {
+		if s.SupplierUserID <= 0 {
+			continue
+		}
+		dt := s.DiscountType
+		if dt != "percent" {
+			dt = "baht"
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_supplier (product_item_id, supplier_user_id, cost_price, discount, discount_type, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5::discount_unit, $6, $6)`,
+			itemID, s.SupplierUserID, s.CostPrice, s.Discount, dt, nullActor(actorID)); err != nil {
+			return err
+		}
+	}
+	keepBins := map[int64]bool{}
+	for _, w := range it.Warehouses {
+		if w.BinID <= 0 {
+			continue
+		}
+		if w.ID != nil {
+			keepBins[*w.ID] = true
+		}
+	}
+	rows, err := tx.QueryContext(ctx, `
+SELECT id, bin_id FROM product_item_warehouse WHERE product_item_id = $1 AND deleted_at IS NULL`, itemID)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id, binID int64
+		if rows.Scan(&id, &binID) != nil {
+			continue
+		}
+		still := false
+		for _, w := range it.Warehouses {
+			if w.ID != nil && *w.ID == id {
+				still = true
+				break
+			}
+		}
+		if !still {
+			if _, err := tx.ExecContext(ctx, `
+UPDATE product_item_warehouse SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1`, id, nullActor(actorID)); err != nil {
+				rows.Close()
+				return err
+			}
+		}
+	}
+	rows.Close()
+	for _, w := range it.Warehouses {
+		if w.BinID <= 0 {
+			continue
+		}
+		if w.ID != nil && *w.ID > 0 {
+			if _, err := tx.ExecContext(ctx, `
+UPDATE product_item_warehouse SET bin_id = $2, updated_at = NOW(), updated_by = $3
+WHERE id = $1 AND product_item_id = $4 AND deleted_at IS NULL`, *w.ID, w.BinID, nullActor(actorID), itemID); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := assertBinAvailable(ctx, tx, w.BinID, itemID); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_warehouse (product_item_id, bin_id, created_by, updated_by)
+VALUES ($1, $2, $3, $3)`, itemID, w.BinID, nullActor(actorID)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func assertBinAvailable(ctx context.Context, tx *sql.Tx, binID, excludeItemID int64) error {
+	var otherItem int64
+	err := tx.QueryRowContext(ctx, `
+SELECT product_item_id FROM product_item_warehouse
+WHERE bin_id = $1 AND deleted_at IS NULL AND product_item_id <> $2 LIMIT 1`, binID, excludeItemID).Scan(&otherItem)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return fmt.Errorf("%w: bin in use", ErrValidation)
+}
+
+func (r *ListRepository) PatchItemFull(ctx context.Context, itemID int64, it listItemBody, actorID int64) error {
+	vat, err := r.currentVatRate(ctx)
+	if err != nil {
+		return err
+	}
+	var listID int64
+	if err := r.db.QueryRowContext(ctx, `
+SELECT product_list_id FROM product_item WHERE id = $1 AND deleted_at IS NULL`, itemID).Scan(&listID); err != nil {
+		if err == sql.ErrNoRows {
+			return ErrNotFound
+		}
+		return err
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := upsertOneItem(ctx, tx, listID, itemID, it, actorID, vat, true); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *ListRepository) SoftDeleteList(ctx context.Context, id int64, actorID int64) error {
+	res, err := r.db.ExecContext(ctx, `
+UPDATE product_list SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1 AND deleted_at IS NULL`, id, nullActor(actorID))
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
