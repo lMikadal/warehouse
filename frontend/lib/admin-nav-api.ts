@@ -96,6 +96,76 @@ export function apiNavTreeToAdminNodes(tree: ApiNavNode[]): AdminNavNode[] {
   });
 }
 
+function hrefMatchesPath(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** Most specific menu href for pathname (longest prefix match). */
+export function bestMatchingNavHref(
+  pathname: string,
+  tree: AdminNavNode[]
+): string | undefined {
+  let best: string | undefined;
+  let bestExact = false;
+
+  function walk(nodes: AdminNavNode[]) {
+    for (const node of nodes) {
+      if (node.href) {
+        const href = node.href;
+        if (hrefMatchesPath(pathname, href)) {
+          const exact = pathname === href;
+          if (
+            !best ||
+            href.length > best.length ||
+            (href.length === best.length && exact && !bestExact)
+          ) {
+            best = href;
+            bestExact = exact;
+          }
+        }
+      }
+      if (node.children?.length) walk(node.children);
+    }
+  }
+
+  walk(tree);
+  return best;
+}
+
+export function navItemActive(
+  pathname: string,
+  href: string | undefined,
+  tree: AdminNavNode[]
+): boolean {
+  if (!href) return false;
+  return bestMatchingNavHref(pathname, tree) === href;
+}
+
+function findChainToHref(
+  nodes: AdminNavNode[],
+  targetHref: string,
+  acc: AdminNavNode[]
+): AdminNavNode[] | null {
+  for (const node of nodes) {
+    const next = [...acc, node];
+    if (node.href === targetHref) return next;
+    if (node.children?.length) {
+      const found = findChainToHref(node.children, targetHref, next);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findNavChain(
+  pathname: string,
+  tree: AdminNavNode[]
+): AdminNavNode[] | null {
+  const best = bestMatchingNavHref(pathname, tree);
+  if (!best) return null;
+  return findChainToHref(tree, best, []);
+}
+
 export function breadcrumbFromNavTree(
   pathname: string,
   tree: AdminNavNode[]
@@ -106,29 +176,6 @@ export function breadcrumbFromNavTree(
     labels: n.labels,
     href: n.href,
   }));
-}
-
-function findNavChain(
-  pathname: string,
-  nodes: AdminNavNode[],
-  acc: AdminNavNode[] = []
-): AdminNavNode[] | null {
-  for (const node of nodes) {
-    const next = [...acc, node];
-    if (node.href === pathname) return next;
-    if (node.href && pathname.startsWith(`${node.href}/`)) {
-      if (node.children?.length) {
-        const deeper = findNavChain(pathname, node.children, next);
-        if (deeper) return deeper;
-      }
-      return next;
-    }
-    if (node.children?.length) {
-      const found = findNavChain(pathname, node.children, next);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 export function navLabelsForPath(

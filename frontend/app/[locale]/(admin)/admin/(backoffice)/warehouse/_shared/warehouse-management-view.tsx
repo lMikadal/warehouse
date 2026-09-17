@@ -1,19 +1,38 @@
 "use client";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
-import { ButtonIcon } from "@/components/ui/button-icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
+  conditionsFromApi,
+  conditionsToPatchBody,
+  WarehouseNodeEditSheet,
+  type WarehouseNodeFormInitial,
+  type WarehouseNodeSavePayload,
+  type WarehouseSheetState,
+} from "./warehouse-node-edit-sheet";
+import { WarehouseViewLegend } from "./warehouse-view-legend";
+import { WarehouseViewStatCards } from "./warehouse-view-stat-cards";
+import { WarehouseViewTreePanel } from "./warehouse-view-tree-panel";
+import {
+  allowedChildTypes,
+  computeViewStats,
+  nodesById,
+} from "./warehouse-tree-utils";
+import {
+  createWarehouseNode,
+  deleteWarehouseNode,
   fetchWarehouseById,
-  fetchWarehouseStats,
   fetchWarehouseTree,
-  type WarehouseStats,
+  patchWarehouseConditions,
+  patchWarehouseNode,
+  WarehouseApiError,
+  type WarehouseCondition,
   type WarehouseTreeNode,
 } from "@/lib/warehouse-api";
 
@@ -21,100 +40,37 @@ type Props = {
   warehouseId: number | null;
 };
 
-function countType(nodes: WarehouseTreeNode[], typ: string) {
-  return nodes.filter((n) => n.type === typ).length;
-}
-
-function childrenOf(
-  nodes: WarehouseTreeNode[],
-  parentId: number
-): WarehouseTreeNode[] {
-  return nodes
-    .filter((n) => n.parent_id === parentId)
-    .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
-}
-
-function TreeBranch({
-  node,
-  nodes,
-  depth,
-  open,
-  onToggle,
-  tWh,
-}: {
-  node: WarehouseTreeNode;
-  nodes: WarehouseTreeNode[];
-  depth: number;
-  open: Record<number, boolean>;
-  onToggle: (id: number) => void;
-  tWh: ReturnType<typeof useTranslations<"warehouse">>;
-}) {
-  const kids = childrenOf(nodes, node.id);
-  const hasKids = kids.length > 0;
-  const isOpen = open[node.id] ?? depth < 1;
-
-  return (
-    <div className="border-border/60 border-b last:border-0">
-      <div
-        className="flex flex-wrap items-center gap-2 py-2"
-        style={{ paddingLeft: `${depth * 1.25}rem` }}
-      >
-        {hasKids ? (
-          <ButtonIcon
-            type="button"
-            variant="ghost"
-            aria-label={tWh("details")}
-            aria-expanded={isOpen}
-            onClick={() => onToggle(node.id)}
-          >
-            {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-          </ButtonIcon>
-        ) : (
-          <span className="inline-block w-9" />
-        )}
-        <span className="min-w-[5rem] font-medium">{node.name}</span>
-        <span className="text-muted-foreground text-xs">{node.sku}</span>
-        <span className="text-muted-foreground ml-auto text-xs tabular-nums">
-          {tWh("capacityShort", {
-            used: Math.round(node.used),
-            total: node.capacity,
-          })}
-        </span>
-        <Progress value={node.capacity_pct} className="h-2 w-24" />
-      </div>
-      {hasKids && isOpen
-        ? kids.map((c) => (
-            <TreeBranch
-              key={c.id}
-              node={c}
-              nodes={nodes}
-              depth={depth + 1}
-              open={open}
-              onToggle={onToggle}
-              tWh={tWh}
-            />
-          ))
-        : null}
-    </div>
-  );
-}
-
 export function WarehouseManagementView({ warehouseId }: Props) {
   const locale = useLocale();
   const tPage = useTranslations("page.warehouseView");
   const tWh = useTranslations("warehouse");
+  const tCrud = useTranslations("crud");
   const tError = useTranslations("error");
+
+  const perm = useResourcePermissions("warehouse", "warehouse_list");
 
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
-  const [stats, setStats] = useState<WarehouseStats | null>(null);
+  const [sku, setSku] = useState("");
   const [nodes, setNodes] = useState<WarehouseTreeNode[]>([]);
   const [open, setOpen] = useState<Record<number, boolean>>({});
+  const [sortableEpoch, setSortableEpoch] = useState(0);
+  const [sheet, setSheet] = useState<WarehouseSheetState | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [sheetInitial, setSheetInitial] = useState<WarehouseNodeFormInitial>({
+    sku: "",
+    nameTh: "",
+    nameEn: "",
+    isActive: true,
+  });
 
-  const zoneRoots = useMemo(() => {
-    if (!warehouseId) return [];
-    return childrenOf(nodes, warehouseId);
-  }, [nodes, warehouseId]);
+  const viewStats = useMemo(
+    () =>
+      warehouseId && !Number.isNaN(warehouseId)
+        ? computeViewStats(nodes, warehouseId)
+        : null,
+    [nodes, warehouseId]
+  );
 
   const load = useCallback(async () => {
     if (!warehouseId || Number.isNaN(warehouseId)) {
@@ -123,13 +79,12 @@ export function WarehouseManagementView({ warehouseId }: Props) {
     }
     setLoading(true);
     try {
-      const [wh, st, tree] = await Promise.all([
+      const [wh, tree] = await Promise.all([
         fetchWarehouseById(locale, warehouseId),
-        fetchWarehouseStats(locale, warehouseId),
         fetchWarehouseTree(locale, warehouseId),
       ]);
-      setTitle(String(wh.name ?? wh.sku ?? ""));
-      setStats(st);
+      setTitle(String(wh.name ?? ""));
+      setSku(String(wh.sku ?? ""));
       setNodes(tree);
     } catch {
       toast.error(tError("forbidden"));
@@ -142,8 +97,142 @@ export function WarehouseManagementView({ warehouseId }: Props) {
     void load();
   }, [load]);
 
-  function toggle(id: number) {
+  function toggleOpen(id: number) {
     setOpen((o) => ({ ...o, [id]: !o[id] }));
+  }
+
+  async function openEdit(id: number) {
+    const node = nodesById(nodes).get(id);
+    if (!node || !warehouseId) return;
+    const row = await fetchWarehouseById(locale, id);
+    const names = (row.names ?? {}) as { th?: string; en?: string };
+    if (node.type === "zone") {
+      setSheetInitial({
+        sku: String(row.sku ?? ""),
+        nameTh: names.th ?? "",
+        nameEn: names.en ?? "",
+        isActive: Boolean(row.is_active),
+        conditions: conditionsFromApi(
+          row.conditions as WarehouseCondition[] | undefined
+        ),
+      });
+      setSheet({ kind: "zone", warehouseId, id });
+      return;
+    }
+    if (["shelf", "rack", "bin"].includes(node.type)) {
+      setSheetInitial({
+        sku: String(row.sku ?? ""),
+        nameTh: names.th ?? "",
+        nameEn: names.en ?? "",
+        isActive: Boolean(row.is_active),
+        capacity: String(row.capacity ?? 0),
+        childType: node.type,
+      });
+      setSheet({
+        kind: "slot",
+        parentId: node.parent_id ?? 0,
+        id,
+        childType: node.type,
+      });
+    }
+  }
+
+  function openAddChild(parentId: number) {
+    const parent = nodesById(nodes).get(parentId);
+    if (!parent) return;
+    const types = allowedChildTypes(parent.type).filter(
+      (t) => t !== "zone"
+    );
+    if (!types.length) return;
+    setSheetInitial({
+      sku: "",
+      nameTh: "",
+      nameEn: "",
+      isActive: true,
+      capacity: "0",
+      childType: types[0],
+    });
+    setSheet({
+      kind: "slot",
+      parentId,
+      childType: types[0],
+      allowedTypes: types.length > 1 ? types : undefined,
+    });
+  }
+
+  async function saveSheetPayload(payload: WarehouseNodeSavePayload) {
+    if (!sheet || !warehouseId) return;
+    try {
+      if (sheet.kind === "zone") {
+        const condBody = payload.conditions
+          ? conditionsToPatchBody(payload.conditions)
+          : null;
+        const body = {
+          type: "zone" as const,
+          sku: payload.sku,
+          capacity: 0,
+          is_active: payload.isActive,
+          names: { th: payload.nameTh, en: payload.nameEn },
+          parent_id: warehouseId,
+          ...(condBody ?? {}),
+        };
+        if (sheet.id) {
+          await patchWarehouseNode(locale, sheet.id, body);
+          if (condBody) {
+            await patchWarehouseConditions(locale, sheet.id, condBody);
+          }
+        } else {
+          await createWarehouseNode(locale, body);
+        }
+      } else if (sheet.kind === "slot") {
+        const type =
+          payload.childType ||
+          sheet.childType ||
+          sheet.allowedTypes?.[0] ||
+          "shelf";
+        const cap = Number(payload.capacity) || 0;
+        const body = {
+          type,
+          sku: payload.sku,
+          capacity: cap,
+          is_active: payload.isActive,
+          names: { th: payload.nameTh, en: payload.nameEn },
+          parent_id: sheet.parentId,
+        };
+        if (sheet.id) {
+          await patchWarehouseNode(locale, sheet.id, body);
+        } else {
+          await createWarehouseNode(locale, body);
+        }
+      }
+      toast.success(
+        sheet.id ? tCrud("toast.saved") : tCrud("toast.created")
+      );
+      await load();
+    } catch (e) {
+      toast.error(
+        e instanceof WarehouseApiError ? e.message : tError("required")
+      );
+      throw e;
+    }
+  }
+
+  async function confirmDelete() {
+    if (deleteId == null) return;
+    try {
+      await deleteWarehouseNode(locale, deleteId);
+      toast.success(tCrud("toast.deleted"));
+      setDeleteId(null);
+      await load();
+    } catch (e) {
+      if (e instanceof WarehouseApiError && e.code === "has_stock") {
+        toast.error(tWh("deleteHasStock"));
+      } else {
+        toast.error(
+          e instanceof WarehouseApiError ? e.message : tError("forbidden")
+        );
+      }
+    }
   }
 
   if (!warehouseId || Number.isNaN(warehouseId)) {
@@ -156,7 +245,9 @@ export function WarehouseManagementView({ warehouseId }: Props) {
     <div className="flex flex-col gap-6">
       <CrudPageHeader
         title={title || tPage("title")}
-        description={tPage("desc")}
+        description={
+          sku ? `${tPage("desc")} · ${sku}` : tPage("desc")
+        }
       />
 
       {loading ? (
@@ -170,49 +261,49 @@ export function WarehouseManagementView({ warehouseId }: Props) {
         </div>
       ) : (
         <>
-          {stats ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <StatCard label={tWh("statTotalZones")} value={stats.zone_count} />
-              <StatCard label={tWh("statTotalShelves")} value={countType(nodes, "shelf")} />
-              <StatCard label={tWh("statTotalRacks")} value={countType(nodes, "rack")} />
-              <StatCard label={tWh("statTotalBins")} value={countType(nodes, "bin")} />
-              <StatCard
-                label={tWh("statCapacityUsed")}
-                value={Math.round(stats.remain_qty)}
-              />
-            </div>
-          ) : null}
+          {viewStats ? <WarehouseViewStatCards stats={viewStats} /> : null}
 
-          <div className="rounded-lg border border-border bg-background p-3">
-            {zoneRoots.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">
-                {tWh("noZones")}
-              </p>
-            ) : (
-              zoneRoots.map((z) => (
-                <TreeBranch
-                  key={z.id}
-                  node={z}
-                  nodes={nodes}
-                  depth={0}
-                  open={open}
-                  onToggle={toggle}
-                  tWh={tWh}
-                />
-              ))
-            )}
+          <div className="rounded-lg border border-border bg-background">
+            <WarehouseViewTreePanel
+              nodes={nodes}
+              warehouseId={warehouseId}
+              open={open}
+              perm={perm}
+              sortableEpoch={sortableEpoch}
+              onSortableEpochBump={() =>
+                setSortableEpoch((e) => e + 1)
+              }
+              onToggle={toggleOpen}
+              onReload={load}
+              onAdd={openAddChild}
+              onEdit={(id) => void openEdit(id)}
+              onDelete={setDeleteId}
+            />
           </div>
+
+          <WarehouseViewLegend />
         </>
       )}
-    </div>
-  );
-}
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="text-muted-foreground text-xs">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums">{value}</div>
+      <WarehouseNodeEditSheet
+        state={sheet}
+        initial={sheetInitial}
+        canSave={
+          sheet?.kind === "zone"
+            ? perm.update || perm.create
+            : sheet?.kind === "slot"
+              ? perm.update || perm.create
+              : perm.update
+        }
+        onOpenChange={(o) => !o && setSheet(null)}
+        onSave={saveSheetPayload}
+      />
+
+      <CrudDeleteConfirmDialog
+        open={deleteId != null}
+        onOpenChange={(o) => !o && setDeleteId(null)}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 }

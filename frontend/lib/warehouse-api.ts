@@ -6,6 +6,7 @@ import {
   parseBffError,
   type BffStandardListParams,
 } from "@/lib/bff-crud-client";
+import type { TreeDropZone } from "@/lib/crud-list-rows";
 
 export type WarehouseStats = {
   sku_count: number;
@@ -100,7 +101,7 @@ export async function reorderWarehouseNodes(
 
 export async function moveWarehouseNode(
   locale: string,
-  body: { drag_id: number; target_id: number; zone: string }
+  body: { drag_id: number; target_id: number; zone: TreeDropZone }
 ) {
   const res = await authFetch(`${PROXY}/move`, {
     method: "PATCH",

@@ -865,7 +865,7 @@ func (r *Repository) checkZoneQuota(ctx context.Context, tx *sql.Tx, zoneID int6
 		zoneID, childType).Scan(&amount, &amountActive)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ErrValidation
+			return ErrZoneQuota
 		}
 		return err
 	}
@@ -879,10 +879,10 @@ WHERE deleted_at IS NULL AND type = $2
 		return err
 	}
 	if total+add > amount {
-		return ErrValidation
+		return ErrZoneQuota
 	}
 	if isActive && active+add > amountActive {
-		return ErrValidation
+		return ErrZoneQuota
 	}
 	return nil
 }

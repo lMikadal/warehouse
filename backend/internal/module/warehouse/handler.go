@@ -200,6 +200,9 @@ func (h *Handler) create(c *echo.Context) error {
 	}
 	id, err := h.repo.Create(c.Request().Context(), in)
 	if err != nil {
+		if errors.Is(err, ErrZoneQuota) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "zone_quota_exceeded", Message: "zone quota exceeded"})
+		}
 		if errors.Is(err, ErrValidation) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
 		}
@@ -345,6 +348,9 @@ func (h *Handler) move(c *echo.Context) error {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
 	if err := h.repo.Move(c.Request().Context(), body.DragID, body.TargetID, body.Zone, httputil.ActorID(c)); err != nil {
+		if errors.Is(err, ErrZoneQuota) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "zone_quota_exceeded", Message: "zone quota exceeded"})
+		}
 		if errors.Is(err, ErrValidation) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid move"})
 		}

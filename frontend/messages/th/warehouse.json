@@ -14,6 +14,13 @@
     "addWarehouse": "เพิ่มคลังสินค้า",
     "editWarehouse": "แก้ไขคลังสินค้า",
     "editZone": "แก้ไขโซน",
+    "editNode": "แก้ไขตำแหน่ง",
+    "addChild": "เพิ่มตำแหน่งย่อย",
+    "childType": "ประเภท",
+    "capacity": "ความจุ",
+    "moveDrag": "ลากเพื่อย้าย",
+    "moveQuotaFull": "โควต้าในโซนปลายทางเต็มแล้ว",
+    "moveInvalidParent": "ไม่สามารถวางในตำแหน่งนี้ได้",
     "typeShelf": "ชั้นวาง",
     "typeRack": "แร็ค",
     "typeBin": "กล่อง",
@@ -26,8 +33,15 @@
     "statTotalRacks": "แร็คทั้งหมด",
     "statTotalBins": "กล่องทั้งหมด",
     "statCapacityUsed": "ใช้ความจุ",
+    "statCapacityOfTotal": "จากความจุทั้งหมด",
     "details": "รายละเอียด",
     "deleteHasStock": "ลบไม่ได้: ยังมีสต็อกคงเหลือในกล่องภายใต้คลัง/โซนนี้",
-    "errorAmountActiveExceedsMax": "จำนวนใช้งานต้องไม่มากกว่าจำนวนสูงสุด"
+    "errorAmountActiveExceedsMax": "จำนวนใช้งานต้องไม่มากกว่าจำนวนสูงสุด",
+    "legendCapacity": {
+      "empty": "ว่าง",
+      "low": "ต่ำ (0–79%)",
+      "mid": "ปานกลาง (80–99%)",
+      "high": "เต็ม (100%)"
+    }
   }
 }

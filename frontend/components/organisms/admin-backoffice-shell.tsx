@@ -67,6 +67,7 @@ import {
   adminNavLabel,
   breadcrumbFromNavTree,
   filterAdminNavTree,
+  navItemActive,
   type AdminNavIcon,
   type AdminNavNode,
 } from "@/lib/admin-nav-api";
@@ -139,6 +140,7 @@ type NavRenderContext = {
   locale: string;
   depth: number;
   navSearchActive: boolean;
+  navTree: AdminNavNode[];
   onDialogNav?: (node: AdminNavNode) => void;
 };
 
@@ -173,11 +175,12 @@ function AdminNavCollapsible({
 
 function navBranchContainsActivePath(
   node: AdminNavNode,
-  pathname: string
+  pathname: string,
+  tree: AdminNavNode[]
 ): boolean {
-  if (isPathActive(pathname, node.href)) return true;
+  if (navItemActive(pathname, node.href, tree)) return true;
   return (node.children ?? []).some((c) =>
-    navBranchContainsActivePath(c, pathname)
+    navBranchContainsActivePath(c, pathname, tree)
   );
 }
 
@@ -187,12 +190,7 @@ function navCollapsibleDefaultOpen(
 ): boolean {
   if (ctx.navSearchActive) return true;
   if (node.defaultOpen) return true;
-  return navBranchContainsActivePath(node, ctx.pathname);
-}
-
-function isPathActive(pathname: string, href: string | undefined): boolean {
-  if (!href) return false;
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return navBranchContainsActivePath(node, ctx.pathname, ctx.navTree);
 }
 
 function AdminNavSubTree({
@@ -220,7 +218,7 @@ function AdminNavNodeView({
 }) {
   const label = adminNavLabel(node.labels, ctx.locale);
   const hasChildren = (node.children?.length ?? 0) > 0;
-  const active = isPathActive(ctx.pathname, node.href);
+  const active = navItemActive(ctx.pathname, node.href, ctx.navTree);
 
   if (hasChildren && ctx.depth === 0) {
     return (
@@ -280,6 +278,7 @@ function AdminNavNodeView({
       <SidebarMenuSubItem>
         <SidebarMenuSubButton
           size="md"
+          isActive={active}
           onClick={() => ctx.onDialogNav?.(node)}
         >
           <span>{label}</span>
@@ -356,6 +355,7 @@ export function AdminBackofficeShell({
     locale,
     depth: 0,
     navSearchActive,
+    navTree,
     onDialogNav: () => setMgmtPickerOpen(true),
   };
 

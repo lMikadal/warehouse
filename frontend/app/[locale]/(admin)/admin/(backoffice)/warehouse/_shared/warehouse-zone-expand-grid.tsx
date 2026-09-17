@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  ClipboardList,
-  Layers,
-  LayoutGrid,
-  Package,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ComponentType } from "react";
 
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { ButtonIcon } from "@/components/ui/button-icon";
@@ -30,6 +22,10 @@ import {
   type WarehouseSheetState,
   type ZoneConditionsForm,
 } from "./warehouse-node-edit-sheet";
+import {
+  WAREHOUSE_SLOT_TYPE_ICON,
+  type WarehouseSlotType,
+} from "./warehouse-type-icons";
 
 export type WarehouseZoneExpandRow = {
   id: number;
@@ -39,15 +35,7 @@ export type WarehouseZoneExpandRow = {
   conditions: WarehouseCondition[];
 };
 
-const CONDITION_TYPES = ["shelf", "rack", "bin"] as const;
-
-type ConditionType = (typeof CONDITION_TYPES)[number];
-
-const TYPE_ICON: Record<ConditionType, ComponentType<{ className?: string }>> = {
-  shelf: Layers,
-  rack: LayoutGrid,
-  bin: Package,
-};
+const CONDITION_TYPES = ["shelf", "rack", "bin"] as const satisfies readonly WarehouseSlotType[];
 
 type Props = {
   warehouseId: number;
@@ -58,7 +46,7 @@ type Props = {
   onDeleteZone: (zoneId: number) => void;
 };
 
-function condAmounts(form: ZoneConditionsForm, type: ConditionType) {
+function condAmounts(form: ZoneConditionsForm, type: WarehouseSlotType) {
   const row = form[type];
   const amount = Number.parseInt(row.amount, 10) || 0;
   const active = Number.parseInt(row.amountActive, 10) || 0;
@@ -78,7 +66,7 @@ export function WarehouseZoneExpandGrid({
   const tCol = useTranslations("col");
   const tCrud = useTranslations("crud");
 
-  const typeLabel = (type: ConditionType) => {
+  const typeLabel = (type: WarehouseSlotType) => {
     if (type === "shelf") return tWh("typeShelf");
     if (type === "rack") return tWh("typeRack");
     return tWh("typeBin");
@@ -164,7 +152,7 @@ export function WarehouseZoneExpandGrid({
                 </TableHeader>
                 <TableBody>
                   {CONDITION_TYPES.map((type) => {
-                    const Icon = TYPE_ICON[type];
+                    const Icon = WAREHOUSE_SLOT_TYPE_ICON[type];
                     const { amount, active, inactive } = condAmounts(form, type);
                     return (
                       <TableRow key={type}>

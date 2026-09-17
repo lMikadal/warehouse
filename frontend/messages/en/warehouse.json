@@ -14,6 +14,13 @@
     "addWarehouse": "Add warehouse",
     "editWarehouse": "Edit warehouse",
     "editZone": "Edit zone",
+    "editNode": "Edit location",
+    "addChild": "Add child location",
+    "childType": "Type",
+    "capacity": "Capacity",
+    "moveDrag": "Drag to move",
+    "moveQuotaFull": "Destination zone quota is full",
+    "moveInvalidParent": "Cannot drop into this location",
     "typeShelf": "Shelf",
     "typeRack": "Rack",
     "typeBin": "Bin",
@@ -26,8 +33,15 @@
     "statTotalRacks": "Total racks",
     "statTotalBins": "Total bins",
     "statCapacityUsed": "Capacity used",
+    "statCapacityOfTotal": "of total capacity",
     "details": "Details",
     "deleteHasStock": "Cannot delete: bins under this location still have remaining stock.",
-    "errorAmountActiveExceedsMax": "Active quantity cannot exceed max quantity."
+    "errorAmountActiveExceedsMax": "Active quantity cannot exceed max quantity.",
+    "legendCapacity": {
+      "empty": "Empty",
+      "low": "Low (0–79%)",
+      "mid": "Medium (80–99%)",
+      "high": "Full (100%)"
+    }
   }
 }

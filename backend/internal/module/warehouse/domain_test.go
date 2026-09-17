@@ -1,6 +1,9 @@
 package warehouse
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestValidParent(t *testing.T) {
 	if !validParent("shelf", "zone") {
@@ -14,5 +17,11 @@ func TestValidParent(t *testing.T) {
 	}
 	if !validParent("zone", "warehouse") {
 		t.Fatal("zone under warehouse")
+	}
+}
+
+func TestErrZoneQuotaDistinctFromValidation(t *testing.T) {
+	if errors.Is(ErrZoneQuota, ErrValidation) {
+		t.Fatal("zone quota must not match generic validation")
 	}
 }
