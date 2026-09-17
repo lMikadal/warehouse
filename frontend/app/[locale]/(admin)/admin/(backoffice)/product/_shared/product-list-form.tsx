@@ -13,6 +13,7 @@ import {
   FormCardHeader,
   FormCardTitle,
 } from "@/components/molecules/form-card";
+import { CommaTagsField } from "@/components/molecules/comma-tags-field";
 import { FormField } from "@/components/molecules/form-field";
 import { ProductCategoryCascadeDialog } from "@/components/molecules/product-category-cascade-dialog";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
@@ -628,14 +629,16 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     />
                   </Field>
                   <Field className="gap-1.5 md:col-span-2">
-                    <FieldLabel>{tForm("tag")}</FieldLabel>
-                    <Input
+                    <FieldLabel htmlFor="plf-tag">{tForm("tag")}</FieldLabel>
+                    <CommaTagsField
+                      id="plf-tag"
                       value={draft.tag ?? ""}
                       placeholder={tFormPh("placeholder.input", {
                         label: tForm("tag"),
                       })}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, tag: e.target.value }))
+                      aria-label={tForm("tag")}
+                      onChange={(tag) =>
+                        setDraft((d) => ({ ...d, tag }))
                       }
                     />
                   </Field>

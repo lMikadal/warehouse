@@ -16,6 +16,9 @@
       "input": "กรุณากรอก{label}",
       "select": "กรุณาเลือก{label}"
     },
+    "tags": {
+      "remove": "ลบ {label}"
+    },
     "password": {
       "hide": "ซ่อนรหัสผ่าน",
       "show": "แสดงรหัสผ่าน"

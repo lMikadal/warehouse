@@ -16,6 +16,9 @@
       "input": "Please enter {label}",
       "select": "Please select {label}"
     },
+    "tags": {
+      "remove": "Remove {label}"
+    },
     "password": {
       "hide": "Hide password",
       "show": "Show password"
