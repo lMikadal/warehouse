@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Link } from "@/i18n/navigation";
+import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import {
   fetchProductItemWarehousePlacements,
@@ -45,6 +47,7 @@ export function ProductListCarModal({ listId, open, onOpenChange }: CarModalProp
   const locale = useLocale() as DisplayLocale;
   const tList = useTranslations("productList");
   const tAttr = useTranslations("productAttr");
+  const carPerms = useResourcePermissions("product", "product_car");
   const [rows, setRows] = useState<CarFitmentRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -111,11 +114,13 @@ export function ProductListCarModal({ listId, open, onOpenChange }: CarModalProp
             </TableBody>
           </Table>
         </div>
-        <DialogFooter>
-          <Button type="button" onClick={() => onOpenChange(false)}>
-            OK
-          </Button>
-        </DialogFooter>
+        {carPerms.view ? (
+          <DialogFooter className="justify-end sm:justify-end">
+            <Button variant="link" className="h-auto px-0" asChild>
+              <Link href="/admin/product/car">{tList("viewMoreDetails")}</Link>
+            </Button>
+          </DialogFooter>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -134,6 +139,7 @@ export function ProductListWarehouseModal({
 }: WhModalProps) {
   const locale = useLocale() as DisplayLocale;
   const tList = useTranslations("productList");
+  const whPerms = useResourcePermissions("warehouse", "warehouse_list");
   const [rows, setRows] = useState<WarehousePlacementRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -198,11 +204,13 @@ export function ProductListWarehouseModal({
             </TableBody>
           </Table>
         </div>
-        <DialogFooter>
-          <Button type="button" onClick={() => onOpenChange(false)}>
-            OK
-          </Button>
-        </DialogFooter>
+        {whPerms.view ? (
+          <DialogFooter className="justify-end sm:justify-end">
+            <Button variant="link" className="h-auto px-0" asChild>
+              <Link href="/admin/warehouse/list">{tList("viewMoreDetails")}</Link>
+            </Button>
+          </DialogFooter>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

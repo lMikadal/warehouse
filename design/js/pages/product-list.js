@@ -46,6 +46,30 @@
     return global.permissions && global.permissions.canAction(PERM_MODULE, PERM_TYPE, action);
   }
 
+  function canResource(module, type, action) {
+    return global.permissions && global.permissions.canAction(module, type, action);
+  }
+
+  function setDetailModalFooter(kind) {
+    if (!detailOverlay) return;
+    var footer = detailOverlay.querySelector("#pl-detail-footer");
+    if (!footer) return;
+    var html = "";
+    if (kind === "car" && canResource("product", "product_car", "view")) {
+      html =
+        '<a class="product-list__detail-more-link" href="' +
+        escapeAttr(global.nav.resolve("pages/product-car.html")) +
+        '" data-i18n="productList.viewMoreDetails"></a>';
+    } else if (kind === "warehouse" && canResource("warehouse", "warehouse_list", "view")) {
+      html =
+        '<a class="product-list__detail-more-link" href="' +
+        escapeAttr(global.nav.resolve("pages/warehouse-list.html")) +
+        '" data-i18n="productList.viewMoreDetails"></a>';
+    }
+    footer.innerHTML = html;
+    footer.hidden = !html;
+  }
+
   function now() {
     return new Date().toISOString();
   }
@@ -850,12 +874,10 @@
       '<button type="button" class="modal__close" id="pl-detail-close" aria-label="Close">' +
       '<img src="../assets/icons/x.svg" alt="" width="18" height="18" /></button></div>' +
       '<div class="modal__content" id="pl-detail-content"></div>' +
-      '<div class="modal__footer">' +
-      '<button type="button" class="btn btn--primary" id="pl-detail-ok" data-i18n="modal.ok"></button>' +
+      '<div class="modal__footer" id="pl-detail-footer" hidden></div>' +
       "</div></div>";
     document.body.appendChild(detailOverlay);
     detailOverlay.querySelector("#pl-detail-close").addEventListener("click", closeDetailModal);
-    detailOverlay.querySelector("#pl-detail-ok").addEventListener("click", closeDetailModal);
     detailOverlay.addEventListener("click", function (e) {
       if (e.target === detailOverlay) closeDetailModal();
     });
@@ -918,6 +940,7 @@
             .join("") +
           "</tbody></table>";
     content.innerHTML = rows;
+    setDetailModalFooter("car");
     detailOverlay.hidden = false;
     document.body.classList.add("modal-open");
     if (global.i18n) global.i18n.init();
@@ -986,6 +1009,7 @@
           .join("") +
         "</tbody></table>";
     }
+    setDetailModalFooter("warehouse");
     detailOverlay.hidden = false;
     document.body.classList.add("modal-open");
     if (global.i18n) global.i18n.init();

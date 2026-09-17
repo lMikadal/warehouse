@@ -152,6 +152,7 @@ window.I18N_TH = {
   "productList.newProductFilterOnly": "เฉพาะสินค้าใหม่",
   "productList.lowStock": "ใกล้หมด",
   "productList.viewMore": "ดูเพิ่มเติม",
+  "productList.viewMoreDetails": "ดูรายละเอียดเพิ่มเติม",
   "productList.warehouseCountLabel": "คลังสินค้า {count} แห่ง",
   "productList.packUnitPiece": "ชิ้น",
   "productList.packUnitBox": "กล่อง",

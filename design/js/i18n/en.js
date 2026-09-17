@@ -152,6 +152,7 @@ window.I18N_EN = {
   "productList.newProductFilterOnly": "New only",
   "productList.lowStock": "Low stock",
   "productList.viewMore": "View more",
+  "productList.viewMoreDetails": "View more details",
   "productList.warehouseCountLabel": "{count} warehouse(s)",
   "productList.packUnitPiece": "piece(s)",
   "productList.packUnitBox": "box",

@@ -20,6 +20,7 @@
     "lowStock": "ใกล้หมด",
     "salesStopped": "ปิดการขาย",
     "viewMore": "ดูเพิ่มเติม",
+    "viewMoreDetails": "ดูรายละเอียดเพิ่มเติม",
     "warehouseCountLabel": "คลังสินค้า {count} แห่ง",
     "packUnitPiece": "ชิ้น",
     "packUnitBox": "กล่อง",

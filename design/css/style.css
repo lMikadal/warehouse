@@ -6417,6 +6417,17 @@ select.product-list-form__hist-filter-control {
   font-size: var(--text-xs);
 }
 
+.product-list__detail-more-link {
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.product-list__detail-more-link:hover {
+  opacity: 0.9;
+}
+
 /* Member tier split page (form left, cards right) */
 .member-tier-split {
   display: grid;
