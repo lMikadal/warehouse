@@ -35,12 +35,16 @@ import {
 import {
   isTreePathDescendant,
   resolveTreeDropZone,
+  sortableIndicesFromSource,
   treeDepth,
   type TreeDropZone,
 } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
-import type { ProductAttributeRow } from "@/lib/product-attribute-api";
+import {
+  ProductAttributeApiError,
+  type ProductAttributeRow,
+} from "@/lib/product-attribute-api";
 import { cn } from "@/lib/utils";
 
 import type { ProductAttributePageConfig } from "./product-attribute-config";
@@ -435,6 +439,7 @@ export type ProductAttributeListTableProps = {
   onDelete: (id: number) => void;
   onCategoryMove: (intent: AttributeDragIntent) => Promise<void>;
   onCarMove: (intent: AttributeDragIntent) => Promise<void>;
+  onBrandReorder: (dragId: number, targetId: number) => Promise<void>;
 };
 
 export function productAttributeColumnCount(
@@ -448,7 +453,11 @@ export function productAttributeColumnCount(
 export function productAttributeShowGrip(
   config: ProductAttributePageConfig
 ): boolean {
-  return config.kind === "category" || config.kind === "car";
+  return (
+    config.kind === "category" ||
+    config.kind === "brand" ||
+    config.kind === "car"
+  );
 }
 
 export function ProductAttributeListTable({
@@ -464,6 +473,7 @@ export function ProductAttributeListTable({
   onDelete,
   onCategoryMove,
   onCarMove,
+  onBrandReorder,
 }: ProductAttributeListTableProps) {
   const tCrud = useTranslations("crud");
   const tCol = useTranslations("col");
@@ -472,12 +482,14 @@ export function ProductAttributeListTable({
 
   const showGrip = productAttributeShowGrip(config);
   const columnCount = productAttributeColumnCount(config);
-  const dndMode =
+  const dndMode: "category" | "car" | "brand" | null =
     config.kind === "category"
       ? "category"
-      : config.kind === "car"
-        ? "car"
-        : null;
+      : config.kind === "brand"
+        ? "brand"
+        : config.kind === "car"
+          ? "car"
+          : null;
 
   const [sortableEpoch, setSortableEpoch] = useState(0);
   const [dragIntent, setDragIntent] = useState<AttributeDragIntent | null>(
@@ -494,6 +506,12 @@ export function ProductAttributeListTable({
   const syncDragIntent = useCallback(
     (operation: DndOperation | undefined) => {
       if (!dragEnabled || !dndMode) {
+        dragIntentRef.current = null;
+        lastDropIntentRef.current = null;
+        setDragIntent(null);
+        return;
+      }
+      if (dndMode === "brand") {
         dragIntentRef.current = null;
         lastDropIntentRef.current = null;
         setDragIntent(null);
@@ -524,6 +542,36 @@ export function ProductAttributeListTable({
       resetSortableOrder();
       if (msg) toast.error(msg);
     };
+
+    if (dndMode === "brand") {
+      if (event.canceled || !dragEnabled) {
+        if (dragEnabled) resetSortableOrder();
+        return;
+      }
+      const indices = sortableIndicesFromSource(event.operation?.source);
+      if (!indices || indices.from === indices.to) {
+        resetSortableOrder();
+        return;
+      }
+      const dragRow = rows[indices.from];
+      const targetRow = rows[indices.to];
+      if (!dragRow || !targetRow) {
+        resetSortableOrder();
+        return;
+      }
+      void onBrandReorder(dragRow.id, targetRow.id)
+        .then(() => {
+          resetSortableOrder();
+          toast.success(tCrud("toast.reordered"));
+        })
+        .catch((e: unknown) => {
+          resetSortableOrder();
+          toast.error(
+            e instanceof ProductAttributeApiError ? e.message : tError("noData")
+          );
+        });
+      return;
+    }
 
     const intent =
       dragIntentRef.current ??

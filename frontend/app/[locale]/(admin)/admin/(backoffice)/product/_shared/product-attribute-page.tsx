@@ -49,6 +49,7 @@ import {
   patchProductAttribute,
   ProductAttributeApiError,
   moveProductCars,
+  reorderProductAttributes,
   type ProductAttributeRow,
 } from "@/lib/product-attribute-api";
 
@@ -354,6 +355,11 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
     await loadList();
   };
 
+  const onBrandReorder = async (dragId: number, targetId: number) => {
+    await reorderProductAttributes(config.segment, dragId, targetId);
+    await loadList();
+  };
+
   const loadCarPickerRows = useCallback(
     async (typeCar: "brand" | "model", brandId?: number) => {
       const res = await fetchProductAttributes(config.segment, locale, {
@@ -414,6 +420,7 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
               onDelete={setDeleteId}
               onCategoryMove={onCategoryMove}
               onCarMove={onCarMove}
+              onBrandReorder={onBrandReorder}
             />
           </div>
 
