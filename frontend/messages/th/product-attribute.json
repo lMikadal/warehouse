@@ -1,0 +1,21 @@
+{
+  "productAttr": {
+    "parentCategory": "หมวดหมู่หลัก",
+    "parentRoot": "ไม่มี (ระดับบนสุด)",
+    "categoryBrands": "แบรนด์ที่เกี่ยวข้อง",
+    "carLevel": {
+      "label": "ระดับ",
+      "brand": "ยี่ห้อ",
+      "model": "รุ่น",
+      "engine": "เครื่องยนต์"
+    },
+    "carBrand": "ยี่ห้อรถ",
+    "carModel": "รุ่นรถ",
+    "dragHasChildren": "ไม่สามารถย้ายหมวดหมู่ที่มีหมวดย่อยไปอยู่ใต้หมวดอื่นได้",
+    "dragInvalidParent": "ไม่สามารถวางไว้ใต้รายการนี้ได้",
+    "dragInvalidMove": "ไม่สามารถย้ายไปไว้ในตำแหน่งนี้ได้",
+    "carBrandRequired": "กรุณาเลือกยี่ห้อรถ",
+    "carModelRequired": "กรุณาเลือกรุ่นรถ",
+    "treeEmpty": "ไม่มีรายการ"
+  }
+}

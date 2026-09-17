@@ -1015,6 +1015,169 @@
       ]
     },
     {
+      "name": "Product",
+      "item": [
+        {
+          "name": "Categories",
+          "item": [
+            {
+              "name": "List categories",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/categories?page=1&limit=100",
+                "description": "Items include tree_path (ltree) for DFS order and admin table name indent."
+              }
+            },
+            {
+              "name": "Get category",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/categories/3"
+              }
+            },
+            {
+              "name": "Create category",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"names\": { \"th\": \"หมวดทดสอบ\", \"en\": \"Test category\" },\n  \"brand_ids\": [1]\n}"
+                },
+                "url": "{{baseUrl}}/product/categories"
+              }
+            },
+            {
+              "name": "Patch category",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"brand_ids\": [1, 2]\n}"
+                },
+                "url": "{{baseUrl}}/product/categories/3"
+              }
+            },
+            {
+              "name": "Move category",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 4,\n  \"target_id\": 16,\n  \"zone\": \"child\"\n}"
+                },
+                "url": "{{baseUrl}}/product/categories/move"
+              }
+            },
+            {
+              "name": "Delete category",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/product/categories/99" }
+            }
+          ]
+        },
+        {
+          "name": "Brands",
+          "item": [
+            {
+              "name": "List brands",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/brands?page=1&limit=100"
+              }
+            },
+            {
+              "name": "Create brand",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"names\": { \"th\": \"แบรนด์ทดสอบ\", \"en\": \"Test brand\" }\n}"
+                },
+                "url": "{{baseUrl}}/product/brands"
+              }
+            },
+            {
+              "name": "Reorder brands",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 2,\n  \"target_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/product/brands/reorder"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cars",
+          "item": [
+            {
+              "name": "List car attributes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/cars?page=1&limit=100",
+                "description": "Items include tree_path (ltree) for DFS order and admin table name indent."
+              }
+            },
+            {
+              "name": "Create car model",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": true,\n  \"type_car\": \"model\",\n  \"parent_id\": 5,\n  \"names\": { \"th\": \"รุ่นทดสอบ\", \"en\": \"Test model\" }\n}"
+                },
+                "url": "{{baseUrl}}/product/cars"
+              }
+            },
+            {
+              "name": "Reorder car siblings",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 8,\n  \"target_id\": 5\n}"
+                },
+                "url": "{{baseUrl}}/product/cars/reorder"
+              }
+            },
+            {
+              "name": "Move car attribute",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 9,\n  \"target_id\": 6,\n  \"zone\": \"child\"\n}"
+                },
+                "url": "{{baseUrl}}/product/cars/move"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Supplier",
       "item": [
         {

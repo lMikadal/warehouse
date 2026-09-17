@@ -23,7 +23,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `member_setting_relation` | TBD | active | [ ] | |
 | `product_list` | TBD | active | [ ] | No `sort_order` |
 | `product_item` | TBD | active | [ ] | |
-| `product_attribute` | TBD | active, move | [ ] | Tree; attribute UI may restrict drag scope |
+| `product_attribute` | `/product/categories`, `/brands`, `/cars` | active, reorder, move (categories + cars) | [x] | Three APIs; same table; type fixed per route |
 | `supplier_user` | `/supplier/users` | active | [x] | No list `sort_order` |
 | `supplier_bank` | TBD | active | [ ] | Reorder parent-scoped — see §D |
 | `warehouse_list` | `/warehouse/lists` | active, move | [x] | Tree |
@@ -57,7 +57,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `system_language` | global | [x] | `is_active` + **`is_default`** exclusive + `/reorder` |
 | `system_menu` | tree | [x] | Use **`/move`**, not `/reorder` |
 | `warehouse_list` | tree | [x] | Use **`/move`** |
-| `product_attribute` | tree | [ ] | Use **`/move`** (sibling-only for some types in design) |
+| `product_attribute` | tree | [x] | Categories **`/move`**; brand/car **`/reorder`** (sibling scope) |
 | `member_tier` | tree | [ ] | Use **`/move`** |
 
 ## C — `tree_path` (requires `PATCH /move`)
@@ -66,7 +66,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 |-------|--------|
 | `system_menu` | [x] |
 | `warehouse_list` | [x] |
-| `product_attribute` | [ ] |
+| `product_attribute` | [x] |
 | `member_tier` | [ ] |
 
 Shared logic: [`backend/internal/tree/`](../../../backend/internal/tree/).

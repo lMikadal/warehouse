@@ -8,7 +8,9 @@ import enForm from "./en/form.json";
 import enPageAuth from "./en/page-auth.json";
 import enPageSetting from "./en/page-setting.json";
 import enPageLocation from "./en/page-location.json";
+import enPageProduct from "./en/page-product.json";
 import enPageWarehouse from "./en/page-warehouse.json";
+import enProductAttribute from "./en/product-attribute.json";
 import enPageSupplier from "./en/page-supplier.json";
 import enWarehouse from "./en/warehouse.json";
 import enPageSystem from "./en/page-system.json";
@@ -24,7 +26,9 @@ import thForm from "./th/form.json";
 import thPageAuth from "./th/page-auth.json";
 import thPageSetting from "./th/page-setting.json";
 import thPageLocation from "./th/page-location.json";
+import thPageProduct from "./th/page-product.json";
 import thPageWarehouse from "./th/page-warehouse.json";
+import thProductAttribute from "./th/product-attribute.json";
 import thPageSupplier from "./th/page-supplier.json";
 import thWarehouse from "./th/warehouse.json";
 import thPageSystem from "./th/page-system.json";
@@ -69,6 +73,8 @@ const FRAGMENTS: MessageTree[] = [
   thPageSetting,
   thPageLocation,
   thPageWarehouse,
+  thPageProduct,
+  thProductAttribute,
   thPageSupplier,
   thWarehouse,
   thSupplier,
@@ -88,6 +94,8 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageSetting,
   enPageLocation,
   enPageWarehouse,
+  enPageProduct,
+  enProductAttribute,
   enPageSupplier,
   enWarehouse,
   enSupplier,

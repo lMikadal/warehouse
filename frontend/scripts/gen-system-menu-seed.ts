@@ -39,6 +39,9 @@ const PATH_OVERRIDE_BY_ID: Record<number, string> = {
   26: "/admin/warehouse/list",
   27: "/admin/warehouse/list/view",
   29: "/admin/product/list",
+  30: "/admin/product/category",
+  31: "/admin/product/brand",
+  32: "/admin/product/car",
   35: "/admin/member/tiers",
   36: "/admin/member/users",
 };

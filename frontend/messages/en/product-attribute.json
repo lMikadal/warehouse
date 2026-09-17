@@ -1,0 +1,21 @@
+{
+  "productAttr": {
+    "parentCategory": "Parent category",
+    "parentRoot": "None (top level)",
+    "categoryBrands": "Related brands",
+    "carLevel": {
+      "label": "Level",
+      "brand": "Brand",
+      "model": "Model",
+      "engine": "Engine"
+    },
+    "carBrand": "Car brand",
+    "carModel": "Car model",
+    "dragHasChildren": "Cannot move a category with subcategories under another category",
+    "dragInvalidParent": "Cannot drop under this item",
+    "dragInvalidMove": "Cannot move to this position",
+    "carBrandRequired": "Please select a car brand",
+    "carModelRequired": "Please select a car model",
+    "treeEmpty": "No items"
+  }
+}

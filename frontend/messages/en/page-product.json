@@ -1,0 +1,16 @@
+{
+  "page": {
+    "productCategory": {
+      "title": "Product categories",
+      "desc": "Manage product categories and brand links"
+    },
+    "productBrand": {
+      "title": "Product brands",
+      "desc": "Manage product brands"
+    },
+    "productCar": {
+      "title": "Car categories",
+      "desc": "Manage car brand, model, and engine"
+    }
+  }
+}
