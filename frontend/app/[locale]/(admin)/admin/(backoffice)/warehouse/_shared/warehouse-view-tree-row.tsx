@@ -27,6 +27,7 @@ import {
 } from "./warehouse-view-tree-styles";
 import {
   childCountSummary,
+  isTreeNodeOpen,
   nodeCapacity,
   storageChildren,
   type ChildCountPart,
@@ -147,7 +148,7 @@ function TreeRowBody({
 
   const kids = storageChildren(nodes, row.id);
   const hasKids = kids.length > 0;
-  const isOpen = open[row.id] ?? depth < 1;
+  const isOpen = isTreeNodeOpen(open, row.id);
   const cap = nodeCapacity(nodes, row);
   const counts = childCountSummary(nodes, row.id);
   const Icon = typeIcon(row.type);

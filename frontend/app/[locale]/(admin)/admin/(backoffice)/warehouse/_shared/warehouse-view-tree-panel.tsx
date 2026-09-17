@@ -28,6 +28,7 @@ import {
   childrenOf,
   flattenVisibleTree,
   isDescendant,
+  isTreeNodeOpen,
   nodesById,
   storageChildren,
   validParent,
@@ -263,7 +264,7 @@ export function WarehouseViewTreePanel({
 
   function renderNode(node: WarehouseTreeNode, depth: number) {
     const kids = storageChildren(nodes, node.id);
-    const isOpen = open[node.id] ?? depth < 1;
+    const isOpen = isTreeNodeOpen(open, node.id);
     const showChildren = isOpen && kids.length > 0;
     const index = indexById.get(node.id) ?? 0;
 

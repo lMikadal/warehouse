@@ -156,6 +156,13 @@ export type FlatVisibleRow = {
   depth: number;
 };
 
+export function isTreeNodeOpen(
+  open: Record<number, boolean>,
+  nodeId: number
+): boolean {
+  return open[nodeId] ?? false;
+}
+
 export function flattenVisibleTree(
   nodes: WarehouseTreeNode[],
   warehouseId: number,
@@ -166,7 +173,7 @@ export function flattenVisibleTree(
     out.push({ node, depth });
     const kids = storageChildren(nodes, node.id);
     const hasKids = kids.length > 0;
-    const isOpen = open[node.id] ?? depth < 1;
+    const isOpen = isTreeNodeOpen(open, node.id);
     if (!hasKids || !isOpen) return;
     for (const c of kids) walk(c, depth + 1);
   }

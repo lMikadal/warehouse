@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
@@ -38,9 +38,29 @@ import {
 
 type Props = {
   warehouseId: number | null;
+  expandZoneId?: number | null;
 };
 
-export function WarehouseManagementView({ warehouseId }: Props) {
+function initialOpenForZone(
+  nodes: WarehouseTreeNode[],
+  warehouseId: number,
+  expandZoneId: number | null | undefined
+): Record<number, boolean> {
+  if (expandZoneId == null || Number.isNaN(expandZoneId)) return {};
+  const node = nodesById(nodes).get(expandZoneId);
+  if (
+    node?.type === "zone" &&
+    node.parent_id === warehouseId
+  ) {
+    return { [expandZoneId]: true };
+  }
+  return {};
+}
+
+export function WarehouseManagementView({
+  warehouseId,
+  expandZoneId = null,
+}: Props) {
   const locale = useLocale();
   const tPage = useTranslations("page.warehouseView");
   const tWh = useTranslations("warehouse");
@@ -54,6 +74,7 @@ export function WarehouseManagementView({ warehouseId }: Props) {
   const [sku, setSku] = useState("");
   const [nodes, setNodes] = useState<WarehouseTreeNode[]>([]);
   const [open, setOpen] = useState<Record<number, boolean>>({});
+  const openInitKeyRef = useRef<string | null>(null);
   const [sortableEpoch, setSortableEpoch] = useState(0);
   const [sheet, setSheet] = useState<WarehouseSheetState | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -96,6 +117,20 @@ export function WarehouseManagementView({ warehouseId }: Props) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    openInitKeyRef.current = null;
+  }, [warehouseId, expandZoneId]);
+
+  useEffect(() => {
+    if (loading || !warehouseId || Number.isNaN(warehouseId) || !nodes.length) {
+      return;
+    }
+    const key = `${warehouseId}:${expandZoneId ?? ""}`;
+    if (openInitKeyRef.current === key) return;
+    openInitKeyRef.current = key;
+    setOpen(initialOpenForZone(nodes, warehouseId, expandZoneId));
+  }, [loading, nodes, warehouseId, expandZoneId]);
 
   function toggleOpen(id: number) {
     setOpen((o) => ({ ...o, [id]: !o[id] }));

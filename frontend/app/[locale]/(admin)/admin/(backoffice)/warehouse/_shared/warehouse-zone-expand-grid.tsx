@@ -97,7 +97,7 @@ export function WarehouseZoneExpandGrid({
                     nativeButton={false}
                     render={
                       <Link
-                        href={`/admin/warehouse/list/view?id=${warehouseId}`}
+                        href={`/admin/warehouse/list/view?id=${warehouseId}&zone=${zone.id}`}
                       />
                     }
                     aria-label={tCrud("btn.view")}
