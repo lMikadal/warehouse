@@ -298,7 +298,7 @@ export function WarehouseManagementView({
         <>
           {viewStats ? <WarehouseViewStatCards stats={viewStats} /> : null}
 
-          <div className="rounded-lg border border-border bg-background">
+          <div className="flex flex-col gap-2">
             <WarehouseViewTreePanel
               nodes={nodes}
               warehouseId={warehouseId}

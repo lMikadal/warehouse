@@ -15,6 +15,14 @@ export const whViewTreeItemClass = cn(
 export const whViewTreeChildrenClass =
   "wh-view-tree__children ml-3 border-l border-border/80 pl-4";
 
+/** Zone roots: one card per zone (design reference mockup) */
+export const whViewZoneRootBlockClass =
+  "overflow-hidden rounded-lg border border-border bg-card shadow-sm px-1 py-0.5";
+
+/** Design `.wh-view-tree` — stacked zone cards, no outer panel border */
+export const whViewTreeListClass =
+  "wh-view-tree flex flex-col gap-2 bg-transparent px-0 py-0 sm:gap-3";
+
 /** Design `.wh-view-row` */
 export const whViewRowClass =
   "wh-view-row flex flex-nowrap items-center gap-x-2 gap-y-1 rounded-[calc(var(--radius)-2px)] px-2 py-2.5 sm:gap-x-3 hover:bg-muted/25";

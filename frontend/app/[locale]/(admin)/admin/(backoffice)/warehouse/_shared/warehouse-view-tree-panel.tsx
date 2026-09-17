@@ -23,7 +23,10 @@ import {
   SortableWarehouseTreeRow,
   type WarehouseDragIntent,
 } from "./warehouse-view-tree-row";
-import { whViewTreeChildrenClass } from "./warehouse-view-tree-styles";
+import {
+  whViewTreeChildrenClass,
+  whViewTreeListClass,
+} from "./warehouse-view-tree-styles";
 import {
   childrenOf,
   flattenVisibleTree,
@@ -274,6 +277,7 @@ export function WarehouseViewTreePanel({
         row={node}
         index={index}
         depth={depth}
+        isZoneRoot={depth === 0}
         nestedChildren={
           showChildren ? (
             <div className={whViewTreeChildrenClass}>
@@ -304,10 +308,7 @@ export function WarehouseViewTreePanel({
       }
       onDragEnd={handleDragEnd}
     >
-      <div
-        key={sortableEpoch}
-        className="wh-view-tree overflow-hidden py-2 pr-3 pl-2"
-      >
+      <div key={sortableEpoch} className={whViewTreeListClass}>
         {zoneRoots.map((zone) => renderNode(zone, 0))}
       </div>
     </DragDropProvider>

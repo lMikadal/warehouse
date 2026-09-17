@@ -24,6 +24,7 @@ import {
   whViewRowClass,
   whViewRowIconClass,
   whViewTreeItemClass,
+  whViewZoneRootBlockClass,
 } from "./warehouse-view-tree-styles";
 import {
   childCountSummary,
@@ -270,6 +271,7 @@ function TreeRowBody({
 type SortableTreeRowProps = Omit<RowBodyProps, "handleRef" | "isDragging"> & {
   index: number;
   nestedChildren?: ReactNode;
+  isZoneRoot?: boolean;
 };
 
 export function SortableWarehouseTreeRow({
@@ -277,6 +279,7 @@ export function SortableWarehouseTreeRow({
   index,
   dragEnabled,
   nestedChildren,
+  isZoneRoot = false,
   ...rest
 }: SortableTreeRowProps) {
   const sortable =
@@ -288,7 +291,14 @@ export function SortableWarehouseTreeRow({
   });
 
   return (
-    <div ref={ref} className={cn("wh-view-tree-item", whViewTreeItemClass)}>
+    <div
+      ref={ref}
+      className={cn(
+        "wh-view-tree-item",
+        whViewTreeItemClass,
+        isZoneRoot && whViewZoneRootBlockClass
+      )}
+    >
       <TreeRowBody
         row={row}
         dragEnabled={dragEnabled}
