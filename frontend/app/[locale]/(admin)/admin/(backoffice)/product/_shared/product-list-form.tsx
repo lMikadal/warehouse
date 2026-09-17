@@ -1,5 +1,6 @@
 "use client";
 
+import { Info, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -13,11 +14,18 @@ import {
   FormCardTitle,
 } from "@/components/molecules/form-card";
 import { FormField } from "@/components/molecules/form-field";
+import { ProductCategoryCascadeDialog } from "@/components/molecules/product-category-cascade-dialog";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { RemoteMultiComboboxField } from "@/components/molecules/remote-multi-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { ButtonIcon } from "@/components/ui/button-icon";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import {
@@ -32,10 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import {
-  loadProductListFormCategoryComboboxOptions,
-  resolveProductListFormCategoryLabel,
-} from "@/lib/product-category-combobox";
+import { resolveCategoryBreadcrumb } from "@/lib/product-category-cascade";
 import {
   loadProductBrandComboboxOptions,
   resolveProductBrandLabels,
@@ -111,6 +116,68 @@ function emptyDraft(): ProductListAggregate {
   };
 }
 
+function ProductCodeListEditor({
+  values,
+  onChange,
+  addLabel,
+  inputPlaceholder,
+  deleteAriaLabel,
+  idPrefix,
+}: {
+  values: string[];
+  onChange: (next: string[]) => void;
+  addLabel: string;
+  inputPlaceholder: string;
+  deleteAriaLabel: string;
+  idPrefix: string;
+}) {
+  const rows = values.length ? values : [""];
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => onChange([...rows, ""])}
+      >
+        <Plus className="mr-1 size-4" />
+        {addLabel}
+      </Button>
+      {rows.map((code, i) => (
+        <div key={`${idPrefix}-${i}`} className="flex items-center gap-1.5">
+          <Input
+            id={`${idPrefix}-${i}`}
+            className="min-w-0 flex-1"
+            value={code}
+            placeholder={inputPlaceholder}
+            onChange={(e) => {
+              const next = [...rows];
+              next[i] = e.target.value;
+              onChange(next);
+            }}
+          />
+          {rows.length > 1 ? (
+            <ButtonIcon
+              type="button"
+              variant="outline"
+              tone="delete"
+              className="shrink-0"
+              aria-label={deleteAriaLabel}
+              onClick={() => {
+                const next = rows.filter((_, idx) => idx !== i);
+                onChange(next.length ? next : [""]);
+              }}
+            >
+              <Trash2 className="text-current" />
+            </ButtonIcon>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function bodyForSave(draft: ProductListAggregate): ProductListAggregate {
   return {
     ...draft,
@@ -142,6 +209,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
   const [saleChannels, setSaleChannels] = useState<
     { id: number; name: string }[]
   >([]);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState("");
 
   useEffect(() => {
     void fetchProductListFilters(locale, "sale_channels", {
@@ -203,6 +272,21 @@ export function ProductListForm({ listId }: { listId?: number }) {
       items: d.items.map((it) => mergeItemChannels(it)),
     }));
   }, [saleChannels, mergeItemChannels]);
+
+  useEffect(() => {
+    const id = draft.product_category_id;
+    if (id == null || id <= 0) {
+      setCategoryBreadcrumb("");
+      return;
+    }
+    let cancelled = false;
+    void resolveCategoryBreadcrumb(locale, id).then((label) => {
+      if (!cancelled) setCategoryBreadcrumb(label);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.product_category_id, locale]);
 
   const itemIds = useMemo(
     () =>
@@ -294,15 +378,6 @@ export function ProductListForm({ listId }: { listId?: number }) {
     [locale]
   );
 
-  const loadCategoryOptions = useCallback(
-    (ctx: RemoteComboboxLoadContext) =>
-      loadProductListFormCategoryComboboxOptions(locale, {
-        search: ctx.search,
-        signal: ctx.signal,
-      }),
-    [locale]
-  );
-
   const loadBrandOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
       loadProductBrandComboboxOptions(locale, {
@@ -388,32 +463,28 @@ export function ProductListForm({ listId }: { listId?: number }) {
                         *
                       </span>
                     </FieldLabel>
-                    <RemoteComboboxField
+                    <Input
                       id="plf-category"
-                      label={tList("filterProductCategory")}
-                      value={
-                        draft.product_category_id != null
-                          ? String(draft.product_category_id)
-                          : ""
-                      }
-                      onValueChange={(v) => {
-                        setDraft((d) => ({
-                          ...d,
-                          product_category_id: v ? Number(v) : null,
-                        }));
-                        setFieldErrors((fe) => ({ ...fe, productCategory: "" }));
-                      }}
+                      readOnly
+                      className="cursor-pointer"
+                      value={categoryBreadcrumb}
                       placeholder={tFormPh("placeholder.select", {
                         label: tList("filterProductCategory"),
                       })}
-                      emptyLabel={tFormPh("combobox.noResults")}
-                      inputClassName="w-full"
-                      invalid={!!fieldErrors.productCategory}
-                      showClear
-                      onLoadOptions={loadCategoryOptions}
-                      resolveSelectedLabel={(value) =>
-                        resolveProductListFormCategoryLabel(locale, value)
+                      aria-label={tForm("categoryOpenAria")}
+                      aria-invalid={
+                        fieldErrors.productCategory ? true : undefined
                       }
+                      aria-describedby={
+                        fieldErrors.productCategory
+                          ? "plf-category-error"
+                          : undefined
+                      }
+                      onClick={() => setCategoryDialogOpen(true)}
+                      onFocus={(e) => {
+                        e.target.blur();
+                        setCategoryDialogOpen(true);
+                      }}
                     />
                     {fieldErrors.productCategory ? (
                       <FieldError id="plf-category-error">
@@ -514,7 +585,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       }
                     />
                   </Field>
-                  <Field className="gap-1.5 md:col-span-2">
+                  <Field className="gap-1.5">
                     <FieldLabel>{tForm("descTh")}</FieldLabel>
                     <Textarea
                       value={draft.languages.th.description ?? ""}
@@ -535,7 +606,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       }
                     />
                   </Field>
-                  <Field className="gap-1.5 md:col-span-2">
+                  <Field className="gap-1.5">
                     <FieldLabel>{tForm("descEn")}</FieldLabel>
                     <Textarea
                       value={draft.languages.en.description ?? ""}
@@ -556,38 +627,6 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       }
                     />
                   </Field>
-                </FormCardContent>
-              </FormCard>
-
-              <FormCard>
-                <FormCardHeader>
-                  <FormCardTitle>{tForm("sectionCodes")}</FormCardTitle>
-                </FormCardHeader>
-                <FormCardContent className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    id="plf-sku"
-                    labelKey="col.sku"
-                    required
-                    value={draft.sku}
-                    invalid={!!fieldErrors.sku}
-                    errorMessage={fieldErrors.sku}
-                    onChange={(v) => {
-                      setDraft((d) => ({ ...d, sku: v }));
-                      setFieldErrors((fe) => ({ ...fe, sku: "" }));
-                    }}
-                  />
-                  <Field className="gap-1.5">
-                    <FieldLabel>{tForm("supplierSku")}</FieldLabel>
-                    <Input
-                      value={draft.supplier_sku ?? ""}
-                      placeholder={tFormPh("placeholder.input", {
-                        label: tForm("supplierSku"),
-                      })}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, supplier_sku: e.target.value }))
-                      }
-                    />
-                  </Field>
                   <Field className="gap-1.5 md:col-span-2">
                     <FieldLabel>{tForm("tag")}</FieldLabel>
                     <Input
@@ -600,74 +639,106 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       }
                     />
                   </Field>
-                  <Field className="gap-1.5 md:col-span-2">
-                    <FieldLabel>{tForm("factoryCodes")}</FieldLabel>
-                    <div className="space-y-2">
-                      {(draft.factory_codes ?? [""]).map((code, i) => (
-                        <Input
-                          key={`factory-${i}`}
-                          value={code}
-                          placeholder={tFormPh("placeholder.input", {
-                            label: tForm("factoryCodes"),
-                          })}
-                          onChange={(e) =>
-                            setDraft((d) => {
-                              const factory_codes = [...(d.factory_codes ?? [""])];
-                              factory_codes[i] = e.target.value;
-                              return { ...d, factory_codes };
-                            })
-                          }
+                </FormCardContent>
+              </FormCard>
+
+              <FormCard>
+                <FormCardHeader>
+                  <FormCardTitle>{tForm("sectionCodes")}</FormCardTitle>
+                </FormCardHeader>
+                <FormCardContent className="grid gap-4 md:grid-cols-2 md:items-start">
+                  <div className="flex flex-col gap-4">
+                    <Field
+                      className="gap-1.5"
+                      data-invalid={fieldErrors.sku ? true : undefined}
+                    >
+                      <FieldLabel htmlFor="plf-sku">
+                        {tForm("skuProduct")}
+                        <span className="text-[#dc2626]" aria-hidden>
+                          {" "}
+                          *
+                        </span>
+                      </FieldLabel>
+                      <Input
+                        id="plf-sku"
+                        required
+                        value={draft.sku}
+                        aria-invalid={fieldErrors.sku ? true : undefined}
+                        aria-describedby={
+                          fieldErrors.sku ? "plf-sku-error" : undefined
+                        }
+                        placeholder={tFormPh("placeholder.input", {
+                          label: tForm("skuProduct"),
+                        })}
+                        onChange={(e) => {
+                          setDraft((d) => ({ ...d, sku: e.target.value }));
+                          setFieldErrors((fe) => ({ ...fe, sku: "" }));
+                        }}
+                      />
+                      <FieldDescription>{tForm("skuPrimaryHint")}</FieldDescription>
+                      {fieldErrors.sku ? (
+                        <FieldError id="plf-sku-error">
+                          {fieldErrors.sku}
+                        </FieldError>
+                      ) : null}
+                    </Field>
+                    <Field className="gap-1.5">
+                      <FieldLabel className="inline-flex items-center gap-1">
+                        {tForm("factoryCodesOe")}
+                        <Info
+                          className="size-3.5 text-muted-foreground"
+                          aria-label={tForm("factoryCodesOeHint")}
+                          title={tForm("factoryCodesOeHint")}
                         />
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
+                      </FieldLabel>
+                      <ProductCodeListEditor
+                        idPrefix="plf-factory"
+                        values={draft.factory_codes ?? [""]}
+                        addLabel={tForm("addFactoryCodeOe")}
+                        inputPlaceholder={tForm("factoryCodeInputPlaceholder")}
+                        deleteAriaLabel={tCrud("btn.delete")}
+                        onChange={(factory_codes) =>
+                          setDraft((d) => ({ ...d, factory_codes }))
+                        }
+                      />
+                    </Field>
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <Field className="gap-1.5">
+                      <FieldLabel htmlFor="plf-supplier-sku">
+                        {tForm("supplierSkuProduct")}
+                      </FieldLabel>
+                      <Input
+                        id="plf-supplier-sku"
+                        value={draft.supplier_sku ?? ""}
+                        placeholder={tFormPh("placeholder.input", {
+                          label: tForm("supplierSkuProduct"),
+                        })}
+                        onChange={(e) =>
                           setDraft((d) => ({
                             ...d,
-                            factory_codes: [...(d.factory_codes ?? [""]), ""],
+                            supplier_sku: e.target.value,
                           }))
                         }
-                      >
-                        {tForm("addFactoryCode")}
-                      </Button>
-                    </div>
-                  </Field>
-                  <Field className="gap-1.5 md:col-span-2">
-                    <FieldLabel>{tForm("otherCodes")}</FieldLabel>
-                    <div className="space-y-2">
-                      {(draft.other_codes ?? [""]).map((code, i) => (
-                        <Input
-                          key={`other-${i}`}
-                          value={code}
-                          placeholder={tFormPh("placeholder.input", {
-                            label: tForm("otherCodes"),
-                          })}
-                          onChange={(e) =>
-                            setDraft((d) => {
-                              const other_codes = [...(d.other_codes ?? [""])];
-                              other_codes[i] = e.target.value;
-                              return { ...d, other_codes };
-                            })
-                          }
-                        />
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setDraft((d) => ({
-                            ...d,
-                            other_codes: [...(d.other_codes ?? [""]), ""],
-                          }))
+                      />
+                      <FieldDescription>
+                        {tForm("supplierSkuHint")}
+                      </FieldDescription>
+                    </Field>
+                    <Field className="gap-1.5">
+                      <FieldLabel>{tForm("otherCodesRef")}</FieldLabel>
+                      <ProductCodeListEditor
+                        idPrefix="plf-other"
+                        values={draft.other_codes ?? [""]}
+                        addLabel={tForm("addOtherCodeRef")}
+                        inputPlaceholder={tForm("otherCodeInputPlaceholder")}
+                        deleteAriaLabel={tCrud("btn.delete")}
+                        onChange={(other_codes) =>
+                          setDraft((d) => ({ ...d, other_codes }))
                         }
-                      >
-                        {tForm("addOtherCode")}
-                      </Button>
-                    </div>
-                  </Field>
+                      />
+                    </Field>
+                  </div>
                 </FormCardContent>
               </FormCard>
 
@@ -978,6 +1049,18 @@ export function ProductListForm({ listId }: { listId?: number }) {
           ) : null}
         </div>
       </Tabs>
+
+      <ProductCategoryCascadeDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        valueId={draft.product_category_id ?? null}
+        onConfirm={(id, breadcrumb) => {
+          setDraft((d) => ({ ...d, product_category_id: id }));
+          setCategoryBreadcrumb(breadcrumb);
+          setFieldErrors((fe) => ({ ...fe, productCategory: "" }));
+          toast.success(tForm("toastCategorySelected"));
+        }}
+      />
 
       <div className="fixed bottom-0 left-0 right-0 z-10 flex justify-end gap-2 border-t border-border bg-background p-4">
         <Button
