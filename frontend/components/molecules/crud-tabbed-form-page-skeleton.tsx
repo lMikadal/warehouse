@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 import { FormCard, FormCardContent, FormCardHeader } from "./form-card";
@@ -21,6 +22,8 @@ export function CrudTabbedFormPageSkeleton({
   className,
 }: CrudTabbedFormPageSkeletonProps) {
   const tCrud = useTranslations("crud");
+  const { open: sidebarOpen, isMobile } = useSidebar();
+  const footerInsetLeft = !isMobile && sidebarOpen;
 
   return (
     <div
@@ -75,11 +78,16 @@ export function CrudTabbedFormPageSkeleton({
 
       {showFixedFooter ? (
         <div
-          className="fixed bottom-0 right-0 z-10 flex items-center justify-end gap-2 border-t border-border bg-background p-4 left-0"
+          className={cn(
+            "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+            footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0",
+          )}
           aria-hidden
         >
-          <Skeleton className="h-10 w-24 rounded-md" />
-          <Skeleton className="h-10 w-28 rounded-md" />
+          <div className="mx-auto flex w-full max-w-crud-page justify-end gap-2 px-admin-content py-3">
+            <Skeleton className="h-10 w-24 rounded-md" />
+            <Skeleton className="h-10 w-28 rounded-md" />
+          </div>
         </div>
       ) : null}
     </div>

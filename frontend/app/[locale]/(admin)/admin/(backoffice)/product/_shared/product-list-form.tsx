@@ -20,6 +20,7 @@ import { RemoteComboboxField } from "@/components/molecules/remote-combobox-fiel
 import { RemoteMultiComboboxField } from "@/components/molecules/remote-multi-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import {
   Field,
@@ -201,6 +202,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
   const tFormPh = useTranslations("form");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("product", "product_list");
+  const { open: sidebarOpen, isMobile } = useSidebar();
+  const footerInsetLeft = !isMobile && sidebarOpen;
 
   const [tab, setTab] = useState("data");
   const [draft, setDraft] = useState<ProductListAggregate>(emptyDraft);
@@ -394,7 +397,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-24">
+    <div className="flex flex-col gap-4 pb-20">
       <CrudPageHeader title={tPage("title")} description={tPage("desc")} />
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
@@ -691,7 +694,6 @@ export function ProductListForm({ listId }: { listId?: number }) {
                         <Info
                           className="size-3.5 text-muted-foreground"
                           aria-label={tForm("factoryCodesOeHint")}
-                          title={tForm("factoryCodesOeHint")}
                         />
                       </FieldLabel>
                       <ProductCodeListEditor
@@ -1065,19 +1067,32 @@ export function ProductListForm({ listId }: { listId?: number }) {
         }}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 z-10 flex justify-end gap-2 border-t border-border bg-background p-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/admin/product/list")}
-        >
-          {isEdit ? tCrud("btn.cancel") : tCrud("btn.back")}
-        </Button>
-        {(isEdit ? perms.update : perms.create) ? (
-          <Button type="button" disabled={saving} onClick={() => void onSave()}>
-            {tCrud("btn.save")}
+      <div
+        className={cn(
+          "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+          footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0",
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-crud-page justify-end gap-2 px-admin-content py-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => router.push("/admin/product/list")}
+          >
+            {isEdit ? tCrud("btn.cancel") : tCrud("btn.back")}
           </Button>
-        ) : null}
+          {(isEdit ? perms.update : perms.create) ? (
+            <Button
+              type="button"
+              size="lg"
+              disabled={saving}
+              onClick={() => void onSave()}
+            >
+              {tCrud("btn.save")}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
