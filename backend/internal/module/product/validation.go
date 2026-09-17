@@ -2,44 +2,11 @@ package product
 
 import "github.com/lMikadal/warehouse/backend/internal/tree"
 
-func categoryDepth(rows []Row, id int64) int {
-	depth := 0
-	parentByID := map[int64]*int64{}
-	for _, r := range rows {
-		parentByID[r.ID] = r.ParentID
-	}
-	node := id
-	for {
-		p, ok := parentByID[node]
-		if !ok || p == nil {
-			break
-		}
-		depth++
-		node = *p
-	}
-	return depth
-}
-
-func hasChildren(rows []Row, id int64) bool {
-	for _, r := range rows {
-		if r.ParentID != nil && *r.ParentID == id {
-			return true
-		}
-	}
-	return false
-}
-
 func validateCategoryParent(rows []Row, rowID int64, newParentID *int64) error {
 	if newParentID != nil && *newParentID == rowID {
 		return ErrValidation
 	}
 	if newParentID != nil && tree.IsInvalidParent(rowsToNodes(rows), rowID, newParentID) {
-		return ErrValidation
-	}
-	if newParentID != nil && categoryDepth(rows, *newParentID) != 0 {
-		return ErrValidation
-	}
-	if hasChildren(rows, rowID) && newParentID != nil {
 		return ErrValidation
 	}
 	return nil

@@ -32,9 +32,10 @@ import {
   tableIconActionsFromResource,
   tableRowDetailAction,
 } from "@/lib/admin-permissions";
-import { treeDepth } from "@/lib/crud-list-rows";
 import {
+  isTreePathDescendant,
   resolveTreeDropZone,
+  treeDepth,
   type TreeDropZone,
 } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
@@ -140,7 +141,17 @@ function resolveAttributeDragIntent(
   const targetRow = visibleRows.find((r) => r.id === targetId);
   if (!dragRow || !targetRow) return null;
 
-  if (isAncestorOf(visibleRows, dragId, targetId)) return null;
+  if (mode === "category") {
+    if (
+      dragRow.tree_path &&
+      targetRow.tree_path &&
+      isTreePathDescendant(dragRow.tree_path, targetRow.tree_path)
+    ) {
+      return null;
+    }
+  } else if (isAncestorOf(visibleRows, dragId, targetId)) {
+    return null;
+  }
 
   const el = document.querySelector(
     `[data-product-attr-row-id="${targetId}"]`
@@ -153,6 +164,42 @@ function resolveAttributeDragIntent(
   const zone = resolveTreeDropZone(rect.top, rect.height, pointerY);
 
   return { dragId, targetId, zone };
+}
+
+function isInvalidCategoryParent(
+  rows: ProductAttributeRow[],
+  dragId: number,
+  newParentId: number | null
+): boolean {
+  if (newParentId == null) return false;
+  if (newParentId === dragId) return true;
+  const self = rows.find((r) => r.id === dragId);
+  const candidate = rows.find((r) => r.id === newParentId);
+  if (!self || !candidate) return true;
+  if (self.tree_path && candidate.tree_path) {
+    const prefix = `${self.tree_path}.`;
+    return (
+      candidate.id === dragId ||
+      candidate.tree_path.startsWith(prefix)
+    );
+  }
+  return isAncestorOf(rows, dragId, newParentId);
+}
+
+function categoryDropAllowed(
+  rows: ProductAttributeRow[],
+  dragId: number,
+  targetRow: ProductAttributeRow,
+  zone: TreeDropZone
+): boolean {
+  if (
+    zone === "child" &&
+    isInvalidCategoryParent(rows, dragId, targetRow.id)
+  ) {
+    return false;
+  }
+  const newParentId = zone === "child" ? targetRow.id : targetRow.parent_id;
+  return !isInvalidCategoryParent(rows, dragId, newParentId);
 }
 
 function carDropAllowed(
@@ -502,6 +549,20 @@ export function ProductAttributeListTable({
     }
 
     if (dndMode === "category") {
+      const dragRow = rows.find((r) => r.id === intent.dragId);
+      const targetRow = rows.find((r) => r.id === intent.targetId);
+      if (!dragRow || !targetRow) {
+        scheduleReject();
+        return;
+      }
+      if (!categoryDropAllowed(rows, intent.dragId, targetRow, intent.zone)) {
+        scheduleReject(
+          intent.zone === "child"
+            ? tAttr("dragInvalidParent")
+            : tAttr("dragInvalidMove")
+        );
+        return;
+      }
       void onCategoryMove(intent)
         .then(() => {
           resetSortableOrder();

@@ -6,7 +6,7 @@ Three REST resources over `product_attribute` — `/api/v1/product/categories`, 
 
 - [x] Shared `internal/module/product` repository (languages, category `brand_ids`, tree paths)
 - [x] Routes registered on `/product` in `cmd/server/main.go`
-- [x] Category `PATCH /move` + validation (depth, children)
+- [x] Category `PATCH /move` + validation (unlimited depth; cycle/subtree only)
 - [x] Car `PATCH /move` + `validateCarParent` (brand/model/engine)
 - [x] Brand/car `PATCH /reorder`
 - [x] Postman folder **Product** in `document/postman/postman.json`

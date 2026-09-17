@@ -30,6 +30,7 @@ import {
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
+import { isTreePathDescendant, treeDepth } from "@/lib/crud-list-rows";
 import { cn } from "@/lib/utils";
 import {
   createProductAttribute,
@@ -341,14 +342,30 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
     [config.segment, locale]
   );
 
-  const loadRootCategories = useCallback(async () => {
+  const loadCategoryParentOptions = useCallback(async () => {
     const res = await fetchProductAttributes("categories", locale, {
       page: 1,
       limit: 100,
     });
-    return res.items.filter(
-      (r) => r.parent_id == null && (editingId == null || r.id !== editingId)
-    );
+    const editingRow =
+      editingId != null
+        ? res.items.find((r) => r.id === editingId)
+        : undefined;
+    const editingPath = editingRow?.tree_path;
+
+    return res.items
+      .filter((r) => {
+        if (editingId != null && r.id === editingId) return false;
+        if (editingPath && r.tree_path) {
+          if (isTreePathDescendant(editingPath, r.tree_path)) return false;
+        }
+        return true;
+      })
+      .map((r) => {
+        const depth = treeDepth(r.tree_path);
+        const indent = depth > 0 ? `${" ".repeat(depth * 2)}` : "";
+        return { value: String(r.id), label: `${indent}${r.name}` };
+      });
   }, [locale, editingId]);
 
   const readOnly = editingId ? !perms.update : !perms.create;
@@ -439,13 +456,7 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
                   emptyLabel={tForm("combobox.noResults")}
                   inputClassName="w-full"
                   showClear
-                  onLoadOptions={async () => {
-                    const roots = await loadRootCategories();
-                    return roots.map((r) => ({
-                      value: String(r.id),
-                      label: r.name,
-                    }));
-                  }}
+                  onLoadOptions={loadCategoryParentOptions}
                 />
                 <div className="space-y-2">
                   <p className="text-sm font-medium">{tAttr("categoryBrands")}</p>

@@ -2,23 +2,27 @@ package product
 
 import "testing"
 
-func TestValidateCategoryParent_depthAndChildren(t *testing.T) {
+func TestValidateCategoryParent_cycleOnly(t *testing.T) {
 	rows := []Row{
-		{ID: 1, ParentID: nil},
-		{ID: 2, ParentID: int64Ptr(1)},
-		{ID: 3, ParentID: int64Ptr(2)},
+		{ID: 1, ParentID: nil, TreePath: "1"},
+		{ID: 2, ParentID: int64Ptr(1), TreePath: "1.2"},
+		{ID: 3, ParentID: int64Ptr(2), TreePath: "1.2.3"},
+		{ID: 4, ParentID: nil, TreePath: "4"},
+	}
+	if err := validateCategoryParent(rows, 3, int64Ptr(2)); err != nil {
+		t.Fatalf("nest leaf under parent: %v", err)
+	}
+	if err := validateCategoryParent(rows, 2, int64Ptr(4)); err != nil {
+		t.Fatalf("branch with children under another root: %v", err)
 	}
 	if err := validateCategoryParent(rows, 1, int64Ptr(2)); err == nil {
-		t.Fatal("expected error when parent is not root")
+		t.Fatal("expected error when nesting under descendant")
 	}
-	if err := validateCategoryParent(rows, 1, int64Ptr(3)); err == nil {
-		t.Fatal("expected error when parent has depth > 0")
-	}
-	if err := validateCategoryParent(rows, 1, int64Ptr(2)); err == nil {
-		t.Fatal("expected error when row has children and new parent set")
+	if err := validateCategoryParent(rows, 1, int64Ptr(1)); err == nil {
+		t.Fatal("expected error for self-parent")
 	}
 	if err := validateCategoryParent(rows, 3, nil); err != nil {
-		t.Fatalf("leaf promote to root: %v", err)
+		t.Fatalf("promote leaf to root: %v", err)
 	}
 }
 

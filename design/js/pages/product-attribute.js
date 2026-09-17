@@ -8,7 +8,6 @@
       pageTitleKey: "page.productCategory",
       pageDescriptionKey: "page.productCategory.desc",
       tree: true,
-      maxParentDepth: 1,
     },
     brand: {
       attrType: "brand",
@@ -407,7 +406,8 @@
   function categoryParentOptions(editingId) {
     return activeRows().filter(function (r) {
       if (r.id === editingId) return false;
-      return categoryDepth(r.id) === 0;
+      if (editingId != null && isDescendantOf(editingId, r.id)) return false;
+      return true;
     });
   }
 
@@ -920,15 +920,6 @@
     if (newParentId != null && isDescendantOf(rowId, newParentId)) {
       return "productAttr.dragInvalidParent";
     }
-    if (newParentId != null && categoryDepth(newParentId) !== 0) {
-      return "productAttr.dragInvalidParent";
-    }
-    if (hasCategoryChildren(rowId) && newParentId != null) {
-      return "productAttr.dragHasChildren";
-    }
-    if (newParentId != null && categoryDepth(newParentId) >= cfg.maxParentDepth) {
-      return "productAttr.parentTooDeep";
-    }
     return null;
   }
 
@@ -972,12 +963,9 @@
     var toIdx = parseInt(el.getAttribute("data-drag-idx"), 10);
     var targetId = Number(el.getAttribute("data-tree-id"));
 
-    if (dropParentKey === "" && categoryDepth(targetId) === 0 && dragRowId !== targetId) {
+    if (dropParentKey === "" && dragRowId !== targetId) {
       var fromParentId = siblingParentId(dragState.fromParentKey);
-      if (
-        fromParentId !== targetId &&
-        (fromParentId != null || !hasCategoryChildren(dragRowId))
-      ) {
+      if (fromParentId !== targetId) {
         var children = siblingsUnder(targetId).filter(function (r) {
           return r.id !== dragRowId;
         });
@@ -1383,8 +1371,12 @@
         }
         var parentIdRaw = String(fd.get("parent_id") || "").trim();
         var parentId = parentIdRaw ? Number(parentIdRaw) : null;
-        if (parentId && categoryDepth(parentId) >= cfg.maxParentDepth) {
-          global.toast.show(t("productAttr.parentTooDeep"), "error");
+        if (
+          state.editingId != null &&
+          parentId != null &&
+          isDescendantOf(state.editingId, parentId)
+        ) {
+          global.toast.show(t("productAttr.dragInvalidParent"), "error");
           return;
         }
         saveCategory(nameTh, nameEn, isActive, parentId, fd.getAll("brand_ids"));
