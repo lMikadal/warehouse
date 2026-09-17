@@ -77,7 +77,9 @@ export function RemoteMultiComboboxField({
         items={items}
         value={null}
         autoComplete="none"
-        onInputValueChange={onInputValueChange}
+        onInputValueChange={(next, details) =>
+          onInputValueChange(next, details)
+        }
         onValueChange={(next) => {
           if (next) toggleValue(next);
         }}

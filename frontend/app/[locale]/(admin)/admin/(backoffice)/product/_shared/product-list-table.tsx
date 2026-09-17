@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
+import { ButtonIcon } from "@/components/ui/button-icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -454,26 +455,29 @@ export function ProductListTable({
                 <TableCell className="text-center">
                   <div className="inline-flex justify-center gap-1.5">
                     {canUpdate ? (
-                      <Button variant="outline" size="icon" asChild>
+                      <ButtonIcon
+                        variant="outline"
+                        tone="neutral"
+                        asChild
+                        aria-label={tCrud("btn.edit")}
+                      >
                         <Link
                           href={`/admin/product/list/${row.product_list_id}`}
-                          aria-label={tCrud("btn.edit")}
                         >
-                          <Pencil className="size-4" />
+                          <Pencil className="text-current" />
                         </Link>
-                      </Button>
+                      </ButtonIcon>
                     ) : null}
                     {canDelete ? (
-                      <Button
+                      <ButtonIcon
                         type="button"
                         variant="outline"
-                        size="icon"
-                        className="text-destructive"
+                        tone="delete"
                         aria-label={tCrud("btn.delete")}
                         onClick={() => onDelete(row)}
                       >
-                        <Trash2 className="size-4" />
-                      </Button>
+                        <Trash2 className="text-current" />
+                      </ButtonIcon>
                     ) : null}
                   </div>
                 </TableCell>

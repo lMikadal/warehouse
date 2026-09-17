@@ -65,7 +65,9 @@ export function RemoteComboboxField({
       itemToStringLabel={(itemValue) =>
         items.find((o) => o.value === itemValue)?.label ?? ""
       }
-      onInputValueChange={onInputValueChange}
+      onInputValueChange={(next, details) =>
+        onInputValueChange(next, details)
+      }
       onValueChange={(next) => {
         onValueChange(next ?? "");
         resetInputAfterSelect();

@@ -4,9 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   REMOTE_COMBOBOX_DEBOUNCE_MS,
+  type RemoteComboboxInputChangeDetails,
   type RemoteComboboxLoadContext,
   type RemoteComboboxOption,
 } from "@/hooks/use-remote-combobox-options";
+
+const USER_FILTER_INPUT_REASONS = new Set([
+  "input-change",
+  "input-paste",
+  "input-clear",
+  "clear-press",
+]);
 
 function mergeOptions(
   pinned: RemoteComboboxOption[],
@@ -72,7 +80,7 @@ export function useRemoteMultiComboboxOptions({
       cancelled = true;
       controller.abort();
     };
-  }, [enabled, debouncedSearch, onLoadOptions]);
+  }, [enabled, debouncedSearch]);
 
   const items = useMemo(() => {
     const withPinned = mergeOptions(pinnedItems, extraPinned);
@@ -116,9 +124,16 @@ export function useRemoteMultiComboboxOptions({
     [labelByValue]
   );
 
-  const onInputValueChange = useCallback((next: string) => {
-    setInputValue(next);
-  }, []);
+  const onInputValueChange = useCallback(
+    (next: string, details?: RemoteComboboxInputChangeDetails) => {
+      const reason = details?.reason;
+      if (reason == null || !USER_FILTER_INPUT_REASONS.has(reason)) {
+        return;
+      }
+      setInputValue(next);
+    },
+    []
+  );
 
   const resetInputAfterSelect = useCallback(() => {
     setInputValue("");

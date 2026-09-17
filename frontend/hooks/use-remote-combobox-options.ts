@@ -12,6 +12,18 @@ export type RemoteComboboxLoadContext = {
   signal: AbortSignal;
 };
 
+/** Base UI combobox reasons that reflect user-driven filter text, not label sync. */
+const USER_FILTER_INPUT_REASONS = new Set([
+  "input-change",
+  "input-paste",
+  "input-clear",
+  "clear-press",
+]);
+
+export type RemoteComboboxInputChangeDetails = {
+  reason?: string;
+};
+
 function mergeOptions(
   pinned: RemoteComboboxOption[],
   remote: RemoteComboboxOption[]
@@ -76,7 +88,7 @@ export function useRemoteComboboxOptions({
       cancelled = true;
       controller.abort();
     };
-  }, [enabled, debouncedSearch, onLoadOptions]);
+  }, [enabled, debouncedSearch]);
 
   useEffect(() => {
     if (!enabled || !value || !resolveSelectedLabel) {
@@ -111,9 +123,16 @@ export function useRemoteComboboxOptions({
     return mergeOptions([...pinnedItems, ...extraPinned], remoteItems);
   }, [enabled, pinnedItems, extraPinned, remoteItems]);
 
-  const handleInputValueChange = useCallback((next: string) => {
-    setInputValue(next);
-  }, []);
+  const handleInputValueChange = useCallback(
+    (next: string, details?: RemoteComboboxInputChangeDetails) => {
+      const reason = details?.reason;
+      if (reason == null || !USER_FILTER_INPUT_REASONS.has(reason)) {
+        return;
+      }
+      setInputValue(next);
+    },
+    []
+  );
 
   const resetInputAfterSelect = useCallback(() => {
     setInputValue("");

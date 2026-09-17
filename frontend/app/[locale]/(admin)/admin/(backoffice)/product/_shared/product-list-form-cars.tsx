@@ -69,6 +69,11 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
     [locale]
   );
 
+  const loadBrandOptions = useCallback(
+    (ctx: RemoteComboboxLoadContext) => loadCarOptions(ctx, "brand"),
+    [loadCarOptions]
+  );
+
   const rows = cars.length ? cars : [emptyCar()];
 
   const patchRow = (index: number, patch: Partial<ListCarBody>) => {
@@ -106,12 +111,13 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
               emptyLabel={tFormPh("combobox.noResults")}
               inputClassName="w-full"
               showClear
-              onLoadOptions={(ctx) => loadCarOptions(ctx, "brand")}
+              onLoadOptions={loadBrandOptions}
             />
           </Field>
           <Field className="gap-1.5">
             <FieldLabel>{tAttr("carModel")}</FieldLabel>
             <RemoteComboboxField
+              key={`car-model-${index}-${row.product_attribute_brand_id ?? "none"}`}
               label={tAttr("carModel")}
               value={
                 row.product_attribute_model_id
@@ -139,6 +145,7 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
           <Field className="gap-1.5">
             <FieldLabel>{tAttr("carLevel.engine")}</FieldLabel>
             <RemoteComboboxField
+              key={`car-engine-${index}-${row.product_attribute_model_id ?? "none"}`}
               label={tAttr("carLevel.engine")}
               value={
                 row.product_attribute_engine_id
