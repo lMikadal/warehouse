@@ -70,4 +70,21 @@ func TestFilterNavNodes_superadminOnlyGroupShowsChildWithView(t *testing.T) {
 	}
 }
 
+func TestToNavNodes_dialogIncludesPath(t *testing.T) {
+	viewPath := "/admin/warehouse/list/view"
+	nodes := []navTreeNode{
+		{row: MenuRow{ID: 27, Path: &viewPath, IsDialog: true}},
+	}
+	out := toNavNodes(nodes)
+	if len(out) != 1 || out[0].Path == nil {
+		t.Fatalf("expected path on dialog nav node, got %+v", out)
+	}
+	if *out[0].Path != viewPath {
+		t.Fatalf("path = %q, want %q", *out[0].Path, viewPath)
+	}
+	if !out[0].IsDialog {
+		t.Fatal("expected is_dialog true")
+	}
+}
+
 func strPtr(s string) *string { return &s }

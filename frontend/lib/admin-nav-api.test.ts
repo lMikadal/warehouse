@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   adminNavLabel,
+  apiNavTreeToAdminNodes,
   bestMatchingNavHref,
   breadcrumbFromNavTree,
   navItemActive,
@@ -28,6 +29,41 @@ const warehouseNav: AdminNavNode[] = [
     ],
   },
 ];
+
+describe("apiNavTreeToAdminNodes", () => {
+  test("dialog menu from API includes href for active matching", () => {
+    const tree = apiNavTreeToAdminNodes([
+      {
+        id: 25,
+        labels: { th: "คลังสินค้า", en: "Warehouse" },
+        children: [
+          {
+            id: 26,
+            labels: { th: "รายการ", en: "List" },
+            path: "/admin/warehouse/list",
+          },
+          {
+            id: 27,
+            labels: { th: "การจัดการ", en: "Management" },
+            path: "/admin/warehouse/list/view",
+            is_dialog: true,
+          },
+        ],
+      },
+    ]);
+    expect(tree[0]!.children![1]!.href).toBe("/admin/warehouse/list/view");
+    expect(tree[0]!.children![1]!.dialogPath).toBe(
+      "/admin/warehouse/list/view"
+    );
+    expect(
+      navItemActive(
+        "/admin/warehouse/list/view",
+        tree[0]!.children![1]!.href,
+        tree
+      )
+    ).toBe(true);
+  });
+});
 
 describe("bestMatchingNavHref", () => {
   test("list page matches list href", () => {

@@ -185,7 +185,7 @@ func toNavNodes(nodes []navTreeNode) []NavNode {
 			labels["en"] = n.row.Names["en"]
 		}
 		var path *string
-		if isNavigablePath(n.row.Path) && !n.row.IsDialog {
+		if isNavigablePath(n.row.Path) {
 			path = n.row.Path
 		}
 		out[i] = NavNode{

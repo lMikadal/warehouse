@@ -114,7 +114,7 @@ Bearer-only (session present; **no** route permission catalog):
 | Method | Path | Notes |
 |--------|------|--------|
 | `GET` | `/api/v1/auth/me` | Current user profile |
-| `GET` | `/api/v1/auth/nav` | Role-filtered sidebar tree + `landing_path` (first permitted leaf in DFS menu order) |
+| `GET` | `/api/v1/auth/nav` | Role-filtered sidebar tree + `landing_path` (first permitted leaf in DFS menu order). `is_dialog` rows still include `path` in JSON for client sidebar/breadcrumb active matching; `landing_path` skips dialog leaves. |
 | `GET` | `/api/v1/auth/permissions` | Active permission codes for UI gating: `{ "codes": ["module.type.action", …] }` — superadmin gets all active codes; others from `admin_role_permission` |
 
 Nav visibility (non-superadmin): leaf menus with a real `path` must have a **`system_menu_permission`** row to the menu’s **`system_permission`** row with `action = 'view'`; role must hold that code via `admin_role_permission`. Group rows (`path` empty) and leaves under **`is_superadmin_only`** still appear when the user has view on permitted descendants (e.g. `system.system_menu.view` → “เมนู” under “ผู้ดูแลระบบสูงสุด”). Implemented in [`MenuPermissionRepository.LoadMenuViewCodes`](../../backend/internal/module/system/menu_permission_repository.go) + [`NavService`](../../backend/internal/module/system/nav_service.go). No runtime `ViewPermissionCode` computation.

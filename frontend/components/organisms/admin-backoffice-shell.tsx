@@ -178,7 +178,8 @@ function navBranchContainsActivePath(
   pathname: string,
   tree: AdminNavNode[]
 ): boolean {
-  if (navItemActive(pathname, node.href, tree)) return true;
+  const nodeHref = node.href ?? node.dialogPath;
+  if (navItemActive(pathname, nodeHref, tree)) return true;
   return (node.children ?? []).some((c) =>
     navBranchContainsActivePath(c, pathname, tree)
   );
@@ -218,7 +219,8 @@ function AdminNavNodeView({
 }) {
   const label = adminNavLabel(node.labels, ctx.locale);
   const hasChildren = (node.children?.length ?? 0) > 0;
-  const active = navItemActive(ctx.pathname, node.href, ctx.navTree);
+  const navHref = node.href ?? node.dialogPath;
+  const active = navItemActive(ctx.pathname, navHref, ctx.navTree);
 
   if (hasChildren && ctx.depth === 0) {
     return (

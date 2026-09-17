@@ -110,8 +110,8 @@ export function bestMatchingNavHref(
 
   function walk(nodes: AdminNavNode[]) {
     for (const node of nodes) {
-      if (node.href) {
-        const href = node.href;
+      const href = node.href ?? node.dialogPath;
+      if (href) {
         if (hrefMatchesPath(pathname, href)) {
           const exact = pathname === href;
           if (
