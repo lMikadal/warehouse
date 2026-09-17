@@ -16,10 +16,11 @@ import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { CrudSearchField } from "@/components/molecules/crud-search-field";
 import { FormField } from "@/components/molecules/form-field";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
+import { RemoteMultiComboboxField } from "@/components/molecules/remote-multi-combobox-field";
 import { StatusFilterGroup } from "@/components/molecules/status-filter-group";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -30,8 +31,15 @@ import {
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import { isTreePathDescendant, treeDepth } from "@/lib/crud-list-rows";
 import { cn } from "@/lib/utils";
+import {
+  loadCategoryParentComboboxOptions,
+  resolveCategoryParentComboboxLabel,
+} from "@/lib/product-category-combobox";
+import {
+  loadProductBrandComboboxOptions,
+  resolveProductBrandLabels,
+} from "@/lib/product-brand-combobox";
 import {
   createProductAttribute,
   deleteProductAttribute,
@@ -104,8 +112,8 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
   const [listRows, setListRows] = useState<ProductAttributeRow[]>([]);
   const [listMeta, setListMeta] = useState({ total: 0, page: 1, limit: 10 });
   const [loading, setLoading] = useState(true);
-  const [brandOptions, setBrandOptions] = useState<ProductAttributeRow[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTreePath, setEditingTreePath] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -120,20 +128,6 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
     }),
     [baseListParams]
   );
-
-  const loadBrandOptions = useCallback(async () => {
-    if (config.kind !== "category") return;
-    try {
-      const brands = await fetchProductAttributes("brands", locale, {
-        page: 1,
-        limit: 100,
-        isActive: true,
-      });
-      setBrandOptions(brands.items);
-    } catch {
-      /* picker optional */
-    }
-  }, [config.kind, locale]);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -158,10 +152,6 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
     void loadList();
   }, [loadList]);
 
-  useEffect(() => {
-    void loadBrandOptions();
-  }, [loadBrandOptions]);
-
   const total = listMeta.total;
   const totalPages = listTotalPages(total);
   const safePage = listSafePage(total);
@@ -173,6 +163,7 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
       setFieldErrors({});
       try {
         const detail = await fetchProductAttribute(config.segment, locale, id);
+        setEditingTreePath(detail.tree_path ?? null);
         setForm({
           nameTh: detail.names?.th ?? "",
           nameEn: detail.names?.en ?? "",
@@ -217,9 +208,48 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
 
   const resetForm = () => {
     setEditingId(null);
+    setEditingTreePath(null);
     setForm(emptyForm());
     setFieldErrors({});
   };
+
+  const categoryParentRootOption = useMemo(
+    () => ({ value: "", label: tAttr("parentRoot") }),
+    [tAttr]
+  );
+
+  const loadCategoryParentOptions = useCallback(
+    (ctx: { search: string; signal: AbortSignal }) =>
+      loadCategoryParentComboboxOptions(locale, {
+        search: ctx.search,
+        signal: ctx.signal,
+        editCategoryId: editingId,
+        editTreePath: editingTreePath,
+      }),
+    [locale, editingId, editingTreePath]
+  );
+
+  const resolveCategoryParentLabel = useCallback(
+    (value: string) => {
+      if (value === "") return Promise.resolve(tAttr("parentRoot"));
+      return resolveCategoryParentComboboxLabel(locale, value);
+    },
+    [locale, tAttr]
+  );
+
+  const loadBrandComboboxOptions = useCallback(
+    (ctx: { search: string; signal: AbortSignal }) =>
+      loadProductBrandComboboxOptions(locale, {
+        search: ctx.search,
+        signal: ctx.signal,
+      }),
+    [locale]
+  );
+
+  const resolveBrandComboboxLabels = useCallback(
+    (ids: string[]) => resolveProductBrandLabels(locale, ids),
+    [locale]
+  );
 
   const validate = (): boolean => {
     const err: Record<string, string> = {};
@@ -342,33 +372,15 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
     [config.segment, locale]
   );
 
-  const loadCategoryParentOptions = useCallback(async () => {
-    const res = await fetchProductAttributes("categories", locale, {
-      page: 1,
-      limit: 100,
-    });
-    const editingRow =
-      editingId != null
-        ? res.items.find((r) => r.id === editingId)
-        : undefined;
-    const editingPath = editingRow?.tree_path;
-
-    return res.items
-      .filter((r) => {
-        if (editingId != null && r.id === editingId) return false;
-        if (editingPath && r.tree_path) {
-          if (isTreePathDescendant(editingPath, r.tree_path)) return false;
-        }
-        return true;
-      })
-      .map((r) => {
-        const depth = treeDepth(r.tree_path);
-        const indent = depth > 0 ? `${" ".repeat(depth * 2)}` : "";
-        return { value: String(r.id), label: `${indent}${r.name}` };
-      });
-  }, [locale, editingId]);
-
   const readOnly = editingId ? !perms.update : !perms.create;
+
+  const categoryParentLabel = tAttr("parentCategory");
+  const categoryParentPlaceholder = tForm("placeholder.select", {
+    label: categoryParentLabel,
+  });
+  const brandMultiPlaceholder = tForm("placeholder.select", {
+    label: tAttr("categoryBrands"),
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -445,44 +457,46 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
 
             {config.kind === "category" ? (
               <>
-                <RemoteComboboxField
-                  label={tAttr("parentCategory")}
-                  value={form.parentId}
-                  onValueChange={(v) => setForm((f) => ({ ...f, parentId: v }))}
+                <Field className="gap-1.5">
+                  <FieldLabel htmlFor="attr-parent-category">
+                    {categoryParentLabel}
+                  </FieldLabel>
+                  <RemoteComboboxField
+                    id="attr-parent-category"
+                    label={categoryParentLabel}
+                    value={form.parentId}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, parentId: v }))
+                    }
+                    disabled={readOnly}
+                    placeholder={categoryParentPlaceholder}
+                    emptyLabel={tForm("combobox.noResults")}
+                    inputClassName="w-full"
+                    pinnedItems={[categoryParentRootOption]}
+                    showClear={form.parentId !== ""}
+                    onLoadOptions={loadCategoryParentOptions}
+                    resolveSelectedLabel={resolveCategoryParentLabel}
+                  />
+                </Field>
+                <RemoteMultiComboboxField
+                  id="attr-category-brands"
+                  label={tAttr("categoryBrands")}
+                  values={form.brandIds.map(String)}
+                  onValuesChange={(next) =>
+                    setForm((f) => ({
+                      ...f,
+                      brandIds: next
+                        .map((v) => Number(v))
+                        .filter((id) => Number.isFinite(id)),
+                    }))
+                  }
                   disabled={readOnly}
-                  placeholder={tForm("placeholder.select", {
-                    label: tAttr("parentCategory"),
-                  })}
+                  placeholder={brandMultiPlaceholder}
                   emptyLabel={tForm("combobox.noResults")}
                   inputClassName="w-full"
-                  showClear
-                  onLoadOptions={loadCategoryParentOptions}
+                  onLoadOptions={loadBrandComboboxOptions}
+                  resolveSelectedLabels={resolveBrandComboboxLabels}
                 />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{tAttr("categoryBrands")}</p>
-                  <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border border-border p-2">
-                    {brandOptions.map((b) => (
-                      <label
-                        key={b.id}
-                        className="flex cursor-pointer items-center gap-2 text-sm"
-                      >
-                        <Checkbox
-                          checked={form.brandIds.includes(b.id)}
-                          disabled={readOnly}
-                          onCheckedChange={(checked) => {
-                            setForm((f) => ({
-                              ...f,
-                              brandIds: checked
-                                ? [...f.brandIds, b.id]
-                                : f.brandIds.filter((id) => id !== b.id),
-                            }));
-                          }}
-                        />
-                        {b.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </>
             ) : null}
 
@@ -577,7 +591,6 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
                 checked={form.isActive}
                 disabled={readOnly}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
-                labelKey="col.active"
               />
             </div>
 

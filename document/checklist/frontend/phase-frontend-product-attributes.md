@@ -12,7 +12,7 @@ Split-pane tree + form for **หมวดหมู่ / แบรนด์ / ห
 ## Required checklist
 
 - [x] RBAC via `useResourcePermissions("product", permType)`
-- [x] Category: parent combobox (any category except self/subtree) + brand checkboxes; car: level + brand/model pickers on create
+- [x] Category: tree-indented parent `RemoteComboboxField` (menu pattern) + `RemoteMultiComboboxField` for related brands; car: level + brand/model pickers on create
 - [x] Left panel (category / brand / car): server paginated table, `CrudSearchField`, `StatusFilterGroup`, `CrudPaginationBar` (single `surface-table-wrap` frame, no outer card); category + car tree move DnD (child/before/after) with client validation when not filtering
 - [x] Split layout 2fr/1fr; right form card `h-fit` / `self-start`; car level select full width + i18n trigger label
 - [x] Category/car table name indent via list `tree_path` + `treeDepth` (system menu pattern)
