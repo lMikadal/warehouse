@@ -39,6 +39,10 @@ import {
   type WarehouseNodeSavePayload,
   type WarehouseSheetState,
 } from "./warehouse-node-edit-sheet";
+import {
+  WarehouseZoneExpandGrid,
+  type WarehouseZoneExpandRow,
+} from "./warehouse-zone-expand-grid";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { Link } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
@@ -74,7 +78,9 @@ export function WarehouseListPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-  const [zonesByWh, setZonesByWh] = useState<Record<number, WarehouseListItem[]>>({});
+  const [zonesByWh, setZonesByWh] = useState<
+    Record<number, WarehouseZoneExpandRow[]>
+  >({});
   const [sheet, setSheet] = useState<WarehouseSheetState | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [sheetInitial, setSheetInitial] = useState<WarehouseNodeFormInitial>({
@@ -115,15 +121,31 @@ export function WarehouseListPage() {
     void load();
   }, [load]);
 
-  async function loadZones(warehouseId: number) {
-    const res = await fetchWarehouseList(locale, {
-      page: 1,
-      limit: 100,
-      type: "zone",
-      parentId: warehouseId,
-    });
-    setZonesByWh((prev) => ({ ...prev, [warehouseId]: res.items }));
-  }
+  const loadZones = useCallback(
+    async (warehouseId: number) => {
+      const res = await fetchWarehouseList(locale, {
+        page: 1,
+        limit: 100,
+        type: "zone",
+        parentId: warehouseId,
+      });
+      const details = await Promise.all(
+        res.items.map(async (z) => {
+          const row = await fetchWarehouseById(locale, z.id);
+          return {
+            id: z.id,
+            sku: z.sku,
+            name: z.name,
+            is_active: z.is_active,
+            conditions:
+              (row.conditions as WarehouseCondition[] | undefined) ?? [],
+          };
+        })
+      );
+      setZonesByWh((prev) => ({ ...prev, [warehouseId]: details }));
+    },
+    [locale]
+  );
 
   async function toggleExpand(id: number) {
     const next = !expanded[id];
@@ -205,10 +227,17 @@ export function WarehouseListPage() {
     }
   }
 
-  async function onToggleActive(id: number, active: boolean) {
+  async function onToggleActive(
+    id: number,
+    active: boolean,
+    refreshZonesForWh?: number
+  ) {
     try {
       await patchWarehouseNode(locale, id, { is_active: active });
       await load();
+      if (refreshZonesForWh != null) {
+        await loadZones(refreshZonesForWh);
+      }
     } catch {
       toast.error(tError("required"));
     }
@@ -370,17 +399,16 @@ export function WarehouseListPage() {
                         {tWh("noZones")}
                       </p>
                     ) : (
-                      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 py-2">
-                        {zoneRows.map((z) => (
-                          <li
-                            key={z.id}
-                            className="rounded-lg border border-border bg-background p-3 text-sm"
-                          >
-                            <div className="font-medium">{z.name}</div>
-                            <div className="text-muted-foreground">{z.sku}</div>
-                          </li>
-                        ))}
-                      </ul>
+                      <WarehouseZoneExpandGrid
+                        warehouseId={row.id}
+                        zones={zoneRows}
+                        perms={perms}
+                        onToggleActive={(zoneId, active) =>
+                          void onToggleActive(zoneId, active, row.id)
+                        }
+                        onOpenSheet={(mode) => void openSheet(mode)}
+                        onDeleteZone={setDeleteId}
+                      />
                     )}
                   </TableCell>
                 </TableRow>
@@ -419,8 +447,14 @@ export function WarehouseListPage() {
           try {
             await deleteWarehouseNode(locale, deleteId);
             toast.success(tCrud("toast.deleted"));
+            const deletedId = deleteId;
             setDeleteId(null);
             await load();
+            for (const [whId, zones] of Object.entries(zonesByWh)) {
+              if (zones.some((z) => z.id === deletedId)) {
+                await loadZones(Number(whId));
+              }
+            }
           } catch (e) {
             if (
               e instanceof WarehouseApiError &&

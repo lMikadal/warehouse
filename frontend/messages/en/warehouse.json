@@ -27,6 +27,7 @@
     "statTotalBins": "Total bins",
     "statCapacityUsed": "Capacity used",
     "details": "Details",
-    "deleteHasStock": "Cannot delete: bins under this location still have remaining stock."
+    "deleteHasStock": "Cannot delete: bins under this location still have remaining stock.",
+    "errorAmountActiveExceedsMax": "Active quantity cannot exceed max quantity."
   }
 }

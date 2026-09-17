@@ -53,6 +53,44 @@ export function conditionsFromApi(
   return form;
 }
 
+export type ZoneConditionType = keyof ZoneConditionsForm;
+
+export type ValidateZoneConditionResult =
+  | { ok: true; amount: number; active: number }
+  | {
+      ok: false;
+      reason: "required" | "exceeds";
+      field: keyof ZoneConditionValues;
+    };
+
+export function validateZoneConditionAmounts(
+  amountStr: string,
+  activeStr: string
+): ValidateZoneConditionResult {
+  const amountTrim = amountStr.trim();
+  const activeTrim = activeStr.trim();
+  if (amountTrim === "") {
+    return { ok: false, reason: "required", field: "amount" };
+  }
+  if (activeTrim === "") {
+    return { ok: false, reason: "required", field: "amountActive" };
+  }
+  const amount = Number(amountTrim);
+  const active = Number(activeTrim);
+  if (
+    !Number.isFinite(amount) ||
+    amount < 0 ||
+    !Number.isFinite(active) ||
+    active < 0
+  ) {
+    return { ok: false, reason: "required", field: "amount" };
+  }
+  if (active > amount) {
+    return { ok: false, reason: "exceeds", field: "amountActive" };
+  }
+  return { ok: true, amount, active };
+}
+
 export function conditionsToPatchBody(form: ZoneConditionsForm) {
   const n = (s: string) => Number(s) || 0;
   return {
@@ -146,6 +184,7 @@ function WarehouseNodeEditForm({
     initial.conditions ?? EMPTY_ZONE_CONDITIONS
   );
   const [invalid, setInvalid] = useState<Record<string, boolean>>({});
+  const [condErrorMsg, setCondErrorMsg] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   const title =
@@ -166,6 +205,13 @@ function WarehouseNodeEditForm({
       ...prev,
       [type]: { ...prev[type], [field]: value },
     }));
+    const key = `${type}-${field}`;
+    setInvalid((p) => ({ ...p, [key]: false }));
+    setCondErrorMsg((p) => {
+      const next = { ...p };
+      delete next[key];
+      return next;
+    });
   };
 
   const submit = async (e: FormEvent) => {
@@ -174,7 +220,25 @@ function WarehouseNodeEditForm({
     if (!sku.trim()) next.sku = true;
     if (!nameTh.trim()) next.nameTh = true;
     if (!nameEn.trim()) next.nameEn = true;
+    const condMsg: Record<string, string> = {};
+    if (state.kind === "zone") {
+      for (const key of ["shelf", "rack", "bin"] as const) {
+        const v = validateZoneConditionAmounts(
+          conditions[key].amount,
+          conditions[key].amountActive
+        );
+        if (!v.ok) {
+          const fieldKey = `${key}-${v.field}`;
+          next[fieldKey] = true;
+          condMsg[fieldKey] =
+            v.reason === "exceeds"
+              ? tWh("errorAmountActiveExceedsMax")
+              : "";
+        }
+      }
+    }
     setInvalid(next);
+    setCondErrorMsg(condMsg);
     if (Object.keys(next).length > 0) return;
     setSaving(true);
     try {
@@ -241,15 +305,33 @@ function WarehouseNodeEditForm({
                       id={`wh-cond-${key}-amount`}
                       labelKey="warehouse.amountMax"
                       type="number"
+                      required
                       value={conditions[key].amount}
                       onChange={(v) => setCond(key, "amount", v)}
+                      invalid={invalid[`${key}-amount`]}
+                      errorMessage={condErrorMsg[`${key}-amount`]}
+                      onClearInvalid={() =>
+                        setInvalid((p) => ({ ...p, [`${key}-amount`]: false }))
+                      }
                     />
                     <FormField
                       id={`wh-cond-${key}-active`}
                       labelKey="warehouse.amountActive"
                       type="number"
+                      required
                       value={conditions[key].amountActive}
                       onChange={(v) => setCond(key, "amountActive", v)}
+                      invalid={invalid[`${key}-amountActive`]}
+                      errorMessage={
+                        condErrorMsg[`${key}-amountActive`] ||
+                        undefined
+                      }
+                      onClearInvalid={() =>
+                        setInvalid((p) => ({
+                          ...p,
+                          [`${key}-amountActive`]: false,
+                        }))
+                      }
                     />
                   </div>
                 </fieldset>

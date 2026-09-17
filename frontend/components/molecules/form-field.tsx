@@ -15,6 +15,7 @@ export type FormFieldProps = {
   value: string;
   onChange: (value: string) => void;
   invalid?: boolean;
+  errorMessage?: string;
   onClearInvalid?: () => void;
   readOnly?: boolean;
   children?: ReactNode;
@@ -30,6 +31,7 @@ export function FormField({
   value,
   onChange,
   invalid,
+  errorMessage,
   onClearInvalid,
   readOnly,
   children,
@@ -80,6 +82,11 @@ export function FormField({
           aria-describedby={invalid ? `${id}-error` : undefined}
         />
       )}
+      {invalid ? (
+        <FieldError id={`${id}-error`}>
+          {errorMessage ?? t("error.required")}
+        </FieldError>
+      ) : null}
     </Field>
   );
 }
