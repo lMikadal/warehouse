@@ -17,7 +17,7 @@ import { RemoteComboboxField } from "@/components/molecules/remote-combobox-fiel
 import { RemoteMultiComboboxField } from "@/components/molecules/remote-multi-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import {
@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 
 import { ProductListFormCars } from "./product-list-form-cars";
 import { ProductListFormHistory } from "./product-list-form-history";
+import { ProductListFormSidebar } from "./product-list-form-sidebar";
 
 const UNITS = [
   "piece",
@@ -216,6 +217,12 @@ export function ProductListForm({ listId }: { listId?: number }) {
     if (!draft.sku.trim()) err.sku = tError("required");
     if (!draft.languages.th.name.trim()) err.nameTh = tError("required");
     if (!draft.languages.en.name.trim()) err.nameEn = tError("required");
+    if (!draft.product_category_id || draft.product_category_id <= 0) {
+      err.productCategory = tError("required");
+    }
+    if (!draft.product_brand_id || draft.product_brand_id <= 0) {
+      err.productBrand = tError("required");
+    }
     setFieldErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -314,8 +321,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
     <div className="flex flex-col gap-4 pb-24">
       <CrudPageHeader title={tPage("title")} description={tPage("desc")} />
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <TabsList variant="line">
           <TabsTrigger value="data">{tForm("tabData")}</TabsTrigger>
           <TabsTrigger value="pricing">{tForm("tabPricing")}</TabsTrigger>
           <TabsTrigger value="history">{tForm("tabHistory")}</TabsTrigger>
@@ -370,53 +377,83 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       setFieldErrors((fe) => ({ ...fe, nameEn: "" }));
                     }}
                   />
-                  <Field className="gap-1.5">
-                    <FieldLabel>{tList("filterProductCategory")}</FieldLabel>
+                  <Field
+                    className="gap-1.5"
+                    data-invalid={fieldErrors.productCategory ? true : undefined}
+                  >
+                    <FieldLabel htmlFor="plf-category">
+                      {tList("filterProductCategory")}
+                      <span className="text-[#dc2626]" aria-hidden>
+                        {" "}
+                        *
+                      </span>
+                    </FieldLabel>
                     <RemoteComboboxField
+                      id="plf-category"
                       label={tList("filterProductCategory")}
                       value={
                         draft.product_category_id != null
                           ? String(draft.product_category_id)
                           : ""
                       }
-                      onValueChange={(v) =>
+                      onValueChange={(v) => {
                         setDraft((d) => ({
                           ...d,
                           product_category_id: v ? Number(v) : null,
-                        }))
-                      }
+                        }));
+                        setFieldErrors((fe) => ({ ...fe, productCategory: "" }));
+                      }}
                       placeholder={tFormPh("placeholder.select", {
                         label: tList("filterProductCategory"),
                       })}
                       emptyLabel={tFormPh("combobox.noResults")}
                       inputClassName="w-full"
+                      invalid={!!fieldErrors.productCategory}
                       showClear
                       onLoadOptions={loadCategoryOptions}
                       resolveSelectedLabel={(value) =>
                         resolveProductListFormCategoryLabel(locale, value)
                       }
                     />
+                    {fieldErrors.productCategory ? (
+                      <FieldError id="plf-category-error">
+                        {fieldErrors.productCategory}
+                      </FieldError>
+                    ) : null}
                   </Field>
-                  <Field className="gap-1.5">
-                    <FieldLabel>{tCol("brand")}</FieldLabel>
+                  <Field
+                    className="gap-1.5"
+                    data-invalid={fieldErrors.productBrand ? true : undefined}
+                  >
+                    <FieldLabel htmlFor="plf-brand">
+                      {tCol("brand")}
+                      <span className="text-[#dc2626]" aria-hidden>
+                        {" "}
+                        *
+                      </span>
+                    </FieldLabel>
                     <RemoteComboboxField
+                      id="plf-brand"
                       label={tCol("brand")}
                       value={
                         draft.product_brand_id != null
                           ? String(draft.product_brand_id)
                           : ""
                       }
-                      onValueChange={(v) =>
+                      onValueChange={(v) => {
                         setDraft((d) => ({
                           ...d,
                           product_brand_id: v ? Number(v) : null,
-                        }))
-                      }
+                        }));
+                        setFieldErrors((fe) => ({ ...fe, productBrand: "" }));
+                      }}
                       placeholder={tFormPh("placeholder.select", {
                         label: tCol("brand"),
                       })}
                       emptyLabel={tFormPh("combobox.noResults")}
                       inputClassName="w-full"
+                      invalid={!!fieldErrors.productBrand}
+                      showClear
                       onLoadOptions={loadBrandOptions}
                       resolveSelectedLabel={async (value) => {
                         const opts = await resolveProductBrandLabels(
@@ -427,6 +464,11 @@ export function ProductListForm({ listId }: { listId?: number }) {
                         return opts[0]?.label ?? null;
                       }}
                     />
+                    {fieldErrors.productBrand ? (
+                      <FieldError id="plf-brand-error">
+                        {fieldErrors.productBrand}
+                      </FieldError>
+                    ) : null}
                   </Field>
                 </FormCardContent>
               </FormCard>
@@ -922,70 +964,16 @@ export function ProductListForm({ listId }: { listId?: number }) {
 
           {tab === "data" ? (
             <aside className="space-y-4">
-              <FormCard>
-                <FormCardHeader>
-                  <FormCardTitle>{tForm("statusTitle")}</FormCardTitle>
-                </FormCardHeader>
-                <FormCardContent className="space-y-4">
-                  <StatusSwitchField
-                    labelKey="col.status"
-                    checked={draft.is_active}
-                    onCheckedChange={(checked) =>
-                      setDraft((d) => ({ ...d, is_active: checked }))
-                    }
-                  />
-                  <Field className="gap-1.5">
-                    <FieldLabel>{tList("badgeNew")}</FieldLabel>
-                    <StatusSwitchField
-                      checked={draft.is_new}
-                      onCheckedChange={(checked) =>
-                        setDraft((d) => ({ ...d, is_new: checked }))
-                      }
-                    />
-                  </Field>
-                </FormCardContent>
-              </FormCard>
-              <FormCard>
-                <FormCardHeader>
-                  <FormCardTitle>{tForm("noteTitle")}</FormCardTitle>
-                </FormCardHeader>
-                <FormCardContent>
-                  <Textarea
-                    value={draft.note ?? ""}
-                    placeholder={tFormPh("placeholder.input", {
-                      label: tForm("noteTitle"),
-                    })}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, note: e.target.value }))
-                    }
-                  />
-                </FormCardContent>
-              </FormCard>
-              <FormCard>
-                <FormCardHeader>
-                  <FormCardTitle>{tForm("summaryTitle")}</FormCardTitle>
-                </FormCardHeader>
-                <FormCardContent className="space-y-2 text-sm">
-                  <p>
-                    <span className="text-muted-foreground">
-                      {tForm("summaryName")}:{" "}
-                    </span>
-                    {draft.languages.th.name || "—"}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">
-                      {tForm("summaryCars")}:{" "}
-                    </span>
-                    {draft.cars?.filter((c) => c.product_attribute_engine_id > 0)
-                      .length ?? 0}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">
-                      {tForm("itemTitle", { index: draft.items.length })}
-                    </span>
-                  </p>
-                </FormCardContent>
-              </FormCard>
+              <ProductListFormSidebar
+                draft={draft}
+                canEditNote={isEdit ? perms.update : perms.create}
+                onActiveChange={(checked) =>
+                  setDraft((d) => ({ ...d, is_active: checked }))
+                }
+                onNoteChange={(note) =>
+                  setDraft((d) => ({ ...d, note }))
+                }
+              />
             </aside>
           ) : null}
         </div>
