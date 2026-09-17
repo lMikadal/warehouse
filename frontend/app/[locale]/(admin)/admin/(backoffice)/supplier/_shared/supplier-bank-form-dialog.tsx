@@ -13,7 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { fetchSettingLangById, fetchSettingLangList } from "@/lib/setting-api";
+import {
+  loadSupplierUserBankComboboxOptions,
+  resolveSupplierUserBankLabel,
+} from "@/lib/supplier-user-filters-combobox";
 import type { SupplierBankInput } from "@/lib/supplier-user-api";
 
 type SupplierBankFormDialogProps = {
@@ -48,9 +51,7 @@ export function SupplierBankFormDialog({
           <RemoteComboboxField
             id="bank-dialog-bank"
             label={tCol("bank")}
-            value={
-              draft.setting_bank_id ? String(draft.setting_bank_id) : ""
-            }
+            value={draft.setting_bank_id ? String(draft.setting_bank_id) : ""}
             inputClassName="w-full"
             emptyLabel={tForm("combobox.noResults")}
             placeholder={tForm("placeholder.select", { label: tCol("bank") })}
@@ -60,24 +61,12 @@ export function SupplierBankFormDialog({
                 setting_bank_id: Number(v),
               })
             }
-            onLoadOptions={async ({ search, signal }) => {
-              const { items } = await fetchSettingLangList(locale, "banks", {
-                page: 1,
-                limit: 50,
-                search,
-                isActive: true,
-              });
-              if (signal?.aborted) return [];
-              return items.map((i) => ({ value: String(i.id), label: i.name }));
-            }}
-            resolveSelectedLabel={async (value) => {
-              const item = await fetchSettingLangById(
-                locale,
-                "banks",
-                Number(value)
-              );
-              return item.name;
-            }}
+            onLoadOptions={async ({ search, signal }) =>
+              loadSupplierUserBankComboboxOptions(locale, { search, signal })
+            }
+            resolveSelectedLabel={async (value) =>
+              resolveSupplierUserBankLabel(locale, Number(value))
+            }
           />
           <FormField
             id="bank-dialog-name"

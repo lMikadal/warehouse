@@ -3,6 +3,7 @@ import type { NextResponse } from "next/server";
 import { proxyAuthedBackendJson } from "@/lib/bff-backend";
 import {
   createSystemCrudHandlers,
+  proxyListGet,
   readJsonBody,
 } from "@/lib/bff-system-crud";
 
@@ -14,6 +15,12 @@ function base(segment: ProductAttrSegment) {
 
 function crud(segment: ProductAttrSegment) {
   return createSystemCrudHandlers(base(segment));
+}
+
+export async function handleProductCategoryFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, "/v1/product/categories/filters");
 }
 
 export async function handleProductAttrListGet(

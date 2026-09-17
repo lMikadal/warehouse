@@ -4,12 +4,15 @@ import (
 	"database/sql"
 
 	"github.com/labstack/echo/v5"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 )
 
 func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	repo := NewRepository(db)
-	h := NewHandler(repo)
+	langRepo := setting.NewLangRepository(db)
+	h := NewHandler(repo, langRepo)
 
+	g.GET("/users/filters", h.listFilters)
 	g.GET("/users", h.list)
 	g.GET("/users/:id", h.get)
 	g.POST("/users", h.create)

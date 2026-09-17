@@ -9,6 +9,11 @@ import {
   fetchProductAttributes,
   type ProductAttributeRow,
 } from "@/lib/product-attribute-api";
+import {
+  fetchProductItemBrowseFilters,
+  fetchProductListFilters,
+  filterItemsToComboboxOptions,
+} from "@/lib/product-filters-api";
 
 function categoryOptionLabel(row: ProductAttributeRow): string {
   const depth = treeDepth(row.tree_path);
@@ -67,6 +72,70 @@ export async function resolveCategoryParentComboboxLabel(
   try {
     const row = await fetchProductAttribute("categories", locale, id);
     return categoryOptionLabel(row);
+  } catch {
+    return null;
+  }
+}
+
+export async function loadProductItemBrowseCategoryComboboxOptions(
+  locale: DisplayLocale,
+  params: { search: string; signal?: AbortSignal }
+): Promise<RemoteComboboxOption[]> {
+  if (params.signal?.aborted) return [];
+  const res = await fetchProductItemBrowseFilters(locale, "categories", {
+    page: 1,
+    limit: REMOTE_COMBOBOX_LIMIT,
+    search: params.search.trim() || undefined,
+    signal: params.signal,
+  });
+  if (params.signal?.aborted) return [];
+  return filterItemsToComboboxOptions(res.items);
+}
+
+export async function resolveProductItemBrowseCategoryLabel(
+  locale: DisplayLocale,
+  value: string
+): Promise<string | null> {
+  const id = Number(value);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  try {
+    const res = await fetchProductItemBrowseFilters(locale, "categories", {
+      id,
+      limit: 1,
+    });
+    return res.items[0]?.name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadProductListFormCategoryComboboxOptions(
+  locale: DisplayLocale,
+  params: { search: string; signal?: AbortSignal }
+): Promise<RemoteComboboxOption[]> {
+  if (params.signal?.aborted) return [];
+  const res = await fetchProductListFilters(locale, "categories", {
+    page: 1,
+    limit: REMOTE_COMBOBOX_LIMIT,
+    search: params.search.trim() || undefined,
+    signal: params.signal,
+  });
+  if (params.signal?.aborted) return [];
+  return filterItemsToComboboxOptions(res.items);
+}
+
+export async function resolveProductListFormCategoryLabel(
+  locale: DisplayLocale,
+  value: string
+): Promise<string | null> {
+  const id = Number(value);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  try {
+    const res = await fetchProductListFilters(locale, "categories", {
+      id,
+      limit: 1,
+    });
+    return res.items[0]?.name ?? null;
   } catch {
     return null;
   }

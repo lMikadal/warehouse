@@ -33,8 +33,8 @@ import { useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import {
-  loadCategoryParentComboboxOptions,
-  resolveCategoryParentComboboxLabel,
+  loadProductListFormCategoryComboboxOptions,
+  resolveProductListFormCategoryLabel,
 } from "@/lib/product-category-combobox";
 import {
   loadProductBrandComboboxOptions,
@@ -49,9 +49,10 @@ import {
   type ListItemBody,
   type ProductListAggregate,
 } from "@/lib/product-list-api";
-import { fetchSettingLangList } from "@/lib/setting-api";
-import { fetchSupplierUsers } from "@/lib/supplier-user-api";
-import { fetchWarehouseList } from "@/lib/warehouse-api";
+import {
+  fetchProductListFilters,
+  filterItemsToComboboxOptions,
+} from "@/lib/product-filters-api";
 import { cn } from "@/lib/utils";
 
 import { ProductListFormCars } from "./product-list-form-cars";
@@ -109,6 +110,16 @@ function emptyDraft(): ProductListAggregate {
   };
 }
 
+function bodyForSave(draft: ProductListAggregate): ProductListAggregate {
+  return {
+    ...draft,
+    factory_codes: draft.factory_codes?.filter((c) => c.trim()) ?? [],
+    other_codes: draft.other_codes?.filter((c) => c.trim()) ?? [],
+    cars:
+      draft.cars?.filter((c) => c.product_attribute_engine_id > 0) ?? [],
+  };
+}
+
 export function ProductListForm({ listId }: { listId?: number }) {
   const isEdit = listId != null && listId > 0;
   const locale = useLocale() as DisplayLocale;
@@ -132,7 +143,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
   >([]);
 
   useEffect(() => {
-    void fetchSettingLangList(locale, "sale-channels", {
+    void fetchProductListFilters(locale, "sale_channels", {
       page: 1,
       limit: 100,
       isActive: true,
@@ -140,7 +151,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
       setSaleChannels(
         res.items.map((ch) => ({
           id: ch.id,
-          name: ch.names?.[locale === "en" ? "en" : "th"] ?? ch.name,
+          name: ch.name,
         }))
       );
     });
@@ -213,13 +224,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
     if (!validate()) return;
     setSaving(true);
     try {
-      const body: ProductListAggregate = {
-        ...draft,
-        factory_codes: draft.factory_codes?.filter((c) => c.trim()) ?? [],
-        other_codes: draft.other_codes?.filter((c) => c.trim()) ?? [],
-        cars:
-          draft.cars?.filter((c) => c.product_attribute_engine_id > 0) ?? [],
-      };
+      const body = bodyForSave(draft);
       if (isEdit && listId) {
         await updateProductList(listId, body);
         toast.success(tCrud("toast.saved"));
@@ -256,40 +261,35 @@ export function ProductListForm({ listId }: { listId?: number }) {
 
   const loadSuppliers = useCallback(
     async (ctx: RemoteComboboxLoadContext) => {
-      const res = await fetchSupplierUsers(locale, {
+      const res = await fetchProductListFilters(locale, "suppliers", {
         page: 1,
         limit: 50,
         search: ctx.search.trim() || undefined,
+        signal: ctx.signal,
       });
       if (ctx.signal.aborted) return [];
-      return res.rows.map((r) => ({
-        value: String(r.id),
-        label: r.company_name || r.sku,
-      }));
+      return filterItemsToComboboxOptions(res.items);
     },
     [locale]
   );
 
   const loadBins = useCallback(
     async (ctx: RemoteComboboxLoadContext) => {
-      const res = await fetchWarehouseList(locale, {
+      const res = await fetchProductListFilters(locale, "warehouse_bins", {
         page: 1,
         limit: 50,
-        type: "bin",
         search: ctx.search.trim() || undefined,
+        signal: ctx.signal,
       });
       if (ctx.signal.aborted) return [];
-      return res.items.map((b) => ({
-        value: String(b.id),
-        label: b.name || b.sku,
-      }));
+      return filterItemsToComboboxOptions(res.items);
     },
     [locale]
   );
 
   const loadCategoryOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
-      loadCategoryParentComboboxOptions(locale, {
+      loadProductListFormCategoryComboboxOptions(locale, {
         search: ctx.search,
         signal: ctx.signal,
       }),
@@ -301,6 +301,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
       loadProductBrandComboboxOptions(locale, {
         search: ctx.search,
         signal: ctx.signal,
+        source: "listForm",
       }),
     [locale]
   );
@@ -392,7 +393,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       showClear
                       onLoadOptions={loadCategoryOptions}
                       resolveSelectedLabel={(value) =>
-                        resolveCategoryParentComboboxLabel(locale, value)
+                        resolveProductListFormCategoryLabel(locale, value)
                       }
                     />
                   </Field>
@@ -418,9 +419,11 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       inputClassName="w-full"
                       onLoadOptions={loadBrandOptions}
                       resolveSelectedLabel={async (value) => {
-                        const opts = await resolveProductBrandLabels(locale, [
-                          value,
-                        ]);
+                        const opts = await resolveProductBrandLabels(
+                          locale,
+                          [value],
+                          "listForm"
+                        );
                         return opts[0]?.label ?? null;
                       }}
                     />

@@ -10,15 +10,17 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
 type Handler struct {
 	repo *Repository
+	lang *setting.LangRepository
 }
 
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *Repository, lang *setting.LangRepository) *Handler {
+	return &Handler{repo: repo, lang: lang}
 }
 
 type listItem struct {

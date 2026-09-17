@@ -249,7 +249,16 @@ Wave 1 schema: shared enums, locale registry (`system_language` after rename), `
 | `GET/POST/PATCH/DELETE /product/lists/:id` | Aggregate graph (languages, codes, suppliers, cars, items with prices/suppliers/bin placements); create/update in one transaction; VAT rate snapshot from `setting_vat` on save |
 | `GET /product/lists/:id/cars` | Car fitment modal table |
 
-Validation: SKU uniqueness, bin-only placements, one-bin-one-item among active placements. Postman: **Product → Items (browse)** and **Lists (aggregate)**.
+**Filters (cross-module pickers)** — same RBAC as the parent resource (`CodeForRoute` maps `GET …/filters` to `{module}.{type}.view` on the route prefix). Query: required `facet`, `page`, `limit`, optional `search`, optional `id` (label resolve), optional `is_active`. Response `{ "items": [{ "id", "name" }], "meta" }` unless noted.
+
+| Path | Permission | Facets / notes |
+|------|------------|----------------|
+| `GET /product/categories/filters` | `product.product_category.view` | `brands` — active brand attributes for category form related-brands picker |
+| `GET /product/items/filters` | `product.product_list.view` | `categories`, `brands` — item browse toolbar filters |
+| `GET /product/lists/filters` | `product.product_list.view` | `categories`, `brands`, `suppliers`, `sale_channels`, `warehouse_bins`, `cars` — cars: `type_car` (`brand`\|`model`\|`engine`) + optional `parent_id` |
+| `GET /supplier/users/filters` | `supplier.supplier_user.view` | `prefixes` (company scope), `banks` — supplier form prefix/bank comboboxes without `setting.*.view` |
+
+Validation: SKU uniqueness, bin-only placements, one-bin-one-item among active placements. Postman: **Product → Items (browse)** and **Lists (aggregate)** (+ **Filters** requests under each folder).
 
 List UI car fitment chips read `car_count` / `car_summary` from `GET /product/items`; demo rows live in dev seed [`seeds/dev/14_product_demo.sql`](../../backend/internal/infra/postgres/seeds/dev/14_product_demo.sql) (`product_list_car`). After pulling seed changes, re-run `make backend-seed-dev` (requires `DATABASE_URL`, e.g. host `localhost:5432` when Postgres is published from compose).
 

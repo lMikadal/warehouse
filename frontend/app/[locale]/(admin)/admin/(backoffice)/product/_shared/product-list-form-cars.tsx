@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/select";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import { fetchProductAttributes } from "@/lib/product-attribute-api";
+import {
+  fetchProductListFilters,
+  filterItemsToComboboxOptions,
+} from "@/lib/product-filters-api";
 import type { ListCarBody } from "@/lib/product-list-api";
 
 const GEAR_TYPES = ["manual", "auto", "cvt", "dct", "other"] as const;
@@ -51,25 +54,17 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
       typeCar: "brand" | "model" | "engine",
       parentId?: number | null
     ) => {
-      const res = await fetchProductAttributes("cars", locale, {
+      const res = await fetchProductListFilters(locale, "cars", {
         page: 1,
         limit: 100,
         isActive: true,
         search: ctx.search.trim() || undefined,
+        typeCar,
+        parentId: parentId ?? undefined,
+        signal: ctx.signal,
       });
       if (ctx.signal.aborted) return [];
-      return res.items
-        .filter((r) => {
-          if (r.type_car !== typeCar) return false;
-          if (typeCar === "model" && parentId != null) {
-            return r.parent_id === parentId;
-          }
-          if (typeCar === "engine" && parentId != null) {
-            return r.parent_id === parentId;
-          }
-          return true;
-        })
-        .map((r) => ({ value: String(r.id), label: r.name }));
+      return filterItemsToComboboxOptions(res.items);
     },
     [locale]
   );

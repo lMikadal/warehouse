@@ -91,6 +91,41 @@ export const WithRows: Story = {
   },
 };
 
+export const ManageWithoutAdd: Story = {
+  render: function Render() {
+    const [rows, setRows] = useState(seed);
+    return (
+      <CrudNestedSortableList
+        rows={rows}
+        dragEnabled
+        description="Row edit/delete without header add (e.g. supplier banks when setting_bank.view is missing)."
+        emptyLabel="No rows"
+        addLabel="Add row"
+        canManage
+        canAdd={false}
+        canDelete
+        onAdd={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onRowsChange={setRows}
+        renderItem={({ row, index, dragEnabled, actions, onEdit, onDelete }) => (
+          <CrudNestedSortableListItem
+            key={row.id}
+            id={row.id}
+            index={index}
+            dragEnabled={dragEnabled}
+            actions={actions}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          >
+            <div className="min-w-0 flex-1 font-medium">{row.name}</div>
+          </CrudNestedSortableListItem>
+        )}
+      />
+    );
+  },
+};
+
 export const Empty: Story = {
   render: function Render() {
     return (

@@ -243,12 +243,14 @@ export function ProductAttributePage({ config }: { config: ProductAttributePageC
       loadProductBrandComboboxOptions(locale, {
         search: ctx.search,
         signal: ctx.signal,
+        source: "categoryForm",
       }),
     [locale]
   );
 
   const resolveBrandComboboxLabels = useCallback(
-    (ids: string[]) => resolveProductBrandLabels(locale, ids),
+    (ids: string[]) =>
+      resolveProductBrandLabels(locale, ids, "categoryForm"),
     [locale]
   );
 

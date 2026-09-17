@@ -42,7 +42,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import { fetchSettingLangById, fetchSettingLangList } from "@/lib/setting-api";
+import {
+  loadSupplierUserPrefixComboboxOptions,
+  resolveSupplierUserPrefixLabel,
+} from "@/lib/supplier-user-filters-combobox";
 import {
   loadGeoComboboxOptions,
   resolveGeoComboboxLabel,
@@ -682,35 +685,18 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                 block.setting_prefix_name
               )}
               onValueChange={(v) => set({ setting_prefix_id: v })}
-              onLoadOptions={async ({ search, signal }) => {
-                const { items } = await fetchSettingLangList(
-                  locale,
-                  "prefixes",
-                  {
-                    page: 1,
-                    limit: 50,
-                    search,
-                    isCompany: true,
-                    isActive: true,
-                  }
-                );
-                if (signal?.aborted) return [];
-                return items.map((i) => ({
-                  value: String(i.id),
-                  label: i.name,
-                }));
-              }}
+              onLoadOptions={async ({ search, signal }) =>
+                loadSupplierUserPrefixComboboxOptions(locale, {
+                  search,
+                  signal,
+                })
+              }
               resolveSelectedLabel={
                 formReadOnly
                   ? undefined
-                  : async (value) => {
-                      const item = await fetchSettingLangById(
-                        locale,
-                        "prefixes",
-                        Number(value)
-                      );
-                      return item.name;
-                    }
+                  : async (value) =>
+                      (await resolveSupplierUserPrefixLabel(locale, value)) ??
+                      null
               }
             />
           ) : null}
@@ -1007,6 +993,7 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
                 locale={locale}
                 supplierId={supplierId}
                 canManage={isEdit ? perms.update : perms.create}
+                canAdd={isEdit ? perms.update : perms.create}
                 canDelete={isEdit ? perms.delete : perms.create}
                 onAdd={() => openBankEdit()}
                 onEdit={(row) => openBankEdit(row)}

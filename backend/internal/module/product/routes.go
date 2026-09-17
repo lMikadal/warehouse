@@ -4,11 +4,19 @@ import (
 	"database/sql"
 
 	"github.com/labstack/echo/v5"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
+	"github.com/lMikadal/warehouse/backend/internal/module/supplier"
+	"github.com/lMikadal/warehouse/backend/internal/module/warehouse"
 )
 
 func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	repo := NewRepository(db)
-	registerResource(g.Group("/categories"), repo, "category", true)
+	langRepo := setting.NewLangRepository(db)
+	filters := NewFiltersHandler(repo, supplier.NewRepository(db), langRepo, warehouse.NewRepository(db))
+
+	categories := g.Group("/categories")
+	categories.GET("/filters", filters.CategoryFilters)
+	registerResource(categories, repo, "category", true)
 	registerResource(g.Group("/brands"), repo, "brand", false)
 	registerResource(g.Group("/cars"), repo, "car", true)
 
@@ -18,6 +26,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	listH := NewListHandler(itemRepo, listRepo)
 
 	items := g.Group("/items")
+	items.GET("/filters", filters.ItemBrowseFilters)
 	items.GET("", itemH.listBrowse)
 	items.PATCH("/:id", itemH.patch)
 	items.DELETE("/:id", itemH.delete)
@@ -26,6 +35,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	items.GET("/:id/history/sales", itemH.historySales)
 
 	lists := g.Group("/lists")
+	lists.GET("/filters", filters.ListFilters)
 	lists.POST("", listH.create)
 	lists.GET("/:id", listH.get)
 	lists.PATCH("/:id", listH.patch)

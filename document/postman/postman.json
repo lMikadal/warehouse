@@ -1030,6 +1030,15 @@
               }
             },
             {
+              "name": "Category filters (brands)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/categories/filters?facet=brands&page=1&limit=50&is_active=true",
+                "description": "product.product_category.view — related brand picker on category form."
+              }
+            },
+            {
               "name": "Get category",
               "request": {
                 "method": "GET",
@@ -1188,6 +1197,15 @@
               }
             },
             {
+              "name": "Item browse filters",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items/filters?facet=categories&page=1&limit=50",
+                "description": "product.product_list.view — facet=categories|brands for list toolbar comboboxes."
+              }
+            },
+            {
               "name": "Patch item active",
               "request": {
                 "method": "PATCH",
@@ -1236,6 +1254,15 @@
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": "{{baseUrl}}/product/lists/1"
+              }
+            },
+            {
+              "name": "List form filters",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/lists/filters?facet=suppliers&page=1&limit=50",
+                "description": "product.product_list.view — facets: categories, brands, suppliers, sale_channels, warehouse_bins, cars (cars: type_car + parent_id)."
               }
             },
             {
@@ -1292,6 +1319,15 @@
               "request": {
                 "method": "GET",
                 "url": "{{baseUrl}}/supplier/users?page=1&limit=10&is_active=true"
+              }
+            },
+            {
+              "name": "Supplier user filters",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/supplier/users/filters?facet=prefixes&page=1&limit=50",
+                "description": "supplier.supplier_user.view — facet=prefixes|banks for form comboboxes."
               }
             },
             {

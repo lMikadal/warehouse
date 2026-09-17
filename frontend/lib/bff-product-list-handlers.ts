@@ -19,6 +19,18 @@ export async function handleProductItemsListGet(
   return proxyListGet(request, itemsBase);
 }
 
+export async function handleProductItemsFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, `${itemsBase}/filters`);
+}
+
+export async function handleProductListsFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, `${listsBase}/filters`);
+}
+
 export async function handleProductItemPatch(
   request: Request,
   id: string

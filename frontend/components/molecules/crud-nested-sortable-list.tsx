@@ -27,6 +27,8 @@ export type CrudNestedSortableListProps<T extends SortOrderRow> = {
   emptyLabel: string;
   addLabel: string;
   canManage: boolean;
+  /** Header add button; defaults to `canManage`. */
+  canAdd?: boolean;
   canDelete: boolean;
   onAdd: () => void;
   onEdit: (row: T) => void;
@@ -55,6 +57,7 @@ export function CrudNestedSortableList<T extends SortOrderRow>({
   emptyLabel,
   addLabel,
   canManage,
+  canAdd,
   canDelete,
   onAdd,
   onEdit,
@@ -67,6 +70,7 @@ export function CrudNestedSortableList<T extends SortOrderRow>({
 }: CrudNestedSortableListProps<T>) {
   const sorted = useMemo(() => sortBySortOrderThenId(rows), [rows]);
   const dragEnabled = dragEnabledProp && sorted.length > 1;
+  const showAdd = canAdd ?? canManage;
   const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
 
   const rowActions = (): TableIconActionKey[] =>
@@ -93,7 +97,7 @@ export function CrudNestedSortableList<T extends SortOrderRow>({
         ) : (
           <p className="text-sm text-muted-foreground" />
         )}
-        {canManage ? (
+        {showAdd ? (
           <Button type="button" size="lg" className="shrink-0" onClick={onAdd}>
             <Plus className="size-4" />
             {addLabel}

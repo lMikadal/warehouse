@@ -17,8 +17,8 @@ import { Link } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import {
-  loadCategoryParentComboboxOptions,
-  resolveCategoryParentComboboxLabel,
+  loadProductItemBrowseCategoryComboboxOptions,
+  resolveProductItemBrowseCategoryLabel,
 } from "@/lib/product-category-combobox";
 import {
   loadProductBrandComboboxOptions,
@@ -55,7 +55,8 @@ export function ProductListPage() {
   const [brandId, setBrandId] = useState("");
   const [newFilter, setNewFilter] = useState<NewFilter>("");
 
-  const filtersActive = categoryId !== "" || brandId !== "" || newFilter !== "";
+  const filtersActive =
+    categoryId !== "" || brandId !== "" || newFilter !== "";
   const listQuery = useCrudListQuery({ extraFiltered: filtersActive });
   const {
     query,
@@ -311,13 +312,13 @@ export function ProductListPage() {
             inputClassName="w-full min-w-[10rem] sm:w-48"
             showClear
             onLoadOptions={(ctx) =>
-              loadCategoryParentComboboxOptions(locale, {
+              loadProductItemBrowseCategoryComboboxOptions(locale, {
                 search: ctx.search,
                 signal: ctx.signal,
               })
             }
             resolveSelectedLabel={(value) =>
-              resolveCategoryParentComboboxLabel(locale, value)
+              resolveProductItemBrowseCategoryLabel(locale, value)
             }
           />
           <RemoteComboboxField
@@ -335,10 +336,11 @@ export function ProductListPage() {
               loadProductBrandComboboxOptions(locale, {
                 search: ctx.search,
                 signal: ctx.signal,
+                source: "itemBrowse",
               })
             }
             resolveSelectedLabel={async (value) => {
-              const opts = await resolveProductBrandLabels(locale, [value]);
+              const opts = await resolveProductBrandLabels(locale, [value], "itemBrowse");
               return opts[0]?.label ?? null;
             }}
           />

@@ -1,13 +1,22 @@
 import type { NextResponse } from "next/server";
 
 import { proxyNestedMutate } from "@/lib/bff-nested-mutate";
-import { createSystemCrudHandlers } from "@/lib/bff-system-crud";
+import {
+  createSystemCrudHandlers,
+  proxyListGet,
+} from "@/lib/bff-system-crud";
 
 const userCrud = createSystemCrudHandlers("/v1/supplier/users");
 
 export const handleSupplierUsersListGet: (
   request: Request
 ) => Promise<NextResponse> = userCrud.listGet;
+
+export async function handleSupplierUserFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, "/v1/supplier/users/filters");
+}
 
 export const handleSupplierUserCreate: (
   request: Request

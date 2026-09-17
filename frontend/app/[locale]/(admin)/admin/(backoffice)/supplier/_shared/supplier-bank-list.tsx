@@ -11,7 +11,7 @@ import {
 } from "@/components/molecules/crud-nested-sortable-list";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { fetchSettingLangById } from "@/lib/setting-api";
+import { resolveSupplierUserBankLabel } from "@/lib/supplier-user-filters-combobox";
 import {
   reorderSupplierBanks,
   SupplierUserApiError,
@@ -32,6 +32,7 @@ type SupplierBankListProps = {
   locale: string;
   supplierId?: number;
   canManage: boolean;
+  canAdd: boolean;
   canDelete: boolean;
   onAdd: () => void;
   onEdit: (row: SupplierBankListRow) => void;
@@ -46,6 +47,7 @@ export function SupplierBankList({
   locale,
   supplierId,
   canManage,
+  canAdd,
   canDelete,
   onAdd,
   onEdit,
@@ -87,12 +89,8 @@ export function SupplierBankList({
     void (async () => {
       const entries = await Promise.all(
         ids.map(async (id) => {
-          try {
-            const item = await fetchSettingLangById(locale, "banks", id);
-            return [id, item.name] as const;
-          } catch {
-            return [id, String(id)] as const;
-          }
+          const name = await resolveSupplierUserBankLabel(locale, id);
+          return [id, name] as const;
         })
       );
       if (cancelled) return;
@@ -117,6 +115,7 @@ export function SupplierBankList({
       emptyLabel={tSupplier("emptyBanks")}
       addLabel={tSupplier("addBank")}
       canManage={canManage}
+      canAdd={canAdd}
       canDelete={canDelete}
       onAdd={onAdd}
       onEdit={onEdit}
