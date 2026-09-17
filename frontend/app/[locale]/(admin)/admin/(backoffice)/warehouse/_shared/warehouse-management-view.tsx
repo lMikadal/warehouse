@@ -5,9 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { ButtonIcon } from "@/components/ui/button-icon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import {
   fetchWarehouseById,
@@ -160,7 +160,14 @@ export function WarehouseManagementView({ warehouseId }: Props) {
       />
 
       {loading ? (
-        <CrudListTableSkeleton columnCount={1} rowCount={6} />
+        <div className="flex flex-col gap-6" aria-busy="true">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} className="h-[4.5rem] rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="min-h-64 w-full rounded-lg" />
+        </div>
       ) : (
         <>
           {stats ? (
