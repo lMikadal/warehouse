@@ -60,10 +60,9 @@ import { cn } from "@/lib/utils";
 import { WarehousePlacementCascadeRow } from "./product-list-form-warehouse-placement-row";
 import {
   activeVatRate,
+  channelMarginDisplay,
   channelRowExIncl,
-  channelSellForMargin,
   composeItemSku,
-  firstSupplierCost,
   sortChannelPriceRows,
   type SaleChannelMeta,
   formatStockQty,
@@ -78,7 +77,6 @@ import {
   listItemFileIdsKey,
   listSkuPrefix,
   nextVariantSkuSuffix,
-  marginPct,
   packUnitKey,
   priceExFromIncl,
   priceInclVat,
@@ -188,6 +186,8 @@ type Props = {
   onClearFieldError?: (key: keyof ItemSalesFieldErrors) => void;
   canCloneItem: boolean;
   onCloneAlternateSku: (newSuffix: string) => void | Promise<void>;
+  /** Bump when lot stock changes so channel margin refetches used lot cost. */
+  stocksRefreshKey?: number;
 };
 
 export function ProductListFormVariantSections({
@@ -203,6 +203,7 @@ export function ProductListFormVariantSections({
   onClearFieldError,
   canCloneItem,
   onCloneAlternateSku,
+  stocksRefreshKey = 0,
 }: Props) {
   const pendingAlternateClone = hasPendingAlternateClone(allItems);
   const locale = useLocale() as DisplayLocale;
@@ -222,7 +223,9 @@ export function ProductListFormVariantSections({
   );
 
   const [channelPage, setChannelPage] = useState(1);
-  const [activeLotSell, setActiveLotSell] = useState<number | null>(null);
+  const [usedLotCostPerUnit, setUsedLotCostPerUnit] = useState<number | null>(
+    null
+  );
 
   const [supplierEditId, setSupplierEditId] = useState<number | null>(null);
   const [supplierDraft, setSupplierDraft] = useState({
@@ -302,10 +305,9 @@ export function ProductListFormVariantSections({
     [item.channel_prices]
   );
 
-  const refCost = firstSupplierCost(item);
-
   useEffect(() => {
-    if (item.type_price !== "stock" || !item.id) {
+    if (!item.id) {
+      setUsedLotCostPerUnit(null);
       return;
     }
     let cancelled = false;
@@ -313,16 +315,18 @@ export function ProductListFormVariantSections({
       .then((res) => {
         const used = res.items.find((s) => s.is_used);
         if (!cancelled) {
-          setActiveLotSell(used != null ? used.sell_price : null);
+          setUsedLotCostPerUnit(
+            used != null ? used.cost_per_unit : null
+          );
         }
       })
       .catch(() => {
-        if (!cancelled) setActiveLotSell(null);
+        if (!cancelled) setUsedLotCostPerUnit(null);
       });
     return () => {
       cancelled = true;
     };
-  }, [item.type_price, item.id, locale]);
+  }, [item.id, locale, stocksRefreshKey]);
 
   const patch = (partial: Partial<ListItemBody>) =>
     onChange({ ...item, ...partial });
@@ -522,7 +526,8 @@ export function ProductListFormVariantSections({
                     !canCloneItem ||
                     !item.id ||
                     stripOpen ||
-                    pendingAlternateClone
+                    pendingAlternateClone ||
+                    alternateSkus.length > 0
                   }
                   onClick={(e) => {
                     e.stopPropagation();
@@ -961,13 +966,6 @@ export function ProductListFormVariantSections({
                   const channelMeta = saleChannels.find((c) => c.id === chId);
                   const resolvedName = channelMeta?.name;
                   const { ex, incl } = channelRowExIncl(row, vatRate);
-                  const sellForMargin = channelSellForMargin(
-                    item,
-                    row,
-                    vatType,
-                    vatRate,
-                    activeLotSell
-                  );
                   const phEx = tFormPh("placeholder.input", {
                     label: tForm("itemColPriceExVat"),
                   });
@@ -1058,7 +1056,13 @@ export function ProductListFormVariantSections({
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {marginPct(sellForMargin, refCost)}%
+                        {channelMarginDisplay(
+                          row,
+                          vatType,
+                          vatRate,
+                          usedLotCostPerUnit
+                        )}
+                        %
                       </TableCell>
                       <TableCell className="text-center">
                         <TableIconActions

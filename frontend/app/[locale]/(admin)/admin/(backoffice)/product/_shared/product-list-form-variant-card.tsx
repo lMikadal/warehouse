@@ -87,6 +87,7 @@ export function ProductListFormVariantCard({
   const [whOpen, setWhOpen] = useState(false);
   const [lotOpen, setLotOpen] = useState(false);
   const [lotSession, setLotSession] = useState(0);
+  const [stocksRefreshKey, setStocksRefreshKey] = useState(0);
 
   const stock = item.total_stock ?? 0;
   const low =
@@ -207,6 +208,7 @@ export function ProductListFormVariantCard({
             allItems={allItems}
             canCloneItem={canCloneItem}
             onCloneAlternateSku={onCloneAlternateSku}
+            stocksRefreshKey={stocksRefreshKey}
           />
         </CollapsibleContent>
       </Collapsible>
@@ -225,7 +227,10 @@ export function ProductListFormVariantCard({
         onOpenChange={setLotOpen}
         canMutate={canMutateLots}
         loadSuppliers={loadSuppliers}
-        onStockChanged={onStockChanged}
+        onStockChanged={() => {
+          onStockChanged?.();
+          setStocksRefreshKey((k) => k + 1);
+        }}
       />
     </>
   );

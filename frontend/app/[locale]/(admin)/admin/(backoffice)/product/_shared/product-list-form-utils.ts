@@ -362,18 +362,26 @@ export function channelRowExIncl(
   return { ex, incl };
 }
 
-export function channelSellForMargin(
-  item: ListItemBody,
+export function channelRowSellForMargin(
+  row: ChannelPriceRow,
+  vatType: "exclude" | "include",
+  vatRate: number
+): number {
+  const { ex, incl } = channelRowExIncl(row, vatRate);
+  return vatType === "include" ? incl : ex;
+}
+
+export function channelMarginDisplay(
   row: ChannelPriceRow,
   vatType: "exclude" | "include",
   vatRate: number,
-  activeLotSell: number | null
-): number {
-  if (item.type_price === "stock") {
-    return activeLotSell ?? 0;
-  }
-  const { ex, incl } = channelRowExIncl(row, vatRate);
-  return vatType === "include" ? incl : ex;
+  usedLotCostPerUnit: number | null | undefined
+): string {
+  if (usedLotCostPerUnit == null) return "—";
+  return marginPct(
+    channelRowSellForMargin(row, vatType, vatRate),
+    usedLotCostPerUnit
+  );
 }
 
 export function sortChannelPriceRows(
