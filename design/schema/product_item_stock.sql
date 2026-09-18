@@ -19,9 +19,10 @@ CREATE TABLE product_item_stock (
     remain_quantity         NUMERIC(15,4) NOT NULL DEFAULT 0,     -- qty still available
     cost_per_unit           NUMERIC(15,4) NOT NULL DEFAULT 0,   -- ex-VAT cost per unit for this lot
     discount_per_unit       NUMERIC(15,4) NOT NULL DEFAULT 0,   -- discount per unit at receipt
-    vat_rate                NUMERIC(5,2)  NOT NULL DEFAULT 0,   -- VAT rate snapshot at receipt
+    vat_type                setting_vat_type NOT NULL DEFAULT 'exclude', -- snapshot from setting_vat.vat_type at receipt
+    vat_rate                NUMERIC(5,2)  NOT NULL DEFAULT 0,   -- VAT rate snapshot from setting_vat.rate at receipt
     sell_price              NUMERIC(15,4) NOT NULL DEFAULT 0,   -- sell price snapshot at receipt
-    is_used                 BOOLEAN       NOT NULL DEFAULT FALSE, -- TRUE = active lot for this item/placement
+    is_used                 BOOLEAN       NOT NULL DEFAULT FALSE, -- TRUE = the single active lot for this product_item
     received_at             TIMESTAMPTZ,                          -- when stock was received
     deleted_at              TIMESTAMPTZ,
     created_at              TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -30,9 +31,9 @@ CREATE TABLE product_item_stock (
     updated_by              BIGINT        REFERENCES admin_user(id) ON DELETE SET NULL
 );
 
--- only one active (is_used=TRUE) lot per item per placement
+-- only one active (is_used=TRUE) lot per product_item (all bins/placements)
 CREATE UNIQUE INDEX uq_product_item_stock_active
-    ON product_item_stock (product_item_id, product_item_warehouse_id)
+    ON product_item_stock (product_item_id)
     WHERE is_used = TRUE AND deleted_at IS NULL;
 CREATE INDEX idx_product_item_stock_item        ON product_item_stock (product_item_id)              WHERE deleted_at IS NULL;
 CREATE INDEX idx_product_item_stock_placement   ON product_item_stock (product_item_warehouse_id)    WHERE deleted_at IS NULL;

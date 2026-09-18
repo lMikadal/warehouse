@@ -194,6 +194,29 @@ export function ProductListForm({ listId }: { listId?: number }) {
     });
   }, [locale]);
 
+  const refreshItemStockTotals = useCallback(async () => {
+    if (!isEdit || !listId) return;
+    try {
+      const data = await fetchProductList(locale, listId);
+      setDraft((d) => ({
+        ...d,
+        items: d.items.map((it) => {
+          if (it.id == null) return it;
+          const fresh = data.items.find((x) => x.id === it.id);
+          if (!fresh) return it;
+          return {
+            ...it,
+            total_stock: fresh.total_stock,
+            low_stock: fresh.low_stock,
+            warehouse_root_count: fresh.warehouse_root_count,
+          };
+        }),
+      }));
+    } catch {
+      /* keep draft on refresh failure */
+    }
+  }, [isEdit, listId, locale]);
+
   const mergeItemChannels = useCallback(
     (item: ListItemBody): ListItemBody => {
       if (!saleChannels.length) return item;
@@ -759,6 +782,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                 expandVariantKey={expandVariantKey}
                 onExpandVariantHandled={handleExpandVariantHandled}
                 canCloneItem={isEdit && perms.update}
+                canMutateLots={isEdit && perms.update}
+                onStockChanged={() => void refreshItemStockTotals()}
               />
             </TabsContent>
 

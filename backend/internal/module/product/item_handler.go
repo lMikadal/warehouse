@@ -3,6 +3,7 @@ package product
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -194,6 +195,189 @@ func (h *ItemHandler) listStocks(c *echo.Context) error {
 	return c.JSON(http.StatusOK, api.NewListResponse(rows, int64(total), q))
 }
 
+type stockCreateBody struct {
+	BinID           int64    `json:"bin_id"`
+	SupplierUserID  *int64   `json:"supplier_user_id"`
+	OrderQuantity   float64  `json:"order_quantity"`
+	OrderFreeGift   float64  `json:"order_free_gift"`
+	Quantity        float64  `json:"quantity"`
+	RemainQuantity  float64  `json:"remain_quantity"`
+	CostPerUnit     float64  `json:"cost_per_unit"`
+	DiscountPerUnit float64  `json:"discount_per_unit"`
+	SellPrice       float64  `json:"sell_price"`
+	IsUsed          bool     `json:"is_used"`
+	ReceivedAt      *string  `json:"received_at"`
+	PoSKU           *string  `json:"po_sku"`
+}
+
+func (h *ItemHandler) createStock(c *echo.Context) error {
+	itemID, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	var body stockCreateBody
+	if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
+	}
+	in := StockCreateInput{
+		BinID:           body.BinID,
+		SupplierUserID:  body.SupplierUserID,
+		OrderQuantity:   body.OrderQuantity,
+		OrderFreeGift:   body.OrderFreeGift,
+		Quantity:        body.Quantity,
+		RemainQuantity:  body.RemainQuantity,
+		CostPerUnit:     body.CostPerUnit,
+		DiscountPerUnit: body.DiscountPerUnit,
+		SellPrice:       body.SellPrice,
+		IsUsed:          body.IsUsed,
+	}
+	if body.ReceivedAt != nil && strings.TrimSpace(*body.ReceivedAt) != "" {
+		t, err := time.Parse("2006-01-02", strings.TrimSpace(*body.ReceivedAt))
+		if err != nil {
+			t, err = time.Parse(time.RFC3339, strings.TrimSpace(*body.ReceivedAt))
+		}
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid received_at"})
+		}
+		in.ReceivedAt = &t
+	}
+	if body.PoSKU != nil {
+		sku := strings.TrimSpace(*body.PoSKU)
+		if sku != "" {
+			in.PoSKUSet = true
+			in.PoSKU = sku
+		}
+	}
+	stockID, err := h.repo.CreateStock(c.Request().Context(), itemID, in, httputil.ActorID(c))
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		if errors.Is(err, ErrBinInUse) {
+			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "conflict", Message: "bin in use"})
+		}
+		if errors.Is(err, ErrValidation) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
+		}
+		applog.HTTPError(c, "create product item stock", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
+	}
+	return c.JSON(http.StatusCreated, map[string]any{"id": stockID})
+}
+
+type stockPatchBody struct {
+	OrderQuantity   *float64 `json:"order_quantity"`
+	OrderFreeGift   *float64 `json:"order_free_gift"`
+	Quantity        *float64 `json:"quantity"`
+	RemainQuantity  *float64 `json:"remain_quantity"`
+	CostPerUnit     *float64 `json:"cost_per_unit"`
+	DiscountPerUnit *float64 `json:"discount_per_unit"`
+	SellPrice       *float64 `json:"sell_price"`
+	IsUsed          *bool    `json:"is_used"`
+	ReceivedAt      *string  `json:"received_at"`
+	SupplierUserID  *int64   `json:"supplier_user_id"`
+	PoSKU           *string  `json:"po_sku"`
+}
+
+func stockPatchInputFromBody(body stockPatchBody, raw map[string]json.RawMessage) (StockPatchInput, error) {
+	in := StockPatchInput{
+		OrderQuantity:   body.OrderQuantity,
+		OrderFreeGift:   body.OrderFreeGift,
+		Quantity:        body.Quantity,
+		RemainQuantity:  body.RemainQuantity,
+		CostPerUnit:     body.CostPerUnit,
+		DiscountPerUnit: body.DiscountPerUnit,
+		SellPrice:       body.SellPrice,
+		IsUsed:          body.IsUsed,
+	}
+	if _, ok := raw["received_at"]; ok {
+		if body.ReceivedAt == nil || strings.TrimSpace(*body.ReceivedAt) == "" {
+			in.ReceivedAtClear = true
+		} else {
+			t, err := parseStockReceivedAt(*body.ReceivedAt)
+			if err != nil {
+				return in, err
+			}
+			in.ReceivedAtSet = true
+			in.ReceivedAt = &t
+		}
+	}
+	if _, ok := raw["supplier_user_id"]; ok {
+		if body.SupplierUserID == nil {
+			in.SupplierClear = true
+		} else {
+			in.SupplierSet = true
+			in.SupplierUserID = body.SupplierUserID
+		}
+	}
+	if _, ok := raw["po_sku"]; ok {
+		if body.PoSKU == nil || strings.TrimSpace(*body.PoSKU) == "" {
+			in.PoSKUClear = true
+		} else {
+			in.PoSKUSet = true
+			in.PoSKU = strings.TrimSpace(*body.PoSKU)
+		}
+	}
+	return in, nil
+}
+
+func (h *ItemHandler) patchStock(c *echo.Context) error {
+	itemID, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	stockID, err := httputil.PathID(c, "stockId")
+	if err != nil {
+		return err
+	}
+	data, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
+	}
+	var body stockPatchBody
+	if err := json.Unmarshal(data, &body); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
+	}
+	in, err := stockPatchInputFromBody(body, raw)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
+	}
+	if err := h.repo.UpdateStock(c.Request().Context(), itemID, stockID, in, httputil.ActorID(c)); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		if errors.Is(err, ErrValidation) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
+		}
+		applog.HTTPError(c, "patch product item stock", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "update failed"})
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *ItemHandler) deleteStock(c *echo.Context) error {
+	itemID, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	stockID, err := httputil.PathID(c, "stockId")
+	if err != nil {
+		return err
+	}
+	if err := h.repo.DeleteStock(c.Request().Context(), itemID, stockID, httputil.ActorID(c)); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		applog.HTTPError(c, "delete product item stock", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "delete failed"})
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
 func (h *ItemHandler) warehousePlacements(c *echo.Context) error {
 	id, err := httputil.PathID(c, "id")
 	if err != nil {
@@ -205,6 +389,8 @@ func (h *ItemHandler) warehousePlacements(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load placements"})
 	}
 	type rowJSON struct {
+		PlacementID   int64   `json:"placement_id"`
+		BinID         int64   `json:"bin_id"`
 		WarehouseName string  `json:"warehouse_name"`
 		ZoneName      string  `json:"zone_name"`
 		ShelfName     string  `json:"shelf_name"`

@@ -55,6 +55,56 @@ export async function handleProductItemWarehousePlacements(
   );
 }
 
+export async function handleProductItemStocks(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = qs
+    ? `${itemsBase}/${id}/stocks?${qs}`
+    : `${itemsBase}/${id}/stocks`;
+  return proxyAuthedBackendJson(request, path);
+}
+
+export async function handleProductItemStockCreate(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  return proxyAuthedBackendJson(request, `${itemsBase}/${id}/stocks`, {
+    method: "POST",
+    body: parsed.body,
+  });
+}
+
+export async function handleProductItemStockPatch(
+  request: Request,
+  id: string,
+  stockId: string
+): Promise<NextResponse> {
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  return proxyAuthedBackendJson(
+    request,
+    `${itemsBase}/${id}/stocks/${stockId}`,
+    { method: "PATCH", body: parsed.body }
+  );
+}
+
+export async function handleProductItemStockDelete(
+  request: Request,
+  id: string,
+  stockId: string
+): Promise<NextResponse> {
+  return proxyAuthedBackendJson(
+    request,
+    `${itemsBase}/${id}/stocks/${stockId}`,
+    { method: "DELETE" }
+  );
+}
+
 export async function handleProductItemHistoryPurchase(
   request: Request,
   id: string

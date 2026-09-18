@@ -6,7 +6,7 @@ Backend for **product_list** / **product_item** browse and aggregate saves.
 
 - [x] `GET /product/items` browse + aggregates (stock, warehouses, cars)
 - [x] `PATCH` / `DELETE /product/items/:id` (+ full item body on PATCH)
-- [x] Modal helpers: warehouse placements, list cars
+- [x] Modal helpers: warehouse placements (`placement_id`, `bin_id`), list cars, item stock lots (`GET/POST/PATCH/DELETE …/items/:id/stocks`; create requires existing placement + rejects alternate SKU; `po_sku` on create; single `is_used` lot per `product_item`)
 - [x] `GET/POST/PATCH/DELETE /product/lists` aggregate
 - [x] History stub: `GET …/history/purchase` · `…/history/sales`
 - [x] Unit tests (`list_validation_test.go`, item/list repos)

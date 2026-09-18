@@ -38,6 +38,8 @@ type Props = {
   expandVariantKey: string | null;
   onExpandVariantHandled: () => void;
   canCloneItem: boolean;
+  canMutateLots: boolean;
+  onStockChanged?: () => void;
 };
 
 export function ProductListFormPricingTab({
@@ -50,6 +52,8 @@ export function ProductListFormPricingTab({
   expandVariantKey,
   onExpandVariantHandled,
   canCloneItem,
+  canMutateLots,
+  onStockChanged,
 }: Props) {
   const tForm = useTranslations("productListForm");
   const tError = useTranslations("error");
@@ -179,6 +183,7 @@ export function ProductListFormPricingTab({
             key={key}
             item={item}
             listSku={draft.sku}
+            listSupplierIds={draft.supplier_ids ?? []}
             vat={vat}
             saleChannels={saleChannels}
             expanded={expanded[key] ?? item._open === true}
@@ -194,6 +199,8 @@ export function ProductListFormPricingTab({
             allItems={draft.items}
             canCloneItem={canCloneItem}
             onCloneAlternateSku={(suffix) => cloneAlternateSku(index, suffix)}
+            canMutateLots={canMutateLots}
+            onStockChanged={onStockChanged}
           />
         );
       })}

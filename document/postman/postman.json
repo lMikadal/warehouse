@@ -1229,7 +1229,8 @@
               "request": {
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
-                "url": "{{baseUrl}}/product/items/1/warehouse-placements"
+                "url": "{{baseUrl}}/product/items/1/warehouse-placements",
+                "description": "Rows: placement_id, bin_id, warehouse→bin path labels, aggregated quantity (lot form bin picker)."
               }
             },
             {
@@ -1239,6 +1240,46 @@
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": "{{baseUrl}}/product/items/1/stocks?page=1&limit=10",
                 "description": "Paginated product_item_stock rows for lot dialog on product list form."
+              }
+            },
+            {
+              "name": "Create item stock lot",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bin_id\": 1,\n  \"quantity\": 10,\n  \"remain_quantity\": 10,\n  \"cost_per_unit\": 100,\n  \"sell_price\": 150,\n  \"received_at\": \"2026-09-18\",\n  \"po_sku\": \"PO-2026010006\",\n  \"supplier_user_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/product/items/1/stocks",
+                "description": "Creates a lot; bin_id must match an existing product_item_warehouse placement for this item (400 validation if missing). Rejects alternate-SKU items (old_product_item_id set). Optional po_sku resolves purchase_order_item_id for this product_item. Server snapshots active setting_vat vat_type + rate onto product_item_stock."
+              }
+            },
+            {
+              "name": "Patch item stock lot",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Accept-Language", "value": "th" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"remain_quantity\": 8,\n  \"is_used\": true,\n  \"received_at\": \"2024-05-21\",\n  \"supplier_user_id\": 1,\n  \"po_sku\": \"PO-2026010006\"\n}"
+                },
+                "url": "{{baseUrl}}/product/items/1/stocks/1",
+                "description": "Optional received_at (ISO or YYYY-MM-DD), supplier_user_id (null clears), po_sku (trimmed PO number → purchase_order_item_id for this product_item; empty clears PO link)."
+              }
+            },
+            {
+              "name": "Delete item stock lot",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items/1/stocks/1"
               }
             },
             {

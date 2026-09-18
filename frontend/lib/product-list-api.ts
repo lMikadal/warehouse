@@ -126,6 +126,8 @@ export async function deleteProductItem(id: number): Promise<void> {
 }
 
 export type WarehousePlacementRow = {
+  placement_id: number;
+  bin_id: number;
   warehouse_name: string;
   zone_name: string;
   shelf_name: string;
@@ -139,16 +141,53 @@ export type ProductItemStockRow = {
   product_item_warehouse_id: number;
   bin_id: number;
   bin_label: string;
+  bin_sku?: string;
+  partner_name?: string;
+  po_sku?: string;
+  purchase_order_item_id?: number | null;
   order_quantity: number;
   order_free_gift: number;
   quantity: number;
   remain_quantity: number;
   cost_per_unit: number;
   discount_per_unit: number;
+  vat_type: "exclude" | "include";
+  vat_rate: number;
   sell_price: number;
   is_used: boolean;
   received_at?: string | null;
   supplier_user_id?: number | null;
+};
+
+export type ProductItemStockCreateBody = {
+  bin_id: number;
+  supplier_user_id?: number | null;
+  order_quantity?: number;
+  order_free_gift?: number;
+  quantity: number;
+  remain_quantity: number;
+  cost_per_unit: number;
+  discount_per_unit?: number;
+  sell_price: number;
+  is_used?: boolean;
+  received_at?: string;
+  po_sku?: string | null;
+};
+
+export type ProductItemStockPatchBody = {
+  order_quantity?: number;
+  order_free_gift?: number;
+  quantity?: number;
+  remain_quantity?: number;
+  cost_per_unit?: number;
+  discount_per_unit?: number;
+  sell_price?: number;
+  is_used?: boolean;
+  /** ISO or YYYY-MM-DD; empty string clears. */
+  received_at?: string | null;
+  supplier_user_id?: number | null;
+  /** PO number; empty string clears purchase_order_item_id. */
+  po_sku?: string | null;
 };
 
 export async function fetchProductItemStocks(
@@ -164,6 +203,59 @@ export async function fetchProductItemStocks(
   });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as ListResponse<ProductItemStockRow>;
+}
+
+export async function fetchAllProductItemStocks(
+  locale: string,
+  itemId: number
+): Promise<ProductItemStockRow[]> {
+  const limit = 100;
+  let page = 1;
+  const all: ProductItemStockRow[] = [];
+  for (;;) {
+    const res = await fetchProductItemStocks(locale, itemId, { page, limit });
+    all.push(...res.items);
+    if (all.length >= res.meta.total || res.items.length === 0) break;
+    page += 1;
+  }
+  return all;
+}
+
+export async function createProductItemStock(
+  itemId: number,
+  body: ProductItemStockCreateBody
+): Promise<number> {
+  const res = await authFetch(`${BFF}/items/${itemId}/stocks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseError(res);
+  const data = (await res.json()) as { id: number };
+  return data.id;
+}
+
+export async function updateProductItemStock(
+  itemId: number,
+  stockId: number,
+  body: ProductItemStockPatchBody
+): Promise<void> {
+  const res = await authFetch(`${BFF}/items/${itemId}/stocks/${stockId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseError(res);
+}
+
+export async function deleteProductItemStock(
+  itemId: number,
+  stockId: number
+): Promise<void> {
+  const res = await authFetch(`${BFF}/items/${itemId}/stocks/${stockId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw await parseError(res);
 }
 
 export async function fetchProductItemWarehousePlacements(

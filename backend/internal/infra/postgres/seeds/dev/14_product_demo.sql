@@ -185,18 +185,80 @@ ON CONFLICT (id) DO UPDATE SET
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;
 
-INSERT INTO product_item_stock (id, product_item_id, product_item_warehouse_id, purchase_order_item_id, order_quantity, order_free_gift, quantity, remain_quantity, cost_per_unit, discount_per_unit, sell_price, is_used, received_at, created_by, updated_by, created_at, updated_at)
+-- purchase_order demo (after product_item; before product_item_stock FK — see also 14_purchase_order_demo.sql)
+INSERT INTO purchase_order (
+  id, sku, purchase_request_id, supplier_user_id, status, ordered_at,
+  vat_type, vat_rate, discount, special_discount, total_price, note,
+  created_by, updated_by, created_at, updated_at
+)
 VALUES
-  (1, 1, 1, 1, 48, 2, 50, 10, 6.5, 0.2, 10, TRUE, '2024-05-20T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (2, 2, 2, NULL, 0, 0, 12, 12, 0, 0, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (3, 3, 3, NULL, 0, 0, 7, 7, 0, 0, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (4, 4, 4, NULL, 0, 0, 4, 4, 0, 0, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (5, 5, 5, NULL, 0, 0, 18400, 18400, 0, 0, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (6, 6, 6, NULL, 0, 0, 9200, 9200, 0, 0, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (7, 1, 7, 2, 28, 2, 30, 5, 6, 0.15, 9.5, FALSE, '2024-06-15T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (8, 1, 8, 3, 18, 2, 20, 0, 5.8, 0.1, 10.5, FALSE, '2024-08-01T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+  (1, 'PO-2026010004', NULL, 1, 'receive_completed', '2026-01-04T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2026-01-04T10:00:00.000Z', '2026-01-04T10:00:00.000Z'),
+  (2, 'PO-2026010006', NULL, 1, 'receive_completed', '2026-01-06T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2026-01-06T10:00:00.000Z', '2026-01-06T10:00:00.000Z'),
+  (3, 'PO-2026020018', NULL, 2, 'receive_completed', '2026-02-18T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2026-02-18T10:00:00.000Z', '2026-02-18T10:00:00.000Z'),
+  (4, 'PO-2026030022', NULL, 2, 'receive_completed', '2026-03-22T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2026-03-22T10:00:00.000Z', '2026-03-22T10:00:00.000Z'),
+  (5, 'PO-2025050015', NULL, 1, 'receive_completed', '2025-05-15T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2025-05-15T10:00:00.000Z', '2025-05-15T10:00:00.000Z'),
+  (6, 'PO-2025110002', NULL, 3, 'receive_completed', '2025-11-02T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2025-11-02T10:00:00.000Z', '2025-11-02T10:00:00.000Z'),
+  (7, 'PO-2024030010', NULL, 2, 'receive_completed', '2024-03-10T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2024-03-10T10:00:00.000Z', '2024-03-10T10:00:00.000Z'),
+  (8, 'PO-2024080020', NULL, 3, 'receive_completed', '2024-08-20T10:00:00.000Z', 'exclude', 7.00, 0, 0, 0, '', 1, 1, '2024-08-20T10:00:00.000Z', '2024-08-20T10:00:00.000Z')
 ON CONFLICT (id) DO UPDATE SET
+  sku = EXCLUDED.sku,
+  supplier_user_id = EXCLUDED.supplier_user_id,
+  status = EXCLUDED.status,
+  vat_type = EXCLUDED.vat_type,
+  vat_rate = EXCLUDED.vat_rate,
+  deleted_at = NULL,
+  updated_at = EXCLUDED.updated_at;
+
+SELECT setval(pg_get_serial_sequence('purchase_order', 'id'), GREATEST((SELECT MAX(id) FROM purchase_order), 1));
+
+INSERT INTO purchase_order_item (
+  id, purchase_order_id, status, type, product_item_id, identification_number,
+  qty, free_gift, unit, price_per_unit, vat_rate, discount, total_price, note,
+  created_by, updated_by, created_at, updated_at
+)
+VALUES
+  (1, 1, 'receive_approved', 'catalog', 1, '', 48, 2, 'piece', 6.5, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, 2, 'receive_approved', 'catalog', 1, '', 28, 2, 'piece', 6.0, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (3, 2, 'receive_approved', 'catalog', 1, '', 18, 2, 'piece', 5.8, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (4, 3, 'receive_approved', 'catalog', 1, '', 40, 3, 'piece', 6.2, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (5, 3, 'receive_approved', 'catalog', 2, '', 20, 0, 'set', 12.0, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (6, 4, 'receive_approved', 'catalog', 1, '', 30, 2, 'piece', 6.4, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (7, 4, 'receive_approved', 'catalog', 2, '', 15, 1, 'set', 11.5, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (8, 5, 'receive_approved', 'catalog', 1, '', 50, 5, 'piece', 6.0, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (9, 6, 'receive_approved', 'catalog', 1, '', 25, 2, 'piece', 5.9, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (10, 6, 'receive_approved', 'catalog', 2, '', 10, 0, 'set', 12.5, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (11, 7, 'receive_approved', 'catalog', 1, '', 60, 4, 'piece', 5.7, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (12, 8, 'receive_approved', 'catalog', 2, '', 12, 1, 'set', 11.0, 7.00, 0, 0, '', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+ON CONFLICT (id) DO UPDATE SET
+  purchase_order_id = EXCLUDED.purchase_order_id,
+  product_item_id = EXCLUDED.product_item_id,
+  status = EXCLUDED.status,
+  qty = EXCLUDED.qty,
+  free_gift = EXCLUDED.free_gift,
+  deleted_at = NULL,
+  updated_at = EXCLUDED.updated_at;
+
+SELECT setval(pg_get_serial_sequence('purchase_order_item', 'id'), GREATEST((SELECT MAX(id) FROM purchase_order_item), 1));
+
+INSERT INTO product_item_stock (id, product_item_id, product_item_warehouse_id, purchase_order_item_id, supplier_user_id, order_quantity, order_free_gift, quantity, remain_quantity, cost_per_unit, discount_per_unit, vat_type, vat_rate, sell_price, is_used, received_at, created_by, updated_by, created_at, updated_at)
+VALUES
+  (1, 1, 1, 1, NULL, 48, 2, 50, 10, 6.5, 0.2, 'exclude', 7.00, 10, TRUE, '2024-05-20T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, 2, 2, NULL, 1, 0, 0, 12, 12, 10, 0, 'exclude', 7.00, 20, TRUE, '2024-06-01T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (3, 3, 3, 5, NULL, 20, 0, 7, 7, 12, 0, 'exclude', 7.00, 0, TRUE, '2024-07-10T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (4, 4, 4, NULL, NULL, 0, 0, 4, 4, 0, 0, 'exclude', 7.00, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (5, 5, 5, NULL, NULL, 0, 0, 18400, 18400, 0, 0, 'exclude', 7.00, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (6, 6, 6, NULL, NULL, 0, 0, 9200, 9200, 0, 0, 'exclude', 7.00, 0, TRUE, NULL, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (7, 1, 7, 2, NULL, 28, 2, 30, 5, 6, 0.15, 'exclude', 7.00, 9.5, FALSE, '2024-06-15T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (8, 1, 8, 3, NULL, 18, 2, 20, 0, 5.8, 0.1, 'exclude', 7.00, 10.5, FALSE, '2024-08-01T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+ON CONFLICT (id) DO UPDATE SET
+  purchase_order_item_id = EXCLUDED.purchase_order_item_id,
+  supplier_user_id = EXCLUDED.supplier_user_id,
   remain_quantity = EXCLUDED.remain_quantity,
+  cost_per_unit = EXCLUDED.cost_per_unit,
+  sell_price = EXCLUDED.sell_price,
+  received_at = EXCLUDED.received_at,
+  vat_type = EXCLUDED.vat_type,
+  vat_rate = EXCLUDED.vat_rate,
   is_used = EXCLUDED.is_used,
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;

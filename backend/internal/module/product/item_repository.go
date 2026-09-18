@@ -304,6 +304,8 @@ func (r *ItemRepository) WarehousePlacements(ctx context.Context, itemID int64, 
 	}
 	rows, err := r.db.QueryContext(ctx, `
 SELECT
+  piw.id,
+  piw.bin_id,
   COALESCE(wl.name, wl2.name, '—'),
   COALESCE(zn.name, zn2.name, '—'),
   COALESCE(sh.name, sh2.name, '—'),
@@ -328,7 +330,7 @@ LEFT JOIN warehouse_list_language bn ON bn.warehouse_list_id = bin.id AND bn.loc
 LEFT JOIN warehouse_list_language bn2 ON bn2.warehouse_list_id = bin.id AND bn2.locale = 'th'
 LEFT JOIN product_item_stock st ON st.product_item_warehouse_id = piw.id AND st.deleted_at IS NULL
 WHERE piw.product_item_id = $1 AND piw.deleted_at IS NULL
-GROUP BY piw.id, wl.name, wl2.name, zn.name, zn2.name, sh.name, sh2.name, rk.name, rk2.name, bn.name, bn2.name
+GROUP BY piw.id, piw.bin_id, wl.name, wl2.name, zn.name, zn2.name, sh.name, sh2.name, rk.name, rk2.name, bn.name, bn2.name
 ORDER BY piw.id`, itemID, locale)
 	if err != nil {
 		return nil, err
@@ -337,88 +339,15 @@ ORDER BY piw.id`, itemID, locale)
 	var out []WarehousePlacementRow
 	for rows.Next() {
 		var row WarehousePlacementRow
-		if err := rows.Scan(&row.WarehouseName, &row.ZoneName, &row.ShelfName, &row.RackName, &row.BinName, &row.Quantity); err != nil {
+		if err := rows.Scan(
+			&row.PlacementID, &row.BinID,
+			&row.WarehouseName, &row.ZoneName, &row.ShelfName, &row.RackName, &row.BinName, &row.Quantity,
+		); err != nil {
 			return nil, err
 		}
 		out = append(out, row)
 	}
 	return out, rows.Err()
-}
-
-type ItemStockRow struct {
-	ID                     int64    `json:"id"`
-	ProductItemWarehouseID int64    `json:"product_item_warehouse_id"`
-	BinID                  int64    `json:"bin_id"`
-	BinLabel               string   `json:"bin_label"`
-	OrderQuantity          float64  `json:"order_quantity"`
-	OrderFreeGift          float64  `json:"order_free_gift"`
-	Quantity               float64  `json:"quantity"`
-	RemainQuantity         float64  `json:"remain_quantity"`
-	CostPerUnit            float64  `json:"cost_per_unit"`
-	DiscountPerUnit        float64  `json:"discount_per_unit"`
-	SellPrice              float64  `json:"sell_price"`
-	IsUsed                 bool     `json:"is_used"`
-	ReceivedAt             *string  `json:"received_at,omitempty"`
-	SupplierUserID         *int64   `json:"supplier_user_id,omitempty"`
-}
-
-func (r *ItemRepository) ListStocks(ctx context.Context, itemID int64, locale string, page, limit int) ([]ItemStockRow, int, error) {
-	if locale == "" {
-		locale = "th"
-	}
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 100 {
-		limit = 10
-	}
-	offset := (page - 1) * limit
-	var total int
-	if err := r.db.QueryRowContext(ctx, `
-SELECT COUNT(*) FROM product_item_stock
-WHERE product_item_id = $1 AND deleted_at IS NULL`, itemID).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-	rows, err := r.db.QueryContext(ctx, `
-SELECT s.id, s.product_item_warehouse_id, piw.bin_id,
-  COALESCE(bn.name, bn2.name, '—'),
-  s.order_quantity::float8, s.order_free_gift::float8, s.quantity::float8, s.remain_quantity::float8,
-  s.cost_per_unit::float8, s.discount_per_unit::float8, s.sell_price::float8, s.is_used,
-  s.received_at, s.supplier_user_id
-FROM product_item_stock s
-INNER JOIN product_item_warehouse piw ON piw.id = s.product_item_warehouse_id AND piw.deleted_at IS NULL
-INNER JOIN warehouse_list bin ON bin.id = piw.bin_id AND bin.type = 'bin'
-LEFT JOIN warehouse_list_language bn ON bn.warehouse_list_id = bin.id AND bn.locale = $2
-LEFT JOIN warehouse_list_language bn2 ON bn2.warehouse_list_id = bin.id AND bn2.locale = 'th'
-WHERE s.product_item_id = $1 AND s.deleted_at IS NULL
-ORDER BY s.created_at ASC, s.id ASC
-LIMIT $3 OFFSET $4`, itemID, locale, limit, offset)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-	var out []ItemStockRow
-	for rows.Next() {
-		var row ItemStockRow
-		var recv sql.NullTime
-		var sup sql.NullInt64
-		if err := rows.Scan(&row.ID, &row.ProductItemWarehouseID, &row.BinID, &row.BinLabel,
-			&row.OrderQuantity, &row.OrderFreeGift, &row.Quantity, &row.RemainQuantity,
-			&row.CostPerUnit, &row.DiscountPerUnit, &row.SellPrice, &row.IsUsed,
-			&recv, &sup); err != nil {
-			return nil, 0, err
-		}
-		if recv.Valid {
-			s := recv.Time.Format("2006-01-02T15:04:05Z07:00")
-			row.ReceivedAt = &s
-		}
-		if sup.Valid {
-			v := sup.Int64
-			row.SupplierUserID = &v
-		}
-		out = append(out, row)
-	}
-	return out, total, rows.Err()
 }
 
 func parseOptionalIDParam(s string) (*int64, error) {

@@ -49,6 +49,8 @@ type CarFitmentRow struct {
 }
 
 type WarehousePlacementRow struct {
+	PlacementID   int64
+	BinID         int64
 	WarehouseName string
 	ZoneName      string
 	ShelfName     string

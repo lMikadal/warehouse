@@ -39,6 +39,7 @@ type SaleChannel = { id: number; name: string };
 type Props = {
   item: ListItemBody;
   listSku: string;
+  listSupplierIds: number[];
   vat: SettingVatItem | null;
   saleChannels: SaleChannel[];
   expanded: boolean;
@@ -54,11 +55,14 @@ type Props = {
   allItems: ListItemBody[];
   canCloneItem: boolean;
   onCloneAlternateSku: (newSuffix: string) => void | Promise<void>;
+  canMutateLots: boolean;
+  onStockChanged?: () => void;
 };
 
 export function ProductListFormVariantCard({
   item,
   listSku,
+  listSupplierIds,
   vat,
   saleChannels,
   expanded,
@@ -72,6 +76,8 @@ export function ProductListFormVariantCard({
   allItems,
   canCloneItem,
   onCloneAlternateSku,
+  canMutateLots,
+  onStockChanged,
 }: Props) {
   const locale = useLocale() as DisplayLocale;
   const tList = useTranslations("productList");
@@ -81,6 +87,7 @@ export function ProductListFormVariantCard({
 
   const [whOpen, setWhOpen] = useState(false);
   const [lotOpen, setLotOpen] = useState(false);
+  const [lotSession, setLotSession] = useState(0);
 
   const stock = item.total_stock ?? 0;
   const low =
@@ -192,7 +199,10 @@ export function ProductListFormVariantCard({
             saleChannels={saleChannels}
             onChange={onChange}
             loadSuppliers={loadSuppliers}
-            onViewLots={() => setLotOpen(true)}
+            onViewLots={() => {
+              setLotSession((n) => n + 1);
+              setLotOpen(true);
+            }}
             fieldErrors={fieldErrors}
             onClearFieldError={onClearFieldError}
             allItems={allItems}
@@ -208,10 +218,15 @@ export function ProductListFormVariantCard({
         onOpenChange={setWhOpen}
       />
       <ProductListFormVariantLotModal
+        key={lotSession}
         item={item}
         listSku={listSku}
+        listSupplierIds={listSupplierIds}
         open={lotOpen}
         onOpenChange={setLotOpen}
+        canMutate={canMutateLots}
+        loadSuppliers={loadSuppliers}
+        onStockChanged={onStockChanged}
       />
     </>
   );

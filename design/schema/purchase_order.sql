@@ -17,6 +17,7 @@ CREATE TABLE purchase_order (
     supplier_user_id     BIGINT               REFERENCES supplier_user(id) ON DELETE SET NULL, -- supplier
     status              purchase_order_status NOT NULL DEFAULT 'draft', -- PO workflow state
     ordered_at          TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP, -- PO placement timestamp
+    vat_type            setting_vat_type      NOT NULL DEFAULT 'exclude', -- snapshot VAT treatment (see setting_vat)
     vat_rate            NUMERIC(5,2)          NOT NULL DEFAULT 0,       -- VAT rate snapshot
     discount            NUMERIC(15,4)         NOT NULL DEFAULT 0,       -- Σ line discounts (from purchase_order_item; maintained by app)
     special_discount    NUMERIC(15,4)         NOT NULL DEFAULT 0,       -- additional header discount

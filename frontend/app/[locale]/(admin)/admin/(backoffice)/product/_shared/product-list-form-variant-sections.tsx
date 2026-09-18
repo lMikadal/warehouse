@@ -648,7 +648,6 @@ export function ProductListFormVariantSections({
                   {item.id ? (
                     <Button
                       type="button"
-                      variant="outline"
                       size="lg"
                       className="shrink-0"
                       onClick={(e) => {

@@ -20,7 +20,6 @@ import {
 import {
   buildPageItems,
   PAGE_SIZE_OPTIONS,
-  type PageSizeOption,
 } from "@/lib/crud-pagination";
 import { cn } from "@/lib/utils";
 
@@ -31,10 +30,12 @@ export type CrudPaginationMeta = {
 
 export type CrudPaginationBarProps = {
   page: number;
-  pageSize: PageSizeOption;
+  pageSize: number;
   meta: CrudPaginationMeta;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: PageSizeOption) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  /** Defaults to {@link PAGE_SIZE_OPTIONS} (10 / 25 / 50 / 100). */
+  pageSizeOptions?: readonly number[];
   className?: string;
 };
 
@@ -44,6 +45,7 @@ export function CrudPaginationBar({
   meta,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions = PAGE_SIZE_OPTIONS,
   className,
 }: CrudPaginationBarProps) {
   const t = useTranslations("crud");
@@ -67,7 +69,7 @@ export function CrudPaginationBar({
           <Select
             value={String(pageSize)}
             onValueChange={(v) => {
-              if (v != null) onPageSizeChange(Number(v) as PageSizeOption);
+              if (v != null) onPageSizeChange(Number(v));
             }}
           >
             <SelectTrigger
@@ -77,7 +79,7 @@ export function CrudPaginationBar({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((n) => (
+              {pageSizeOptions.map((n) => (
                 <SelectItem key={n} value={String(n)}>
                   {n}
                 </SelectItem>

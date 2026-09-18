@@ -250,7 +250,7 @@ ON CONFLICT (id) DO UPDATE SET
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;
 
-INSERT INTO product_item_stock (id, product_item_id, product_item_warehouse_id, purchase_order_item_id, order_quantity, order_free_gift, quantity, remain_quantity, cost_per_unit, discount_per_unit, sell_price, is_used, received_at, created_by, updated_by, created_at, updated_at)
+INSERT INTO product_item_stock (id, product_item_id, product_item_warehouse_id, purchase_order_item_id, order_quantity, order_free_gift, quantity, remain_quantity, cost_per_unit, discount_per_unit, vat_type, vat_rate, sell_price, is_used, received_at, created_by, updated_by, created_at, updated_at)
 VALUES
 `;
 prodSql += pis
@@ -262,14 +262,18 @@ prodSql += pis
     const rq = r.remain_quantity ?? 0;
     const cpu = r.cost_per_unit ?? 0;
     const dpu = r.discount_per_unit ?? 0;
+    const vt = sqlStr(r.vat_type === "include" ? "include" : "exclude");
+    const vr = r.vat_rate ?? 7;
     const sp = r.sell_price ?? 0;
     const recv = r.received_at ? sqlStr(r.received_at) : "NULL";
-    return `  (${r.id}, ${r.product_item_id}, ${r.product_item_warehouse_id}, ${po}, ${oq}, ${ofg}, ${qty}, ${rq}, ${cpu}, ${dpu}, ${sp}, ${sqlBool(r.is_used)}, ${recv}, 1, 1, ${sqlStr(TS)}, ${sqlStr(TS)})`;
+    return `  (${r.id}, ${r.product_item_id}, ${r.product_item_warehouse_id}, ${po}, ${oq}, ${ofg}, ${qty}, ${rq}, ${cpu}, ${dpu}, ${vt}, ${vr}, ${sp}, ${sqlBool(r.is_used)}, ${recv}, 1, 1, ${sqlStr(TS)}, ${sqlStr(TS)})`;
   })
   .join(",\n");
 prodSql += `
 ON CONFLICT (id) DO UPDATE SET
   remain_quantity = EXCLUDED.remain_quantity,
+  vat_type = EXCLUDED.vat_type,
+  vat_rate = EXCLUDED.vat_rate,
   is_used = EXCLUDED.is_used,
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;
