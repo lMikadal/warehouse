@@ -134,6 +134,38 @@ export type WarehousePlacementRow = {
   quantity: number;
 };
 
+export type ProductItemStockRow = {
+  id: number;
+  product_item_warehouse_id: number;
+  bin_id: number;
+  bin_label: string;
+  order_quantity: number;
+  order_free_gift: number;
+  quantity: number;
+  remain_quantity: number;
+  cost_per_unit: number;
+  discount_per_unit: number;
+  sell_price: number;
+  is_used: boolean;
+  received_at?: string | null;
+  supplier_user_id?: number | null;
+};
+
+export async function fetchProductItemStocks(
+  locale: string,
+  itemId: number,
+  params: { page?: number; limit?: number } = {}
+): Promise<ListResponse<ProductItemStockRow>> {
+  const q = new URLSearchParams();
+  q.set("page", String(params.page ?? 1));
+  q.set("limit", String(params.limit ?? 10));
+  const res = await authFetch(`${BFF}/items/${itemId}/stocks?${q}`, {
+    headers: { Accept: "application/json", "Accept-Language": locale },
+  });
+  if (!res.ok) throw await parseError(res);
+  return (await res.json()) as ListResponse<ProductItemStockRow>;
+}
+
 export async function fetchProductItemWarehousePlacements(
   locale: string,
   itemId: number
@@ -174,6 +206,12 @@ export type LocaleBlock = {
   description?: string;
 };
 
+export type ListItemFileBody = {
+  id?: number | null;
+  system_file_id: number;
+  sort_order: number;
+};
+
 export type ListItemBody = {
   id?: number | null;
   sku?: string;
@@ -189,10 +227,15 @@ export type ListItemBody = {
   length?: number | null;
   height?: number | null;
   minimum_stock: number;
+  old_product_item_id?: number | null;
+  is_new: boolean;
   is_active: boolean;
   is_stopped: boolean;
   is_fake: boolean;
   promotion?: string;
+  total_stock?: number;
+  warehouse_root_count?: number;
+  low_stock?: boolean;
   names: { th: string; en: string };
   channel_prices?: { setting_sale_channel_id: number; price: number }[];
   suppliers?: {
@@ -202,6 +245,11 @@ export type ListItemBody = {
     discount_type: string;
   }[];
   warehouse_placements?: { id?: number | null; bin_id: number }[];
+  files?: ListItemFileBody[];
+  /** Client-only: expand pricing card on first render */
+  _open?: boolean;
+  /** Client-only: stable key for new drafts */
+  _draftKey?: string;
 };
 
 export type ListCarBody = {
@@ -221,7 +269,6 @@ export type ProductListAggregate = {
   tag?: string;
   note?: string;
   is_active: boolean;
-  is_new: boolean;
   product_brand_id?: number | null;
   product_category_id?: number | null;
   updated_at?: string;

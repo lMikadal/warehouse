@@ -1,6 +1,6 @@
 -- source: v1 product_products + v2 v2_product_products (UUID→BIGSERIAL)
 --   - kept:    sku, product_brand_id, product_category_id, is_active, audit
---   - restored: tag, supplier_sku, note, is_new (v1); product_list_code still holds factory/other codes
+--   - restored: tag, supplier_sku, note (v1); is_new lives on product_item; product_list_code holds factory/other codes
 --   - removed: sort_order (compute from name)
 CREATE TABLE product_list (
     id                   BIGSERIAL    PRIMARY KEY,              -- surrogate PK
@@ -10,7 +10,6 @@ CREATE TABLE product_list (
     tag                  TEXT         NOT NULL DEFAULT '',       -- comma-separated labels (e.g. ทดสอบ, 1, 2)
     supplier_sku         TEXT         NOT NULL DEFAULT '',       -- supplier-side SKU (v1 code_supplier)
     note                 TEXT         NOT NULL DEFAULT '',       -- admin note on product row (v1)
-    is_new               BOOLEAN      NOT NULL DEFAULT FALSE,    -- highlight as new product (v1)
     is_active            BOOLEAN      NOT NULL DEFAULT TRUE,    -- sellable when TRUE
     deleted_at           TIMESTAMPTZ,
     created_at           TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,

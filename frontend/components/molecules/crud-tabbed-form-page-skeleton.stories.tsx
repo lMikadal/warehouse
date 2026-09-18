@@ -18,3 +18,12 @@ export const SupplierForm: Story = {
     leftCardCount: 3,
   },
 };
+
+export const ProductListFormPricing: Story = {
+  args: {
+    showPageHeader: true,
+    showFixedFooter: true,
+    leftCardCount: 3,
+    pricingVariantStrips: 2,
+  },
+};

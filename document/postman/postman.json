@@ -1233,6 +1233,15 @@
               }
             },
             {
+              "name": "Item stock lots",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items/1/stocks?page=1&limit=10",
+                "description": "Paginated product_item_stock rows for lot dialog on product list form."
+              }
+            },
+            {
               "name": "Item history purchase (stub)",
               "request": {
                 "method": "GET",
@@ -1254,7 +1263,7 @@
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": "{{baseUrl}}/product/lists/1",
-                "description": "Aggregate includes product_list.updated_at (ISO timestamp) for form sidebar last-updated display."
+                "description": "Aggregate includes product_list.updated_at (ISO timestamp) for form sidebar last-updated display. Each items[] entry includes read-only total_stock, warehouse_root_count, low_stock, and files[] (product_item_file)."
               }
             },
             {
@@ -1284,7 +1293,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"sku\": \"PL-DEMO-1\",\n  \"is_active\": true,\n  \"is_new\": false,\n  \"product_brand_id\": 1,\n  \"product_category_id\": 3,\n  \"languages\": {\n    \"th\": { \"name\": \"สินค้าทดสอบ\", \"sub_name\": \"\", \"description\": \"\" },\n    \"en\": { \"name\": \"Demo product\", \"sub_name\": \"\", \"description\": \"\" }\n  },\n  \"factory_codes\": [],\n  \"other_codes\": [],\n  \"supplier_ids\": [],\n  \"cars\": [],\n  \"items\": [\n    {\n      \"price\": 100,\n      \"price_wholesale\": 0,\n      \"type_price\": \"manual\",\n      \"unit\": \"piece\",\n      \"qty_per_unit\": 1,\n      \"minimum_stock\": 0,\n      \"is_active\": true,\n      \"is_stopped\": false,\n      \"is_fake\": false,\n      \"names\": { \"th\": \"ตัวเลือก 1\", \"en\": \"Variant 1\" },\n      \"channel_prices\": [],\n      \"suppliers\": [],\n      \"warehouse_placements\": []\n    }\n  ]\n}"
+                  "raw": "{\n  \"sku\": \"PL-DEMO-1\",\n  \"is_active\": true,\n  \"product_brand_id\": 1,\n  \"product_category_id\": 3,\n  \"languages\": {\n    \"th\": { \"name\": \"สินค้าทดสอบ\", \"sub_name\": \"\", \"description\": \"\" },\n    \"en\": { \"name\": \"Demo product\", \"sub_name\": \"\", \"description\": \"\" }\n  },\n  \"factory_codes\": [],\n  \"other_codes\": [],\n  \"supplier_ids\": [],\n  \"cars\": [],\n  \"items\": [\n    {\n      \"price\": 100,\n      \"price_wholesale\": 0,\n      \"type_price\": \"manual\",\n      \"unit\": \"piece\",\n      \"qty_per_unit\": 1,\n      \"minimum_stock\": 0,\n      \"is_new\": false,\n      \"is_active\": true,\n      \"is_stopped\": false,\n      \"is_fake\": false,\n      \"names\": { \"th\": \"ตัวเลือก 1\", \"en\": \"Variant 1\" },\n      \"channel_prices\": [],\n      \"suppliers\": [],\n      \"warehouse_placements\": []\n    }\n  ]\n}"
                 },
                 "url": "{{baseUrl}}/product/lists"
               }

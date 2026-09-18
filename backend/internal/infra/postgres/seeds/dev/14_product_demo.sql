@@ -92,12 +92,12 @@ ON CONFLICT (product_attribute_id, locale) DO UPDATE SET
   name = EXCLUDED.name,
   updated_at = EXCLUDED.updated_at;
 
-INSERT INTO product_list (id, sku, product_brand_id, product_category_id, tag, supplier_sku, note, is_new, is_active, created_by, updated_by, created_at, updated_at)
+INSERT INTO product_list (id, sku, product_brand_id, product_category_id, tag, supplier_sku, note, is_active, created_by, updated_by, created_at, updated_at)
 VALUES
-  (1, 'P-LIST-001', 1, 3, 'OEM,ทดสอบ', 'SUP-001', '', TRUE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (2, 'P-LIST-002', 2, 4, 'น้ำมัน', 'SUP-002', '', FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (3, 'P-LIST-003', 1, 3, '', '', 'Demo low stock', FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (4, 'P-LIST-004', 2, 3, 'promo', 'SUP-004', '', TRUE, FALSE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+  (1, 'P-LIST-001', 1, 3, 'OEM,ทดสอบ', 'SUP-001', '', TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, 'P-LIST-002', 2, 4, 'น้ำมัน', 'SUP-002', '', TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (3, 'P-LIST-003', 1, 3, '', '', 'Demo low stock', TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (4, 'P-LIST-004', 2, 3, 'promo', 'SUP-004', '', FALSE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
 ON CONFLICT (id) DO UPDATE SET
   sku = EXCLUDED.sku,
   product_brand_id = EXCLUDED.product_brand_id,
@@ -105,7 +105,6 @@ ON CONFLICT (id) DO UPDATE SET
   tag = EXCLUDED.tag,
   supplier_sku = EXCLUDED.supplier_sku,
   note = EXCLUDED.note,
-  is_new = EXCLUDED.is_new,
   is_active = EXCLUDED.is_active,
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;
@@ -151,20 +150,21 @@ ON CONFLICT (id) DO UPDATE SET
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;
 
-INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_fake, is_active, created_by, updated_by, created_at, updated_at)
+INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_new, is_stopped, is_fake, is_active, created_by, updated_by, created_at, updated_at)
 VALUES
-  (1, 1, 'P-ITEM-001-A', '8851234567890', 'P-ITEM-001-A', 450, 400, 7, 'ส่วนลด 10% เดือนมีนาคม (ตัวอย่าง)', 'manual', 'piece', 1, 0.45, 10, 10, 15, 5, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (2, 1, 'P-ITEM-001-B', NULL, NULL, 890, 0, 0, '', 'manual', 'set', 2, NULL, NULL, NULL, NULL, 3, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (3, 2, 'P-ITEM-002-A', NULL, NULL, 1250.5, 0, 0, '', 'manual', 'liter', 4, NULL, NULL, NULL, NULL, 10, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (4, 2, 'P-ITEM-002-B', NULL, NULL, 620, 0, 0, '', 'manual', 'piece', 1, NULL, NULL, NULL, NULL, 8, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (5, 3, 'P-ITEM-003-A', NULL, NULL, 2100, 0, 0, '', 'manual', 'pair', 1, NULL, NULL, NULL, NULL, 20, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (6, 3, 'P-ITEM-003-B', NULL, NULL, 1800, 0, 0, '', 'manual', 'pair', 1, NULL, NULL, NULL, NULL, 10000, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (7, 4, 'P-ITEM-004-A', NULL, NULL, 320, 0, 0, '', 'manual', 'piece', 4, NULL, NULL, NULL, NULL, 5, FALSE, FALSE, FALSE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (8, 4, 'P-ITEM-004-B', NULL, NULL, 280, 0, 0, '', 'manual', 'box', 10, NULL, NULL, NULL, NULL, 2, FALSE, FALSE, FALSE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+  (1, 1, 'P-ITEM-001-A', '8851234567890', 'P-ITEM-001-A', 450, 400, 7, 'ส่วนลด 10% เดือนมีนาคม (ตัวอย่าง)', 'manual', 'piece', 1, 0.45, 10, 10, 15, 5, TRUE, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, 1, 'P-ITEM-001-B', NULL, NULL, 890, 0, 0, '', 'manual', 'set', 2, NULL, NULL, NULL, NULL, 3, TRUE, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (3, 2, 'P-ITEM-002-A', NULL, NULL, 1250.5, 0, 0, '', 'manual', 'liter', 4, NULL, NULL, NULL, NULL, 10, FALSE, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (4, 2, 'P-ITEM-002-B', NULL, NULL, 620, 0, 0, '', 'manual', 'piece', 1, NULL, NULL, NULL, NULL, 8, FALSE, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (5, 3, 'P-ITEM-003-A', NULL, NULL, 2100, 0, 0, '', 'manual', 'pair', 1, NULL, NULL, NULL, NULL, 20, FALSE, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (6, 3, 'P-ITEM-003-B', NULL, NULL, 1800, 0, 0, '', 'manual', 'pair', 1, NULL, NULL, NULL, NULL, 10000, FALSE, FALSE, FALSE, TRUE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (7, 4, 'P-ITEM-004-A', NULL, NULL, 320, 0, 0, '', 'manual', 'piece', 4, NULL, NULL, NULL, NULL, 5, TRUE, FALSE, FALSE, FALSE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (8, 4, 'P-ITEM-004-B', NULL, NULL, 280, 0, 0, '', 'manual', 'box', 10, NULL, NULL, NULL, NULL, 2, TRUE, FALSE, FALSE, FALSE, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
 ON CONFLICT (id) DO UPDATE SET
   product_list_id = EXCLUDED.product_list_id,
   sku = EXCLUDED.sku,
   price = EXCLUDED.price,
+  is_new = EXCLUDED.is_new,
   is_active = EXCLUDED.is_active,
   deleted_at = NULL,
   updated_at = EXCLUDED.updated_at;

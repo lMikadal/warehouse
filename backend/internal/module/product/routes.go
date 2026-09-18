@@ -31,6 +31,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	items.PATCH("/:id", itemH.patch)
 	items.DELETE("/:id", itemH.delete)
 	items.GET("/:id/warehouse-placements", itemH.warehousePlacements)
+	items.GET("/:id/stocks", itemH.listStocks)
 	items.GET("/:id/history/purchase", itemH.historyPurchase)
 	items.GET("/:id/history/sales", itemH.historySales)
 

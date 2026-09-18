@@ -59,29 +59,41 @@ type itemWarehouseBody struct {
 	BinID int64  `json:"bin_id"`
 }
 
+type itemFileBody struct {
+	ID           *int64 `json:"id,omitempty"`
+	SystemFileID int64  `json:"system_file_id"`
+	SortOrder    int    `json:"sort_order"`
+}
+
 type listItemBody struct {
-	ID            *int64                  `json:"id,omitempty"`
-	SKU           string                  `json:"sku,omitempty"`
-	Barcode       string                  `json:"barcode,omitempty"`
-	Qrcode        string                  `json:"qrcode,omitempty"`
-	Price         float64                 `json:"price"`
-	PriceWholesale float64                `json:"price_wholesale"`
-	TypePrice     string                  `json:"type_price"`
-	Unit          string                  `json:"unit"`
-	QtyPerUnit    int                     `json:"qty_per_unit"`
-	Weight        *float64                `json:"weight,omitempty"`
-	Width         *float64                `json:"width,omitempty"`
-	Length        *float64                `json:"length,omitempty"`
-	Height        *float64                `json:"height,omitempty"`
-	MinimumStock  int                     `json:"minimum_stock"`
-	IsActive      bool                    `json:"is_active"`
-	IsStopped     bool                    `json:"is_stopped"`
-	IsFake        bool                    `json:"is_fake"`
-	Promotion     string                  `json:"promotion,omitempty"`
-	Names         itemLangNames           `json:"names"`
-	ChannelPrices []itemChannelPriceBody  `json:"channel_prices,omitempty"`
-	Suppliers     []itemSupplierBody      `json:"suppliers,omitempty"`
-	Warehouses    []itemWarehouseBody     `json:"warehouse_placements,omitempty"`
+	ID                 *int64                 `json:"id,omitempty"`
+	SKU                string                 `json:"sku,omitempty"`
+	Barcode            string                 `json:"barcode,omitempty"`
+	Qrcode             string                 `json:"qrcode,omitempty"`
+	Price              float64                `json:"price"`
+	PriceWholesale     float64                `json:"price_wholesale"`
+	TypePrice          string                 `json:"type_price"`
+	Unit               string                 `json:"unit"`
+	QtyPerUnit         int                    `json:"qty_per_unit"`
+	Weight             *float64               `json:"weight,omitempty"`
+	Width              *float64               `json:"width,omitempty"`
+	Length             *float64               `json:"length,omitempty"`
+	Height             *float64               `json:"height,omitempty"`
+	MinimumStock       int                    `json:"minimum_stock"`
+	OldProductItemID   *int64                 `json:"old_product_item_id,omitempty"`
+	IsNew              bool                   `json:"is_new"`
+	IsActive           bool                   `json:"is_active"`
+	IsStopped          bool                   `json:"is_stopped"`
+	IsFake             bool                   `json:"is_fake"`
+	Promotion          string                 `json:"promotion,omitempty"`
+	TotalStock         float64                `json:"total_stock,omitempty"`
+	WarehouseRootCount int                    `json:"warehouse_root_count,omitempty"`
+	LowStock           bool                   `json:"low_stock,omitempty"`
+	Names              itemLangNames          `json:"names"`
+	ChannelPrices      []itemChannelPriceBody `json:"channel_prices,omitempty"`
+	Suppliers          []itemSupplierBody     `json:"suppliers,omitempty"`
+	Warehouses         []itemWarehouseBody    `json:"warehouse_placements,omitempty"`
+	Files              []itemFileBody         `json:"files,omitempty"`
 }
 
 type listAggregateBody struct {
@@ -90,7 +102,6 @@ type listAggregateBody struct {
 	Tag               string         `json:"tag,omitempty"`
 	Note              string         `json:"note,omitempty"`
 	IsActive          bool           `json:"is_active"`
-	IsNew             bool           `json:"is_new"`
 	ProductBrandID    *int64         `json:"product_brand_id,omitempty"`
 	ProductCategoryID *int64         `json:"product_category_id,omitempty"`
 	Languages         listLangBody   `json:"languages"`
@@ -108,7 +119,6 @@ type listAggregateResponse struct {
 	Tag               string         `json:"tag"`
 	Note              string         `json:"note"`
 	IsActive          bool           `json:"is_active"`
-	IsNew             bool           `json:"is_new"`
 	ProductBrandID    *int64         `json:"product_brand_id,omitempty"`
 	ProductCategoryID *int64         `json:"product_category_id,omitempty"`
 	UpdatedAt         time.Time      `json:"updated_at"`
@@ -152,14 +162,14 @@ SELECT rate FROM setting_vat WHERE deleted_at IS NULL AND is_active = TRUE ORDER
 func (r *ListRepository) GetAggregate(ctx context.Context, id int64, locale string) (*listAggregateResponse, error) {
 	var row struct {
 		sku, tag, note, supplierSKU string
-		isActive, isNew           bool
+		isActive                  bool
 		brandID, catID            sql.NullInt64
 		updatedAt                 time.Time
 	}
 	err := r.db.QueryRowContext(ctx, `
-SELECT sku, supplier_sku, tag, note, is_active, is_new, product_brand_id, product_category_id, updated_at
+SELECT sku, supplier_sku, tag, note, is_active, product_brand_id, product_category_id, updated_at
 FROM product_list WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
-		&row.sku, &row.supplierSKU, &row.tag, &row.note, &row.isActive, &row.isNew, &row.brandID, &row.catID, &row.updatedAt)
+		&row.sku, &row.supplierSKU, &row.tag, &row.note, &row.isActive, &row.brandID, &row.catID, &row.updatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -168,7 +178,7 @@ FROM product_list WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
 	}
 	out := &listAggregateResponse{
 		ID: id, SKU: row.sku, SupplierSKU: row.supplierSKU, Tag: row.tag, Note: row.note,
-		IsActive: row.isActive, IsNew: row.isNew, UpdatedAt: row.updatedAt,
+		IsActive: row.isActive, UpdatedAt: row.updatedAt,
 	}
 	if row.brandID.Valid {
 		out.ProductBrandID = &row.brandID.Int64
@@ -290,7 +300,7 @@ func loadListItems(ctx context.Context, db *sql.DB, listID int64) ([]listItemBod
 SELECT id, COALESCE(sku, ''), COALESCE(barcode, ''), COALESCE(qrcode, ''),
        price::float8, price_wholesale::float8, type_price::text, unit::text, qty_per_unit,
        weight::float8, width::float8, length::float8, height::float8,
-       minimum_stock, is_active, is_stopped, is_fake, promotion
+       minimum_stock, old_product_item_id, is_new, is_active, is_stopped, is_fake, promotion
 FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`, listID)
 	if err != nil {
 		return nil, err
@@ -301,9 +311,10 @@ FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`
 		var it listItemBody
 		var itemID int64
 		var w, wi, l, h sql.NullFloat64
+		var oldItemID sql.NullInt64
 		if err := rows.Scan(&itemID, &it.SKU, &it.Barcode, &it.Qrcode, &it.Price, &it.PriceWholesale,
 			&it.TypePrice, &it.Unit, &it.QtyPerUnit, &w, &wi, &l, &h,
-			&it.MinimumStock, &it.IsActive, &it.IsStopped, &it.IsFake, &it.Promotion); err != nil {
+			&it.MinimumStock, &oldItemID, &it.IsNew, &it.IsActive, &it.IsStopped, &it.IsFake, &it.Promotion); err != nil {
 			return nil, err
 		}
 		if w.Valid {
@@ -318,11 +329,16 @@ FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`
 		if h.Valid {
 			it.Height = &h.Float64
 		}
+		if oldItemID.Valid {
+			it.OldProductItemID = &oldItemID.Int64
+		}
 		it.ID = &itemID
 		it.Names = loadItemNames(ctx, db, itemID)
 		it.ChannelPrices = loadItemChannelPrices(ctx, db, itemID)
 		it.Suppliers = loadItemSuppliers(ctx, db, itemID)
 		it.Warehouses = loadItemWarehouses(ctx, db, itemID)
+		it.Files = loadItemFiles(ctx, db, itemID)
+		loadItemSummaryStats(ctx, db, itemID, it.MinimumStock, &it)
 		out = append(out, it)
 	}
 	return out, rows.Err()
@@ -387,6 +403,46 @@ SELECT id, bin_id FROM product_item_warehouse WHERE product_item_id = $1 AND del
 	return out
 }
 
+func loadItemSummaryStats(ctx context.Context, db *sql.DB, itemID int64, minimumStock int, it *listItemBody) {
+	_ = db.QueryRowContext(ctx, `
+SELECT COALESCE(SUM(s.remain_quantity), 0)::float8
+FROM product_item_stock s
+WHERE s.product_item_id = $1 AND s.deleted_at IS NULL`, itemID).Scan(&it.TotalStock)
+	var whCnt int
+	_ = db.QueryRowContext(ctx, `
+SELECT COUNT(DISTINCT zone.parent_id)::int
+FROM product_item_warehouse piw
+INNER JOIN warehouse_list bin ON bin.id = piw.bin_id AND bin.type = 'bin'
+LEFT JOIN warehouse_list rack ON rack.id = bin.parent_id AND rack.type = 'rack'
+LEFT JOIN warehouse_list shelf ON shelf.id = rack.parent_id AND shelf.type = 'shelf'
+LEFT JOIN warehouse_list zone ON zone.id = shelf.parent_id AND zone.type = 'zone'
+WHERE piw.product_item_id = $1 AND piw.deleted_at IS NULL AND zone.parent_id IS NOT NULL`, itemID).Scan(&whCnt)
+	it.WarehouseRootCount = whCnt
+	it.LowStock = it.TotalStock < float64(minimumStock)
+}
+
+func loadItemFiles(ctx context.Context, db *sql.DB, itemID int64) []itemFileBody {
+	rows, err := db.QueryContext(ctx, `
+SELECT id, system_file_id, sort_order
+FROM product_item_file
+WHERE product_item_id = $1 AND deleted_at IS NULL
+ORDER BY sort_order ASC, id ASC`, itemID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var out []itemFileBody
+	for rows.Next() {
+		var f itemFileBody
+		var id int64
+		if rows.Scan(&id, &f.SystemFileID, &f.SortOrder) == nil {
+			f.ID = &id
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
 func (r *ListRepository) CreateAggregate(ctx context.Context, b listAggregateBody, actorID int64) (int64, error) {
 	if err := validateListAggregate(b); err != nil {
 		return 0, err
@@ -403,11 +459,11 @@ func (r *ListRepository) CreateAggregate(ctx context.Context, b listAggregateBod
 
 	var listID int64
 	err = tx.QueryRowContext(ctx, `
-INSERT INTO product_list (sku, product_brand_id, product_category_id, tag, supplier_sku, note, is_new, is_active, created_by, updated_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9) RETURNING id`,
+INSERT INTO product_list (sku, product_brand_id, product_category_id, tag, supplier_sku, note, is_active, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING id`,
 		strings.TrimSpace(b.SKU), b.ProductBrandID, b.ProductCategoryID,
 		strings.TrimSpace(b.Tag), strings.TrimSpace(b.SupplierSKU), strings.TrimSpace(b.Note),
-		b.IsNew, b.IsActive, nullActor(actorID)).Scan(&listID)
+		b.IsActive, nullActor(actorID)).Scan(&listID)
 	if err != nil {
 		return 0, err
 	}
@@ -432,11 +488,11 @@ func (r *ListRepository) UpdateAggregate(ctx context.Context, listID int64, b li
 	defer tx.Rollback()
 	res, err := tx.ExecContext(ctx, `
 UPDATE product_list SET sku = $2, product_brand_id = $3, product_category_id = $4, tag = $5,
-  supplier_sku = $6, note = $7, is_new = $8, is_active = $9, updated_at = NOW(), updated_by = $10
+  supplier_sku = $6, note = $7, is_active = $8, updated_at = NOW(), updated_by = $9
 WHERE id = $1 AND deleted_at IS NULL`, listID,
 		strings.TrimSpace(b.SKU), b.ProductBrandID, b.ProductCategoryID,
 		strings.TrimSpace(b.Tag), strings.TrimSpace(b.SupplierSKU), strings.TrimSpace(b.Note),
-		b.IsNew, b.IsActive, nullActor(actorID))
+		b.IsActive, nullActor(actorID))
 	if err != nil {
 		return err
 	}
@@ -506,6 +562,32 @@ func strOrNull(s string) any {
 		return nil
 	}
 	return s
+}
+
+func int64OrNull(id *int64) any {
+	if id == nil || *id <= 0 {
+		return nil
+	}
+	return *id
+}
+
+func validateOldProductItemRef(ctx context.Context, tx *sql.Tx, listID int64, oldID *int64) error {
+	if oldID == nil || *oldID <= 0 {
+		return nil
+	}
+	var refListID int64
+	err := tx.QueryRowContext(ctx, `
+SELECT product_list_id FROM product_item WHERE id = $1 AND deleted_at IS NULL`, *oldID).Scan(&refListID)
+	if err == sql.ErrNoRows {
+		return ErrValidation
+	}
+	if err != nil {
+		return err
+	}
+	if refListID != listID {
+		return ErrValidation
+	}
+	return nil
 }
 
 func syncListCodes(ctx context.Context, tx *sql.Tx, listID int64, codeType string, codes []string, actorID int64) error {
@@ -621,15 +703,20 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 			}
 			continue
 		}
+		if err := validateOldProductItemRef(ctx, tx, listID, it.OldProductItemID); err != nil {
+			return err
+		}
 		var itemID int64
 		err := tx.QueryRowContext(ctx, `
 INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion,
-  type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_fake, is_active, created_by, updated_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::product_item_type_price, $10::product_unit, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $20)
+  type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, old_product_item_id, is_new,
+  is_stopped, is_fake, is_active, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::product_item_type_price, $10::product_unit, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $22)
 RETURNING id`,
 			listID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
 			strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
-			it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsStopped, it.IsFake, it.IsActive, nullActor(actorID)).Scan(&itemID)
+			it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, int64OrNull(it.OldProductItemID), it.IsNew,
+			it.IsStopped, it.IsFake, it.IsActive, nullActor(actorID)).Scan(&itemID)
 		if err != nil {
 			return err
 		}
@@ -655,12 +742,12 @@ func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it lis
 	res, err := tx.ExecContext(ctx, `
 UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, vat_rate = $7,
   promotion = $8, type_price = $9::product_item_type_price, unit = $10::product_unit, qty_per_unit = $11,
-  weight = $12, width = $13, length = $14, height = $15, minimum_stock = $16, is_stopped = $17, is_fake = $18,
-  is_active = $19, updated_at = NOW(), updated_by = $20
-WHERE id = $1 AND product_list_id = $21 AND deleted_at IS NULL`,
+  weight = $12, width = $13, length = $14, height = $15, minimum_stock = $16, is_new = $17, is_stopped = $18,
+  is_fake = $19, is_active = $20, updated_at = NOW(), updated_by = $21
+WHERE id = $1 AND product_list_id = $22 AND deleted_at IS NULL`,
 		itemID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
 		strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
-		it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsStopped, it.IsFake, it.IsActive,
+		it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsNew, it.IsStopped, it.IsFake, it.IsActive,
 		nullActor(actorID), listID)
 	if err != nil {
 		return err
@@ -782,6 +869,67 @@ WHERE id = $1 AND product_item_id = $4 AND deleted_at IS NULL`, *w.ID, w.BinID, 
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO product_item_warehouse (product_item_id, bin_id, created_by, updated_by)
 VALUES ($1, $2, $3, $3)`, itemID, w.BinID, nullActor(actorID)); err != nil {
+			return err
+		}
+	}
+	return syncItemFiles(ctx, tx, itemID, it.Files, actorID)
+}
+
+func syncItemFiles(ctx context.Context, tx *sql.Tx, itemID int64, files []itemFileBody, actorID int64) error {
+	keep := map[int64]bool{}
+	for _, f := range files {
+		if f.ID != nil && *f.ID > 0 {
+			keep[*f.ID] = true
+		}
+	}
+	rows, err := tx.QueryContext(ctx, `
+SELECT id FROM product_item_file WHERE product_item_id = $1 AND deleted_at IS NULL`, itemID)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var id int64
+		if rows.Scan(&id) == nil && !keep[id] {
+			if _, err := tx.ExecContext(ctx, `
+UPDATE product_item_file SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1`, id, nullActor(actorID)); err != nil {
+				rows.Close()
+				return err
+			}
+		}
+	}
+	rows.Close()
+	for _, f := range files {
+		if f.SystemFileID <= 0 {
+			continue
+		}
+		sortOrder := f.SortOrder
+		if f.ID != nil && *f.ID > 0 {
+			if _, err := tx.ExecContext(ctx, `
+UPDATE product_item_file SET system_file_id = $2, sort_order = $3, updated_at = NOW(), updated_by = $4
+WHERE id = $1 AND product_item_id = $5 AND deleted_at IS NULL`,
+				*f.ID, f.SystemFileID, sortOrder, nullActor(actorID), itemID); err != nil {
+				return err
+			}
+			continue
+		}
+		var existingID int64
+		err := tx.QueryRowContext(ctx, `
+SELECT id FROM product_item_file
+WHERE product_item_id = $1 AND system_file_id = $2 AND deleted_at IS NULL`, itemID, f.SystemFileID).Scan(&existingID)
+		if err == sql.ErrNoRows {
+			if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_file (product_item_id, system_file_id, sort_order, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $4)`, itemID, f.SystemFileID, sortOrder, nullActor(actorID)); err != nil {
+				return err
+			}
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `
+UPDATE product_item_file SET sort_order = $2, updated_at = NOW(), updated_by = $3
+WHERE id = $1`, existingID, sortOrder, nullActor(actorID)); err != nil {
 			return err
 		}
 	}

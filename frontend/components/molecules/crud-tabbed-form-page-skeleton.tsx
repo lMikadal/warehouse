@@ -12,6 +12,8 @@ export type CrudTabbedFormPageSkeletonProps = {
   showPageHeader?: boolean;
   showFixedFooter?: boolean;
   leftCardCount?: number;
+  /** Collapsed pricing-tab variant row strips (product list form). */
+  pricingVariantStrips?: number;
   className?: string;
 };
 
@@ -19,6 +21,7 @@ export function CrudTabbedFormPageSkeleton({
   showPageHeader = true,
   showFixedFooter = true,
   leftCardCount = 3,
+  pricingVariantStrips = 0,
   className,
 }: CrudTabbedFormPageSkeletonProps) {
   const tCrud = useTranslations("crud");
@@ -48,6 +51,19 @@ export function CrudTabbedFormPageSkeleton({
 
       <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
+          {Array.from({ length: pricingVariantStrips }, (_, i) => (
+            <div
+              key={`variant-${i}`}
+              className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-3"
+            >
+              <Skeleton className="size-11 shrink-0 rounded-md" />
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-16" />
+              <Skeleton className="h-10 w-28" />
+              <Skeleton className="ml-auto size-9 rounded-md" />
+            </div>
+          ))}
           {Array.from({ length: leftCardCount }, (_, i) => (
             <FormCard key={i}>
               <FormCardHeader>

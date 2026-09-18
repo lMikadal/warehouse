@@ -181,6 +181,20 @@ func (h *ItemHandler) delete(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+func (h *ItemHandler) listStocks(c *echo.Context) error {
+	id, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	q := api.ParsePageQuery(c)
+	rows, total, err := h.repo.ListStocks(c.Request().Context(), id, api.LocaleFromRequest(c), q.Page, q.Limit)
+	if err != nil {
+		applog.HTTPError(c, "list product item stocks", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to list stocks"})
+	}
+	return c.JSON(http.StatusOK, api.NewListResponse(rows, int64(total), q))
+}
+
 func (h *ItemHandler) warehousePlacements(c *echo.Context) error {
 	id, err := httputil.PathID(c, "id")
 	if err != nil {

@@ -18,7 +18,6 @@ import { FormField } from "@/components/molecules/form-field";
 import { ProductCategoryCascadeDialog } from "@/components/molecules/product-category-cascade-dialog";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { RemoteMultiComboboxField } from "@/components/molecules/remote-multi-combobox-field";
-import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ButtonIcon } from "@/components/ui/button-icon";
@@ -30,13 +29,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
@@ -50,7 +42,6 @@ import {
 import {
   createProductList,
   fetchProductList,
-  patchProductItemFull,
   ProductListApiError,
   updateProductList,
   type ListItemBody,
@@ -64,39 +55,16 @@ import { cn } from "@/lib/utils";
 
 import { ProductListFormCars } from "./product-list-form-cars";
 import { ProductListFormHistory } from "./product-list-form-history";
+import { ProductListFormPricingTab } from "./product-list-form-pricing-tab";
 import { ProductListFormSidebar } from "./product-list-form-sidebar";
-
-const UNITS = [
-  "piece",
-  "box",
-  "set",
-  "roll",
-  "pair",
-  "bag",
-  "sheet",
-  "meter",
-  "liter",
-  "kg",
-] as const;
-
-function emptyItem(): ListItemBody {
-  return {
-    price: 0,
-    price_wholesale: 0,
-    type_price: "manual",
-    unit: "piece",
-    qty_per_unit: 1,
-    minimum_stock: 0,
-    is_active: true,
-    is_stopped: false,
-    is_fake: false,
-    promotion: "",
-    names: { th: "", en: "" },
-    channel_prices: [],
-    suppliers: [],
-    warehouse_placements: [],
-  };
-}
+import {
+  bodyForSave,
+  emptyItem,
+  hasItemSalesFieldErrors,
+  type ItemSalesFieldErrors,
+  validateItemSalesFields,
+  variantItemKey,
+} from "./product-list-form-utils";
 
 function emptyDraft(): ProductListAggregate {
   return {
@@ -105,7 +73,6 @@ function emptyDraft(): ProductListAggregate {
     tag: "",
     note: "",
     is_active: true,
-    is_new: false,
     languages: {
       th: { name: "", sub_name: "", description: "" },
       en: { name: "", sub_name: "", description: "" },
@@ -180,16 +147,6 @@ function ProductCodeListEditor({
   );
 }
 
-function bodyForSave(draft: ProductListAggregate): ProductListAggregate {
-  return {
-    ...draft,
-    factory_codes: draft.factory_codes?.filter((c) => c.trim()) ?? [],
-    other_codes: draft.other_codes?.filter((c) => c.trim()) ?? [],
-    cars:
-      draft.cars?.filter((c) => c.product_attribute_engine_id > 0) ?? [],
-  };
-}
-
 export function ProductListForm({ listId }: { listId?: number }) {
   const isEdit = listId != null && listId > 0;
   const locale = useLocale() as DisplayLocale;
@@ -210,6 +167,12 @@ export function ProductListForm({ listId }: { listId?: number }) {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [itemFieldErrors, setItemFieldErrors] = useState<
+    Record<string, ItemSalesFieldErrors>
+  >({});
+  const [expandVariantKey, setExpandVariantKey] = useState<string | null>(
+    null
+  );
   const [saleChannels, setSaleChannels] = useState<
     { id: number; name: string }[]
   >([]);
@@ -300,6 +263,11 @@ export function ProductListForm({ listId }: { listId?: number }) {
     [draft.items]
   );
 
+  const handleExpandVariantHandled = useCallback(
+    () => setExpandVariantKey(null),
+    []
+  );
+
   const validate = (): boolean => {
     const err: Record<string, string> = {};
     if (!draft.sku.trim()) err.sku = tError("required");
@@ -312,7 +280,31 @@ export function ProductListForm({ listId }: { listId?: number }) {
       err.productBrand = tError("required");
     }
     setFieldErrors(err);
-    return Object.keys(err).length === 0;
+
+    const preparedItems = bodyForSave(draft).items;
+    const nextItemErrors: Record<string, ItemSalesFieldErrors> = {};
+    let firstInvalidKey: string | null = null;
+    draft.items.forEach((item, index) => {
+      const key = variantItemKey(item, index);
+      const salesErrors = validateItemSalesFields(
+        preparedItems[index] ?? item,
+        draft.sku,
+        tError("required")
+      );
+      if (hasItemSalesFieldErrors(salesErrors)) {
+        nextItemErrors[key] = salesErrors;
+        if (!firstInvalidKey) firstInvalidKey = key;
+      }
+    });
+    setItemFieldErrors(nextItemErrors);
+
+    const listOk = Object.keys(err).length === 0;
+    const itemsOk = Object.keys(nextItemErrors).length === 0;
+    if (!itemsOk) {
+      setTab("pricing");
+      if (firstInvalidKey) setExpandVariantKey(firstInvalidKey);
+    }
+    return listOk && itemsOk;
   };
 
   const onSave = async () => {
@@ -338,39 +330,9 @@ export function ProductListForm({ listId }: { listId?: number }) {
     }
   };
 
-  const saveVariant = async (index: number) => {
-    const it = draft.items[index];
-    if (!it?.id) {
-      toast.error(tError("noData"));
-      return;
-    }
-    try {
-      await patchProductItemFull(it.id, it);
-      toast.success(tCrud("toast.saved"));
-    } catch (e) {
-      toast.error(
-        e instanceof ProductListApiError ? e.message : tError("noData")
-      );
-    }
-  };
-
   const loadSuppliers = useCallback(
     async (ctx: RemoteComboboxLoadContext) => {
       const res = await fetchProductListFilters(locale, "suppliers", {
-        page: 1,
-        limit: 50,
-        search: ctx.search.trim() || undefined,
-        signal: ctx.signal,
-      });
-      if (ctx.signal.aborted) return [];
-      return filterItemsToComboboxOptions(res.items);
-    },
-    [locale]
-  );
-
-  const loadBins = useCallback(
-    async (ctx: RemoteComboboxLoadContext) => {
-      const res = await fetchProductListFilters(locale, "warehouse_bins", {
         page: 1,
         limit: 50,
         search: ctx.search.trim() || undefined,
@@ -393,7 +355,9 @@ export function ProductListForm({ listId }: { listId?: number }) {
   );
 
   if (loading) {
-    return <CrudTabbedFormPageSkeleton leftCardCount={5} />;
+    return (
+      <CrudTabbedFormPageSkeleton leftCardCount={3} pricingVariantStrips={2} />
+    );
   }
 
   return (
@@ -784,253 +748,18 @@ export function ProductListForm({ listId }: { listId?: number }) {
               </FormCard>
             </TabsContent>
 
-            <TabsContent value="pricing" className="mt-0 space-y-4">
-              {draft.items.map((item, index) => (
-                <FormCard key={item.id ?? index}>
-                  <FormCardHeader className="flex flex-row items-center justify-between">
-                    <FormCardTitle>
-                      {tForm("itemTitle", { index: index + 1 })}
-                    </FormCardTitle>
-                    {isEdit && item.id ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void saveVariant(index)}
-                      >
-                        {tCrud("btn.save")}
-                      </Button>
-                    ) : null}
-                  </FormCardHeader>
-                  <FormCardContent className="grid gap-4 md:grid-cols-2">
-                    <Field className="gap-1.5">
-                      <FieldLabel>{tForm("variantName")}</FieldLabel>
-                      <Input
-                        value={item.names.th}
-                        placeholder={tFormPh("placeholder.input", {
-                          label: tForm("nameTh"),
-                        })}
-                        onChange={(e) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = {
-                              ...items[index],
-                              names: {
-                                ...items[index].names,
-                                th: e.target.value,
-                              },
-                            };
-                            return { ...d, items };
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field className="gap-1.5">
-                      <FieldLabel>{tCol("sku")}</FieldLabel>
-                      <Input
-                        value={item.sku ?? ""}
-                        placeholder={tFormPh("placeholder.input", {
-                          label: tCol("sku"),
-                        })}
-                        onChange={(e) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = { ...items[index], sku: e.target.value };
-                            return { ...d, items };
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field className="gap-1.5">
-                      <FieldLabel>{tList("colNetPrice")}</FieldLabel>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        value={String(item.price)}
-                        onChange={(e) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = {
-                              ...items[index],
-                              price: Number(e.target.value) || 0,
-                            };
-                            return { ...d, items };
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field className="gap-1.5">
-                      <FieldLabel>{tForm("qtyPerUnit")}</FieldLabel>
-                      <Input
-                        type="number"
-                        value={String(item.qty_per_unit)}
-                        onChange={(e) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = {
-                              ...items[index],
-                              qty_per_unit: Number(e.target.value) || 1,
-                            };
-                            return { ...d, items };
-                          })
-                        }
-                      />
-                    </Field>
-                    <Field className="gap-1.5">
-                      <FieldLabel>{tCol("unit")}</FieldLabel>
-                      <Select
-                        value={item.unit}
-                        onValueChange={(v) => {
-                          if (!v) return;
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = { ...items[index], unit: v };
-                            return { ...d, items };
-                          });
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {UNITS.map((u) => (
-                            <SelectItem key={u} value={u}>
-                              {u}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field className="gap-1.5">
-                      <FieldLabel>{tForm("minimumStock")}</FieldLabel>
-                      <Input
-                        type="number"
-                        value={String(item.minimum_stock)}
-                        onChange={(e) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = {
-                              ...items[index],
-                              minimum_stock: Number(e.target.value) || 0,
-                            };
-                            return { ...d, items };
-                          })
-                        }
-                      />
-                    </Field>
-                    <div className="md:col-span-2">
-                      <StatusSwitchField
-                        labelKey="col.status"
-                        checked={item.is_active}
-                        onCheckedChange={(checked) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = { ...items[index], is_active: checked };
-                            return { ...d, items };
-                          })
-                        }
-                      />
-                    </div>
-                    <Field className="gap-1.5 md:col-span-2">
-                      <FieldLabel>{tList("wpLabelBin")}</FieldLabel>
-                      <RemoteComboboxField
-                        label={tList("wpLabelBin")}
-                        value={
-                          item.warehouse_placements?.[0]?.bin_id
-                            ? String(item.warehouse_placements[0].bin_id)
-                            : ""
-                        }
-                        onValueChange={(v) =>
-                          setDraft((d) => {
-                            const items = [...d.items];
-                            items[index] = {
-                              ...items[index],
-                              warehouse_placements: v
-                                ? [{ bin_id: Number(v) }]
-                                : [],
-                            };
-                            return { ...d, items };
-                          })
-                        }
-                        placeholder={tFormPh("placeholder.select", {
-                          label: tList("wpLabelBin"),
-                        })}
-                        emptyLabel={tFormPh("combobox.noResults")}
-                        inputClassName="w-full"
-                        showClear
-                        onLoadOptions={loadBins}
-                      />
-                    </Field>
-                    {saleChannels.length ? (
-                      <div className="md:col-span-2 space-y-2">
-                        <FieldLabel>{tForm("itemSectionChannel")}</FieldLabel>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {saleChannels.map((ch) => {
-                            const price =
-                              item.channel_prices?.find(
-                                (p) => p.setting_sale_channel_id === ch.id
-                              )?.price ?? 0;
-                            return (
-                              <Field key={ch.id} className="gap-1.5">
-                                <FieldLabel className="text-xs font-normal">
-                                  {ch.name}
-                                </FieldLabel>
-                                <Input
-                                  type="number"
-                                  inputMode="decimal"
-                                  value={String(price)}
-                                  placeholder={tFormPh("placeholder.input", {
-                                    label: ch.name,
-                                  })}
-                                  onChange={(e) =>
-                                    setDraft((d) => {
-                                      const items = [...d.items];
-                                      const cp = [
-                                        ...(items[index].channel_prices ?? []),
-                                      ];
-                                      const idx = cp.findIndex(
-                                        (p) =>
-                                          p.setting_sale_channel_id === ch.id
-                                      );
-                                      const nextPrice =
-                                        Number(e.target.value) || 0;
-                                      if (idx >= 0) {
-                                        cp[idx] = {
-                                          ...cp[idx],
-                                          price: nextPrice,
-                                        };
-                                      } else {
-                                        cp.push({
-                                          setting_sale_channel_id: ch.id,
-                                          price: nextPrice,
-                                        });
-                                      }
-                                      items[index] = {
-                                        ...items[index],
-                                        channel_prices: cp,
-                                      };
-                                      return { ...d, items };
-                                    })
-                                  }
-                                />
-                              </Field>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : null}
-                  </FormCardContent>
-                </FormCard>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  setDraft((d) => ({ ...d, items: [...d.items, emptyItem()] }))
-                }
-              >
-                {tForm("addItem")}
-              </Button>
+            <TabsContent value="pricing" className="mt-0">
+              <ProductListFormPricingTab
+                locale={locale}
+                draft={draft}
+                setDraft={setDraft}
+                saleChannels={saleChannels}
+                itemFieldErrors={itemFieldErrors}
+                setItemFieldErrors={setItemFieldErrors}
+                expandVariantKey={expandVariantKey}
+                onExpandVariantHandled={handleExpandVariantHandled}
+                canCloneItem={isEdit && perms.update}
+              />
             </TabsContent>
 
             <TabsContent value="history" className="mt-0">
