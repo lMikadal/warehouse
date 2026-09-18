@@ -182,6 +182,7 @@ window.I18N_TH = {
   "productListForm.tabData": "ข้อมูล",
   "productListForm.tabPricing": "ราคาและสต็อก",
   "productListForm.tabHistory": "ประวัติ",
+  "productListForm.histPhasePending": "รอ phase ถัดไป",
   "productListForm.sectionInfo": "ข้อมูลสินค้า",
   "productListForm.sectionDetails": "รายละเอียดสินค้า",
   "productListForm.sectionCodes": "รหัสสินค้า",

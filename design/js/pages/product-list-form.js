@@ -4806,11 +4806,7 @@
   function historyPanelHtml() {
     return (
       '<div class="product-list-form__history">' +
-      '<div class="product-list-form__item-tabs" role="tablist">' +
-      historyTabBtn("purchase", "productListForm.histTabPurchase") +
-      historyTabBtn("sales", "productListForm.histTabSales") +
-      "</div>" +
-      (historySubTab === "sales" ? historySalesHtml() : historyPurchaseHtml()) +
+      '<p class="product-list-form__muted product-list-form__history-pending" data-i18n="productListForm.histPhasePending"></p>' +
       "</div>"
     );
   }

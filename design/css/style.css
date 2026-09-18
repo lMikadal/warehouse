@@ -4166,6 +4166,13 @@ body.modal-open {
   gap: 1rem;
 }
 
+.product-list-form__history-pending {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: var(--text-sm);
+  opacity: 0.85;
+}
+
 .product-list-form__hist-summary {
   margin-bottom: 0.25rem;
 }

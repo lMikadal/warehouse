@@ -182,6 +182,7 @@ window.I18N_EN = {
   "productListForm.tabData": "Details",
   "productListForm.tabPricing": "Pricing & stock",
   "productListForm.tabHistory": "History",
+  "productListForm.histPhasePending": "Coming in the next phase",
   "productListForm.sectionInfo": "Product information",
   "productListForm.sectionDetails": "Product details",
   "productListForm.sectionCodes": "Product codes",

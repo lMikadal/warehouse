@@ -15,7 +15,7 @@ Production **สินค้า → รายการ** — parity with design 
 - [x] RBAC `product.product_list.*` via `useResourcePermissions`
 - [x] List grain = `product_item`; no DnD column
 - [x] Forms: placeholders, required asterisk fields, create vs edit leave labels
-- [x] History tab wired to stub APIs; export → coming-soon toast
+- [x] History tab label **ประวัติ**; panel shows **รอ phase ถัดไป** until PO/order history ships
 - [ ] Manual QA th/en with `make backend-seed-dev` + `14_product_demo.sql`
 
 ## Known gaps vs design (documented)
