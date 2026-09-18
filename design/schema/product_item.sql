@@ -19,6 +19,9 @@ CREATE TABLE product_item (
     qrcode                VARCHAR(255),                                    -- QR code value
     price                 NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- ex-VAT base sell price
     price_wholesale       NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- ex-VAT wholesale price
+    price_vat             NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- retail price incl. VAT (storefront)
+    price_wholesale_vat   NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- wholesale price incl. VAT (storefront)
+    vat_type              setting_vat_type        NOT NULL DEFAULT 'exclude',    -- snapshot from setting_vat.vat_type at save time
     vat_rate              NUMERIC(5,2)            NOT NULL DEFAULT 0,            -- VAT rate snapshot from setting_vat.rate at save time
     promotion             TEXT                    NOT NULL DEFAULT '',           -- promotion conditions (v1 condition_promotion)
     type_price            product_item_type_price NOT NULL DEFAULT 'manual', -- manual=set on item; stock=from first stock lot sell_price

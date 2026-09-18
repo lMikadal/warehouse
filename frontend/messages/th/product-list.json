@@ -4,6 +4,7 @@
     "colProduct": "สินค้า",
     "colStock": "สต็อก",
     "colNetPrice": "ราคาขายสุทธิ",
+    "colSellPrice": "ราคาขาย",
     "colPackaging": "บรรจุ",
     "colWarehouse": "คลังสินค้า",
     "colManageProduct": "จัดการสินค้า",

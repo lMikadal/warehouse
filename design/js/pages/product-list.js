@@ -30,6 +30,35 @@
     return global.i18n ? global.i18n.getLocale() : "th";
   }
 
+  function activeSettingVat() {
+    if (!global.store) return { vat_type: "exclude", rate: 0 };
+    var rows = global.store.getAll("setting_vat").filter(function (r) {
+      return r.deleted_at == null && r.is_active !== false;
+    });
+    if (!rows.length) return { vat_type: "exclude", rate: 0 };
+    rows.sort(function (a, b) {
+      return b.id - a.id;
+    });
+    return rows[0];
+  }
+
+  function priceInclVat(exVat, vatRate) {
+    var p = Number(exVat) || 0;
+    var v = Number(vatRate) || 0;
+    return p * (1 + v / 100);
+  }
+
+  function browseSellPrice(item) {
+    var setting = activeSettingVat();
+    if (setting.vat_type === "include") {
+      if (item.price_vat != null && Number(item.price_vat) > 0) {
+        return Number(item.price_vat);
+      }
+      return priceInclVat(item.price, setting.rate);
+    }
+    return Number(item.price) || 0;
+  }
+
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
@@ -209,7 +238,7 @@
           tag: list.tag || "",
           is_new: !!list.is_new,
           is_active: !!item.is_active,
-          price: Number(item.price) || 0,
+          price: browseSellPrice(item),
           unit: item.unit || "piece",
           qty_per_unit: item.qty_per_unit != null ? item.qty_per_unit : 1,
           minimum_stock: item.minimum_stock || 0,
@@ -502,7 +531,7 @@
     var cols = [
       { id: "_productName", sort: true, labelKey: "productList.colProduct", class: "product-list__col-product" },
       { id: "_totalStock", sort: true, labelKey: "productList.colStock", class: "data-table__col-numeric" },
-      { id: "price", sort: true, labelKey: "productList.colNetPrice", class: "data-table__col-numeric" },
+      { id: "price", sort: true, labelKey: "productList.colSellPrice", class: "data-table__col-numeric" },
       {
         id: "qty_per_unit",
         sort: false,

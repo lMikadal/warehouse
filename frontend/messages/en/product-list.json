@@ -4,6 +4,7 @@
     "colProduct": "Product",
     "colStock": "Stock",
     "colNetPrice": "Net price",
+    "colSellPrice": "Sell price",
     "colPackaging": "Packaging",
     "colWarehouse": "Warehouse",
     "colManageProduct": "Manage",

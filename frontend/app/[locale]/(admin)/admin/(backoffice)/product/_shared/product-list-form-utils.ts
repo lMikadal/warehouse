@@ -21,6 +21,8 @@ export function emptyItem(open = false): ListItemBody {
   return {
     price: 0,
     price_wholesale: 0,
+    price_vat: 0,
+    price_wholesale_vat: 0,
     type_price: "manual",
     unit: "piece",
     qty_per_unit: 1,

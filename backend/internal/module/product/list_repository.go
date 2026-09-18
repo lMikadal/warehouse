@@ -72,6 +72,10 @@ type listItemBody struct {
 	Qrcode             string                 `json:"qrcode,omitempty"`
 	Price              float64                `json:"price"`
 	PriceWholesale     float64                `json:"price_wholesale"`
+	PriceVat           float64                `json:"price_vat"`
+	PriceWholesaleVat  float64                `json:"price_wholesale_vat"`
+	VatType            string                 `json:"vat_type,omitempty"`
+	VatRate            float64                `json:"vat_rate,omitempty"`
 	TypePrice          string                 `json:"type_price"`
 	Unit               string                 `json:"unit"`
 	QtyPerUnit         int                    `json:"qty_per_unit"`
@@ -143,20 +147,8 @@ func validateListAggregate(b listAggregateBody) error {
 	return nil
 }
 
-func (r *ListRepository) currentVatRate(ctx context.Context) (float64, error) {
-	var rate sql.NullFloat64
-	err := r.db.QueryRowContext(ctx, `
-SELECT rate FROM setting_vat WHERE deleted_at IS NULL AND is_active = TRUE ORDER BY id LIMIT 1`).Scan(&rate)
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
-	if err != nil {
-		return 0, err
-	}
-	if rate.Valid {
-		return rate.Float64, nil
-	}
-	return 0, nil
+func (r *ListRepository) activeVatSnapshot(ctx context.Context) (SettingVatSnapshot, error) {
+	return activeSettingVatSnapshot(ctx, r.db)
 }
 
 func (r *ListRepository) GetAggregate(ctx context.Context, id int64, locale string) (*listAggregateResponse, error) {
@@ -298,7 +290,8 @@ FROM product_list_car WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY
 func loadListItems(ctx context.Context, db *sql.DB, listID int64) ([]listItemBody, error) {
 	rows, err := db.QueryContext(ctx, `
 SELECT id, COALESCE(sku, ''), COALESCE(barcode, ''), COALESCE(qrcode, ''),
-       price::float8, price_wholesale::float8, type_price::text, unit::text, qty_per_unit,
+       price::float8, price_wholesale::float8, price_vat::float8, price_wholesale_vat::float8,
+       vat_type::text, vat_rate::float8, type_price::text, unit::text, qty_per_unit,
        weight::float8, width::float8, length::float8, height::float8,
        minimum_stock, old_product_item_id, is_new, is_active, is_stopped, is_authentic, promotion
 FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`, listID)
@@ -313,6 +306,7 @@ FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`
 		var w, wi, l, h sql.NullFloat64
 		var oldItemID sql.NullInt64
 		if err := rows.Scan(&itemID, &it.SKU, &it.Barcode, &it.Qrcode, &it.Price, &it.PriceWholesale,
+			&it.PriceVat, &it.PriceWholesaleVat, &it.VatType, &it.VatRate,
 			&it.TypePrice, &it.Unit, &it.QtyPerUnit, &w, &wi, &l, &h,
 			&it.MinimumStock, &oldItemID, &it.IsNew, &it.IsActive, &it.IsStopped, &it.IsAuthentic, &it.Promotion); err != nil {
 			return nil, err
@@ -447,7 +441,7 @@ func (r *ListRepository) CreateAggregate(ctx context.Context, b listAggregateBod
 	if err := validateListAggregate(b); err != nil {
 		return 0, err
 	}
-	vat, err := r.currentVatRate(ctx)
+	snap, err := r.activeVatSnapshot(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -467,7 +461,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING id`,
 	if err != nil {
 		return 0, err
 	}
-	if err := upsertListChildren(ctx, tx, listID, b, actorID, vat); err != nil {
+	if err := upsertListChildren(ctx, tx, listID, b, actorID, snap); err != nil {
 		return 0, err
 	}
 	return listID, tx.Commit()
@@ -477,7 +471,7 @@ func (r *ListRepository) UpdateAggregate(ctx context.Context, listID int64, b li
 	if err := validateListAggregate(b); err != nil {
 		return ErrValidation
 	}
-	vat, err := r.currentVatRate(ctx)
+	snap, err := r.activeVatSnapshot(ctx)
 	if err != nil {
 		return err
 	}
@@ -500,13 +494,13 @@ WHERE id = $1 AND deleted_at IS NULL`, listID,
 	if n == 0 {
 		return ErrNotFound
 	}
-	if err := upsertListChildren(ctx, tx, listID, b, actorID, vat); err != nil {
+	if err := upsertListChildren(ctx, tx, listID, b, actorID, snap); err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
-func upsertListChildren(ctx context.Context, tx *sql.Tx, listID int64, b listAggregateBody, actorID int64, vat float64) error {
+func upsertListChildren(ctx context.Context, tx *sql.Tx, listID int64, b listAggregateBody, actorID int64, snap SettingVatSnapshot) error {
 	for _, loc := range []struct {
 		locale string
 		block  localeBlock
@@ -545,7 +539,7 @@ ON CONFLICT DO NOTHING`, listID, sid); err != nil {
 	if err := syncListCars(ctx, tx, listID, b.Cars, actorID); err != nil {
 		return err
 	}
-	return syncListItems(ctx, tx, listID, b.Items, actorID, vat)
+	return syncListItems(ctx, tx, listID, b.Items, actorID, snap)
 }
 
 func nullStr(s string) sql.NullString {
@@ -665,7 +659,7 @@ VALUES ($1, $2, $3, $4, $5::product_list_car_gear_type, $6, $7, $8, $8)`,
 	return nil
 }
 
-func syncListItems(ctx context.Context, tx *sql.Tx, listID int64, items []listItemBody, actorID int64, vat float64) error {
+func syncListItems(ctx context.Context, tx *sql.Tx, listID int64, items []listItemBody, actorID int64, snap SettingVatSnapshot) error {
 	keep := map[int64]bool{}
 	for _, it := range items {
 		if it.ID != nil && *it.ID > 0 {
@@ -698,7 +692,7 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 			unit = "piece"
 		}
 		if it.ID != nil && *it.ID > 0 {
-			if err := upsertOneItem(ctx, tx, listID, *it.ID, it, actorID, vat); err != nil {
+			if err := upsertOneItem(ctx, tx, listID, *it.ID, it, actorID, snap); err != nil {
 				return err
 			}
 			continue
@@ -706,17 +700,21 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 		if err := validateOldProductItemRef(ctx, tx, listID, it.OldProductItemID); err != nil {
 			return err
 		}
+		norm := it
+		normalizeStorefrontPrices(snap, &norm)
 		var itemID int64
 		err := tx.QueryRowContext(ctx, `
-INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion,
-  type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, old_product_item_id, is_new,
-  is_stopped, is_authentic, is_active, created_by, updated_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::product_item_type_price, $10::product_unit, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $22)
+INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, price_vat, price_wholesale_vat,
+  vat_type, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock,
+  old_product_item_id, is_new, is_stopped, is_authentic, is_active, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::setting_vat_type, $10, $11, $12::product_item_type_price, $13::product_unit,
+  $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $25)
 RETURNING id`,
-			listID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
-			strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
-			it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, int64OrNull(it.OldProductItemID), it.IsNew,
-			it.IsStopped, it.IsAuthentic, it.IsActive, nullActor(actorID)).Scan(&itemID)
+			listID, strOrNull(norm.SKU), strOrNull(norm.Barcode), strOrNull(norm.Qrcode),
+			norm.Price, norm.PriceWholesale, norm.PriceVat, norm.PriceWholesaleVat, norm.VatType, norm.VatRate,
+			strings.TrimSpace(norm.Promotion), tp, unit, norm.QtyPerUnit,
+			norm.Weight, norm.Width, norm.Length, norm.Height, norm.MinimumStock, int64OrNull(norm.OldProductItemID),
+			norm.IsNew, norm.IsStopped, norm.IsAuthentic, norm.IsActive, nullActor(actorID)).Scan(&itemID)
 		if err != nil {
 			return err
 		}
@@ -730,7 +728,7 @@ RETURNING id`,
 	return nil
 }
 
-func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it listItemBody, actorID int64, vat float64) error {
+func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it listItemBody, actorID int64, snap SettingVatSnapshot) error {
 	tp := it.TypePrice
 	if tp != "stock" {
 		tp = "manual"
@@ -739,16 +737,20 @@ func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it lis
 	if unit == "" {
 		unit = "piece"
 	}
+	norm := it
+	normalizeStorefrontPrices(snap, &norm)
 	res, err := tx.ExecContext(ctx, `
-UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, vat_rate = $7,
-  promotion = $8, type_price = $9::product_item_type_price, unit = $10::product_unit, qty_per_unit = $11,
-  weight = $12, width = $13, length = $14, height = $15, minimum_stock = $16, is_new = $17, is_stopped = $18,
-  is_authentic = $19, is_active = $20, updated_at = NOW(), updated_by = $21
-WHERE id = $1 AND product_list_id = $22 AND deleted_at IS NULL`,
-		itemID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
-		strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
-		it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsNew, it.IsStopped, it.IsAuthentic, it.IsActive,
-		nullActor(actorID), listID)
+UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, price_vat = $7,
+  price_wholesale_vat = $8, vat_type = $9::setting_vat_type, vat_rate = $10, promotion = $11,
+  type_price = $12::product_item_type_price, unit = $13::product_unit, qty_per_unit = $14,
+  weight = $15, width = $16, length = $17, height = $18, minimum_stock = $19, is_new = $20, is_stopped = $21,
+  is_authentic = $22, is_active = $23, updated_at = NOW(), updated_by = $24
+WHERE id = $1 AND product_list_id = $25 AND deleted_at IS NULL`,
+		itemID, strOrNull(norm.SKU), strOrNull(norm.Barcode), strOrNull(norm.Qrcode),
+		norm.Price, norm.PriceWholesale, norm.PriceVat, norm.PriceWholesaleVat, norm.VatType, norm.VatRate,
+		strings.TrimSpace(norm.Promotion), tp, unit, norm.QtyPerUnit,
+		norm.Weight, norm.Width, norm.Length, norm.Height, norm.MinimumStock, norm.IsNew, norm.IsStopped,
+		norm.IsAuthentic, norm.IsActive, nullActor(actorID), listID)
 	if err != nil {
 		return err
 	}
@@ -951,7 +953,7 @@ WHERE bin_id = $1 AND deleted_at IS NULL AND product_item_id <> $2 LIMIT 1`, bin
 }
 
 func (r *ListRepository) PatchItemFull(ctx context.Context, itemID int64, it listItemBody, actorID int64) error {
-	vat, err := r.currentVatRate(ctx)
+	snap, err := r.activeVatSnapshot(ctx)
 	if err != nil {
 		return err
 	}
@@ -968,7 +970,7 @@ SELECT product_list_id FROM product_item WHERE id = $1 AND deleted_at IS NULL`, 
 		return err
 	}
 	defer tx.Rollback()
-	if err := upsertOneItem(ctx, tx, listID, itemID, it, actorID, vat); err != nil {
+	if err := upsertOneItem(ctx, tx, listID, itemID, it, actorID, snap); err != nil {
 		return err
 	}
 	return tx.Commit()

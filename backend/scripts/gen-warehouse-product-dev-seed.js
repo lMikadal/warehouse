@@ -216,14 +216,23 @@ ON CONFLICT (product_list_id, locale) DO UPDATE SET
   sub_name = EXCLUDED.sub_name,
   updated_at = EXCLUDED.updated_at;
 
-INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_authentic, is_active, created_by, updated_by, created_at, updated_at)
+INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, price_vat, price_wholesale_vat, vat_type, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_authentic, is_active, created_by, updated_by, created_at, updated_at)
 VALUES
 `;
 prodSql += pi
-  .map(
-    (r) =>
-      `  (${r.id}, ${r.product_list_id}, ${sqlStr(r.sku)}, ${sqlStr(r.barcode)}, ${sqlStr(r.qrcode)}, ${r.price ?? 0}, ${r.price_wholesale ?? 0}, ${r.vat_rate ?? 0}, ${sqlStr(r.promotion || "")}, ${sqlStr(r.type_price || "manual")}, ${sqlStr(r.unit || "piece")}, ${r.qty_per_unit ?? 1}, ${r.weight ?? "NULL"}, ${r.width ?? "NULL"}, ${r.length ?? "NULL"}, ${r.height ?? "NULL"}, ${r.minimum_stock ?? 0}, ${sqlBool(r.is_stopped)}, ${sqlBool(r.is_authentic ?? (r.is_fake != null ? !r.is_fake : true))}, ${sqlBool(r.is_active)}, 1, 1, ${sqlStr(TS)}, ${sqlStr(TS)})`
-  )
+  .map((r) => {
+    const rate = r.vat_rate ?? 0;
+    const price = r.price ?? 0;
+    const wholesale = r.price_wholesale ?? 0;
+    const priceVat =
+      r.price_vat != null ? r.price_vat : price * (1 + rate / 100);
+    const wholesaleVat =
+      r.price_wholesale_vat != null
+        ? r.price_wholesale_vat
+        : wholesale * (1 + rate / 100);
+    const vatType = sqlStr(r.vat_type || "exclude");
+    return `  (${r.id}, ${r.product_list_id}, ${sqlStr(r.sku)}, ${sqlStr(r.barcode)}, ${sqlStr(r.qrcode)}, ${price}, ${wholesale}, ${priceVat}, ${wholesaleVat}, ${vatType}, ${rate}, ${sqlStr(r.promotion || "")}, ${sqlStr(r.type_price || "manual")}, ${sqlStr(r.unit || "piece")}, ${r.qty_per_unit ?? 1}, ${r.weight ?? "NULL"}, ${r.width ?? "NULL"}, ${r.length ?? "NULL"}, ${r.height ?? "NULL"}, ${r.minimum_stock ?? 0}, ${sqlBool(r.is_stopped)}, ${sqlBool(r.is_authentic ?? (r.is_fake != null ? !r.is_fake : true))}, ${sqlBool(r.is_active)}, 1, 1, ${sqlStr(TS)}, ${sqlStr(TS)})`;
+  })
   .join(",\n");
 prodSql += `
 ON CONFLICT (id) DO UPDATE SET

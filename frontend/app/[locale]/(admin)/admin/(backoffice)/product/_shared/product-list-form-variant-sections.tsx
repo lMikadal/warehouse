@@ -72,6 +72,7 @@ import {
   nextVariantSkuSuffix,
   marginPct,
   packUnitKey,
+  priceExFromIncl,
   priceInclVat,
   PRODUCT_ITEM_GALLERY_MAX,
   PRODUCT_ITEM_UNITS,
@@ -127,6 +128,7 @@ export function ProductListFormVariantSections({
   const tError = useTranslations("error");
 
   const vatRate = activeVatRate(vat);
+  const vatType = vat?.vat_type === "include" ? "include" : "exclude";
   const skuPrefix = listSkuPrefix(listSku);
   const skuSuffix = itemSkuSuffix(item, listSku);
   const alternateSkus = useMemo(
@@ -698,20 +700,54 @@ export function ProductListFormVariantSections({
           </label>
         </div>
         {item.type_price !== "stock" ? (
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
             <PricePair
               labelEx={tList("colNetPrice")}
               labelIncl={tForm("itemPriceInclVat")}
+              vatType={vatType}
               exValue={item.price}
+              inclValue={
+                item.price_vat > 0
+                  ? item.price_vat
+                  : priceInclVat(item.price, vatRate)
+              }
               vatRate={vatRate}
-              onExChange={(price) => patch({ price })}
+              onExChange={(price) =>
+                patch({
+                  price,
+                  price_vat: priceInclVat(price, vatRate),
+                })
+              }
+              onInclChange={(price_vat) =>
+                patch({
+                  price_vat,
+                  price: priceExFromIncl(price_vat, vatRate),
+                })
+              }
             />
             <PricePair
               labelEx={tForm("itemWholesaleExVat")}
               labelIncl={tForm("itemWholesaleInclVat")}
+              vatType={vatType}
               exValue={item.price_wholesale}
+              inclValue={
+                item.price_wholesale_vat > 0
+                  ? item.price_wholesale_vat
+                  : priceInclVat(item.price_wholesale, vatRate)
+              }
               vatRate={vatRate}
-              onExChange={(price_wholesale) => patch({ price_wholesale })}
+              onExChange={(price_wholesale) =>
+                patch({
+                  price_wholesale,
+                  price_wholesale_vat: priceInclVat(price_wholesale, vatRate),
+                })
+              }
+              onInclChange={(price_wholesale_vat) =>
+                patch({
+                  price_wholesale_vat,
+                  price_wholesale: priceExFromIncl(price_wholesale_vat, vatRate),
+                })
+              }
             />
           </div>
         ) : null}
@@ -1169,31 +1205,65 @@ function Section({
 function PricePair({
   labelEx,
   labelIncl,
+  vatType,
   exValue,
+  inclValue,
   vatRate,
   onExChange,
+  onInclChange,
 }: {
   labelEx: string;
   labelIncl: string;
+  vatType: "exclude" | "include";
   exValue: number;
+  inclValue: number;
   vatRate: number;
   onExChange: (v: number) => void;
+  onInclChange: (v: number) => void;
 }) {
-  const incl = priceInclVat(exValue, vatRate);
+  const derivedEx =
+    vatType === "include"
+      ? priceExFromIncl(inclValue, vatRate)
+      : exValue;
+  const derivedIncl =
+    vatType === "include"
+      ? inclValue
+      : priceInclVat(exValue, vatRate);
   return (
-    <div className="space-y-2 rounded-md border border-border p-3">
-      <Field className="gap-1.5">
+    <div className="grid min-w-0 grid-cols-2 gap-3">
+      <Field className="min-w-0 gap-1.5">
         <FieldLabel>{labelEx}</FieldLabel>
-        <Input
-          type="number"
-          inputMode="decimal"
-          value={String(exValue)}
-          onChange={(e) => onExChange(Number(e.target.value) || 0)}
-        />
+        {vatType === "include" ? (
+          <Input
+            readOnly
+            value={derivedEx.toFixed(2)}
+            className="bg-muted/30"
+          />
+        ) : (
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={String(exValue)}
+            onChange={(e) => onExChange(Number(e.target.value) || 0)}
+          />
+        )}
       </Field>
-      <Field className="gap-1.5">
+      <Field className="min-w-0 gap-1.5">
         <FieldLabel>{labelIncl}</FieldLabel>
-        <Input readOnly value={incl.toFixed(2)} className="bg-muted/30" />
+        {vatType === "include" ? (
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={String(inclValue)}
+            onChange={(e) => onInclChange(Number(e.target.value) || 0)}
+          />
+        ) : (
+          <Input
+            readOnly
+            value={derivedIncl.toFixed(2)}
+            className="bg-muted/30"
+          />
+        )}
       </Field>
     </div>
   );

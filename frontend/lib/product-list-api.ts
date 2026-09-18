@@ -311,6 +311,10 @@ export type ListItemBody = {
   qrcode?: string;
   price: number;
   price_wholesale: number;
+  price_vat: number;
+  price_wholesale_vat: number;
+  vat_type?: "exclude" | "include";
+  vat_rate?: number;
   type_price: string;
   unit: string;
   qty_per_unit: number;

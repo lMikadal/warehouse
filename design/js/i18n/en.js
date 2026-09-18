@@ -139,6 +139,7 @@ window.I18N_EN = {
   "productList.colProduct": "Product",
   "productList.colStock": "Stock",
   "productList.colNetPrice": "Net price",
+  "productList.colSellPrice": "Sell price",
   "productList.colPackaging": "Packaging",
   "productList.colWarehouse": "Warehouse",
   "productList.colManageProduct": "Manage",

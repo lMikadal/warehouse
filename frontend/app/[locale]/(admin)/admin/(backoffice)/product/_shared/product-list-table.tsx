@@ -273,13 +273,13 @@ export function ProductListTable({
               sortLabel={sortFieldLabel(
                 tCrud,
                 "price",
-                tList("colNetPrice"),
+                tList("colSellPrice"),
                 sortKey,
                 sortDir,
                 "price"
               )}
             >
-              {tList("colNetPrice")}
+              {tList("colSellPrice")}
             </TableSortHead>
             <TableHead className="text-center">{tList("colPackaging")}</TableHead>
             <TableSortHead

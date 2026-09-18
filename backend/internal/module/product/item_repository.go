@@ -25,6 +25,17 @@ LEFT JOIN product_list_language ll2 ON ll2.product_list_id = pl.id AND ll2.local
 LEFT JOIN product_attribute_language bl ON bl.product_attribute_id = pl.product_brand_id AND bl.locale = $1
 LEFT JOIN product_attribute_language cl ON cl.product_attribute_id = pl.product_category_id AND cl.locale = $1`
 
+const itemBrowseVatJoin = `
+LEFT JOIN LATERAL (
+  SELECT v.vat_type
+  FROM setting_vat v
+  WHERE v.deleted_at IS NULL AND v.is_active = TRUE
+  ORDER BY v.id ASC
+  LIMIT 1
+) vat ON TRUE`
+
+const itemBrowseSellPriceSQL = `(CASE WHEN vat.vat_type = 'include' THEN i.price_vat ELSE i.price END)`
+
 func itemListOrderBy(sort, order string) string {
 	col := "i.created_at ASC, i.id ASC"
 	switch sort {
@@ -33,7 +44,7 @@ func itemListOrderBy(sort, order string) string {
 	case "stock", "_totalStock":
 		col = "total_stock"
 	case "price":
-		col = "i.price"
+		col = itemBrowseSellPriceSQL
 	case "category", "_categoryName":
 		col = "category_name"
 	case "brand", "_brandName":
@@ -84,7 +95,7 @@ func (r *ItemRepository) ListBrowse(ctx context.Context, f ItemListFilter) ([]It
 	q := fmt.Sprintf(`
 SELECT
   i.id, i.product_list_id, COALESCE(NULLIF(TRIM(i.sku), ''), pl.sku) AS sku,
-  i.price::float8, i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
+  %s::float8 AS price, i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
   pl.tag, i.is_new, pl.product_brand_id, pl.product_category_id,
   COALESCE(NULLIF(TRIM(COALESCE(il.name, il2.name, ll.name, ll2.name)), ''), '') AS display_name,
   COALESCE(NULLIF(TRIM(bl.name), ''), '—') AS brand_name,
@@ -131,7 +142,7 @@ LEFT JOIN LATERAL (
 ) car ON TRUE
 WHERE %s
 ORDER BY %s
-LIMIT $%d OFFSET $%d`, itemBrowseFrom, where, itemListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
+LIMIT $%d OFFSET $%d`, itemBrowseSellPriceSQL, itemBrowseFrom+itemBrowseVatJoin, where, itemListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
 
 	rows, err := r.db.QueryContext(ctx, q, listArgs...)
 	if err != nil {

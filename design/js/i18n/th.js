@@ -139,6 +139,7 @@ window.I18N_TH = {
   "productList.colProduct": "สินค้า",
   "productList.colStock": "สต็อก",
   "productList.colNetPrice": "ราคาขายสุทธิ",
+  "productList.colSellPrice": "ราคาขาย",
   "productList.colPackaging": "บรรจุ",
   "productList.colWarehouse": "คลังสินค้า",
   "productList.colManageProduct": "จัดการสินค้า",

@@ -5902,6 +5902,12 @@
               : true,
         type_price: isStockPrice ? "stock" : "manual",
         price_wholesale: Number(it.price_wholesale) || 0,
+        price_vat: priceInclVat(priceForStore, Number(activeSettingVat().rate) || 0),
+        price_wholesale_vat: priceInclVat(
+          Number(it.price_wholesale) || 0,
+          Number(activeSettingVat().rate) || 0
+        ),
+        vat_type: activeSettingVat().vat_type === "include" ? "include" : "exclude",
         vat_rate: Number(activeSettingVat().rate) || 0,
         promotion: String(it.promotion != null ? it.promotion : ""),
         updated_at: ts,
