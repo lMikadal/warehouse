@@ -26,7 +26,8 @@ backend/
 │   │   ├── admin/         # users, roles
 │   │   ├── setting/       # setting_* CRUD
 │   │   ├── product/       # product_attribute (categories, brands, cars)
-│   │   └── supplier/      # supplier_user aggregate
+│   │   ├── supplier/      # supplier_user aggregate
+│   │   └── member/        # member settings, tiers, users
 │   └── server/
 ├── env.example
 └── go.mod
@@ -229,6 +230,8 @@ Wave 1 schema: shared enums, locale registry (`system_language` after rename), `
 **Object storage (dev):** Compose runs MinIO; backend receives `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION`, `S3_USE_SSL`, `S3_PUBLIC_BASE_URL` (browser URL for `<img src>`, e.g. `http://localhost:9002`; see [`infrastructure/env.example`](../../infrastructure/env.example)).
 
 **Upload API:** `internal/module/system` — authed routes (Bearer only, no RBAC catalog row): `POST /api/v1/system/files` (multipart `file` + `purpose`), `GET/DELETE /api/v1/system/files/:id`. Images only (jpeg/png/webp/gif, max 5MB); writes MinIO then inserts `system_file`. Response includes public `url`. Delete soft-deletes metadata and removes object when not referenced (`409` if still linked from setting bank/sale channel). **`DeleteIfUnreferenced`** — same as delete when nothing references the id (used after setting bank/sale-channel **DELETE** or **PATCH** that clears/changes `system_file_id`). **`CleanupOrphans`** / **`make backend-file-cleanup`** — removes active `system_file` rows with no FK from `IsReferenced` and `created_at` older than grace (orphans from pre-deferred upload or abandoned drafts).
+
+**Member module:** migration `20260919100000_member_module.sql` — all `member_*` tables from `design/schema/`; adds FK `setting_sale_channel.member_setting_relation_id` → `member_setting_relation`. Handlers: [`internal/module/member`](../../backend/internal/module/member/) on RBAC group `/api/v1/member` — `/settings/credits|groups|businesses` (th/en names, optional `sku`, no list reorder); business create/patch may sync `credit_ids` × `group_ids` into `member_setting_relation`; `/settings/businesses/:id/relations`, `PATCH|DELETE /settings/relations/:id`; `/tiers` tree CRUD + `PATCH /tiers/reorder|move` + nested tier relations; `/users` aggregate (addresses, setting combos, owners, files, discounts, append-only histories). Permissions: `member.member_setting_*`, `member.member_tier.*`, `member.member_user.*` (catalog paths). Dev demo: `seeds/dev/15_member_demo.sql` after `10_setting_catalog.sql`, `14_product_demo.sql`, init geo; links sale channels 6–13 to relation ids. Postman folder **Member**.
 
 **Supplier module:** migration `20260917100000_supplier_module.sql` — `supplier_user`, `supplier_information` (PK `supplier_user_id` + `type`), `supplier_contact`, `supplier_bank`. Handlers: [`internal/module/supplier`](../../backend/internal/module/supplier/) on RBAC group `/api/v1/supplier` — resource prefix `/supplier/users` (`supplier.supplier_user.*`). List joins contact information for display; `GET /:id` returns aggregate (`information`, `contacts`, `banks`); each `information.*` object may include read-only `setting_prefix_name` and `website_*_name` labels (locale from `Accept-Language`, `th` fallback) so view-only supplier roles need not call setting/geo APIs for display; create accepts nested contacts/banks; nested `POST/PATCH/DELETE` on `/:id/contacts/:contactId` and `/:id/banks/:bankId`; `PATCH /:id/contacts/reorder` and `PATCH /:id/banks/reorder` with `{ "drag_id", "target_id" }` renumber nested `sort_order` under that user (same RBAC as nested update); delete soft-deletes user + children and removes `supplier_information` rows. Dev demo: `seeds/dev/11_supplier_demo.sql` (after `10_setting_catalog.sql` + init geo).
 

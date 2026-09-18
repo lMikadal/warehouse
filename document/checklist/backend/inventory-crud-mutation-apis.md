@@ -14,13 +14,13 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `admin_user` | `/admin/users` | — | [x] | Uses **`status`** enum — `?status=` + `PATCH { "status" }`, not `is_active` |
 | `admin_user_session` | — | — | — | Internal auth; no public toggle |
 | `location_location` | `/location/locations` | active, reorder | [x] | Sidebar inject is frontend-only |
-| `member_tier` | TBD | active, move | [ ] | Tree |
-| `member_user` | TBD | active | [ ] | |
-| `member_discount` | TBD | active | [ ] | |
-| `member_setting_business` | TBD | active | [ ] | |
-| `member_setting_credit` | TBD | active | [ ] | |
-| `member_setting_group` | TBD | active | [ ] | |
-| `member_setting_relation` | TBD | active | [ ] | |
+| `member_tier` | `/member/tiers` | active, move | [x] | Tree |
+| `member_user` | `/member/users` | active | [x] | Aggregate + nested files/discounts/history |
+| `member_discount` | `/member/users/:id/discounts` | active | [x] | Nested under user |
+| `member_setting_business` | `/member/settings/businesses` | active | [x] | Relations via business patch + `/settings/relations` |
+| `member_setting_credit` | `/member/settings/credits` | active | [x] | |
+| `member_setting_group` | `/member/settings/groups` | active | [x] | |
+| `member_setting_relation` | `/member/settings/relations` | active | [x] | Partial `PATCH { "is_active" }` only |
 | `product_list` | `/product/lists` | active | [x] | Aggregate GET/POST/PATCH; list-level `is_active` on aggregate body; no `sort_order` |
 | `product_item` | `/product/items` | active | [x] | Browse list + `PATCH { "is_active" }`; extended item `PATCH` from pricing tab |
 | `product_attribute` | `/product/categories`, `/brands`, `/cars` | active, reorder, move (categories + cars) | [x] | Three APIs; same table; type fixed per route |
@@ -58,7 +58,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `system_menu` | tree | [x] | Use **`/move`**, not `/reorder` |
 | `warehouse_list` | tree | [x] | Use **`/move`** |
 | `product_attribute` | tree | [x] | Categories **`/move`**; brand/car **`/reorder`** (sibling scope) |
-| `member_tier` | tree | [ ] | Use **`/move`** |
+| `member_tier` | tree | [x] | Use **`/move`** + `/reorder` |
 
 ## C — `tree_path` (requires `PATCH /move`)
 
@@ -67,7 +67,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `system_menu` | [x] |
 | `warehouse_list` | [x] |
 | `product_attribute` | [x] |
-| `member_tier` | [ ] |
+| `member_tier` | [x] |
 
 Shared logic: [`backend/internal/tree/`](../../../backend/internal/tree/).
 

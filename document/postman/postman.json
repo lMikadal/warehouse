@@ -1360,6 +1360,82 @@
       ]
     },
     {
+      "name": "Member",
+      "item": [
+        {
+          "name": "Settings",
+          "item": [
+            {
+              "name": "List credits",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/settings/credits?page=1&limit=10"
+              }
+            },
+            {
+              "name": "List businesses",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/settings/businesses?page=1&limit=10"
+              }
+            },
+            {
+              "name": "Business relations",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/settings/businesses/1/relations"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tiers",
+          "item": [
+            {
+              "name": "List tiers",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/tiers?page=1&limit=10"
+              }
+            },
+            {
+              "name": "Get tier",
+              "request": { "method": "GET", "url": "{{baseUrl}}/member/tiers/1" }
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Member user filters",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters"
+              }
+            },
+            {
+              "name": "List members",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users?page=1&limit=10&is_active=true"
+              }
+            },
+            {
+              "name": "Get member",
+              "request": { "method": "GET", "url": "{{baseUrl}}/member/users/1" }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Supplier",
       "item": [
         {
