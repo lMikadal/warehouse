@@ -125,6 +125,16 @@ ON CONFLICT (product_list_id, locale) DO UPDATE SET
   sub_name = EXCLUDED.sub_name,
   updated_at = EXCLUDED.updated_at;
 
+INSERT INTO product_list_supplier (product_list_id, supplier_user_id)
+VALUES
+  (1, 1),
+  (1, 2),
+  (2, 2),
+  (2, 3),
+  (3, 1),
+  (4, 4)
+ON CONFLICT (product_list_id, supplier_user_id) DO NOTHING;
+
 INSERT INTO product_list_car (id, product_list_id, product_attribute_brand_id, product_attribute_model_id, product_attribute_engine_id, gear_type, year_start, year_end, created_by, updated_by, created_at, updated_at)
 VALUES
   (1, 1, 5, 6, 7, 'auto', 2018, 2022, 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),

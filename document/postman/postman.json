@@ -1253,7 +1253,8 @@
               "request": {
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
-                "url": "{{baseUrl}}/product/lists/1"
+                "url": "{{baseUrl}}/product/lists/1",
+                "description": "Aggregate includes product_list.updated_at (ISO timestamp) for form sidebar last-updated display."
               }
             },
             {

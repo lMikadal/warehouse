@@ -224,6 +224,7 @@ export type ProductListAggregate = {
   is_new: boolean;
   product_brand_id?: number | null;
   product_category_id?: number | null;
+  updated_at?: string;
   languages: { th: LocaleBlock; en: LocaleBlock };
   factory_codes?: string[];
   other_codes?: string[];

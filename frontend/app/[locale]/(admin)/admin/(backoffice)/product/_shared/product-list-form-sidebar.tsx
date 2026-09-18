@@ -31,7 +31,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import type { DisplayLocale } from "@/lib/format-datetime";
+import {
+  formatDateTime,
+  type DisplayLocale,
+} from "@/lib/format-datetime";
 import {
   resolveProductListFormCategoryLabel,
 } from "@/lib/product-category-combobox";
@@ -186,7 +189,9 @@ export function ProductListFormSidebar({
             {tForm("summaryCarCount", { count: carCount })}
           </SummaryRow>
           <SummaryRow icon={Clock} label={tForm("summaryUpdated")}>
-            —
+            {draft.updated_at
+              ? formatDateTime(draft.updated_at, locale)
+              : "—"}
           </SummaryRow>
         </FormCardContent>
       </FormCard>

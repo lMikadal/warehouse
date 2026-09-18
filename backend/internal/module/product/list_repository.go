@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type ListRepository struct {
@@ -110,6 +111,7 @@ type listAggregateResponse struct {
 	IsNew             bool           `json:"is_new"`
 	ProductBrandID    *int64         `json:"product_brand_id,omitempty"`
 	ProductCategoryID *int64         `json:"product_category_id,omitempty"`
+	UpdatedAt         time.Time      `json:"updated_at"`
 	Languages         listLangBody   `json:"languages"`
 	FactoryCodes      []string       `json:"factory_codes"`
 	OtherCodes        []string       `json:"other_codes"`
@@ -152,11 +154,12 @@ func (r *ListRepository) GetAggregate(ctx context.Context, id int64, locale stri
 		sku, tag, note, supplierSKU string
 		isActive, isNew           bool
 		brandID, catID            sql.NullInt64
+		updatedAt                 time.Time
 	}
 	err := r.db.QueryRowContext(ctx, `
-SELECT sku, supplier_sku, tag, note, is_active, is_new, product_brand_id, product_category_id
+SELECT sku, supplier_sku, tag, note, is_active, is_new, product_brand_id, product_category_id, updated_at
 FROM product_list WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
-		&row.sku, &row.supplierSKU, &row.tag, &row.note, &row.isActive, &row.isNew, &row.brandID, &row.catID)
+		&row.sku, &row.supplierSKU, &row.tag, &row.note, &row.isActive, &row.isNew, &row.brandID, &row.catID, &row.updatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -165,7 +168,7 @@ FROM product_list WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
 	}
 	out := &listAggregateResponse{
 		ID: id, SKU: row.sku, SupplierSKU: row.supplierSKU, Tag: row.tag, Note: row.note,
-		IsActive: row.isActive, IsNew: row.isNew,
+		IsActive: row.isActive, IsNew: row.isNew, UpdatedAt: row.updatedAt,
 	}
 	if row.brandID.Valid {
 		out.ProductBrandID = &row.brandID.Int64
