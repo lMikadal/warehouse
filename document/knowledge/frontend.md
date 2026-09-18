@@ -235,6 +235,7 @@ Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 | `action.json` | `action` — short icon aria verbs |
 | `page-auth.json` | `page.login` — admin sign-in screen |
 | `page-system.json` | `page.adminMenu`, `page.adminRole`, `page.adminUser`, geo/system page headers |
+| `page-member-setting.json` | `page.memberSettingCredit|Group|Business`, `memberSettingBusiness.*` |
 | `user.json` | `userType.*`, `userStatus.*`, `rolePerm.*` |
 
 Sidebar / breadcrumb labels live in [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) as mock `labels: { th, en }` until `admin_menu` API returns display names — not in `messages/`.
@@ -274,6 +275,16 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Session | httpOnly JWT cookies via BFF [`app/api/v1/auth/*`](../../frontend/app/api/v1/auth/); short-lived access + 7d refresh. **Silent refresh:** BFF [`proxyAuthedBackendJson`](../../frontend/lib/bff-backend.ts) and [`getValidAccessToken`](../../frontend/lib/auth-server.ts) (Route Handlers only) call Go refresh when access is missing or backend returns 401 (deduped in-flight refresh). Browser CRUD helpers use [`authFetch`](../../frontend/lib/auth-client.ts) → `POST /api/v1/auth/refresh` + one retry; on failure → logout + redirect login (callback URL via [`lib/locale-path.ts`](../../frontend/lib/locale-path.ts) `stripLocalePrefix` / `loginPathWithCallback`). **SSR backoffice:** layout reads cookies only; missing access + refresh present → [`GET /api/v1/auth/refresh-redirect`](../../frontend/app/api/v1/auth/refresh-redirect/route.ts) (sets cookies, sets short-lived `warehouse_ssr_refresh_tried`, returns via `x-warehouse-admin-path` from middleware); if `/auth/me` or `/auth/nav` still fail after one refresh round → [`GET /api/v1/auth/clear-session`](../../frontend/app/api/v1/auth/clear-session/route.ts) then login (clears stale cookies — avoids login ↔ landing loops). Refresh failure on `refresh-redirect` clears cookies on the login redirect. Footer user from SSR `/auth/me`. Agent rule: [`.cursor/rules/auth-redirects.mdc`](../../.cursor/rules/auth-redirects.mdc). |
 | Guard | [`middleware.ts`](../../frontend/middleware.ts) — `/admin/*` (except login) requires **access or refresh** cookie; neither → `/admin/login`; login page auto-redirects to `warehouse_landing` **only when access cookie is present** (refresh-only does not skip login). If `warehouse_ssr_refresh_tried=1` on login, clear session cookies and show login (no landing bounce). Sets request header `x-warehouse-admin-path` for SSR refresh return URL. Locale stripping / redirect prefix: [`lib/locale-path.ts`](../../frontend/lib/locale-path.ts). |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-admin-backoffice-shell.md`](../checklist/frontend/phase-frontend-admin-backoffice-shell.md) |
+
+### Member settings (credit / group / business)
+
+| Item | Detail |
+|------|--------|
+| Routes | `/admin/member/settings/{credit,group,business}` + co-located `loading.tsx` |
+| BFF / API | [`lib/bff-member-setting-handlers.ts`](../../frontend/lib/bff-member-setting-handlers.ts) → [`app/api/v1/auth/proxy/member/settings/`](../../frontend/app/api/v1/auth/proxy/member/settings/); client [`lib/member-setting-api.ts`](../../frontend/lib/member-setting-api.ts) → Go `/api/v1/member/settings/*` |
+| UI | [`member/_shared/member-setting-lang-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-setting-lang-list.tsx) (credit, group); [`member-setting-business-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-setting-business-list.tsx) (expand relations, business sheet with [`RemoteMultiComboboxField`](../../frontend/components/molecules/remote-multi-combobox-field.tsx)) |
+| i18n | [`messages/{th,en}/page-member-setting.json`](../../frontend/messages/th/page-member-setting.json); SKU conflict → `error.skuTaken` |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-member-setting.md`](../checklist/frontend/phase-frontend-member-setting.md) |
 
 ### Product list (item browse + aggregate form)
 

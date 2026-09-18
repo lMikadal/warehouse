@@ -7,6 +7,7 @@ import enError from "./en/error.json";
 import enForm from "./en/form.json";
 import enModal from "./en/modal.json";
 import enPageAuth from "./en/page-auth.json";
+import enPageMemberSetting from "./en/page-member-setting.json";
 import enPageSetting from "./en/page-setting.json";
 import enPageLocation from "./en/page-location.json";
 import enPageProduct from "./en/page-product.json";
@@ -27,6 +28,7 @@ import thError from "./th/error.json";
 import thForm from "./th/form.json";
 import thModal from "./th/modal.json";
 import thPageAuth from "./th/page-auth.json";
+import thPageMemberSetting from "./th/page-member-setting.json";
 import thPageSetting from "./th/page-setting.json";
 import thPageLocation from "./th/page-location.json";
 import thPageProduct from "./th/page-product.json";
@@ -76,6 +78,7 @@ const FRAGMENTS: MessageTree[] = [
   thPageAuth,
   thPageSystem,
   thPageSetting,
+  thPageMemberSetting,
   thPageLocation,
   thPageWarehouse,
   thPageProduct,
@@ -99,6 +102,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageAuth,
   enPageSystem,
   enPageSetting,
+  enPageMemberSetting,
   enPageLocation,
   enPageWarehouse,
   enPageProduct,

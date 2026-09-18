@@ -1,0 +1,21 @@
+{
+  "page": {
+    "memberSettingCredit": {
+      "title": "Credit",
+      "description": "Manage member payment formats"
+    },
+    "memberSettingGroup": {
+      "title": "Group",
+      "description": "Manage member pricing groups"
+    },
+    "memberSettingBusiness": {
+      "title": "Business",
+      "description": "Manage member business groups"
+    }
+  },
+  "memberSettingBusiness": {
+    "relationsTitle": "Payment format and type",
+    "paymentMethods": "Payment format",
+    "types": "Type"
+  }
+}

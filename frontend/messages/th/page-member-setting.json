@@ -1,0 +1,21 @@
+{
+  "page": {
+    "memberSettingCredit": {
+      "title": "รูปแบบชำระ",
+      "description": "จัดการรูปแบบการชำระเงินของสมาชิก"
+    },
+    "memberSettingGroup": {
+      "title": "ประเภท",
+      "description": "จัดการประเภทราคาของสมาชิก"
+    },
+    "memberSettingBusiness": {
+      "title": "กลุ่มธุรกิจ",
+      "description": "จัดการกลุ่มธุรกิจของสมาชิก"
+    }
+  },
+  "memberSettingBusiness": {
+    "relationsTitle": "รูปแบบชำระและประเภท",
+    "paymentMethods": "รูปแบบชำระเงิน",
+    "types": "ประเภท"
+  }
+}
