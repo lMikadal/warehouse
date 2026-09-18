@@ -230,9 +230,13 @@ export function ProductListFormVariantSections({
         />
       </Section>
 
-      <Section title={tForm("itemSectionSales")} num={2}>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-3 rounded-md border border-border p-3">
+      <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
+        <Section
+          title={tForm("itemSectionSales")}
+          num={2}
+          className="h-full"
+        >
+          <div className="space-y-3">
             <Field
               className="gap-1.5"
               data-invalid={fieldErrors?.nameTh ? true : undefined}
@@ -468,9 +472,10 @@ export function ProductListFormVariantSections({
               onCheckedChange={(checked) => patch({ is_fake: checked })}
             />
           </div>
-          <div className="space-y-3">
-            <div className="space-y-3 rounded-md border border-border p-3">
-              <h4 className="text-sm font-medium">{tForm("itemSpecs")}</h4>
+        </Section>
+        <div className="flex min-w-0 flex-col gap-3">
+          <Section title={tForm("itemSpecs")} num="2.1">
+            <div className="space-y-3">
               <Field
                 className="gap-1.5"
                 data-invalid={fieldErrors?.weight ? true : undefined}
@@ -556,8 +561,9 @@ export function ProductListFormVariantSections({
                 </Field>
               </div>
             </div>
-            <div className="space-y-3 rounded-md border border-border p-3">
-              <h4 className="text-sm font-medium">{tForm("itemTotalStock")}</h4>
+          </Section>
+          <Section title={tForm("itemTotalStock")} num="2.2">
+            <div className="space-y-3">
               <div className="flex flex-wrap items-end gap-2">
                 <Field className="gap-1.5 min-w-[8rem]">
                   <FieldLabel>{tList("colStock")}</FieldLabel>
@@ -585,9 +591,9 @@ export function ProductListFormVariantSections({
                 />
               </Field>
             </div>
-          </div>
+          </Section>
         </div>
-      </Section>
+      </div>
 
       <Section title={tForm("itemSectionStorefront")} num={3}>
         <div className="flex flex-wrap gap-4 text-sm">
@@ -1054,18 +1060,23 @@ function Section({
   num,
   title,
   children,
+  className,
 }: {
-  num: number;
+  num: number | string;
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) {
+  const badgeClass =
+    typeof num === "string"
+      ? "bg-primary/10 text-primary flex min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold"
+      : "bg-primary/10 text-primary flex size-6 items-center justify-center rounded-full text-xs font-semibold";
+
   return (
-    <FormCard>
+    <FormCard className={className}>
       <FormCardHeader>
         <FormCardTitle className="flex items-center gap-2 text-base">
-          <span className="bg-primary/10 text-primary flex size-6 items-center justify-center rounded-full text-xs font-semibold">
-            {num}
-          </span>
+          <span className={badgeClass}>{num}</span>
           {title}
         </FormCardTitle>
       </FormCardHeader>
