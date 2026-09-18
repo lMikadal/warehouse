@@ -209,6 +209,7 @@ export function ProductListFormVariantCard({
             canCloneItem={canCloneItem}
             onCloneAlternateSku={onCloneAlternateSku}
             stocksRefreshKey={stocksRefreshKey}
+            listSupplierIds={listSupplierIds}
           />
         </CollapsibleContent>
       </Collapsible>

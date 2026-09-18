@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Eye, ImageIcon, Plus, X } from "lucide-react";
+import { Copy, Eye, ImageIcon, Plus, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -13,7 +13,6 @@ import {
   FormCardHeader,
   FormCardTitle,
 } from "@/components/molecules/form-card";
-import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { TableIconActions } from "@/components/molecules/table-icon-actions";
 import { Spinner } from "@/components/ui/spinner";
@@ -45,6 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import type { DisplayLocale } from "@/lib/format-datetime";
+import { fetchProductListFilters } from "@/lib/product-filters-api";
 import {
   fetchProductItemStocks,
   type ListItemBody,
@@ -188,6 +188,7 @@ type Props = {
   onCloneAlternateSku: (newSuffix: string) => void | Promise<void>;
   /** Bump when lot stock changes so channel margin refetches used lot cost. */
   stocksRefreshKey?: number;
+  listSupplierIds: number[];
 };
 
 export function ProductListFormVariantSections({
@@ -197,13 +198,14 @@ export function ProductListFormVariantSections({
   vat,
   saleChannels,
   onChange,
-  loadSuppliers,
+  loadSuppliers: _loadSuppliers,
   onViewLots,
   fieldErrors,
   onClearFieldError,
   canCloneItem,
   onCloneAlternateSku,
   stocksRefreshKey = 0,
+  listSupplierIds,
 }: Props) {
   const pendingAlternateClone = hasPendingAlternateClone(allItems);
   const locale = useLocale() as DisplayLocale;
@@ -227,13 +229,9 @@ export function ProductListFormVariantSections({
     null
   );
 
-  const [supplierEditId, setSupplierEditId] = useState<number | null>(null);
-  const [supplierDraft, setSupplierDraft] = useState({
-    supplier_user_id: 0,
-    cost_price: 0,
-    discount: 0,
-    discount_type: "baht",
-  });
+  const [listPartnerLabelById, setListPartnerLabelById] = useState<
+    Map<number, string>
+  >(new Map());
 
   const [supplyTab, setSupplyTab] = useState<"suppliers" | "warehouse">(
     "suppliers"
@@ -305,6 +303,63 @@ export function ProductListFormVariantSections({
     [item.channel_prices]
   );
 
+  const listPartnerIds = useMemo(
+    () => listSupplierIds.filter((id) => id > 0),
+    [listSupplierIds]
+  );
+
+  const hasListPartnerLeftToAdd = useMemo(() => {
+    const used = new Set(
+      (item.suppliers ?? [])
+        .map((s) => s.supplier_user_id)
+        .filter((id) => id > 0)
+    );
+    return listPartnerIds.some((id) => !used.has(id));
+  }, [item.suppliers, listPartnerIds]);
+
+  useEffect(() => {
+    if (listPartnerIds.length === 0) {
+      setListPartnerLabelById(new Map());
+      return;
+    }
+    let cancelled = false;
+    void fetchProductListFilters(locale, "suppliers", {
+      page: 1,
+      limit: 100,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        const allowed = new Set(listPartnerIds);
+        const map = new Map<number, string>();
+        for (const row of res.items) {
+          if (allowed.has(row.id)) {
+            map.set(row.id, row.name);
+          }
+        }
+        setListPartnerLabelById(map);
+      })
+      .catch(() => {
+        if (!cancelled) setListPartnerLabelById(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [listPartnerIds, locale]);
+
+  const supplierSelectOptionsForRow = (currentSupplierId: number) => {
+    const used = new Set(
+      (item.suppliers ?? [])
+        .map((s) => s.supplier_user_id)
+        .filter((id) => id > 0 && id !== currentSupplierId)
+    );
+    return listPartnerIds
+      .filter((id) => !used.has(id))
+      .map((id) => ({
+        id,
+        name: listPartnerLabelById.get(id) ?? String(id),
+      }));
+  };
+
   useEffect(() => {
     if (!item.id) {
       setUsedLotCostPerUnit(null);
@@ -340,6 +395,25 @@ export function ProductListFormVariantSections({
     if (idx < 0) return;
     cp[idx] = { ...cp[idx]!, ...rowPatch };
     patch({ channel_prices: sortChannelPriceRows(cp, saleChannels) });
+  };
+
+  const updateSupplierRow = (
+    rowIndex: number,
+    rowPatch: Partial<NonNullable<ListItemBody["suppliers"]>[number]>
+  ) => {
+    const list = [...(item.suppliers ?? [])];
+    if (rowIndex < 0 || rowIndex >= list.length) return;
+    const nextId =
+      rowPatch.supplier_user_id ?? list[rowIndex]!.supplier_user_id;
+    if (
+      nextId > 0 &&
+      list.some((r, i) => i !== rowIndex && r.supplier_user_id === nextId)
+    ) {
+      toast.error(tForm("itemSupplierDuplicate"));
+      return;
+    }
+    list[rowIndex] = { ...list[rowIndex]!, ...rowPatch };
+    patch({ suppliers: list });
   };
 
   const setChannelId = (oldId: number, newId: number) => {
@@ -1144,168 +1218,121 @@ export function ProductListFormVariantSections({
                     </TableRow>
                   ) : (
                     (item.suppliers ?? []).map((row, si) => {
-                      const rowKey =
+                      const rowOptions = supplierSelectOptionsForRow(
+                        row.supplier_user_id
+                      );
+                      const resolvedSupplierName =
                         row.supplier_user_id > 0
-                          ? row.supplier_user_id
-                          : -(si + 1);
-                      const editing = supplierEditId === rowKey;
-                      const draft = editing ? supplierDraft : row;
+                          ? listPartnerLabelById.get(row.supplier_user_id)
+                          : undefined;
+                      const phCost = tFormPh("placeholder.input", {
+                        label: tForm("itemColCost"),
+                      });
+                      const phDiscount = tFormPh("placeholder.input", {
+                        label: tForm("itemColDiscount"),
+                      });
                       return (
-                        <TableRow key={row.supplier_user_id}>
-                          <TableCell>
-                            {editing ? (
-                              <RemoteComboboxField
-                                label=""
-                                value={
-                                  draft.supplier_user_id
-                                    ? String(draft.supplier_user_id)
-                                    : ""
-                                }
-                                onValueChange={(v) =>
-                                  setSupplierDraft((d) => ({
-                                    ...d,
-                                    supplier_user_id: Number(v) || 0,
-                                  }))
-                                }
-                                placeholder={tFormPh("placeholder.select", {
-                                  label: tForm("itemColSupplier"),
-                                })}
-                                emptyLabel={tError("noData")}
-                                onLoadOptions={loadSuppliers}
-                                inputClassName="min-w-[12rem]"
-                              />
-                            ) : (
-                              row.supplier_user_id
-                            )}
+                        <TableRow
+                          key={
+                            row.supplier_user_id > 0
+                              ? row.supplier_user_id
+                              : `draft-sup-${si}`
+                          }
+                        >
+                          <TableCell className="min-w-[12rem]">
+                            <Select
+                              value={
+                                row.supplier_user_id > 0
+                                  ? String(row.supplier_user_id)
+                                  : undefined
+                              }
+                              onValueChange={(v) =>
+                                updateSupplierRow(si, {
+                                  supplier_user_id: Number(v),
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue
+                                  placeholder={tFormPh("placeholder.select", {
+                                    label: tForm("itemColSupplier"),
+                                  })}
+                                >
+                                  {resolvedSupplierName ?? null}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {rowOptions.map((c) => (
+                                  <SelectItem key={c.id} value={String(c.id)}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {editing ? (
-                              <Input
-                                type="number"
-                                className="ml-auto max-w-32"
-                                value={String(draft.cost_price)}
-                                onChange={(e) =>
-                                  setSupplierDraft((d) => ({
-                                    ...d,
-                                    cost_price: Number(e.target.value) || 0,
-                                  }))
-                                }
-                              />
-                            ) : (
-                              row.cost_price
-                            )}
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              className="ml-auto max-w-32 text-right tabular-nums"
+                              placeholder={phCost}
+                              value={String(row.cost_price ?? 0)}
+                              onChange={(e) =>
+                                updateSupplierRow(si, {
+                                  cost_price: Number(e.target.value) || 0,
+                                })
+                              }
+                            />
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {editing ? (
-                              <Input
-                                type="number"
-                                className="ml-auto max-w-32"
-                                value={String(draft.discount)}
-                                onChange={(e) =>
-                                  setSupplierDraft((d) => ({
-                                    ...d,
-                                    discount: Number(e.target.value) || 0,
-                                  }))
-                                }
-                              />
-                            ) : (
-                              row.discount
-                            )}
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              className="ml-auto max-w-32 text-right tabular-nums"
+                              placeholder={phDiscount}
+                              value={String(row.discount ?? 0)}
+                              onChange={(e) =>
+                                updateSupplierRow(si, {
+                                  discount: Number(e.target.value) || 0,
+                                })
+                              }
+                            />
                           </TableCell>
                           <TableCell className="text-center">
-                            {editing ? (
-                              <Select
-                                value={draft.discount_type}
-                                onValueChange={(v) =>
-                                  v &&
-                                  setSupplierDraft((d) => ({
-                                    ...d,
-                                    discount_type: v,
-                                  }))
-                                }
-                              >
-                                <SelectTrigger className="mx-auto max-w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="baht">
-                                    {tForm("discountBaht")}
-                                  </SelectItem>
-                                  <SelectItem value="percent">
-                                    {tForm("discountPercent")}
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : row.discount_type === "percent" ? (
-                              tForm("discountPercent")
-                            ) : (
-                              tForm("discountBaht")
-                            )}
+                            <Select
+                              value={row.discount_type ?? "baht"}
+                              onValueChange={(v) =>
+                                v &&
+                                updateSupplierRow(si, { discount_type: v })
+                              }
+                            >
+                              <SelectTrigger className="mx-auto max-w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="baht">
+                                  {tForm("discountBaht")}
+                                </SelectItem>
+                                <SelectItem value="percent">
+                                  {tForm("discountPercent")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {supplierNetPrice(draft).toFixed(2)}
+                            {supplierNetPrice(row).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {editing ? (
-                              <div className="inline-flex gap-1">
-                                <ButtonIcon
-                                  type="button"
-                                  variant="outline"
-                                  tone="neutral"
-                                  aria-label={tCrud("btn.save")}
-                                  onClick={() => {
-                                    const list = [...(item.suppliers ?? [])];
-                                    const idx = list.findIndex((_, i) => {
-                                      const k =
-                                        list[i]!.supplier_user_id > 0
-                                          ? list[i]!.supplier_user_id
-                                          : -(i + 1);
-                                      return k === rowKey;
-                                    });
-                                    if (idx >= 0) {
-                                      list[idx] = { ...supplierDraft };
-                                    }
-                                    patch({ suppliers: list });
-                                    setSupplierEditId(null);
-                                  }}
-                                >
-                                  <Check className="text-current" />
-                                </ButtonIcon>
-                                <ButtonIcon
-                                  type="button"
-                                  variant="outline"
-                                  tone="neutral"
-                                  aria-label={tCrud("btn.cancel")}
-                                  onClick={() => setSupplierEditId(null)}
-                                >
-                                  <X className="text-current" />
-                                </ButtonIcon>
-                              </div>
-                            ) : (
-                              <TableIconActions
-                                actions={["edit", "delete"]}
-                                onAction={(a) => {
-                                  if (a === "edit") {
-                                    setSupplierEditId(rowKey);
-                                    setSupplierDraft({ ...row });
-                                  } else {
-                                    patch({
-                                      suppliers: (item.suppliers ?? []).filter(
-                                        (_, i) => {
-                                          const k =
-                                            item.suppliers![i]!.supplier_user_id >
-                                            0
-                                              ? item.suppliers![i]!
-                                                  .supplier_user_id
-                                              : -(i + 1);
-                                          return k !== rowKey;
-                                        }
-                                      ),
-                                    });
-                                  }
-                                }}
-                              />
-                            )}
+                            <TableIconActions
+                              actions={["delete"]}
+                              onAction={() => {
+                                patch({
+                                  suppliers: (item.suppliers ?? []).filter(
+                                    (_, i) => i !== si
+                                  ),
+                                });
+                              }}
+                            />
                           </TableCell>
                         </TableRow>
                       );
@@ -1316,10 +1343,20 @@ export function ProductListFormVariantSections({
             </div>
             <Button
               type="button"
-              variant="outline"
-              size="sm"
-              disabled={supplierEditId != null}
+              size="lg"
+              className="w-full"
+              disabled={
+                listPartnerIds.length === 0 || !hasListPartnerLeftToAdd
+              }
               onClick={() => {
+                if (listPartnerIds.length === 0) {
+                  toast.warning(tForm("itemSupplierAddNeedsListPartners"));
+                  return;
+                }
+                if (!hasListPartnerLeftToAdd) {
+                  toast.info(tForm("itemSupplierAllAdded"));
+                  return;
+                }
                 const list = [...(item.suppliers ?? [])];
                 list.push({
                   supplier_user_id: 0,
@@ -1328,15 +1365,9 @@ export function ProductListFormVariantSections({
                   discount_type: "baht",
                 });
                 patch({ suppliers: list });
-                setSupplierEditId(-(list.length));
-                setSupplierDraft({
-                  supplier_user_id: 0,
-                  cost_price: 0,
-                  discount: 0,
-                  discount_type: "baht",
-                });
               }}
             >
+              <Plus className="mr-1 size-4" />
               {tForm("itemAddSupplier")}
             </Button>
           </TabsContent>
