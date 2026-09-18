@@ -72,6 +72,82 @@ export async function fetchWarehouseById(locale: string, id: number) {
   return client.getById<Record<string, unknown>>(locale, id);
 }
 
+export type WarehouseCascadeLevel =
+  | "warehouse"
+  | "zone"
+  | "shelf"
+  | "rack"
+  | "bin";
+
+export type WarehouseChainResolved = {
+  ids: Record<WarehouseCascadeLevel, string>;
+  labels: Partial<Record<WarehouseCascadeLevel, string>>;
+};
+
+const emptyWarehouseChain = (): WarehouseChainResolved => ({
+  ids: { warehouse: "", zone: "", shelf: "", rack: "", bin: "" },
+  labels: {},
+});
+
+const warehouseChainCache = new Map<string, WarehouseChainResolved>();
+
+function warehouseNodeLabel(row: Record<string, unknown>): string {
+  const name = row.name;
+  if (typeof name === "string" && name.trim()) return name;
+  const sku = row.sku;
+  if (typeof sku === "string" && sku.trim()) return sku;
+  const id = row.id;
+  return id != null ? String(id) : "—";
+}
+
+const CASCADE_LEVELS: WarehouseCascadeLevel[] = [
+  "warehouse",
+  "zone",
+  "shelf",
+  "rack",
+  "bin",
+];
+
+function isCascadeLevel(type: string): type is WarehouseCascadeLevel {
+  return (CASCADE_LEVELS as string[]).includes(type);
+}
+
+/** Walk parent_id from bin to root; map nodes by type (zone→rack shortcuts omit shelf). */
+export async function resolveWarehouseChainFromBin(
+  locale: string,
+  binId: number
+): Promise<WarehouseChainResolved> {
+  if (binId <= 0) return emptyWarehouseChain();
+
+  const cacheKey = `${locale}:${binId}`;
+  const cached = warehouseChainCache.get(cacheKey);
+  if (cached) return cached;
+
+  const ids = { ...emptyWarehouseChain().ids };
+  const labels: Partial<Record<WarehouseCascadeLevel, string>> = {};
+
+  let curId: number | null = binId;
+  for (let hop = 0; hop < 8 && curId != null && curId > 0; hop++) {
+    const row = await fetchWarehouseById(locale, curId);
+    const type = String(row.type ?? "");
+    const id = Number(row.id);
+    if (!id) break;
+    if (isCascadeLevel(type)) {
+      ids[type] = String(id);
+      labels[type] = warehouseNodeLabel(row);
+    }
+    const parent = row.parent_id;
+    curId =
+      parent == null || parent === ""
+        ? null
+        : Number(parent);
+  }
+
+  const result: WarehouseChainResolved = { ids, labels };
+  warehouseChainCache.set(cacheKey, result);
+  return result;
+}
+
 export async function createWarehouseNode(
   locale: string,
   body: Record<string, unknown>

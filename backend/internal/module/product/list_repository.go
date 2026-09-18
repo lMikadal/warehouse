@@ -3,7 +3,6 @@ package product
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 	"time"
 )
@@ -864,6 +863,21 @@ UPDATE product_item_warehouse SET deleted_at = NOW(), updated_at = NOW(), update
 			continue
 		}
 		if w.ID != nil && *w.ID > 0 {
+			var oldBinID int64
+			err := tx.QueryRowContext(ctx, `
+SELECT bin_id FROM product_item_warehouse WHERE id = $1 AND product_item_id = $2 AND deleted_at IS NULL`,
+				*w.ID, itemID).Scan(&oldBinID)
+			if err == sql.ErrNoRows {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			if oldBinID != w.BinID {
+				if err := assertBinAvailable(ctx, tx, w.BinID, itemID); err != nil {
+					return err
+				}
+			}
 			if _, err := tx.ExecContext(ctx, `
 UPDATE product_item_warehouse SET bin_id = $2, updated_at = NOW(), updated_by = $3
 WHERE id = $1 AND product_item_id = $4 AND deleted_at IS NULL`, *w.ID, w.BinID, nullActor(actorID), itemID); err != nil {
@@ -955,7 +969,7 @@ WHERE bin_id = $1 AND deleted_at IS NULL AND product_item_id <> $2 LIMIT 1`, bin
 	if err != nil {
 		return err
 	}
-	return fmt.Errorf("%w: bin in use", ErrValidation)
+	return ErrBinInUse
 }
 
 func (r *ListRepository) PatchItemFull(ctx context.Context, itemID int64, it listItemBody, actorID int64) error {

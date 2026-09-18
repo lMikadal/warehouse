@@ -64,6 +64,7 @@ import {
   type ItemSalesFieldErrors,
   applyDefaultChannelsToItems,
   type SaleChannelMeta,
+  itemHasDuplicateWarehouseBins,
   validateItemSalesFields,
   variantItemKey,
 } from "./product-list-form-utils";
@@ -313,13 +314,26 @@ export function ProductListForm({ listId }: { listId?: number }) {
     });
     setItemFieldErrors(nextItemErrors);
 
+    let firstWarehouseDupKey: string | null = null;
+    draft.items.forEach((item, index) => {
+      if (itemHasDuplicateWarehouseBins(item)) {
+        const key = variantItemKey(item, index);
+        if (!firstWarehouseDupKey) firstWarehouseDupKey = key;
+      }
+    });
+
     const listOk = Object.keys(err).length === 0;
     const itemsOk = Object.keys(nextItemErrors).length === 0;
-    if (!itemsOk) {
+    const warehouseOk = firstWarehouseDupKey == null;
+    if (!itemsOk || !warehouseOk) {
       setTab("pricing");
       if (firstInvalidKey) setExpandVariantKey(firstInvalidKey);
+      else if (firstWarehouseDupKey) setExpandVariantKey(firstWarehouseDupKey);
     }
-    return listOk && itemsOk;
+    if (!warehouseOk) {
+      toast.error(tForm("itemWarehouseBinDuplicate"));
+    }
+    return listOk && itemsOk && warehouseOk;
   };
 
   const onSave = async () => {
@@ -337,9 +351,13 @@ export function ProductListForm({ listId }: { listId?: number }) {
         router.push(`/admin/product/list/${id}`);
       }
     } catch (e) {
-      toast.error(
-        e instanceof ProductListApiError ? e.message : tError("noData")
-      );
+      if (e instanceof ProductListApiError && e.code === "bin_in_use") {
+        toast.error(tForm("itemLotBinTaken"));
+      } else {
+        toast.error(
+          e instanceof ProductListApiError ? e.message : tError("noData")
+        );
+      }
     } finally {
       setSaving(false);
     }

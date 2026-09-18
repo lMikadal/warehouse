@@ -46,8 +46,12 @@ import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-opti
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { fetchProductListFilters } from "@/lib/product-filters-api";
 import {
+  fetchAllProductItemStocks,
   fetchProductItemStocks,
+  fetchProductItemWarehousePlacements,
   type ListItemBody,
+  type ProductItemStockRow,
+  type WarehousePlacementRow,
 } from "@/lib/product-list-api";
 import type { SettingVatItem } from "@/lib/setting-api";
 import {
@@ -57,6 +61,7 @@ import {
 } from "@/lib/system-file-api";
 import { cn } from "@/lib/utils";
 
+import { remainQtyForWarehousePlacement } from "./product-list-form-lot-utils";
 import { WarehousePlacementCascadeRow } from "./product-list-form-warehouse-placement-row";
 import {
   activeVatRate,
@@ -228,6 +233,10 @@ export function ProductListFormVariantSections({
   const [usedLotCostPerUnit, setUsedLotCostPerUnit] = useState<number | null>(
     null
   );
+  const [warehousePlacementMeta, setWarehousePlacementMeta] = useState<
+    WarehousePlacementRow[]
+  >([]);
+  const [stockRows, setStockRows] = useState<ProductItemStockRow[]>([]);
 
   const [listPartnerLabelById, setListPartnerLabelById] = useState<
     Map<number, string>
@@ -377,6 +386,34 @@ export function ProductListFormVariantSections({
       })
       .catch(() => {
         if (!cancelled) setUsedLotCostPerUnit(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, locale, stocksRefreshKey]);
+
+  useEffect(() => {
+    if (!item.id) {
+      setWarehousePlacementMeta([]);
+      setStockRows([]);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      fetchProductItemWarehousePlacements(locale, item.id),
+      fetchAllProductItemStocks(locale, item.id),
+    ])
+      .then(([placements, stocks]) => {
+        if (!cancelled) {
+          setWarehousePlacementMeta(placements);
+          setStockRows(stocks);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWarehousePlacementMeta([]);
+          setStockRows([]);
+        }
       });
     return () => {
       cancelled = true;
@@ -1372,48 +1409,115 @@ export function ProductListFormVariantSections({
             </Button>
           </TabsContent>
           <TabsContent value="warehouse" className="mt-3 space-y-3">
-            <p className="text-muted-foreground text-sm">{tForm("itemWarehouseHint")}</p>
-            {(item.warehouse_placements ?? []).length === 0 ? (
-              <p className="text-muted-foreground text-sm">{tForm("itemWarehouseEmpty")}</p>
-            ) : (
-              (item.warehouse_placements ?? []).map((wp, wi) => (
-                <div
-                  key={wp.id ?? `wh-${wi}`}
-                  className="flex flex-col gap-2 rounded-md border border-border p-3"
-                >
-                  <WarehousePlacementCascadeRow
-                    key={wp.id ?? `wh-row-${wi}-${wp.bin_id}`}
-                    binId={wp.bin_id}
-                    onBinChange={(bin_id) => {
-                      const list = [...(item.warehouse_placements ?? [])];
-                      list[wi] = { ...list[wi]!, bin_id };
-                      patch({ warehouse_placements: list });
-                    }}
-                  />
-                  <div className="flex justify-end">
-                    <ButtonIcon
-                      type="button"
-                      variant="outline"
-                      tone="delete"
-                      aria-label={tCrud("btn.delete")}
-                      onClick={() =>
-                        patch({
-                          warehouse_placements: (
-                            item.warehouse_placements ?? []
-                          ).filter((_, i) => i !== wi),
-                        })
-                      }
-                    >
-                      <X className="text-current" />
-                    </ButtonIcon>
-                  </div>
-                </div>
-              ))
-            )}
+            <div className="overflow-x-auto rounded-md border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tList("wpLabelWarehouse")}</TableHead>
+                    <TableHead>{tList("wpLabelZone")}</TableHead>
+                    <TableHead>{tList("wpLabelShelf")}</TableHead>
+                    <TableHead>{tList("wpLabelRack")}</TableHead>
+                    <TableHead>{tList("wpLabelBin")}</TableHead>
+                    <TableHead className="text-right">
+                      {tList("wpLabelQty")}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {tCrud("table.actions")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(item.warehouse_placements ?? []).length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-muted-foreground text-center"
+                      >
+                        {tForm("itemWarehouseEmpty")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    (item.warehouse_placements ?? []).map((wp, wi) => {
+                      const meta =
+                        wp.id != null && wp.id > 0
+                          ? warehousePlacementMeta.find(
+                              (p) => p.placement_id === wp.id
+                            )
+                          : undefined;
+                      const effectiveBinId =
+                        wp.bin_id > 0 ? wp.bin_id : meta?.bin_id ?? 0;
+                      const pathHints =
+                        meta != null
+                          ? {
+                              warehouse: meta.warehouse_name,
+                              zone: meta.zone_name,
+                              shelf: meta.shelf_name,
+                              rack: meta.rack_name,
+                              bin: meta.bin_name,
+                            }
+                          : undefined;
+                      const qty = remainQtyForWarehousePlacement(
+                        wp,
+                        warehousePlacementMeta,
+                        stockRows
+                      );
+                      return (
+                        <TableRow key={wp.id ?? `wh-${wi}`}>
+                          <WarehousePlacementCascadeRow
+                            key={
+                              wp.id ??
+                              `wh-row-${wi}-${effectiveBinId}`
+                            }
+                            layout="table"
+                            binId={effectiveBinId}
+                            pathHints={pathHints}
+                            onBinChange={(bin_id) => {
+                              if (
+                                bin_id > 0 &&
+                                (item.warehouse_placements ?? []).some(
+                                  (w, i) => i !== wi && w.bin_id === bin_id
+                                )
+                              ) {
+                                toast.error(tForm("itemWarehouseBinDuplicate"));
+                                return;
+                              }
+                              const list = [...(item.warehouse_placements ?? [])];
+                              list[wi] = { ...list[wi]!, bin_id };
+                              patch({ warehouse_placements: list });
+                            }}
+                          />
+                          <TableCell>
+                            <Input
+                              readOnly
+                              tabIndex={-1}
+                              className="bg-muted/30 text-right tabular-nums"
+                              value={formatStockQty(qty, locale)}
+                              aria-label={tList("wpLabelQty")}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <TableIconActions
+                              actions={["delete"]}
+                              onAction={() =>
+                                patch({
+                                  warehouse_placements: (
+                                    item.warehouse_placements ?? []
+                                  ).filter((_, i) => i !== wi),
+                                })
+                              }
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
             <Button
               type="button"
-              variant="outline"
-              size="sm"
+              size="lg"
+              className="w-full"
               onClick={() =>
                 patch({
                   warehouse_placements: [
@@ -1423,6 +1527,7 @@ export function ProductListFormVariantSections({
                 })
               }
             >
+              <Plus className="mr-1 size-4" />
               {tForm("itemAddWarehouse")}
             </Button>
           </TabsContent>

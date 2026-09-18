@@ -509,6 +509,9 @@ func (h *ListHandler) patch(c *echo.Context) error {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 		}
+		if errors.Is(err, ErrBinInUse) {
+			return c.JSON(http.StatusConflict, api.ErrorBody{Code: "bin_in_use", Message: "bin in use"})
+		}
 		if errors.Is(err, ErrValidation) {
 			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "validation failed"})
 		}

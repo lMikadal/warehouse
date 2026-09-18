@@ -140,6 +140,26 @@ export function writeLotPageSize(n: number) {
 export type LotComboboxOption = { value: string; label: string };
 
 /** Lot partner picker: only suppliers linked on the product_list (`supplier_ids`). */
+export function remainQtyForWarehousePlacement(
+  wp: { id?: number | null; bin_id: number },
+  placements: WarehousePlacementRow[],
+  stocks: ProductItemStockRow[]
+): number {
+  if (wp.id != null && wp.id > 0) {
+    const api = placements.find((p) => p.placement_id === wp.id);
+    if (api) return api.quantity;
+    return stocks
+      .filter((s) => s.product_item_warehouse_id === wp.id)
+      .reduce((n, s) => n + (Number(s.remain_quantity) || 0), 0);
+  }
+  if (wp.bin_id > 0) {
+    return stocks
+      .filter((s) => s.bin_id === wp.bin_id)
+      .reduce((n, s) => n + (Number(s.remain_quantity) || 0), 0);
+  }
+  return 0;
+}
+
 export function filterComboboxToListSuppliers(
   options: LotComboboxOption[],
   listSupplierIds: number[]

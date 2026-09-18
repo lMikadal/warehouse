@@ -259,6 +259,34 @@ export function hasItemSalesFieldErrors(
   );
 }
 
+export function normalizeWarehousePlacements(
+  rows: { id?: number | null; bin_id: number }[] | undefined
+): { id?: number | null; bin_id: number }[] {
+  if (!rows?.length) return [];
+  const byBin = new Map<number, { id?: number | null; bin_id: number }>();
+  for (const w of rows) {
+    if (w.bin_id <= 0) continue;
+    const prev = byBin.get(w.bin_id);
+    if (!prev) {
+      byBin.set(w.bin_id, w);
+      continue;
+    }
+    const keepNew =
+      w.id != null &&
+      w.id > 0 &&
+      (prev.id == null || prev.id <= 0);
+    if (keepNew) byBin.set(w.bin_id, w);
+  }
+  return [...byBin.values()];
+}
+
+export function itemHasDuplicateWarehouseBins(item: ListItemBody): boolean {
+  const bins = (item.warehouse_placements ?? [])
+    .filter((w) => w.bin_id > 0)
+    .map((w) => w.bin_id);
+  return new Set(bins).size !== bins.length;
+}
+
 export function sortListItemFiles(
   files: ListItemFileBody[] | undefined
 ): ListItemFileBody[] {
@@ -466,6 +494,7 @@ export function prepareItemsForSave(
       ...rest,
       sku: composeItemSku(prefix, suffix),
       channel_prices,
+      warehouse_placements: normalizeWarehousePlacements(rest.warehouse_placements),
     };
   });
 }
