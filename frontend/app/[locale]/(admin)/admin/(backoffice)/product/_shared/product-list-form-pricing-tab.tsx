@@ -19,9 +19,11 @@ import { ProductListFormVariantCard } from "./product-list-form-variant-card";
 import {
   cloneListItemBody,
   emptyItem,
+  mergeDefaultChannelPrices,
   hasItemSalesFieldErrors,
   hasPendingAlternateClone,
   type ItemSalesFieldErrors,
+  type SaleChannelMeta,
   validateItemSalesFields,
   variantItemKey,
 } from "./product-list-form-utils";
@@ -30,7 +32,7 @@ type Props = {
   locale: string;
   draft: ProductListAggregate;
   setDraft: React.Dispatch<React.SetStateAction<ProductListAggregate>>;
-  saleChannels: { id: number; name: string }[];
+  saleChannels: SaleChannelMeta[];
   itemFieldErrors: Record<string, ItemSalesFieldErrors>;
   setItemFieldErrors: React.Dispatch<
     React.SetStateAction<Record<string, ItemSalesFieldErrors>>
@@ -97,7 +99,7 @@ export function ProductListFormPricingTab({
   };
 
   const addVariant = () => {
-    const item = emptyItem(true);
+    const item = mergeDefaultChannelPrices(emptyItem(true), saleChannels);
     const key = variantItemKey(item, draft.items.length);
     setExpanded((e) => ({ ...e, [key]: true }));
     setDraft((d) => ({ ...d, items: [...d.items, item] }));

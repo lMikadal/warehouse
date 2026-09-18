@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Eye, X } from "lucide-react";
+import { Check, Copy, Eye, ImageIcon, Plus, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import {
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import { TableIconActions } from "@/components/molecules/table-icon-actions";
+import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -44,7 +45,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import type { RemoteComboboxLoadContext } from "@/hooks/use-remote-combobox-options";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import type { ListItemBody } from "@/lib/product-list-api";
+import {
+  fetchProductItemStocks,
+  type ListItemBody,
+} from "@/lib/product-list-api";
 import type { SettingVatItem } from "@/lib/setting-api";
 import {
   fetchSystemFile,
@@ -56,8 +60,12 @@ import { cn } from "@/lib/utils";
 import { WarehousePlacementCascadeRow } from "./product-list-form-warehouse-placement-row";
 import {
   activeVatRate,
+  channelRowExIncl,
+  channelSellForMargin,
   composeItemSku,
   firstSupplierCost,
+  sortChannelPriceRows,
+  type SaleChannelMeta,
   formatStockQty,
   generateItemBarcode,
   generateItemQrcode,
@@ -82,18 +90,95 @@ import {
 
 const TABLE_PAGE = 10;
 
+function SaleChannelLogoPlaceholder() {
+  return (
+    <div
+      className="flex size-10 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-muted/30"
+      aria-hidden
+    >
+      <ImageIcon className="size-5 text-muted-foreground" aria-hidden />
+    </div>
+  );
+}
+
+function SaleChannelLogoThumbLoaded({
+  fileId,
+  locale,
+}: {
+  fileId: number;
+  locale: string;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSystemFile(locale, fileId)
+      .then((item) => {
+        if (!cancelled) setUrl(item.url);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileId, locale]);
+
+  if (loading) {
+    return (
+      <div
+        className="flex size-10 shrink-0 items-center justify-center"
+        aria-hidden
+      >
+        <Spinner className="size-5" />
+      </div>
+    );
+  }
+  if (failed || !url) {
+    return <SaleChannelLogoPlaceholder />;
+  }
+
+  return (
+    <div
+      className="size-10 shrink-0 overflow-hidden rounded-md border border-border"
+      aria-hidden
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" className="size-full object-cover" />
+    </div>
+  );
+}
+
+function SaleChannelLogoThumb({
+  fileId,
+  locale,
+}: {
+  fileId?: number;
+  locale: string;
+}) {
+  if (fileId == null || fileId <= 0) {
+    return <SaleChannelLogoPlaceholder />;
+  }
+  return (
+    <SaleChannelLogoThumbLoaded key={fileId} fileId={fileId} locale={locale} />
+  );
+}
+
 /** Longest copy: itemGenerateQrcode (th/en) at size lg. */
 const VARIANT_SALES_ROW_BTN_CLASS =
   "h-10 w-[8rem] shrink-0 justify-center px-3";
-
-type SaleChannel = { id: number; name: string };
 
 type Props = {
   item: ListItemBody;
   listSku: string;
   allItems: ListItemBody[];
   vat: SettingVatItem | null;
-  saleChannels: SaleChannel[];
+  saleChannels: SaleChannelMeta[];
   onChange: (next: ListItemBody) => void;
   loadSuppliers: (ctx: RemoteComboboxLoadContext) => Promise<
     { value: string; label: string }[]
@@ -137,8 +222,7 @@ export function ProductListFormVariantSections({
   );
 
   const [channelPage, setChannelPage] = useState(1);
-  const [channelEditId, setChannelEditId] = useState<number | null>(null);
-  const [channelDraft, setChannelDraft] = useState(0);
+  const [activeLotSell, setActiveLotSell] = useState<number | null>(null);
 
   const [supplierEditId, setSupplierEditId] = useState<number | null>(null);
   const [supplierDraft, setSupplierDraft] = useState({
@@ -197,20 +281,116 @@ export function ProductListFormVariantSections({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-fetch on reorder-only patch
   }, [fileIdsKey, locale]);
 
-  const channelRows = item.channel_prices ?? [];
+  const sortedChannelRows = useMemo(
+    () => sortChannelPriceRows(item.channel_prices ?? [], saleChannels),
+    [item.channel_prices, saleChannels]
+  );
   const channelTotalPages = Math.max(
     1,
-    Math.ceil(channelRows.length / TABLE_PAGE)
+    Math.ceil(sortedChannelRows.length / TABLE_PAGE)
   );
-  const channelSlice = channelRows.slice(
+  const channelSlice = sortedChannelRows.slice(
     (channelPage - 1) * TABLE_PAGE,
     channelPage * TABLE_PAGE
   );
 
+  const usedChannelIds = useMemo(
+    () =>
+      new Set(
+        (item.channel_prices ?? []).map((p) => p.setting_sale_channel_id)
+      ),
+    [item.channel_prices]
+  );
+
   const refCost = firstSupplierCost(item);
+
+  useEffect(() => {
+    if (item.type_price !== "stock" || !item.id) {
+      return;
+    }
+    let cancelled = false;
+    void fetchProductItemStocks(locale, item.id, { page: 1, limit: 50 })
+      .then((res) => {
+        const used = res.items.find((s) => s.is_used);
+        if (!cancelled) {
+          setActiveLotSell(used != null ? used.sell_price : null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setActiveLotSell(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.type_price, item.id, locale]);
 
   const patch = (partial: Partial<ListItemBody>) =>
     onChange({ ...item, ...partial });
+
+  const updateChannelRow = (
+    channelId: number,
+    rowPatch: Partial<NonNullable<ListItemBody["channel_prices"]>[number]>
+  ) => {
+    const cp = [...(item.channel_prices ?? [])];
+    const idx = cp.findIndex((p) => p.setting_sale_channel_id === channelId);
+    if (idx < 0) return;
+    cp[idx] = { ...cp[idx]!, ...rowPatch };
+    patch({ channel_prices: sortChannelPriceRows(cp, saleChannels) });
+  };
+
+  const setChannelId = (oldId: number, newId: number) => {
+    if (oldId === newId || newId <= 0) return;
+    if (usedChannelIds.has(newId)) {
+      toast.error(tForm("itemChannelDuplicate"));
+      return;
+    }
+    const cp = [...(item.channel_prices ?? [])];
+    const idx = cp.findIndex((p) => p.setting_sale_channel_id === oldId);
+    if (idx < 0) return;
+    cp[idx] = { ...cp[idx]!, setting_sale_channel_id: newId };
+    patch({ channel_prices: sortChannelPriceRows(cp, saleChannels) });
+  };
+
+  const removeChannelRow = (channelId: number) => {
+    const isDefault = saleChannels.some(
+      (c) => c.is_default && c.id === channelId
+    );
+    const removed = [...(item._removed_channel_ids ?? [])];
+    if (isDefault && channelId > 0 && !removed.includes(channelId)) {
+      removed.push(channelId);
+    }
+    patch({
+      channel_prices: (item.channel_prices ?? []).filter(
+        (p) => p.setting_sale_channel_id !== channelId
+      ),
+      _removed_channel_ids: removed,
+    });
+  };
+
+  const addChannelRow = () => {
+    const used = new Set(
+      (item.channel_prices ?? []).map((p) => p.setting_sale_channel_id)
+    );
+    const next = saleChannels.find((c) => !used.has(c.id));
+    if (!next) {
+      toast.info(tForm("itemChannelAllAdded"));
+      return;
+    }
+    patch({
+      channel_prices: sortChannelPriceRows(
+        [
+          ...(item.channel_prices ?? []),
+          { setting_sale_channel_id: next.id, price: 0, price_vat: 0 },
+        ],
+        saleChannels
+      ),
+    });
+  };
+
+  const channelOptionsForRow = (currentId: number) =>
+    saleChannels.filter(
+      (c) => c.id === currentId || !usedChannelIds.has(c.id)
+    );
 
   const onGalleryChange = (items: ImageUploadItem[]) => {
     setGalleryValue(items);
@@ -759,7 +939,9 @@ export function ProductListFormVariantSections({
             <TableHeader>
               <TableRow>
                 <TableHead>{tForm("itemColChannel")}</TableHead>
-                <TableHead className="text-right">{tForm("itemColPriceExVat")}</TableHead>
+                <TableHead className="text-right">
+                  {tForm("itemColPriceExVat")}
+                </TableHead>
                 <TableHead className="text-right">{tForm("itemColTotal")}</TableHead>
                 <TableHead className="text-right">{tForm("itemColMargin")}</TableHead>
                 <TableHead className="text-center">{tCrud("table.actions")}</TableHead>
@@ -774,85 +956,115 @@ export function ProductListFormVariantSections({
                 </TableRow>
               ) : (
                 channelSlice.map((row) => {
-                  const ch = saleChannels.find(
-                    (c) => c.id === row.setting_sale_channel_id
+                  const chId = row.setting_sale_channel_id;
+                  const rowOptions = channelOptionsForRow(chId);
+                  const channelMeta = saleChannels.find((c) => c.id === chId);
+                  const resolvedName = channelMeta?.name;
+                  const { ex, incl } = channelRowExIncl(row, vatRate);
+                  const sellForMargin = channelSellForMargin(
+                    item,
+                    row,
+                    vatType,
+                    vatRate,
+                    activeLotSell
                   );
-                  const editing = channelEditId === row.setting_sale_channel_id;
-                  const ex = editing ? channelDraft : row.price;
-                  const incl = priceInclVat(ex, vatRate);
+                  const phEx = tFormPh("placeholder.input", {
+                    label: tForm("itemColPriceExVat"),
+                  });
+                  const phIncl = tFormPh("placeholder.input", {
+                    label: tForm("itemColTotal"),
+                  });
                   return (
-                    <TableRow key={row.setting_sale_channel_id}>
-                      <TableCell>{ch?.name ?? row.setting_sale_channel_id}</TableCell>
+                    <TableRow key={chId}>
+                      <TableCell className="min-w-[12rem]">
+                        <div className="flex items-center gap-2">
+                          <SaleChannelLogoThumb
+                            fileId={channelMeta?.system_file_id}
+                            locale={locale}
+                          />
+                          <Select
+                            value={chId > 0 ? String(chId) : undefined}
+                            onValueChange={(v) => setChannelId(chId, Number(v))}
+                          >
+                          <SelectTrigger className="min-w-0 flex-1">
+                            <SelectValue
+                              placeholder={tFormPh("placeholder.select", {
+                                label: tForm("itemColChannel"),
+                              })}
+                            >
+                              {resolvedName ?? null}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rowOptions.map((c) => (
+                              <SelectItem key={c.id} value={String(c.id)}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {editing ? (
+                        {vatType === "include" ? (
+                          <Input
+                            readOnly
+                            className="ml-auto max-w-36 bg-muted/30 text-right tabular-nums"
+                            value={ex.toFixed(2)}
+                          />
+                        ) : (
                           <Input
                             type="number"
                             inputMode="decimal"
-                            className="ml-auto max-w-32"
-                            value={String(channelDraft)}
-                            onChange={(e) =>
-                              setChannelDraft(Number(e.target.value) || 0)
-                            }
-                          />
-                        ) : (
-                          ex.toLocaleString(locale === "th" ? "th-TH" : "en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {incl.toLocaleString(locale === "th" ? "th-TH" : "en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {marginPct(ex, refCost)}%
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {editing ? (
-                          <div className="inline-flex gap-1">
-                            <ButtonIcon
-                              type="button"
-                              variant="outline"
-                              tone="neutral"
-                              aria-label={tCrud("btn.save")}
-                              onClick={() => {
-                                const cp = [...(item.channel_prices ?? [])];
-                                const idx = cp.findIndex(
-                                  (p) =>
-                                    p.setting_sale_channel_id ===
-                                    row.setting_sale_channel_id
-                                );
-                                if (idx >= 0) {
-                                  cp[idx] = { ...cp[idx]!, price: channelDraft };
-                                }
-                                patch({ channel_prices: cp });
-                                setChannelEditId(null);
-                              }}
-                            >
-                              <Check className="text-current" />
-                            </ButtonIcon>
-                            <ButtonIcon
-                              type="button"
-                              variant="outline"
-                              tone="neutral"
-                              aria-label={tCrud("btn.cancel")}
-                              onClick={() => setChannelEditId(null)}
-                            >
-                              <X className="text-current" />
-                            </ButtonIcon>
-                          </div>
-                        ) : (
-                          <TableIconActions
-                            actions={["edit"]}
-                            onAction={() => {
-                              setChannelEditId(row.setting_sale_channel_id);
-                              setChannelDraft(row.price);
+                            className="ml-auto max-w-36 text-right tabular-nums"
+                            placeholder={phEx}
+                            value={String(row.price ?? 0)}
+                            onChange={(e) => {
+                              const price = Number(e.target.value) || 0;
+                              updateChannelRow(chId, {
+                                price,
+                                price_vat: priceInclVat(price, vatRate),
+                              });
                             }}
                           />
                         )}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {vatType === "include" ? (
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            className="ml-auto max-w-36 text-right tabular-nums"
+                            placeholder={phIncl}
+                            value={String(
+                              row.price_vat != null && row.price_vat > 0
+                                ? row.price_vat
+                                : incl
+                            )}
+                            onChange={(e) => {
+                              const price_vat = Number(e.target.value) || 0;
+                              updateChannelRow(chId, {
+                                price_vat,
+                                price: priceExFromIncl(price_vat, vatRate),
+                              });
+                            }}
+                          />
+                        ) : (
+                          <Input
+                            readOnly
+                            className="ml-auto max-w-36 bg-muted/30 text-right tabular-nums"
+                            value={incl.toFixed(2)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {marginPct(sellForMargin, refCost)}%
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <TableIconActions
+                          actions={["delete"]}
+                          onAction={() => removeChannelRow(chId)}
+                        />
                       </TableCell>
                     </TableRow>
                   );
@@ -861,15 +1073,27 @@ export function ProductListFormVariantSections({
             </TableBody>
           </Table>
         </div>
-        {channelRows.length > TABLE_PAGE ? (
+        {sortedChannelRows.length > TABLE_PAGE ? (
           <CrudPaginationBar
             page={channelPage}
             pageSize={10}
-            meta={{ total: channelRows.length, totalPages: channelTotalPages }}
+            meta={{
+              total: sortedChannelRows.length,
+              totalPages: channelTotalPages,
+            }}
             onPageChange={setChannelPage}
             onPageSizeChange={() => {}}
           />
         ) : null}
+        <Button
+          type="button"
+          size="lg"
+          className="mt-3 w-full"
+          onClick={addChannelRow}
+        >
+          <Plus className="mr-1 size-4" />
+          {tForm("itemAddChannel")}
+        </Button>
         <Field className="mt-3 gap-1.5">
           <FieldLabel>{tForm("itemPromotion")}</FieldLabel>
           <Textarea

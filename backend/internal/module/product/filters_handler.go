@@ -217,6 +217,18 @@ func (h *FiltersHandler) respondSupplierFilters(c *echo.Context) error {
 	})
 }
 
+func langRowToFilterItem(k setting.LangKind, r setting.LangRow) filterItem {
+	item := filterItem{ID: r.ID, Name: r.Name}
+	if k == setting.LangSaleChannel {
+		def := r.IsDefault
+		sort := r.SortOrder
+		item.IsDefault = &def
+		item.SortOrder = &sort
+		item.SystemFileID = r.SystemFileID
+	}
+	return item
+}
+
 func (h *FiltersHandler) respondLangFilters(c *echo.Context, k setting.LangKind) error {
 	ctx := c.Request().Context()
 	locale := api.LocaleFromRequest(c)
@@ -237,7 +249,7 @@ func (h *FiltersHandler) respondLangFilters(c *echo.Context, k setting.LangKind)
 			return c.JSON(http.StatusOK, filtersResponse{Items: []filterItem{}, Meta: api.ListMeta{Total: 0, Page: 1, Limit: q.Limit}})
 		}
 		return c.JSON(http.StatusOK, filtersResponse{
-			Items: []filterItem{{ID: row.ID, Name: row.Name}},
+			Items: []filterItem{langRowToFilterItem(k, *row)},
 			Meta:  api.ListMeta{Total: 1, Page: 1, Limit: q.Limit},
 		})
 	}
@@ -248,7 +260,7 @@ func (h *FiltersHandler) respondLangFilters(c *echo.Context, k setting.LangKind)
 	}
 	items := make([]filterItem, len(rows))
 	for i, r := range rows {
-		items[i] = filterItem{ID: r.ID, Name: r.Name}
+		items[i] = langRowToFilterItem(k, r)
 	}
 	return c.JSON(http.StatusOK, filtersResponse{
 		Items: items,

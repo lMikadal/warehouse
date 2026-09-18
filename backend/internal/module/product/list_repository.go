@@ -45,6 +45,9 @@ type itemLangNames struct {
 type itemChannelPriceBody struct {
 	SettingSaleChannelID int64   `json:"setting_sale_channel_id"`
 	Price                float64 `json:"price"`
+	PriceVat             float64 `json:"price_vat,omitempty"`
+	VatType              string  `json:"vat_type,omitempty"`
+	VatRate              float64 `json:"vat_rate,omitempty"`
 }
 
 type itemSupplierBody struct {
@@ -347,7 +350,8 @@ func loadItemNames(ctx context.Context, db *sql.DB, itemID int64) itemLangNames 
 
 func loadItemChannelPrices(ctx context.Context, db *sql.DB, itemID int64) []itemChannelPriceBody {
 	rows, _ := db.QueryContext(ctx, `
-SELECT setting_sale_channel_id, price::float8 FROM product_item_price WHERE product_item_id = $1`, itemID)
+SELECT setting_sale_channel_id, price::float8, price_vat::float8, vat_type::text, vat_rate::float8
+FROM product_item_price WHERE product_item_id = $1`, itemID)
 	if rows == nil {
 		return nil
 	}
@@ -355,7 +359,7 @@ SELECT setting_sale_channel_id, price::float8 FROM product_item_price WHERE prod
 	var out []itemChannelPriceBody
 	for rows.Next() {
 		var p itemChannelPriceBody
-		if rows.Scan(&p.SettingSaleChannelID, &p.Price) == nil {
+		if rows.Scan(&p.SettingSaleChannelID, &p.Price, &p.PriceVat, &p.VatType, &p.VatRate) == nil {
 			out = append(out, p)
 		}
 	}
@@ -721,7 +725,7 @@ RETURNING id`,
 		if err := upsertItemLang(ctx, tx, itemID, it.Names); err != nil {
 			return err
 		}
-		if err := syncItemExtras(ctx, tx, itemID, it, actorID); err != nil {
+		if err := syncItemExtras(ctx, tx, itemID, it, actorID, snap); err != nil {
 			return err
 		}
 	}
@@ -761,7 +765,7 @@ WHERE id = $1 AND product_list_id = $25 AND deleted_at IS NULL`,
 	if err := upsertItemLang(ctx, tx, itemID, it.Names); err != nil {
 		return err
 	}
-	return syncItemExtras(ctx, tx, itemID, it, actorID)
+	return syncItemExtras(ctx, tx, itemID, it, actorID, snap)
 }
 
 func upsertItemLang(ctx context.Context, tx *sql.Tx, itemID int64, names itemLangNames) error {
@@ -786,7 +790,7 @@ ON CONFLICT (product_item_id, locale) DO UPDATE SET name = EXCLUDED.name, update
 	return nil
 }
 
-func syncItemExtras(ctx context.Context, tx *sql.Tx, itemID int64, it listItemBody, actorID int64) error {
+func syncItemExtras(ctx context.Context, tx *sql.Tx, itemID int64, it listItemBody, actorID int64, snap SettingVatSnapshot) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM product_item_price WHERE product_item_id = $1`, itemID); err != nil {
 		return err
 	}
@@ -794,9 +798,11 @@ func syncItemExtras(ctx context.Context, tx *sql.Tx, itemID int64, it listItemBo
 		if p.SettingSaleChannelID <= 0 {
 			continue
 		}
+		norm := p
+		normalizeChannelPrice(snap, &norm)
 		if _, err := tx.ExecContext(ctx, `
-INSERT INTO product_item_price (product_item_id, setting_sale_channel_id, price)
-VALUES ($1, $2, $3)`, itemID, p.SettingSaleChannelID, p.Price); err != nil {
+INSERT INTO product_item_price (product_item_id, setting_sale_channel_id, price, price_vat, vat_type, vat_rate)
+VALUES ($1, $2, $3, $4, $5::setting_vat_type, $6)`, itemID, norm.SettingSaleChannelID, norm.Price, norm.PriceVat, norm.VatType, norm.VatRate); err != nil {
 			return err
 		}
 	}

@@ -340,6 +340,87 @@ export function firstSupplierCost(item: ListItemBody): number {
   return supplierNetPrice(s);
 }
 
+export type SaleChannelMeta = {
+  id: number;
+  name: string;
+  is_default?: boolean;
+  sort_order?: number;
+  system_file_id?: number;
+};
+
+type ChannelPriceRow = NonNullable<ListItemBody["channel_prices"]>[number];
+
+export function channelRowExIncl(
+  row: ChannelPriceRow,
+  vatRate: number
+): { ex: number; incl: number } {
+  const ex = Number(row.price) || 0;
+  const incl =
+    row.price_vat != null && row.price_vat > 0
+      ? row.price_vat
+      : priceInclVat(ex, vatRate);
+  return { ex, incl };
+}
+
+export function channelSellForMargin(
+  item: ListItemBody,
+  row: ChannelPriceRow,
+  vatType: "exclude" | "include",
+  vatRate: number,
+  activeLotSell: number | null
+): number {
+  if (item.type_price === "stock") {
+    return activeLotSell ?? 0;
+  }
+  const { ex, incl } = channelRowExIncl(row, vatRate);
+  return vatType === "include" ? incl : ex;
+}
+
+export function sortChannelPriceRows(
+  rows: ChannelPriceRow[],
+  channels: SaleChannelMeta[]
+): ChannelPriceRow[] {
+  const defaultIds = new Set(
+    channels.filter((c) => c.is_default).map((c) => c.id)
+  );
+  const sortById = new Map(channels.map((c) => [c.id, c.sort_order ?? 0]));
+  return [...rows].sort((a, b) => {
+    const da = defaultIds.has(a.setting_sale_channel_id) ? 0 : 1;
+    const db = defaultIds.has(b.setting_sale_channel_id) ? 0 : 1;
+    if (da !== db) return da - db;
+    const sa = sortById.get(a.setting_sale_channel_id) ?? 0;
+    const sb = sortById.get(b.setting_sale_channel_id) ?? 0;
+    if (sa !== sb) return sa - sb;
+    return a.setting_sale_channel_id - b.setting_sale_channel_id;
+  });
+}
+
+export function applyDefaultChannelsToItems(
+  items: ListItemBody[],
+  channels: SaleChannelMeta[]
+): ListItemBody[] {
+  return items.map((it) => mergeDefaultChannelPrices(it, channels));
+}
+
+export function mergeDefaultChannelPrices(
+  item: ListItemBody,
+  channels: SaleChannelMeta[]
+): ListItemBody {
+  if (!channels.length) return item;
+  const removed = new Set(item._removed_channel_ids ?? []);
+  const existing = [...(item.channel_prices ?? [])];
+  const have = new Set(existing.map((p) => p.setting_sale_channel_id));
+  for (const ch of channels) {
+    if (!ch.is_default || removed.has(ch.id) || have.has(ch.id)) continue;
+    existing.push({ setting_sale_channel_id: ch.id, price: 0, price_vat: 0 });
+    have.add(ch.id);
+  }
+  return {
+    ...item,
+    channel_prices: sortChannelPriceRows(existing, channels),
+  };
+}
+
 export function activeVatRate(vat: SettingVatItem | null): number {
   if (!vat || !vat.is_active) return 0;
   return Number(vat.rate) || 0;
@@ -351,16 +432,32 @@ export function prepareItemsForSave(
   const prefix = draft.sku;
   return draft.items.map((it) => {
     const suffix = itemSkuSuffix(it, prefix);
-    const { _open, _draftKey, total_stock, warehouse_root_count, low_stock, ...rest } =
-      it;
+    const {
+      _open,
+      _draftKey,
+      _removed_channel_ids,
+      total_stock,
+      warehouse_root_count,
+      low_stock,
+      ...rest
+    } = it;
     void _open;
     void _draftKey;
+    void _removed_channel_ids;
     void total_stock;
     void warehouse_root_count;
     void low_stock;
+    const channel_prices = (rest.channel_prices ?? [])
+      .filter((p) => p.setting_sale_channel_id > 0)
+      .map((p) => ({
+        setting_sale_channel_id: p.setting_sale_channel_id,
+        price: Number(p.price) || 0,
+        price_vat: p.price_vat,
+      }));
     return {
       ...rest,
       sku: composeItemSku(prefix, suffix),
+      channel_prices,
     };
   });
 }

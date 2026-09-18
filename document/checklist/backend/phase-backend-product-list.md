@@ -17,6 +17,6 @@ Backend for **product_list** / **product_item** browse and aggregate saves.
 - [x] RBAC catalog prefix `/api/v1/product/lists` and `/api/v1/product/items`
 - [x] Bin-only placements + one-bin-one-item validation
 - [x] SKU uniqueness on save
-- [x] VAT snapshot from `setting_vat` on list save (`vat_type`, `rate`, `price_vat`, `price_wholesale_vat` on `product_item`)
+- [x] VAT snapshot from `setting_vat` on list save (`vat_type`, `rate`, `price_vat`, `price_wholesale_vat` on `product_item`; `product_item_price` channel rows via `20260918210000_product_item_price_vat.sql`)
 - [x] [`inventory-crud-mutation-apis.md`](inventory-crud-mutation-apis.md) ticks for `product_list` / `product_item`
 - [ ] Integration smoke against dev DB (`14_product_demo.sql`)

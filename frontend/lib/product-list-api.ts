@@ -333,7 +333,13 @@ export type ListItemBody = {
   warehouse_root_count?: number;
   low_stock?: boolean;
   names: { th: string; en: string };
-  channel_prices?: { setting_sale_channel_id: number; price: number }[];
+  channel_prices?: {
+    setting_sale_channel_id: number;
+    price: number;
+    price_vat?: number;
+    vat_type?: "exclude" | "include";
+    vat_rate?: number;
+  }[];
   suppliers?: {
     supplier_user_id: number;
     cost_price: number;
@@ -346,6 +352,8 @@ export type ListItemBody = {
   _open?: boolean;
   /** Client-only: stable key for new drafts */
   _draftKey?: string;
+  /** Client-only: default channels removed by user (do not re-merge) */
+  _removed_channel_ids?: number[];
 };
 
 export type ListCarBody = {

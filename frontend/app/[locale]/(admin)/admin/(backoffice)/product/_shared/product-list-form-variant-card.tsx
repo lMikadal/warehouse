@@ -32,16 +32,15 @@ import {
   formatStockQty,
   itemDisplayName,
   type ItemSalesFieldErrors,
+  type SaleChannelMeta,
 } from "./product-list-form-utils";
-
-type SaleChannel = { id: number; name: string };
 
 type Props = {
   item: ListItemBody;
   listSku: string;
   listSupplierIds: number[];
   vat: SettingVatItem | null;
-  saleChannels: SaleChannel[];
+  saleChannels: SaleChannelMeta[];
   expanded: boolean;
   onExpandedChange: (open: boolean) => void;
   onChange: (next: ListItemBody) => void;

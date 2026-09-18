@@ -7,7 +7,13 @@ import {
 
 const PROXY = "/api/v1/auth/proxy/product";
 
-export type ProductFilterItem = { id: number; name: string };
+export type ProductFilterItem = {
+  id: number;
+  name: string;
+  is_default?: boolean;
+  sort_order?: number;
+  system_file_id?: number;
+};
 
 type FiltersResponse = {
   items: ProductFilterItem[];

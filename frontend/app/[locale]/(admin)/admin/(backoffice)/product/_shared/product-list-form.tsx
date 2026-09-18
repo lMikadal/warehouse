@@ -2,7 +2,7 @@
 
 import { Info, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudTabbedFormPageSkeleton } from "@/components/molecules/crud-tabbed-form-page-skeleton";
@@ -62,6 +62,8 @@ import {
   emptyItem,
   hasItemSalesFieldErrors,
   type ItemSalesFieldErrors,
+  applyDefaultChannelsToItems,
+  type SaleChannelMeta,
   validateItemSalesFields,
   variantItemKey,
 } from "./product-list-form-utils";
@@ -173,9 +175,9 @@ export function ProductListForm({ listId }: { listId?: number }) {
   const [expandVariantKey, setExpandVariantKey] = useState<string | null>(
     null
   );
-  const [saleChannels, setSaleChannels] = useState<
-    { id: number; name: string }[]
-  >([]);
+  const [saleChannels, setSaleChannels] = useState<SaleChannelMeta[]>([]);
+  const saleChannelsRef = useRef(saleChannels);
+  saleChannelsRef.current = saleChannels;
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [categoryBreadcrumb, setCategoryBreadcrumb] = useState("");
 
@@ -189,6 +191,11 @@ export function ProductListForm({ listId }: { listId?: number }) {
         res.items.map((ch) => ({
           id: ch.id,
           name: ch.name,
+          is_default: ch.is_default === true,
+          sort_order: ch.sort_order ?? 0,
+          ...(ch.system_file_id != null && ch.system_file_id > 0
+            ? { system_file_id: ch.system_file_id }
+            : {}),
         }))
       );
     });
@@ -217,34 +224,19 @@ export function ProductListForm({ listId }: { listId?: number }) {
     }
   }, [isEdit, listId, locale]);
 
-  const mergeItemChannels = useCallback(
-    (item: ListItemBody): ListItemBody => {
-      if (!saleChannels.length) return item;
-      const existing = item.channel_prices ?? [];
-      return {
-        ...item,
-        channel_prices: saleChannels.map((ch) => ({
-          setting_sale_channel_id: ch.id,
-          price:
-            existing.find((p) => p.setting_sale_channel_id === ch.id)?.price ??
-            0,
-        })),
-      };
-    },
-    [saleChannels]
-  );
-
   useEffect(() => {
     if (!isEdit || !listId) return;
     setLoading(true);
     void fetchProductList(locale, listId)
       .then((data) => {
+        const rawItems = data.items?.length ? data.items : [emptyItem()];
+        const channels = saleChannelsRef.current;
         setDraft({
           ...data,
           factory_codes: data.factory_codes?.length ? data.factory_codes : [""],
           other_codes: data.other_codes?.length ? data.other_codes : [""],
           cars: data.cars ?? [],
-          items: data.items?.length ? data.items : [emptyItem()],
+          items: applyDefaultChannelsToItems(rawItems, channels),
         });
       })
       .catch((e) => {
@@ -259,9 +251,9 @@ export function ProductListForm({ listId }: { listId?: number }) {
     if (!saleChannels.length) return;
     setDraft((d) => ({
       ...d,
-      items: d.items.map((it) => mergeItemChannels(it)),
+      items: applyDefaultChannelsToItems(d.items, saleChannels),
     }));
-  }, [saleChannels, mergeItemChannels]);
+  }, [saleChannels]);
 
   useEffect(() => {
     const id = draft.product_category_id;
