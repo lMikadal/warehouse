@@ -22,7 +22,7 @@
         minimum_stock: 5,
         is_active: true,
         is_stopped: false,
-        is_fake: false,
+        is_authentic: true,
         type_price: "manual",
       },
       audit(1)

@@ -1,7 +1,7 @@
 -- source: v1 product_items + v2 v2_product_product_items (UUID→BIGSERIAL)
 --   - restored: barcode, qrcode, weight/width/length/height (dimensions), minimum_stock, old_product_item_id, is_stopped, is_new
 --   - restored: qty_per_unit (v2 has amount_per_unit — renamed for clarity)
---   - restored: is_fake (v1 product_items.is_fake — genuine vs compatible/fake)
+--   - is_authentic (replaces v1 is_fake: TRUE = genuine OEM spare, FALSE = compatible/aftermarket)
 --   - removed:  suffix_sku (design-time clutter)
 --   - restored: promotion (v1 condition_promotion)
 --   - type_price: manual | stock (v2 manual_price/last_price logic; shorter enum names)
@@ -32,7 +32,7 @@ CREATE TABLE product_item (
     old_product_item_id   BIGINT                  REFERENCES product_item(id) ON DELETE SET NULL,  -- alternate-SKU clone source variant
     is_new                BOOLEAN                 NOT NULL DEFAULT FALSE,        -- highlight as new variant (browse badge / filter)
     is_stopped            BOOLEAN                 NOT NULL DEFAULT FALSE,        -- stop selling this variant
-    is_fake               BOOLEAN                 NOT NULL DEFAULT FALSE,        -- FALSE=genuine, TRUE=compatible/fake
+    is_authentic          BOOLEAN                 NOT NULL DEFAULT TRUE,         -- TRUE=genuine OEM spare, FALSE=compatible/aftermarket
     is_active             BOOLEAN                 NOT NULL DEFAULT TRUE,         -- sellable when TRUE
     deleted_at            TIMESTAMPTZ,
     created_at            TIMESTAMPTZ             NOT NULL DEFAULT CURRENT_TIMESTAMP,

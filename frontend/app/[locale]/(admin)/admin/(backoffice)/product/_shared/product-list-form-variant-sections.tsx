@@ -2,7 +2,8 @@
 
 import { Check, Copy, Eye, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
 import { ImageUploadField } from "@/components/molecules/image-upload-field";
@@ -58,6 +59,8 @@ import {
   composeItemSku,
   firstSupplierCost,
   formatStockQty,
+  generateItemBarcode,
+  generateItemQrcode,
   type ItemSalesFieldErrors,
   imageUploadItemsToListItemFiles,
   alternateSkusForSource,
@@ -77,6 +80,10 @@ import {
 } from "./product-list-form-utils";
 
 const TABLE_PAGE = 10;
+
+/** Longest copy: itemGenerateQrcode (th/en) at size lg. */
+const VARIANT_SALES_ROW_BTN_CLASS =
+  "h-10 w-[8rem] shrink-0 justify-center px-3";
 
 type SaleChannel = { id: number; name: string };
 
@@ -327,9 +334,8 @@ export function ProductListFormVariantSections({
                 </InputGroup>
                 <Button
                   type="button"
-                  variant="outline"
                   size="lg"
-                  className="shrink-0"
+                  className={VARIANT_SALES_ROW_BTN_CLASS}
                   disabled={
                     !canCloneItem ||
                     !item.id ||
@@ -448,28 +454,58 @@ export function ProductListFormVariantSections({
             </Field>
             <Field className="gap-1.5">
               <FieldLabel>{tForm("itemBarcode")}</FieldLabel>
-              <Input
-                value={item.barcode ?? ""}
-                placeholder={tFormPh("placeholder.input", {
-                  label: tForm("itemBarcode"),
-                })}
-                onChange={(e) => patch({ barcode: e.target.value })}
-              />
+              <div className="flex flex-wrap items-start gap-2">
+                <Input
+                  className="min-w-0 flex-1"
+                  value={item.barcode ?? ""}
+                  placeholder={tFormPh("placeholder.input", {
+                    label: tForm("itemBarcode"),
+                  })}
+                  onChange={(e) => patch({ barcode: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  size="lg"
+                  className={VARIANT_SALES_ROW_BTN_CLASS}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    patch({ barcode: generateItemBarcode() });
+                    toast.success(tForm("toastBarcodeGenerated"));
+                  }}
+                >
+                  {tForm("itemCreateBarcode")}
+                </Button>
+              </div>
             </Field>
             <Field className="gap-1.5">
               <FieldLabel>{tForm("itemQrcode")}</FieldLabel>
-              <Input
-                value={item.qrcode ?? ""}
-                placeholder={tFormPh("placeholder.input", {
-                  label: tForm("itemQrcode"),
-                })}
-                onChange={(e) => patch({ qrcode: e.target.value })}
-              />
+              <div className="flex flex-wrap items-start gap-2">
+                <Input
+                  className="min-w-0 flex-1"
+                  value={item.qrcode ?? ""}
+                  placeholder={tFormPh("placeholder.input", {
+                    label: tForm("itemQrcode"),
+                  })}
+                  onChange={(e) => patch({ qrcode: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  size="lg"
+                  className={VARIANT_SALES_ROW_BTN_CLASS}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    patch({ qrcode: generateItemQrcode() });
+                    toast.success(tForm("toastQrcodeGenerated"));
+                  }}
+                >
+                  {tForm("itemGenerateQrcode")}
+                </Button>
+              </div>
             </Field>
             <StatusSwitchField
-              labelKey="productListForm.itemCompatiblePart"
-              checked={item.is_fake}
-              onCheckedChange={(checked) => patch({ is_fake: checked })}
+              labelKey="productListForm.itemAuthenticSpare"
+              checked={item.is_authentic}
+              onCheckedChange={(checked) => patch({ is_authentic: checked })}
             />
           </div>
         </Section>
@@ -486,62 +522,99 @@ export function ProductListFormVariantSections({
                     *
                   </span>
                 </FieldLabel>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  required
-                  value={item.weight != null ? String(item.weight) : ""}
-                  aria-invalid={fieldErrors?.weight ? true : undefined}
-                  className={
-                    fieldErrors?.weight ? "aria-invalid:ring-0" : undefined
-                  }
-                  placeholder={tFormPh("placeholder.input", {
-                    label: tForm("itemWeight"),
-                  })}
-                  onChange={(e) => {
-                    onClearFieldError?.("weight");
-                    patch({
-                      weight: e.target.value ? Number(e.target.value) : null,
-                    });
-                  }}
-                />
+                <InputGroup
+                  className={cn(
+                    "rounded-login",
+                    fieldErrors?.weight &&
+                      "has-[[data-slot][aria-invalid=true]]:ring-0"
+                  )}
+                >
+                  <InputGroupInput
+                    type="number"
+                    inputMode="decimal"
+                    required
+                    value={item.weight != null ? String(item.weight) : ""}
+                    aria-invalid={fieldErrors?.weight ? true : undefined}
+                    placeholder={tFormPh("placeholder.input", {
+                      label: tForm("itemWeight"),
+                    })}
+                    onChange={(e) => {
+                      onClearFieldError?.("weight");
+                      patch({
+                        weight: e.target.value ? Number(e.target.value) : null,
+                      });
+                    }}
+                  />
+                  <InputGroupAddon align="inline-end">kg</InputGroupAddon>
+                </InputGroup>
               </Field>
-              <div className="grid grid-cols-3 gap-2">
-                {(["width", "length", "height"] as const).map((dim) => (
-                  <Field key={dim} className="gap-1.5">
-                    <FieldLabel>
-                      {tForm(dim === "width" ? "dimW" : dim === "length" ? "dimL" : "dimH")}
-                    </FieldLabel>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      value={
-                        item[dim] != null ? String(item[dim]) : ""
-                      }
-                      placeholder={tFormPh("placeholder.input", {
-                        label: tForm("itemPackageSize"),
-                      })}
-                      onChange={(e) =>
-                        patch({
-                          [dim]: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                    />
-                  </Field>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field className="gap-1.5">
+              <Field className="gap-1.5">
+                <div className="flex flex-wrap items-end gap-x-2 gap-y-2">
+                  {(
+                    [
+                      { key: "width" as const, labelKey: "dimW" as const },
+                      { key: "length" as const, labelKey: "dimL" as const },
+                      { key: "height" as const, labelKey: "dimH" as const },
+                    ] as const
+                  ).map((dim, index) => (
+                    <Fragment key={dim.key}>
+                      {index > 0 ? (
+                        <span
+                          className="pb-2 text-sm text-muted-foreground"
+                          aria-hidden="true"
+                        >
+                          ×
+                        </span>
+                      ) : null}
+                      <div className="flex min-w-18 flex-1 flex-col gap-1">
+                        <InputGroup className="rounded-login">
+                          <InputGroupInput
+                            type="number"
+                            inputMode="decimal"
+                            value={
+                              item[dim.key] != null
+                                ? String(item[dim.key])
+                                : ""
+                            }
+                            placeholder={tFormPh("placeholder.input", {
+                              label: tForm(dim.labelKey),
+                            })}
+                            onChange={(e) =>
+                              patch({
+                                [dim.key]: e.target.value
+                                  ? Number(e.target.value)
+                                  : null,
+                              })
+                            }
+                          />
+                          <InputGroupAddon align="inline-end">cm</InputGroupAddon>
+                        </InputGroup>
+                      </div>
+                    </Fragment>
+                  ))}
+                </div>
+              </Field>
+              <div className="flex items-end gap-2">
+                <Field className="min-w-0 flex-1 gap-1.5">
                   <FieldLabel>{tForm("qtyPerPack")}</FieldLabel>
                   <Input
                     type="number"
                     value={String(item.qty_per_unit)}
+                    placeholder={tFormPh("placeholder.input", {
+                      label: tForm("qtyPerPack"),
+                    })}
                     onChange={(e) =>
                       patch({ qty_per_unit: Number(e.target.value) || 1 })
                     }
                   />
                 </Field>
-                <Field className="gap-1.5">
+                <span
+                  className="shrink-0 pb-2.5 text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  /
+                </span>
+                <Field className="min-w-0 flex-1 gap-1.5">
                   <FieldLabel>{tForm("itemUnit")}</FieldLabel>
                   <Select
                     value={item.unit}
@@ -564,22 +637,31 @@ export function ProductListFormVariantSections({
           </Section>
           <Section title={tForm("itemTotalStock")} num="2.2">
             <div className="space-y-3">
-              <div className="flex flex-wrap items-end gap-2">
-                <Field className="gap-1.5 min-w-[8rem]">
-                  <FieldLabel>{tList("colStock")}</FieldLabel>
+              <Field className="gap-1.5">
+                <FieldLabel>{tList("colStock")}</FieldLabel>
+                <div className="flex flex-wrap items-start gap-2">
                   <Input
                     readOnly
                     value={formatStockQty(item.total_stock ?? 0, locale)}
-                    className="bg-muted/30"
+                    className="min-w-0 flex-1 bg-muted/30"
                   />
-                </Field>
-                {item.id ? (
-                  <Button type="button" size="sm" variant="outline" onClick={onViewLots}>
-                    <Eye className="mr-1 size-4" />
-                    {tForm("itemViewStock")}
-                  </Button>
-                ) : null}
-              </div>
+                  {item.id ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewLots();
+                      }}
+                    >
+                      <Eye className="mr-1 size-4" />
+                      {tForm("itemViewStock")}
+                    </Button>
+                  ) : null}
+                </div>
+              </Field>
               <Field className="gap-1.5">
                 <FieldLabel>{tForm("itemMinQty")}</FieldLabel>
                 <Input
@@ -671,7 +753,7 @@ export function ProductListFormVariantSections({
                           <Input
                             type="number"
                             inputMode="decimal"
-                            className="ml-auto max-w-[8rem]"
+                            className="ml-auto max-w-32"
                             value={String(channelDraft)}
                             onChange={(e) =>
                               setChannelDraft(Number(e.target.value) || 0)
@@ -837,7 +919,7 @@ export function ProductListFormVariantSections({
                             {editing ? (
                               <Input
                                 type="number"
-                                className="ml-auto max-w-[8rem]"
+                                className="ml-auto max-w-32"
                                 value={String(draft.cost_price)}
                                 onChange={(e) =>
                                   setSupplierDraft((d) => ({
@@ -854,7 +936,7 @@ export function ProductListFormVariantSections({
                             {editing ? (
                               <Input
                                 type="number"
-                                className="ml-auto max-w-[8rem]"
+                                className="ml-auto max-w-32"
                                 value={String(draft.discount)}
                                 onChange={(e) =>
                                   setSupplierDraft((d) => ({
@@ -879,7 +961,7 @@ export function ProductListFormVariantSections({
                                   }))
                                 }
                               >
-                                <SelectTrigger className="mx-auto max-w-[8rem]">
+                                <SelectTrigger className="mx-auto max-w-32">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

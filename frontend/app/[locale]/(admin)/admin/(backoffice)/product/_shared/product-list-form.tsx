@@ -799,7 +799,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
       <div
         className={cn(
           "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
-          footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0",
+          footerInsetLeft ? "left-(--sidebar-width)" : "left-0",
         )}
       >
         <div className="mx-auto flex w-full max-w-crud-page justify-end gap-2 px-admin-content py-3">

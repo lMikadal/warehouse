@@ -128,7 +128,7 @@ export function ProductListFormVariantCard({
               low={low}
             />
           </CollapsibleTrigger>
-          <div className="flex min-w-[5rem] flex-1 flex-col items-center gap-1 text-center">
+          <div className="flex min-w-20 flex-1 flex-col items-center gap-1 text-center">
             <span className="text-muted-foreground text-xs">
               {tList("colWarehouse")}
             </span>
@@ -325,12 +325,12 @@ function StatCol({
   low?: boolean;
 }) {
   return (
-    <div className="flex min-w-[5rem] flex-1 flex-col gap-0.5">
+    <div className="flex min-w-20 flex-1 flex-col gap-0.5">
       <span className="text-muted-foreground text-xs">{label}</span>
       <span
         className={cn(
           "truncate text-sm font-semibold",
-          sku && "max-w-[10rem]",
+          sku && "max-w-40",
           low && "text-destructive"
         )}
       >

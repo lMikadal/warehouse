@@ -8,18 +8,8 @@ import type { ImageUploadItem } from "@/lib/system-file-api";
 
 export const PRODUCT_ITEM_GALLERY_MAX = 5;
 
-export const PRODUCT_ITEM_UNITS = [
-  "piece",
-  "box",
-  "set",
-  "roll",
-  "pair",
-  "bag",
-  "sheet",
-  "meter",
-  "liter",
-  "kg",
-] as const;
+/** Variant form unit picker — design parity: piece / box / set only. */
+export const PRODUCT_ITEM_UNITS = ["piece", "box", "set"] as const;
 
 let nextDraftKey = 1;
 
@@ -38,7 +28,7 @@ export function emptyItem(open = false): ListItemBody {
     is_new: false,
     is_active: true,
     is_stopped: false,
-    is_fake: false,
+    is_authentic: true,
     promotion: "",
     names: { th: "", en: "" },
     channel_prices: [],
@@ -402,6 +392,29 @@ export function packUnitKey(unit: string): string {
   }
 }
 
+const ITEM_CODE_RANDOM_LEN = 8;
+const ITEM_CODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+export function randomItemCodeSuffix(
+  length = ITEM_CODE_RANDOM_LEN
+): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += ITEM_CODE_ALPHABET[bytes[i]! % ITEM_CODE_ALPHABET.length]!;
+  }
+  return out;
+}
+
+export function generateItemBarcode(): string {
+  return `ITEM-BC-${randomItemCodeSuffix()}`;
+}
+
+export function generateItemQrcode(): string {
+  return `ITEM-QR-${randomItemCodeSuffix()}`;
+}
+
 // ponytail: self-check itemSkuSuffix / composeItemSku — run: bun -e "import './frontend/...'"
 if (process.env.PRODUCT_LIST_SKU_SELF_CHECK === "1") {
   const list = "P-LIST-001";
@@ -417,5 +430,23 @@ if (process.env.PRODUCT_LIST_SKU_SELF_CHECK === "1") {
   const composed = composeItemSku(list, "P-ITEM-001-A");
   if (composed !== "P-LIST-001-P-ITEM-001-A") {
     throw new Error(`compose: ${composed}`);
+  }
+}
+
+if (process.env.PRODUCT_LIST_ITEM_CODE_SELF_CHECK === "1") {
+  const suffix = randomItemCodeSuffix();
+  if (suffix.length !== ITEM_CODE_RANDOM_LEN) {
+    throw new Error(`suffix length: ${suffix.length}`);
+  }
+  if (!/^[0-9A-Z]+$/.test(suffix)) {
+    throw new Error(`suffix charset: ${suffix}`);
+  }
+  const bc = generateItemBarcode();
+  const qr = generateItemQrcode();
+  if (!/^ITEM-BC-[0-9A-Z]{8}$/.test(bc)) {
+    throw new Error(`barcode format: ${bc}`);
+  }
+  if (!/^ITEM-QR-[0-9A-Z]{8}$/.test(qr)) {
+    throw new Error(`qrcode format: ${qr}`);
   }
 }

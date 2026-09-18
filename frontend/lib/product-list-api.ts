@@ -231,7 +231,7 @@ export type ListItemBody = {
   is_new: boolean;
   is_active: boolean;
   is_stopped: boolean;
-  is_fake: boolean;
+  is_authentic: boolean;
   promotion?: string;
   total_stock?: number;
   warehouse_root_count?: number;

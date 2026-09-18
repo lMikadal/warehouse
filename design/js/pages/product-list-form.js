@@ -149,7 +149,7 @@
         width: "",
         length: "",
         height: "",
-        is_fake: false,
+        is_authentic: true,
         promotion: "",
         channelPrices: [],
         removedChannelIds: [],
@@ -216,7 +216,12 @@
         width: it.width != null && it.width !== "" ? String(it.width) : "",
         length: it.length != null && it.length !== "" ? String(it.length) : "",
         height: it.height != null && it.height !== "" ? String(it.height) : "",
-        is_fake: !!it.is_fake,
+        is_authentic:
+          it.is_authentic != null
+            ? !!it.is_authentic
+            : it.is_fake != null
+              ? !it.is_fake
+              : true,
         promotion: it.promotion != null ? String(it.promotion) : "",
         channelPrices: channelPrices,
         removedChannelIds: [],
@@ -244,7 +249,12 @@
     }
     var el = block.querySelector('[data-field="' + field + '"]');
     if (!el) {
-      if (field === "is_fake" || field === "is_active" || field === "is_stopped") return false;
+      if (
+        field === "is_authentic" ||
+        field === "is_active" ||
+        field === "is_stopped"
+      )
+        return false;
       return "";
     }
     if (el.type === "checkbox") return el.checked;
@@ -506,7 +516,7 @@
         width: itemFieldFromBlock(block, "width"),
         length: itemFieldFromBlock(block, "length"),
         height: itemFieldFromBlock(block, "height"),
-        is_fake: !!itemFieldFromBlock(block, "is_fake"),
+        is_authentic: !!itemFieldFromBlock(block, "is_authentic"),
         is_active: block.querySelector('[data-field="is_active"]')
           ? block.querySelector('[data-field="is_active"]').checked
           : true,
@@ -3137,7 +3147,7 @@
     var qrcode = item.qrcode != null ? item.qrcode : "";
     var skuPrefix = listSkuPrefix();
     var skuSuffix = itemSkuSuffix(item, skuPrefix);
-    var isFake = !!item.is_fake;
+    var isAuthentic = !!item.is_authentic;
     var weight = item.weight != null ? String(item.weight) : "";
     var width = item.width != null ? String(item.width) : "";
     var length = item.length != null ? String(item.length) : "";
@@ -3474,11 +3484,11 @@
       phQrcode +
       '" />' +
       '<button type="button" class="btn btn--primary btn--sm plf-item-generate plf-variant-no-toggle" data-gen="qrcode"><span data-i18n="productListForm.itemGenerateQrcode"></span></button></div></div>' +
-      '<div class="form-field form-field--switch"><span data-i18n="productListForm.itemCompatiblePart"></span>' +
-      '<label class="crud-switch"><input type="checkbox" data-field="is_fake"' +
-      (isFake ? " checked" : "") +
+      '<div class="form-field form-field--switch"><span data-i18n="productListForm.itemAuthenticSpare"></span>' +
+      '<label class="crud-switch"><input type="checkbox" data-field="is_authentic"' +
+      (isAuthentic ? " checked" : "") +
       ' role="switch" aria-label="' +
-      escapeAttr(t("productListForm.itemCompatiblePart")) +
+      escapeAttr(t("productListForm.itemAuthenticSpare")) +
       '" /><span class="crud-switch__track"><span class="crud-switch__thumb"></span></span></label></div>';
 
     var dimAffix = function (field, val, dimLabelKey) {
@@ -5882,7 +5892,12 @@
         minimum_stock: Number(it.minimum_stock) || 0,
         is_active: !!it.is_active,
         is_stopped: !!it.is_stopped,
-        is_fake: !!it.is_fake,
+        is_authentic:
+          it.is_authentic != null
+            ? !!it.is_authentic
+            : it.is_fake != null
+              ? !it.is_fake
+              : true,
         type_price: isStockPrice ? "stock" : "manual",
         price_wholesale: Number(it.price_wholesale) || 0,
         vat_rate: Number(activeSettingVat().rate) || 0,

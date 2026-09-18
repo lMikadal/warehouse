@@ -28,13 +28,13 @@ type listLangBody struct {
 }
 
 type listCarBody struct {
-	ID       *int64  `json:"id,omitempty"`
-	BrandID  *int64  `json:"product_attribute_brand_id,omitempty"`
-	ModelID  *int64  `json:"product_attribute_model_id,omitempty"`
-	EngineID int64   `json:"product_attribute_engine_id"`
-	GearType *string `json:"gear_type,omitempty"`
-	YearStart *int  `json:"year_start,omitempty"`
-	YearEnd   *int  `json:"year_end,omitempty"`
+	ID        *int64  `json:"id,omitempty"`
+	BrandID   *int64  `json:"product_attribute_brand_id,omitempty"`
+	ModelID   *int64  `json:"product_attribute_model_id,omitempty"`
+	EngineID  int64   `json:"product_attribute_engine_id"`
+	GearType  *string `json:"gear_type,omitempty"`
+	YearStart *int    `json:"year_start,omitempty"`
+	YearEnd   *int    `json:"year_end,omitempty"`
 }
 
 type itemLangNames struct {
@@ -84,7 +84,7 @@ type listItemBody struct {
 	IsNew              bool                   `json:"is_new"`
 	IsActive           bool                   `json:"is_active"`
 	IsStopped          bool                   `json:"is_stopped"`
-	IsFake             bool                   `json:"is_fake"`
+	IsAuthentic        bool                   `json:"is_authentic"`
 	Promotion          string                 `json:"promotion,omitempty"`
 	TotalStock         float64                `json:"total_stock,omitempty"`
 	WarehouseRootCount int                    `json:"warehouse_root_count,omitempty"`
@@ -162,9 +162,9 @@ SELECT rate FROM setting_vat WHERE deleted_at IS NULL AND is_active = TRUE ORDER
 func (r *ListRepository) GetAggregate(ctx context.Context, id int64, locale string) (*listAggregateResponse, error) {
 	var row struct {
 		sku, tag, note, supplierSKU string
-		isActive                  bool
-		brandID, catID            sql.NullInt64
-		updatedAt                 time.Time
+		isActive                    bool
+		brandID, catID              sql.NullInt64
+		updatedAt                   time.Time
 	}
 	err := r.db.QueryRowContext(ctx, `
 SELECT sku, supplier_sku, tag, note, is_active, product_brand_id, product_category_id, updated_at
@@ -300,7 +300,7 @@ func loadListItems(ctx context.Context, db *sql.DB, listID int64) ([]listItemBod
 SELECT id, COALESCE(sku, ''), COALESCE(barcode, ''), COALESCE(qrcode, ''),
        price::float8, price_wholesale::float8, type_price::text, unit::text, qty_per_unit,
        weight::float8, width::float8, length::float8, height::float8,
-       minimum_stock, old_product_item_id, is_new, is_active, is_stopped, is_fake, promotion
+       minimum_stock, old_product_item_id, is_new, is_active, is_stopped, is_authentic, promotion
 FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`, listID)
 	if err != nil {
 		return nil, err
@@ -314,7 +314,7 @@ FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`
 		var oldItemID sql.NullInt64
 		if err := rows.Scan(&itemID, &it.SKU, &it.Barcode, &it.Qrcode, &it.Price, &it.PriceWholesale,
 			&it.TypePrice, &it.Unit, &it.QtyPerUnit, &w, &wi, &l, &h,
-			&it.MinimumStock, &oldItemID, &it.IsNew, &it.IsActive, &it.IsStopped, &it.IsFake, &it.Promotion); err != nil {
+			&it.MinimumStock, &oldItemID, &it.IsNew, &it.IsActive, &it.IsStopped, &it.IsAuthentic, &it.Promotion); err != nil {
 			return nil, err
 		}
 		if w.Valid {
@@ -698,7 +698,7 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 			unit = "piece"
 		}
 		if it.ID != nil && *it.ID > 0 {
-			if err := upsertOneItem(ctx, tx, listID, *it.ID, it, actorID, vat, true); err != nil {
+			if err := upsertOneItem(ctx, tx, listID, *it.ID, it, actorID, vat); err != nil {
 				return err
 			}
 			continue
@@ -710,13 +710,13 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 		err := tx.QueryRowContext(ctx, `
 INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, vat_rate, promotion,
   type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, old_product_item_id, is_new,
-  is_stopped, is_fake, is_active, created_by, updated_by)
+  is_stopped, is_authentic, is_active, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::product_item_type_price, $10::product_unit, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $22)
 RETURNING id`,
 			listID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
 			strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
 			it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, int64OrNull(it.OldProductItemID), it.IsNew,
-			it.IsStopped, it.IsFake, it.IsActive, nullActor(actorID)).Scan(&itemID)
+			it.IsStopped, it.IsAuthentic, it.IsActive, nullActor(actorID)).Scan(&itemID)
 		if err != nil {
 			return err
 		}
@@ -730,7 +730,7 @@ RETURNING id`,
 	return nil
 }
 
-func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it listItemBody, actorID int64, vat float64, update bool) error {
+func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it listItemBody, actorID int64, vat float64) error {
 	tp := it.TypePrice
 	if tp != "stock" {
 		tp = "manual"
@@ -743,11 +743,11 @@ func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it lis
 UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, vat_rate = $7,
   promotion = $8, type_price = $9::product_item_type_price, unit = $10::product_unit, qty_per_unit = $11,
   weight = $12, width = $13, length = $14, height = $15, minimum_stock = $16, is_new = $17, is_stopped = $18,
-  is_fake = $19, is_active = $20, updated_at = NOW(), updated_by = $21
+  is_authentic = $19, is_active = $20, updated_at = NOW(), updated_by = $21
 WHERE id = $1 AND product_list_id = $22 AND deleted_at IS NULL`,
 		itemID, strOrNull(it.SKU), strOrNull(it.Barcode), strOrNull(it.Qrcode), it.Price, it.PriceWholesale, vat,
 		strings.TrimSpace(it.Promotion), tp, unit, it.QtyPerUnit,
-		it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsNew, it.IsStopped, it.IsFake, it.IsActive,
+		it.Weight, it.Width, it.Length, it.Height, it.MinimumStock, it.IsNew, it.IsStopped, it.IsAuthentic, it.IsActive,
 		nullActor(actorID), listID)
 	if err != nil {
 		return err
@@ -968,7 +968,7 @@ SELECT product_list_id FROM product_item WHERE id = $1 AND deleted_at IS NULL`, 
 		return err
 	}
 	defer tx.Rollback()
-	if err := upsertOneItem(ctx, tx, listID, itemID, it, actorID, vat, true); err != nil {
+	if err := upsertOneItem(ctx, tx, listID, itemID, it, actorID, vat); err != nil {
 		return err
 	}
 	return tx.Commit()

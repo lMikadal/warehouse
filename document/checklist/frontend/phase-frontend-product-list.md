@@ -23,5 +23,5 @@ Production **สินค้า → รายการ** — parity with design 
 - List product cell **car fitment chip** (pill under SKU, opens modal) + dev seed `product_list_car` — done
 - Category **overlay cascade** picker → flat searchable combobox with tree indent
 - Warehouse **bin cascade** picker → bin-type warehouse list combobox
-- Pricing tab: collapsible variant summary + five expanded sections (design parity); lot **add** dialog still read-only list (no POST stock lot API yet)
+- Pricing tab: collapsible variant summary + five expanded sections; section 2 → three FormCards (2 / 2.1 / 2.2); barcode/QR **generate** buttons (`ITEM-BC-{random}` / `ITEM-QR-{random}` on frontend; design mock still uses GS1 / `WH:sku` demo strings); lot **add** dialog still read-only list (no POST stock lot API yet)
 - History grouped tables populate when purchase/order modules migrate

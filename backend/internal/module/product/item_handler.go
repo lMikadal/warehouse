@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type ItemHandler struct {
@@ -44,9 +43,9 @@ type itemBrowseJSON struct {
 	TotalStock         float64   `json:"total_stock"`
 	LowStock           bool      `json:"low_stock"`
 	WarehouseRootCount int       `json:"warehouse_root_count"`
-	CarCount             int       `json:"car_count"`
-	CarSummary           string    `json:"car_summary,omitempty"`
-	CoverSystemFileID    *int64    `json:"cover_system_file_id,omitempty"`
+	CarCount           int       `json:"car_count"`
+	CarSummary         string    `json:"car_summary,omitempty"`
+	CoverSystemFileID  *int64    `json:"cover_system_file_id,omitempty"`
 }
 
 func toItemBrowseJSON(r ItemBrowseRow) itemBrowseJSON {
@@ -346,16 +345,4 @@ func (h *ListHandler) delete(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "delete failed"})
 	}
 	return c.NoContent(http.StatusNoContent)
-}
-
-func parseInt64Query(c *echo.Context, key string) (*int64, error) {
-	v := strings.TrimSpace(c.QueryParam(key))
-	if v == "" {
-		return nil, nil
-	}
-	n, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || n <= 0 {
-		return nil, errors.New("invalid")
-	}
-	return &n, nil
 }
