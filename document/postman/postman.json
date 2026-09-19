@@ -1483,7 +1483,33 @@
               "request": {
                 "method": "GET",
                 "url": "{{baseUrl}}/member/users/1",
-                "description": "Aggregate includes `files[]` (junction + embedded `system_file`): `id`, `system_file_id`, `sort_order`, `updated_at`, `original_name`, `content_type`, `size_bytes`, `file_created_at`, `url`, optional `uploaded_by_username`."
+                "description": "Aggregate includes `files[]` (junction + embedded `system_file`) and `histories[]` with locale `title` (+ optional `names` th/en). History rows append on member create, file create, and discount create."
+              }
+            },
+            {
+              "name": "Create member file",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"system_file_id\": 1\n}"
+                },
+                "url": "{{baseUrl}}/member/users/1/files",
+                "description": "Also appends a `member_history` entry (document uploaded)."
+              }
+            },
+            {
+              "name": "Create member discount",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"product_item_id\": 1,\n  \"discount\": 10,\n  \"discount_type\": \"percent\",\n  \"is_active\": true\n}"
+                },
+                "url": "{{baseUrl}}/member/users/1/discounts",
+                "description": "Also appends a `member_history` entry (special discount added)."
               }
             },
             {
@@ -1508,7 +1534,7 @@
                   "raw": "{\n  \"type\": \"person\",\n  \"name\": \"Demo Member\",\n  \"tel\": \"081-2345678\",\n  \"is_active\": true\n}"
                 },
                 "url": "{{baseUrl}}/member/users",
-                "description": "member.member_user.create — omit `sku` (or null) to auto-assign from `system_code_prefix` (`member_user` → e.g. MEM-202603-00001). Send explicit `sku` to override."
+                "description": "member.member_user.create — omit `sku` (or null) to auto-assign from `system_code_prefix` (`member_user` → e.g. MEM-202603-00001). Send explicit `sku` to override. Inserts initial `member_history` (member created)."
               }
             }
           ]

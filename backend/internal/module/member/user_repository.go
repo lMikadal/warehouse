@@ -373,6 +373,9 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$
 			return 0, err
 		}
 	}
+	if _, err := insertMemberHistoryTx(ctx, tx, id, in.ActorID, historyTitleMemberCreated, memberCreatedDescriptions(in.Name)); err != nil {
+		return 0, err
+	}
 	return id, tx.Commit()
 }
 
@@ -725,6 +728,7 @@ type HistoryRow struct {
 	ID        int64             `json:"id"`
 	CreatedAt time.Time         `json:"created_at"`
 	CreatedBy *int64            `json:"created_by,omitempty"`
+	Title     string            `json:"title"`
 	Names     map[string]string `json:"names,omitempty"`
 }
 
@@ -743,6 +747,7 @@ SELECT id, created_at, created_by FROM member_history WHERE member_user_id = $1 
 		}
 		names, _ := r.loadHistoryNames(ctx, row.ID)
 		row.Names = names
+		row.Title = localeHistoryTitle(names, locale)
 		out = append(out, row)
 	}
 	return out, rows.Err()
@@ -766,13 +771,29 @@ func (r *UserRepository) loadHistoryNames(ctx context.Context, historyID int64) 
 }
 
 func (r *UserRepository) CreateFile(ctx context.Context, userID, fileID int64, actorID int64) (int64, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 	var maxSort int
-	_ = r.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(sort_order), 0) FROM member_user_file WHERE member_user_id = $1 AND deleted_at IS NULL`, userID).Scan(&maxSort)
+	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(sort_order), 0) FROM member_user_file WHERE member_user_id = $1 AND deleted_at IS NULL`, userID).Scan(&maxSort); err != nil {
+		return 0, err
+	}
 	var id int64
-	err := r.db.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 INSERT INTO member_user_file (member_user_id, system_file_id, sort_order, created_by, updated_by)
-VALUES ($1, $2, $3, $4, $4) RETURNING id`, userID, fileID, maxSort+10, nullActor(actorID)).Scan(&id)
-	return id, err
+VALUES ($1, $2, $3, $4, $4) RETURNING id`, userID, fileID, maxSort+10, nullActor(actorID)).Scan(&id); err != nil {
+		return 0, err
+	}
+	var originalName string
+	if err := tx.QueryRowContext(ctx, `SELECT original_name FROM system_file WHERE id = $1 AND deleted_at IS NULL`, fileID).Scan(&originalName); err != nil {
+		return 0, err
+	}
+	if _, err := insertMemberHistoryTx(ctx, tx, userID, actorID, historyTitleFileUploaded, fileUploadedDescriptions(originalName)); err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 
 func (r *UserRepository) ReorderFiles(ctx context.Context, userID, dragID, targetID, actorID int64) error {
@@ -826,12 +847,24 @@ func (r *UserRepository) CreateDiscount(ctx context.Context, userID int64, d Dis
 	if dt == "" {
 		dt = "percent"
 	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 	var id int64
-	err := r.db.QueryRowContext(ctx, `
+	if err := tx.QueryRowContext(ctx, `
 INSERT INTO member_user_discount (member_user_id, member_credit_id, product_item_id, minimum_qty, discount, discount_type, date_start, date_end, is_active, created_by, updated_by)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10) RETURNING id`,
-		userID, d.MemberCreditID, d.ProductItemID, d.MinimumQty, d.Discount, dt, d.DateStart, d.DateEnd, d.IsActive, nullActor(actorID)).Scan(&id)
-	return id, err
+		userID, d.MemberCreditID, d.ProductItemID, d.MinimumQty, d.Discount, dt, d.DateStart, d.DateEnd, d.IsActive, nullActor(actorID)).Scan(&id); err != nil {
+		return 0, err
+	}
+	labelTh := productItemLabel(ctx, tx, d.ProductItemID, "th")
+	labelEn := productItemLabel(ctx, tx, d.ProductItemID, "en")
+	if _, err := insertMemberHistoryTx(ctx, tx, userID, actorID, historyTitleDiscountAdded, discountAddedDescriptions(labelTh, labelEn)); err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 
 func (r *UserRepository) PatchDiscount(ctx context.Context, userID, discountID int64, d DiscountRow, actorID int64) error {
@@ -865,28 +898,20 @@ UPDATE member_user_discount SET deleted_at = NOW(), updated_at = NOW(), updated_
 }
 
 func (r *UserRepository) CreateHistory(ctx context.Context, userID int64, names map[string]string, actorID int64) (int64, error) {
-	if err := validateNames(names); err != nil {
-		return 0, err
-	}
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
-	var id int64
-	err = tx.QueryRowContext(ctx, `INSERT INTO member_history (member_user_id, created_by) VALUES ($1, $2) RETURNING id`, userID, nullActor(actorID)).Scan(&id)
+	emptyDesc := map[string]string{"th": "", "en": ""}
+	id, err := insertMemberHistoryTx(ctx, tx, userID, actorID, names, emptyDesc)
 	if err != nil {
 		return 0, err
 	}
-	for _, loc := range []string{"th", "en"} {
-		name := strings.TrimSpace(names[loc])
-		if _, err := tx.ExecContext(ctx, `
-INSERT INTO member_history_language (member_history_id, locale, title, description) VALUES ($1, $2, $3, '')
-ON CONFLICT (member_history_id, locale) DO UPDATE SET title = EXCLUDED.title, updated_at = NOW()`, id, loc, name); err != nil {
-			return 0, err
-		}
+	if err := tx.Commit(); err != nil {
+		return 0, err
 	}
-	return id, tx.Commit()
+	return id, nil
 }
 
 func (r *UserRepository) Stats(ctx context.Context) (UserStats, error) {

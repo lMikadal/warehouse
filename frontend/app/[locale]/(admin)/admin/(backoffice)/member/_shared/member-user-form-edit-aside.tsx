@@ -106,27 +106,30 @@ export function MemberUserFormEditAside({
               })}
             </p>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-md border border-primary/20 bg-primary/10 px-2 py-2 text-center">
-                <p className="text-xs text-muted-foreground">
+              <div className="flex aspect-square min-w-0 flex-col items-center justify-center rounded-md border border-primary/20 bg-primary/10 px-1 py-2 text-center text-primary">
+                <p className="text-[0.625rem] leading-tight">
                   {t("creditLimit")}
                 </p>
-                <p className="text-sm font-medium tabular-nums">
-                  {formatBaht(limit)} {t("bahtUnit")}
+                <p className="mt-1 text-base font-semibold tabular-nums leading-none">
+                  {formatBaht(limit)}
                 </p>
+                <p className="mt-0.5 text-[0.625rem]">{t("bahtUnit")}</p>
               </div>
-              <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-2 text-center">
-                <p className="text-xs text-muted-foreground">
+              <div className="flex aspect-square min-w-0 flex-col items-center justify-center rounded-md border border-amber-500/25 bg-amber-500/10 px-1 py-2 text-center text-amber-700 dark:text-amber-400">
+                <p className="text-[0.625rem] leading-tight">
                   {t("outstandingBalance")}
                 </p>
-                <p className="text-sm font-medium tabular-nums">
-                  {formatBaht(outstanding)} {t("bahtUnit")}
+                <p className="mt-1 text-base font-semibold tabular-nums leading-none">
+                  {formatBaht(outstanding)}
                 </p>
+                <p className="mt-0.5 text-[0.625rem]">{t("bahtUnit")}</p>
               </div>
-              <div className="rounded-md border border-destructive/25 bg-destructive/10 px-2 py-2 text-center">
-                <p className="text-xs text-muted-foreground">{t("overdue")}</p>
-                <p className="text-sm font-medium tabular-nums">
-                  {formatBaht(overdue)} {t("bahtUnit")}
+              <div className="flex aspect-square min-w-0 flex-col items-center justify-center rounded-md border border-destructive/25 bg-destructive/10 px-1 py-2 text-center text-destructive">
+                <p className="text-[0.625rem] leading-tight">{t("overdue")}</p>
+                <p className="mt-1 text-base font-semibold tabular-nums leading-none">
+                  {formatBaht(overdue)}
                 </p>
+                <p className="mt-0.5 text-[0.625rem]">{t("bahtUnit")}</p>
               </div>
             </div>
           </FormCardContent>
