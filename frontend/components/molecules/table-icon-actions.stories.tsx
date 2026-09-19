@@ -32,6 +32,14 @@ export const EditDelete: Story = {
   },
 };
 
+export const DeleteDisabled: Story = {
+  name: "Delete disabled",
+  args: {
+    actions: ["edit", "delete"],
+    disabledActions: ["delete"],
+  },
+};
+
 export const ViewOnly: Story = {
   name: "View only",
   args: {

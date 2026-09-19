@@ -1,0 +1,57 @@
+{
+  "page": {
+    "memberTier": {
+      "title": "ระดับ",
+      "description": "จัดการระดับสมาชิก เงื่อนไขส่วนลด และโปรไฟล์ธุรกิจ"
+    }
+  },
+  "memberTier": {
+    "formTitle": "เพิ่ม / แก้ไขระดับ",
+    "listTitle": "รายการระดับ",
+    "defaultBadge": "ค่าเริ่มต้น",
+    "memberCount": "จำนวนสมาชิก",
+    "relationCount": "เงื่อนไขธุรกิจ",
+    "relationsTitle": "เงื่อนไขตามโปรไฟล์",
+    "emptyRelations": "ยังไม่มีเงื่อนไข",
+    "viewMore": "ดูเพิ่มเติม",
+    "hide": "ซ่อน",
+    "purchaseStart": "ยอดซื้อขั้นต่ำ",
+    "purchaseEnd": "ยอดซื้อสูงสุด",
+    "scopeAll": "ทั้งหมด",
+    "scopeBrand": "เฉพาะแบรนด์",
+    "scopeCategory": "เฉพาะหมวดหมู่",
+    "scopeExceptBrand": "ยกเว้นแบรนด์",
+    "scopeExceptCategory": "ยกเว้นหมวดหมู่",
+    "brands": "แบรนด์",
+    "categories": "หมวดหมู่",
+    "includePromotion": "นับโปรโมชัน",
+    "selectProfile": "เลือกกลุ่มธุรกิจ",
+    "purchaseRangeCumulative": "ช่วงยอดซื้อสะสม (บาท)",
+    "tierDiscount": "ส่วนลดพิเศษของระดับ",
+    "addRelation": "เพิ่มเงื่อนไข",
+    "editRelation": "แก้ไขเงื่อนไข",
+    "errorPurchaseRange": "ยอดซื้อขั้นต่ำต้องไม่มากกว่ายอดสูงสุด",
+    "errorComboTaken": "โปรไฟล์นี้มีในระดับนี้แล้ว",
+    "errorScopeAttrs": "กรุณาเลือกแบรนด์หรือหมวดหมู่",
+    "uploadBadge": "อัปโหลดรูป",
+    "bahtUnit": "บาท",
+    "discountBaht": "บาท",
+    "includePromotionShort": "นับรวมโปรโมชัน",
+    "relBrandCount": "แบรนด์ที่เข้าร่วม {count} แบรนด์",
+    "relCategoryCount": "หมวดหมู่ที่เข้าร่วม {count} หมวด",
+    "relExceptBrandCount": "แบรนด์ที่ยกเว้น {count} แบรนด์",
+    "relExceptCategoryCount": "หมวดหมู่ที่ยกเว้น {count} หมวด",
+    "countAllProducts": "นับทุกสินค้า",
+    "productScope": "ขอบเขตสินค้า",
+    "percentOfTotal": "{pct}% ของลูกค้าทั้งหมด",
+    "customerCountLabel": "จำนวนลูกค้า",
+    "businessGroupCount": "{count} กลุ่ม",
+    "stats": {
+      "totalMembers": "ลูกค้ารวมทั้งหมด",
+      "totalSalesYtd": "ยอดซื้อรวมทั้งหมด (ปีนี้)",
+      "lastUpdated": "อัปเดตข้อมูลล่าสุด",
+      "refresh": "รีเฟรช",
+      "listUnit": "ราย"
+    }
+  }
+}

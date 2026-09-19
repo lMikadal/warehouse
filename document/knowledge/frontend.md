@@ -236,6 +236,7 @@ Storybook: **UI/Toaster** (`components/ui/sonner.stories.tsx`).
 | `page-auth.json` | `page.login` — admin sign-in screen |
 | `page-system.json` | `page.adminMenu`, `page.adminRole`, `page.adminUser`, geo/system page headers |
 | `page-member-setting.json` | `page.memberSettingCredit|Group|Business`, `memberSettingBusiness.*` |
+| `page-member-tier.json` | `page.memberTier`, `memberTier.*` |
 | `user.json` | `userType.*`, `userStatus.*`, `rolePerm.*` |
 
 Sidebar / breadcrumb labels live in [`admin-menu-mock.ts`](../../frontend/lib/admin-menu-mock.ts) as mock `labels: { th, en }` until `admin_menu` API returns display names — not in `messages/`.
@@ -285,6 +286,17 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | UI | [`member/_shared/member-setting-lang-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-setting-lang-list.tsx) (credit, group); [`member-setting-business-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-setting-business-list.tsx) (expand relations, business sheet with [`RemoteMultiComboboxField`](../../frontend/components/molecules/remote-multi-combobox-field.tsx)) |
 | i18n | [`messages/{th,en}/page-member-setting.json`](../../frontend/messages/th/page-member-setting.json); SKU conflict → `error.skuTaken` |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-member-setting.md`](../checklist/frontend/phase-frontend-member-setting.md) |
+
+### Member tier settings
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/member/tiers` + split [`loading.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/tiers/loading.tsx) (`MemberTierPageSkeleton`) |
+| BFF / API | [`lib/bff-member-tier-handlers.ts`](../../frontend/lib/bff-member-tier-handlers.ts) → [`app/api/v1/auth/proxy/member/tiers/`](../../frontend/app/api/v1/auth/proxy/member/tiers/) (+ [`stats`](../../frontend/app/api/v1/auth/proxy/member/tiers/stats/route.ts)); client [`lib/member-tier-api.ts`](../../frontend/lib/member-tier-api.ts) → Go `/api/v1/member/tiers`, `/tiers/stats` (+ nested `/:id/relations`); list rows include `member_count`, `relation_count` |
+| UI | Design handoff [`design/pages/member-tier.html`](../../design/pages/member-tier.html): [`member-tier-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-tier-page.tsx) — header stats (total members + YTD sales placeholder), no list search; left tier form + card list with progress share of total members; expanded relations use design grid [`member-tier-relation-row.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-tier-relation-row.tsx); [`member-tier-relation-dialog.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-tier-relation-dialog.tsx) |
+| Profile combos | [`member-tier-profile-combos.ts`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-tier-profile-combos.ts) — flattens active business × `GET …/businesses/:id/relations` (bounded pages; upgrade path = dedicated relations list API) |
+| i18n | [`messages/{th,en}/page-member-tier.json`](../../frontend/messages/th/page-member-tier.json) |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-member-tier.md`](../checklist/frontend/phase-frontend-member-tier.md) |
 
 ### Product list (item browse + aggregate form)
 

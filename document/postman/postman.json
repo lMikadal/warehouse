@@ -1403,6 +1403,14 @@
               }
             },
             {
+              "name": "Tier stats",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/tiers/stats"
+              }
+            },
+            {
               "name": "Get tier",
               "request": { "method": "GET", "url": "{{baseUrl}}/member/tiers/1" }
             }

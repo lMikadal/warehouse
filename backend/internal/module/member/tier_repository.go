@@ -28,6 +28,14 @@ type TierRow struct {
 	UpdatedAt     time.Time
 	Names         map[string]string
 	AttributeIDs  []int64
+	MemberCount    int64
+	RelationCount  int64
+}
+
+type TierStats struct {
+	TotalMembers  int64
+	TotalSalesYTD float64
+	UpdatedAt     time.Time
 }
 
 type TierListFilter struct {
@@ -103,7 +111,77 @@ func (r *TierRepository) List(ctx context.Context, f TierListFilter) ([]TierRow,
 	if end > total {
 		end = total
 	}
-	return ordered[start:end], total, nil
+	pageRows := ordered[start:end]
+	memberCounts, err := r.loadMemberCountsByTier(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	relationCounts, err := r.loadRelationCountsByTier(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range pageRows {
+		pageRows[i].MemberCount = memberCounts[pageRows[i].ID]
+		pageRows[i].RelationCount = relationCounts[pageRows[i].ID]
+	}
+	return pageRows, total, nil
+}
+
+func (r *TierRepository) Stats(ctx context.Context) (TierStats, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM member_user WHERE deleted_at IS NULL`,
+	).Scan(&total); err != nil {
+		return TierStats{}, err
+	}
+	// ponytail: TotalSalesYTD stays 0 until order payment aggregate exists.
+	return TierStats{
+		TotalMembers:  total,
+		TotalSalesYTD: 0,
+		UpdatedAt:     time.Now().UTC(),
+	}, nil
+}
+
+func (r *TierRepository) loadMemberCountsByTier(ctx context.Context) (map[int64]int64, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT member_tier_id, COUNT(*)::bigint
+FROM member_user
+WHERE deleted_at IS NULL AND member_tier_id IS NOT NULL
+GROUP BY member_tier_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]int64{}
+	for rows.Next() {
+		var tierID, n int64
+		if err := rows.Scan(&tierID, &n); err != nil {
+			return nil, err
+		}
+		out[tierID] = n
+	}
+	return out, rows.Err()
+}
+
+func (r *TierRepository) loadRelationCountsByTier(ctx context.Context) (map[int64]int64, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT member_tier_id, COUNT(*)::bigint
+FROM member_tier_relation
+WHERE deleted_at IS NULL
+GROUP BY member_tier_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]int64{}
+	for rows.Next() {
+		var tierID, n int64
+		if err := rows.Scan(&tierID, &n); err != nil {
+			return nil, err
+		}
+		out[tierID] = n
+	}
+	return out, rows.Err()
 }
 
 func flattenTierOrder(rows []TierRow) []TierRow {
@@ -364,6 +442,14 @@ func (r *TierRepository) Patch(ctx context.Context, id int64, p TierPatch) error
 }
 
 func (r *TierRepository) SoftDelete(ctx context.Context, id int64, actorID int64) error {
+	var memberCount int64
+	if err := r.db.QueryRowContext(ctx, `
+SELECT COUNT(*) FROM member_user WHERE deleted_at IS NULL AND member_tier_id = $1`, id).Scan(&memberCount); err != nil {
+		return err
+	}
+	if memberCount > 0 {
+		return ErrValidation
+	}
 	res, err := r.db.ExecContext(ctx, `
 UPDATE member_tier SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1 AND deleted_at IS NULL`, id, nullActor(actorID))
 	if err != nil {
@@ -564,6 +650,9 @@ FROM member_tier_relation WHERE member_tier_id = $1 AND deleted_at IS NULL ORDER
 		attrs, _ := r.loadRelationAttributes(ctx, row.ID)
 		row.AttributeIDs = attrs
 		out = append(out, row)
+	}
+	if out == nil {
+		out = []TierRelationRow{}
 	}
 	return out, rows.Err()
 }

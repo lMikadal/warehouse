@@ -19,6 +19,8 @@ export type TableIconActionKey = "view" | "edit" | "add" | "delete";
 
 export type TableIconActionsProps = {
   actions: TableIconActionKey[];
+  /** Actions shown but not clickable (e.g. delete when row is in use). */
+  disabledActions?: TableIconActionKey[];
   onAction?: (action: TableIconActionKey) => void;
   className?: string;
 };
@@ -39,11 +41,13 @@ const TONE: Record<TableIconActionKey, ButtonIconTone> = {
 
 export function TableIconActions({
   actions,
+  disabledActions,
   onAction,
   className,
 }: TableIconActionsProps) {
   const tCrud = useTranslations("crud");
   const tAction = useTranslations("action");
+  const disabled = new Set(disabledActions ?? []);
 
   const labelFor = (key: TableIconActionKey) => {
     if (key === "view") return tAction("view");
@@ -63,6 +67,7 @@ export function TableIconActions({
             type="button"
             tone={TONE[key]}
             aria-label={labelFor(key)}
+            disabled={disabled.has(key)}
             onClick={() => onAction?.(key)}
           >
             <Icon className="text-current" />

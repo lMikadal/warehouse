@@ -50,7 +50,7 @@ type ButtonProps = ButtonPrimitive.Props &
 function Button({
   className,
   variant = "default",
-  size = "default",
+  size = "lg",
   asChild = false,
   children,
   ...props

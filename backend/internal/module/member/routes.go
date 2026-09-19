@@ -43,6 +43,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	s.DELETE("/relations/:id", rel.delete)
 
 	g.GET("/tiers", tier.list)
+	g.GET("/tiers/stats", tier.stats)
 	g.GET("/tiers/:id", tier.get)
 	g.POST("/tiers", tier.create)
 	g.PATCH("/tiers/:id", tier.patch)

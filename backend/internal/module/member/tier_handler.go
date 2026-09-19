@@ -26,11 +26,33 @@ type tierListItem struct {
 	TreePath     string    `json:"tree_path"`
 	Name         string    `json:"name"`
 	SortOrder    int       `json:"sort_order"`
+	SystemFileID *int64    `json:"system_file_id"`
 	IsDefault    bool      `json:"is_default"`
 	IsActive     bool      `json:"is_active"`
 	Discount     float64   `json:"discount"`
 	DiscountType string    `json:"discount_type"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	MemberCount   int64     `json:"member_count"`
+	RelationCount int64     `json:"relation_count"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type tierStatsResponse struct {
+	TotalMembers  int64     `json:"total_members"`
+	TotalSalesYTD float64   `json:"total_sales_ytd"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+func (h *TierHandler) stats(c *echo.Context) error {
+	row, err := h.repo.Stats(c.Request().Context())
+	if err != nil {
+		applog.HTTPError(c, "member tier stats", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load stats"})
+	}
+	return c.JSON(http.StatusOK, tierStatsResponse{
+		TotalMembers:  row.TotalMembers,
+		TotalSalesYTD: row.TotalSalesYTD,
+		UpdatedAt:     row.UpdatedAt,
+	})
 }
 
 func (h *TierHandler) list(c *echo.Context) error {
@@ -49,7 +71,9 @@ func (h *TierHandler) list(c *echo.Context) error {
 	for i, r := range rows {
 		items[i] = tierListItem{
 			ID: r.ID, ParentID: r.ParentID, TreePath: r.TreePath, Name: r.Name, SortOrder: r.SortOrder,
-			IsDefault: r.IsDefault, IsActive: r.IsActive, Discount: r.Discount, DiscountType: r.DiscountType, UpdatedAt: r.UpdatedAt,
+			SystemFileID: r.SystemFileID, IsDefault: r.IsDefault, IsActive: r.IsActive, Discount: r.Discount,
+			DiscountType: r.DiscountType, MemberCount: r.MemberCount, RelationCount: r.RelationCount,
+			UpdatedAt: r.UpdatedAt,
 		}
 	}
 	return c.JSON(http.StatusOK, api.NewListResponse(items, int64(total), q))

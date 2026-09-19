@@ -1,0 +1,57 @@
+{
+  "page": {
+    "memberTier": {
+      "title": "Tier",
+      "description": "Manage member tiers, discount rules, and business profile overrides"
+    }
+  },
+  "memberTier": {
+    "formTitle": "Add / edit tier",
+    "listTitle": "Tiers",
+    "defaultBadge": "Default",
+    "memberCount": "Members",
+    "relationCount": "Business conditions",
+    "relationsTitle": "Profile conditions",
+    "emptyRelations": "No conditions yet",
+    "viewMore": "View more",
+    "hide": "Hide",
+    "purchaseStart": "Min purchase",
+    "purchaseEnd": "Max purchase",
+    "scopeAll": "All products",
+    "scopeBrand": "Selected brands",
+    "scopeCategory": "Selected categories",
+    "scopeExceptBrand": "Except brands",
+    "scopeExceptCategory": "Except categories",
+    "brands": "Brands",
+    "categories": "Categories",
+    "includePromotion": "Include promotions",
+    "selectProfile": "Select business group",
+    "purchaseRangeCumulative": "Cumulative purchase range (THB)",
+    "tierDiscount": "Tier special discount",
+    "addRelation": "Add condition",
+    "editRelation": "Edit condition",
+    "errorPurchaseRange": "Min purchase must not exceed max purchase",
+    "errorComboTaken": "This profile is already used for this tier",
+    "errorScopeAttrs": "Please select brands or categories",
+    "uploadBadge": "Upload image",
+    "bahtUnit": "THB",
+    "discountBaht": "Baht",
+    "includePromotionShort": "Include promotions",
+    "relBrandCount": "{count} participating brands",
+    "relCategoryCount": "{count} participating categories",
+    "relExceptBrandCount": "{count} excluded brands",
+    "relExceptCategoryCount": "{count} excluded categories",
+    "countAllProducts": "All products",
+    "productScope": "Product scope",
+    "percentOfTotal": "{pct}% of all customers",
+    "customerCountLabel": "Customers",
+    "businessGroupCount": "{count} groups",
+    "stats": {
+      "totalMembers": "Total customers",
+      "totalSalesYtd": "Total purchases (this year)",
+      "lastUpdated": "Last updated",
+      "refresh": "Refresh",
+      "listUnit": "accounts"
+    }
+  }
+}

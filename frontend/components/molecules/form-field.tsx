@@ -82,11 +82,11 @@ export function FormField({
           aria-describedby={invalid ? `${id}-error` : undefined}
         />
       )}
-      {invalid ? (
+      {/* {invalid ? (
         <FieldError id={`${id}-error`}>
           {errorMessage ?? t("error.required")}
         </FieldError>
-      ) : null}
+      ) : null} */}
     </Field>
   );
 }
