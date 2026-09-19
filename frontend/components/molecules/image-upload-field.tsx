@@ -291,6 +291,9 @@ export function ImageUploadField({
   const previewSrc = value.length === 1 ? imageUploadItemUrl(value[0]!) : null;
   const singleLogo = maxFiles === 1;
   const singleFullWidth = singleLogo && fullWidth;
+  const showLimitsHint = value.length === 0;
+  const limitsHintId = `${id}-hint`;
+  const singleWithPreview = singleLogo && previewSrc != null && maxFiles === 1;
 
   return (
     <Field className={cn("gap-1.5", className)}>
@@ -308,10 +311,14 @@ export function ImageUploadField({
             tabIndex={disabled ? -1 : 0}
             aria-disabled={disabled || uploading}
             className={cn(
-              "relative flex cursor-pointer flex-col items-center justify-center gap-1.5 border-dashed p-3 text-center text-xs text-muted-foreground shadow-none transition-colors",
-              singleFullWidth
-                ? "min-h-28 w-full min-w-0"
-                : "min-h-[6.5rem] min-w-[6.5rem]",
+              "relative flex cursor-pointer flex-col items-center border-dashed text-center text-xs text-muted-foreground shadow-none transition-colors",
+              singleWithPreview
+                ? "aspect-square w-full min-w-0 max-w-full justify-between gap-1 p-2"
+                : "justify-center gap-1.5 p-3",
+              !singleWithPreview &&
+                (singleFullWidth
+                  ? "min-h-28 w-full min-w-0"
+                  : "min-h-[6.5rem] min-w-[6.5rem]"),
               dragOver && "border-primary bg-muted/40",
               (disabled || uploading) && "pointer-events-none opacity-60"
             )}
@@ -348,18 +355,22 @@ export function ImageUploadField({
                     <X className="size-3.5" />
                   </ButtonIcon>
                 ) : null}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previewSrc}
-                  alt=""
-                  className={cn(
-                    "rounded-md",
-                    singleFullWidth
-                      ? "max-h-24 w-full object-contain"
-                      : "size-14 object-cover"
-                  )}
-                />
-                <span>{t("form.upload.change")}</span>
+                <div className="flex min-h-0 w-full flex-1 flex-col items-stretch">
+                  <div className="flex min-h-0 flex-1 items-center justify-center px-0.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewSrc}
+                      alt=""
+                      className={cn(
+                        "max-h-full max-w-full rounded-md object-contain",
+                        singleFullWidth && "w-full"
+                      )}
+                    />
+                  </div>
+                  {/* <span className="shrink-0 pt-0.5">
+                    {t("form.upload.change")}
+                  </span> */}
+                </div>
               </>
             ) : (
               <>
@@ -412,14 +423,16 @@ export function ImageUploadField({
         disabled={disabled || uploading}
         onChange={onInputChange}
         aria-label={showLabel ? undefined : label}
-        aria-describedby={`${id}-hint`}
+        aria-describedby={showLimitsHint ? limitsHintId : undefined}
       />
-      <p
-        id={`${id}-hint`}
-        className={cn("text-xs text-muted-foreground", singleLogo && "text-center")}
-      >
-        {t("form.upload.limits")}
-      </p>
+      {showLimitsHint ? (
+        <p
+          id={limitsHintId}
+          className={cn("text-xs text-muted-foreground", singleLogo && "text-center")}
+        >
+          {t("form.upload.limits")}
+        </p>
+      ) : null}
 
       <Dialog open={previewUrl != null} onOpenChange={(o) => !o && setPreviewUrl(null)}>
         <DialogContent className="max-w-lg p-2">

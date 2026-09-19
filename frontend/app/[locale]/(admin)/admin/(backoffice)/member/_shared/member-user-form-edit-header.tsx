@@ -127,7 +127,7 @@ export function MemberUserFormEditHeader({
     <>
       <FormCard>
         <FormCardContent className="grid gap-4 px-4 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
-          <div className="w-full max-w-36 shrink-0">
+          <div className="w-full max-w-36 shrink-0 justify-center items-center">
             <ImageUploadField
               id="mu-avatar-edit"
               labelKey="memberUser.uploadImage"

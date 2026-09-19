@@ -1332,7 +1332,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
             onChange={setAvatarItems}
             maxFiles={1}
             uploadTiming="deferred"
-            showLabel
+            showLabel={false}
             disabled={formReadOnly || saving}
           />
         ) : null}
