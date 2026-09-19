@@ -14,7 +14,7 @@ Production UI for sidebar **สมาชิก → รายชื่อ** (`/ad
 
 - [x] Permissions via `useResourcePermissions("member", "member_user")`
 - [x] List: search, date range, business filter, stat cards, header sort, status switch, pagination 10/25/50/100
-- [x] Form: general + tax/doc/financial addresses, profile combos, avatar, staff, note; edit discounts (percent) + files
+- [x] Form: general + tax/doc/financial addresses, profile combos, avatar, staff, note; edit **special discounts** tab (design parity: credit scope, list/bulk/expired, filters, pagination, product picker) + files
 - [x] Edit layout (`/[id]`): design profile header, icon tabs, sticky right aside (balance / activity / note); create `/new` unchanged; balance outstanding/overdue `0` until order KPI API
 - [x] Import/export toasts (coming soon); annual purchase / last purchase / order tab placeholders until order API
 - [x] Backend child tables renamed to `member_user_address`, `member_user_discount`, `member_user_file`

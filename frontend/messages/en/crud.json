@@ -44,6 +44,8 @@
     "toast": {
       "created": "Record added successfully",
       "deleted": "Deleted successfully",
+      "exportComingSoon": "Export will be available soon",
+      "importComingSoon": "Import will be available soon",
       "reordered": "Order updated successfully",
       "saved": "Saved successfully"
     }

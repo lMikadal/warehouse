@@ -939,6 +939,16 @@ type userFilterRow struct {
 	Name string
 }
 
+type userProductItemFilterRow struct {
+	ID          int64
+	Name        string
+	SKU         string
+	ProductName string
+	BrandName   string
+	BrandID     sql.NullInt64
+	Price       float64
+}
+
 func (r *UserRepository) FilterBusinesses(ctx context.Context, locale string, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
 	if id > 0 {
 		var name string
@@ -1072,21 +1082,48 @@ func (r *UserRepository) FilterAdminUsers(ctx context.Context, page, limit int, 
 	return scanUserFilterRows(rows, total)
 }
 
-func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
-	if id > 0 {
-		var label string
-		err := r.db.QueryRowContext(ctx, `
-SELECT COALESCE(i.sku, '') || ' ' || COALESCE(il.name, '')
+const userProductItemFilterFrom = `
 FROM product_item i
+INNER JOIN product_list pl ON pl.id = i.product_list_id AND pl.deleted_at IS NULL
 LEFT JOIN product_item_language il ON il.product_item_id = i.id AND il.locale = $1
-WHERE i.id = $2 AND i.deleted_at IS NULL`, locale, id).Scan(&label)
-		if err == sql.ErrNoRows {
-			return nil, 0, nil
+LEFT JOIN product_attribute_language bl ON bl.product_attribute_id = pl.product_brand_id AND bl.locale = $1
+WHERE i.deleted_at IS NULL AND i.is_active = TRUE`
+
+const userProductItemFilterSelect = `
+SELECT i.id,
+  TRIM(COALESCE(i.sku, '') || ' ' || COALESCE(il.name, '')),
+  COALESCE(i.sku, ''),
+  COALESCE(il.name, ''),
+  COALESCE(bl.name, ''),
+  pl.product_brand_id,
+  COALESCE(i.price, 0)`
+
+func scanUserProductItemFilterRow(rows *sql.Rows) ([]userProductItemFilterRow, error) {
+	var out []userProductItemFilterRow
+	for rows.Next() {
+		var row userProductItemFilterRow
+		if err := rows.Scan(&row.ID, &row.Name, &row.SKU, &row.ProductName, &row.BrandName, &row.BrandID, &row.Price); err != nil {
+			return nil, err
 		}
+		row.Name = strings.TrimSpace(row.Name)
+		out = append(out, row)
+	}
+	if out == nil {
+		out = []userProductItemFilterRow{}
+	}
+	return out, rows.Err()
+}
+
+func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, page, limit int, search string, id int64, brandID int64) ([]userProductItemFilterRow, int64, error) {
+	if id > 0 {
+		row, err := r.loadProductItemFilterByID(ctx, locale, id)
 		if err != nil {
 			return nil, 0, err
 		}
-		return []userFilterRow{{ID: id, Name: strings.TrimSpace(label)}}, 1, nil
+		if row == nil {
+			return nil, 0, nil
+		}
+		return []userProductItemFilterRow{*row}, 1, nil
 	}
 	if page <= 0 {
 		page = 1
@@ -1095,14 +1132,16 @@ WHERE i.id = $2 AND i.deleted_at IS NULL`, locale, id).Scan(&label)
 		limit = 10
 	}
 	offset := (page - 1) * limit
-	base := `FROM product_item i
-LEFT JOIN product_item_language il ON il.product_item_id = i.id AND il.locale = $1
-WHERE i.deleted_at IS NULL AND i.is_active = TRUE`
+	base := userProductItemFilterFrom
 	args := []any{locale}
 	clause := ""
+	if brandID > 0 {
+		args = append(args, brandID)
+		clause += fmt.Sprintf(" AND pl.product_brand_id = $%d", len(args))
+	}
 	if q := strings.TrimSpace(search); q != "" {
 		args = append(args, "%"+strings.ToLower(q)+"%")
-		clause = fmt.Sprintf(" AND (LOWER(COALESCE(i.sku, '')) LIKE $%d OR LOWER(COALESCE(il.name, '')) LIKE $%d)", len(args), len(args))
+		clause += fmt.Sprintf(" AND (LOWER(COALESCE(i.sku, '')) LIKE $%d OR LOWER(COALESCE(il.name, '')) LIKE $%d OR LOWER(COALESCE(bl.name, '')) LIKE $%d)", len(args), len(args), len(args))
 	}
 	var total int64
 	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) `+base+clause, args...).Scan(&total); err != nil {
@@ -1111,8 +1150,70 @@ WHERE i.deleted_at IS NULL AND i.is_active = TRUE`
 	args = append(args, limit, offset)
 	li := len(args) - 1
 	oi := len(args)
-	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
-SELECT i.id, TRIM(COALESCE(i.sku, '') || ' ' || COALESCE(il.name, '')) %s%s ORDER BY i.id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(userProductItemFilterSelect+` %s%s ORDER BY i.id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	out, err := scanUserProductItemFilterRow(rows)
+	return out, total, err
+}
+
+func (r *UserRepository) loadProductItemFilterByID(ctx context.Context, locale string, id int64) (*userProductItemFilterRow, error) {
+	rows, err := r.db.QueryContext(ctx, userProductItemFilterSelect+userProductItemFilterFrom+` AND i.id = $2`, locale, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out, err := scanUserProductItemFilterRow(rows)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) == 0 {
+		return nil, nil
+	}
+	return &out[0], nil
+}
+
+func (r *UserRepository) FilterProductBrands(ctx context.Context, locale string, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
+	if id > 0 {
+		var name string
+		err := r.db.QueryRowContext(ctx, `
+SELECT COALESCE(al.name, '') FROM product_attribute pa
+LEFT JOIN product_attribute_language al ON al.product_attribute_id = pa.id AND al.locale = $1
+WHERE pa.id = $2 AND pa.type = 'brand' AND pa.deleted_at IS NULL`, locale, id).Scan(&name)
+		if err == sql.ErrNoRows {
+			return nil, 0, nil
+		}
+		if err != nil {
+			return nil, 0, err
+		}
+		return []userFilterRow{{ID: id, Name: name}}, 1, nil
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	base := `FROM product_attribute pa
+LEFT JOIN product_attribute_language al ON al.product_attribute_id = pa.id AND al.locale = $1
+WHERE pa.deleted_at IS NULL AND pa.is_active = TRUE AND pa.type = 'brand'`
+	args := []any{locale}
+	clause := ""
+	if q := strings.TrimSpace(search); q != "" {
+		args = append(args, "%"+strings.ToLower(q)+"%")
+		clause = fmt.Sprintf(" AND LOWER(COALESCE(al.name, '')) LIKE $%d", len(args))
+	}
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) `+base+clause, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	li := len(args) - 1
+	oi := len(args)
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`SELECT pa.id, COALESCE(al.name, '') %s%s ORDER BY pa.sort_order, pa.id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -17,9 +17,18 @@ export type MemberUserFilterFacet =
   | "prefixes"
   | "admin_users"
   | "product_items"
+  | "product_brands"
   | "member_credits";
 
 type FilterItem = { id: number; name: string };
+
+export type MemberUserProductItemFilterItem = FilterItem & {
+  sku?: string;
+  product_name?: string;
+  brand_name?: string;
+  brand_id?: number;
+  price?: number;
+};
 
 type FiltersResponse = {
   items: FilterItem[];
@@ -40,6 +49,7 @@ export type MemberUserFiltersParams = {
   limit?: number;
   search?: string;
   id?: number;
+  brand_id?: number;
   member_type?: "person" | "company";
 };
 
@@ -54,6 +64,9 @@ export async function fetchMemberUserFilters(
   q.set("limit", String(params.limit ?? REMOTE_COMBOBOX_LIMIT));
   if (params.search?.trim()) q.set("search", params.search.trim());
   if (params.id != null && params.id > 0) q.set("id", String(params.id));
+  if (params.brand_id != null && params.brand_id > 0) {
+    q.set("brand_id", String(params.brand_id));
+  }
   if (params.member_type) q.set("member_type", params.member_type);
   const res = await authFetch(`${PROXY}?${q}`, {
     headers: { Accept: "application/json", "Accept-Language": locale },
@@ -70,6 +83,33 @@ export function memberFilterItemsToOptions(
   items: FilterItem[] | null | undefined
 ): RemoteComboboxOption[] {
   return (items ?? []).map((row) => ({ value: String(row.id), label: row.name }));
+}
+
+export async function fetchMemberUserProductItemFilters(
+  locale: string,
+  params: MemberUserFiltersParams & { signal?: AbortSignal } = {}
+): Promise<{ items: MemberUserProductItemFilterItem[]; meta?: BffListMeta }> {
+  const q = new URLSearchParams();
+  q.set("facet", "product_items");
+  q.set("page", String(params.page ?? 1));
+  q.set("limit", String(params.limit ?? REMOTE_COMBOBOX_LIMIT));
+  if (params.search?.trim()) q.set("search", params.search.trim());
+  if (params.id != null && params.id > 0) q.set("id", String(params.id));
+  if (params.brand_id != null && params.brand_id > 0) {
+    q.set("brand_id", String(params.brand_id));
+  }
+  const res = await authFetch(`${PROXY}?${q}`, {
+    headers: { Accept: "application/json", "Accept-Language": locale },
+    signal: params.signal,
+  });
+  if (!res.ok) {
+    throw new Error(`filters product_items ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    items: MemberUserProductItemFilterItem[];
+    meta?: BffListMeta;
+  };
+  return { items: data.items ?? [], meta: data.meta };
 }
 
 export async function fetchMemberUserBusinessRelations(

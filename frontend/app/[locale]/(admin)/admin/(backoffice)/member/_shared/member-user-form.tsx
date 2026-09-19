@@ -1597,6 +1597,8 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
                       <MemberUserFormDiscountsTab
                         userId={editId}
                         discounts={discounts}
+                        creditIds={creditIds}
+                        creditOptions={creditProfileOptions}
                         canManage={perms.update}
                         onReload={loadDetail}
                       />

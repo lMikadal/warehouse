@@ -133,6 +133,23 @@ export async function loadMemberUserProductItemOptions(
   };
 }
 
+export async function loadMemberUserProductBrandOptions(
+  locale: string,
+  search: string,
+  page: number,
+  id?: number
+): Promise<{ options: RemoteComboboxOption[]; total: number }> {
+  const { items, meta } = await fetchMemberUserFilters(
+    locale,
+    "product_brands",
+    { page, search, id }
+  );
+  return {
+    options: memberFilterItemsToOptions(items),
+    total: meta?.total ?? (items?.length ?? 0),
+  };
+}
+
 export async function loadMemberUserCreditOptions(
   locale: string,
   search: string,

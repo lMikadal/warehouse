@@ -35,6 +35,19 @@ export function creditOptionsFromRelations(
   return out;
 }
 
+/** Credits selected on the member form, with labels from the business catalog. */
+export function creditTabsFromSelection(
+  creditIds: string[],
+  creditOptions: RemoteOption[]
+): RemoteOption[] {
+  if (creditIds.length === 0) return [];
+  const byValue = new Map(creditOptions.map((o) => [o.value, o.label]));
+  return creditIds.map((id) => ({
+    value: id,
+    label: byValue.get(id)?.trim() || `#${id}`,
+  }));
+}
+
 export function groupOptionsFromRelations(
   relations: MemberBusinessRelationRow[],
   creditIds: string[]

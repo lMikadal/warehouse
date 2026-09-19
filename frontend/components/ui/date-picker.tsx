@@ -220,12 +220,12 @@ function DateRangePickerInner({
           defaultMonth={selected?.from ?? selected?.to}
         />
         <div className="flex justify-end gap-2 border-t p-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
+          <Button type="button" variant="outline" size="lg" onClick={handleCancel}>
             {cancelLabel}
           </Button>
           <Button
             type="button"
-            size="sm"
+            size="lg"
             disabled={!canConfirm}
             onClick={handleConfirm}
           >

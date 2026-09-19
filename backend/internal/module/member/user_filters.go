@@ -12,8 +12,13 @@ import (
 )
 
 type userFilterItem struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID          int64   `json:"id"`
+	Name        string  `json:"name"`
+	SKU         string  `json:"sku,omitempty"`
+	ProductName string  `json:"product_name,omitempty"`
+	BrandName   string  `json:"brand_name,omitempty"`
+	BrandID     *int64  `json:"brand_id,omitempty"`
+	Price       float64 `json:"price,omitempty"`
 }
 
 type userFiltersResponse struct {
@@ -30,7 +35,7 @@ type userStatsResponse struct {
 
 func userFilterFacet(facet string) (string, bool) {
 	switch strings.TrimSpace(strings.ToLower(facet)) {
-	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "member_credits":
+	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "product_brands", "member_credits":
 		return strings.TrimSpace(strings.ToLower(facet)), true
 	default:
 		return "", false
@@ -92,9 +97,17 @@ func (h *UserHandler) listFilters(c *echo.Context) error {
 		}
 		return c.JSON(http.StatusOK, userFiltersToResponse(rows, total, q))
 	case "product_items":
-		rows, total, err := h.repo.FilterProductItems(c.Request().Context(), locale, q.Page, q.Limit, search, id)
+		brandID := userFilterBrandID(c)
+		rows, total, err := h.repo.FilterProductItems(c.Request().Context(), locale, q.Page, q.Limit, search, id, brandID)
 		if err != nil {
 			applog.HTTPError(c, "member user filters product items", err)
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+		}
+		return c.JSON(http.StatusOK, userProductItemsToResponse(rows, total, q))
+	case "product_brands":
+		rows, total, err := h.repo.FilterProductBrands(c.Request().Context(), locale, q.Page, q.Limit, search, id)
+		if err != nil {
+			applog.HTTPError(c, "member user filters product brands", err)
 			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
 		}
 		return c.JSON(http.StatusOK, userFiltersToResponse(rows, total, q))
@@ -264,6 +277,41 @@ func userFiltersToResponse(rows []userFilterRow, total int64, q api.PageQuery) u
 	items := make([]userFilterItem, len(rows))
 	for i, r := range rows {
 		items[i] = userFilterItem{ID: r.ID, Name: r.Name}
+	}
+	return userFiltersResponse{
+		Items: items,
+		Meta:  api.ListMeta{Total: total, Page: q.Page, Limit: q.Limit},
+	}
+}
+
+func userFilterBrandID(c *echo.Context) int64 {
+	v := strings.TrimSpace(c.QueryParam("brand_id"))
+	if v == "" {
+		return 0
+	}
+	id, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || id <= 0 {
+		return 0
+	}
+	return id
+}
+
+func userProductItemsToResponse(rows []userProductItemFilterRow, total int64, q api.PageQuery) userFiltersResponse {
+	items := make([]userFilterItem, len(rows))
+	for i, r := range rows {
+		item := userFilterItem{
+			ID:          r.ID,
+			Name:        r.Name,
+			SKU:         r.SKU,
+			ProductName: r.ProductName,
+			BrandName:   r.BrandName,
+			Price:       r.Price,
+		}
+		if r.BrandID.Valid {
+			bid := r.BrandID.Int64
+			item.BrandID = &bid
+		}
+		items[i] = item
 	}
 	return userFiltersResponse{
 		Items: items,
