@@ -105,7 +105,7 @@ func (h *SettingHandler) create(c *echo.Context) error {
 	if h.k == SettingBusiness && h.rel != nil && (len(body.CreditIDs) > 0 || len(body.GroupIDs) > 0) {
 		if err := h.rel.SyncBusinessRelations(c.Request().Context(), id, body.CreditIDs, body.GroupIDs, httputil.ActorID(c)); err != nil {
 			applog.HTTPError(c, "sync business relations", err)
-			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "relation sync failed"})
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "relation_sync_failed", Message: "relation sync failed"})
 		}
 	}
 	return c.JSON(http.StatusCreated, map[string]any{"id": id})
@@ -186,7 +186,7 @@ func (h *SettingHandler) patch(c *echo.Context) error {
 		}
 		if err := h.rel.SyncBusinessRelations(c.Request().Context(), id, credits, groups, httputil.ActorID(c)); err != nil {
 			applog.HTTPError(c, "sync business relations", err)
-			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "relation sync failed"})
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "relation_sync_failed", Message: "relation sync failed"})
 		}
 	}
 	return c.NoContent(http.StatusNoContent)

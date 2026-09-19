@@ -87,6 +87,20 @@ function buildSettingBody(
   return body;
 }
 
+function memberBusinessApiErrorMessage(
+  e: unknown,
+  tBiz: (key: "errorRelationSyncFailed") => string,
+  tError: (key: "generic") => string
+): string {
+  if (e instanceof MemberSettingApiError) {
+    if (e.code === "relation_sync_failed") {
+      return tBiz("errorRelationSyncFailed");
+    }
+    return e.message;
+  }
+  return tError("generic");
+}
+
 export function MemberSettingBusinessList() {
   const locale = useLocale() as DisplayLocale;
   const router = useRouter();
@@ -96,7 +110,6 @@ export function MemberSettingBusinessList() {
   const tBiz = useTranslations("memberSettingBusiness");
   const tCol = useTranslations("col");
   const tCrud = useTranslations("crud");
-  const t = useTranslations();
   const tError = useTranslations("error");
 
   const perms = useResourcePermissions("member", "member_setting_business");
@@ -133,9 +146,7 @@ export function MemberSettingBusinessList() {
       setRows(res.items);
       setTotal(res.meta.total);
     } catch (e) {
-      toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
-      );
+      toast.error(memberBusinessApiErrorMessage(e, tBiz, tError));
     } finally {
       setLoading(false);
     }
@@ -145,7 +156,8 @@ export function MemberSettingBusinessList() {
     listQuery.page,
     listQuery.pageSize,
     locale,
-    t,
+    tBiz,
+    tError,
   ]);
 
   useEffect(() => {
@@ -162,13 +174,13 @@ export function MemberSettingBusinessList() {
         setRelationsByBusiness((p) => ({ ...p, [businessId]: items }));
       } catch (e) {
         toast.error(
-          e instanceof MemberSettingApiError ? e.message : t("error.generic")
+          memberBusinessApiErrorMessage(e, tBiz, tError)
         );
       } finally {
         setRelationsLoading((p) => ({ ...p, [businessId]: false }));
       }
     },
-    [locale, t]
+    [locale, tBiz, tError]
   );
 
   const toggleExpand = async (businessId: number) => {
@@ -198,7 +210,7 @@ export function MemberSettingBusinessList() {
       });
     } catch (e) {
       toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
+        memberBusinessApiErrorMessage(e, tBiz, tError)
       );
     }
   };
@@ -233,7 +245,7 @@ export function MemberSettingBusinessList() {
         throw e;
       }
       toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
+        memberBusinessApiErrorMessage(e, tBiz, tError)
       );
     }
   };
@@ -245,7 +257,7 @@ export function MemberSettingBusinessList() {
       refreshShell();
     } catch (e) {
       toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
+        memberBusinessApiErrorMessage(e, tBiz, tError)
       );
     }
   };
@@ -260,7 +272,7 @@ export function MemberSettingBusinessList() {
       await loadRelations(businessId);
     } catch (e) {
       toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
+        memberBusinessApiErrorMessage(e, tBiz, tError)
       );
     }
   };
@@ -275,7 +287,7 @@ export function MemberSettingBusinessList() {
       refreshShell();
     } catch (e) {
       toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
+        memberBusinessApiErrorMessage(e, tBiz, tError)
       );
     }
   };
@@ -294,7 +306,7 @@ export function MemberSettingBusinessList() {
       }
     } catch (e) {
       toast.error(
-        e instanceof MemberSettingApiError ? e.message : t("error.generic")
+        memberBusinessApiErrorMessage(e, tBiz, tError)
       );
     }
   };

@@ -16,6 +16,7 @@
   "memberSettingBusiness": {
     "relationsTitle": "รูปแบบชำระและประเภท",
     "paymentMethods": "รูปแบบชำระเงิน",
-    "types": "ประเภท"
+    "types": "ประเภท",
+    "errorRelationSyncFailed": "ไม่สามารถบันทึกรูปแบบชำระและประเภทได้ กรุณาลองใหม่อีกครั้ง"
   }
 }

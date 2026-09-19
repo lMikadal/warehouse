@@ -34,12 +34,15 @@ export function useRemoteMultiComboboxOptions({
   enabled = true,
   values,
   pinnedItems = [],
+  catalogKey = "",
   onLoadOptions,
   resolveSelectedLabels,
 }: {
   enabled?: boolean;
   values: string[];
   pinnedItems?: RemoteComboboxOption[];
+  /** When this changes, option list is re-fetched (e.g. parent data loaded async). */
+  catalogKey?: string | number;
   onLoadOptions: (ctx: RemoteComboboxLoadContext) => Promise<RemoteComboboxOption[]>;
   resolveSelectedLabels?: (values: string[]) => Promise<RemoteComboboxOption[]>;
 }) {
@@ -80,7 +83,7 @@ export function useRemoteMultiComboboxOptions({
       cancelled = true;
       controller.abort();
     };
-  }, [enabled, debouncedSearch]);
+  }, [enabled, debouncedSearch, catalogKey]);
 
   const items = useMemo(() => {
     const withPinned = mergeOptions(pinnedItems, extraPinned);

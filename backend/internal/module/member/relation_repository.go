@@ -88,25 +88,38 @@ VALUES ($1, $2, $3, TRUE, $4, $4)`, cID, gID, businessID, act); err != nil {
 			}
 		}
 	}
-	// soft-delete relations not in cartesian set
+	// soft-delete relations not in cartesian set (read all rows before UPDATE — same tx cannot Exec while Rows open)
 	rows, err := tx.QueryContext(ctx, `
 SELECT id, credit_id, group_id FROM member_setting_relation
 WHERE business_id = $1 AND deleted_at IS NULL`, businessID)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	var stale []struct {
+		id, cID, gID int64
+	}
 	for rows.Next() {
 		var id, cID, gID int64
 		if err := rows.Scan(&id, &cID, &gID); err != nil {
+			_ = rows.Close()
 			return err
 		}
 		key := fmt.Sprintf("%d:%d", cID, gID)
 		if _, ok := want[key]; !ok {
-			if _, err := tx.ExecContext(ctx, `
-UPDATE member_setting_relation SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1`, id, act); err != nil {
-				return err
-			}
+			stale = append(stale, struct{ id, cID, gID int64 }{id, cID, gID})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, s := range stale {
+		if _, err := tx.ExecContext(ctx, `
+UPDATE member_setting_relation SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 WHERE id = $1`, s.id, act); err != nil {
+			return err
 		}
 	}
 	return tx.Commit()

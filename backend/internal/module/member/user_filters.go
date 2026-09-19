@@ -30,7 +30,7 @@ type userStatsResponse struct {
 
 func userFilterFacet(facet string) (string, bool) {
 	switch strings.TrimSpace(strings.ToLower(facet)) {
-	case "businesses", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "member_credits":
+	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "member_credits":
 		return strings.TrimSpace(strings.ToLower(facet)), true
 	default:
 		return "", false
@@ -62,6 +62,8 @@ func (h *UserHandler) listFilters(c *echo.Context) error {
 	id := userFilterQueryID(c)
 
 	switch facet {
+	case "business_relations":
+		return h.userBusinessRelationFilters(c, locale)
 	case "setting_relations":
 		return h.userSettingRelationFilters(c, locale, q, search, id)
 	case "prefixes":
@@ -101,6 +103,37 @@ func (h *UserHandler) listFilters(c *echo.Context) error {
 	}
 }
 
+type userSettingRelationFilterItem struct {
+	ID            int64  `json:"id"`
+	BusinessID    int64  `json:"business_id"`
+	CreditID      int64  `json:"credit_id"`
+	GroupID       int64  `json:"group_id"`
+	Name          string `json:"name"`
+	BusinessTitle string `json:"business_title,omitempty"`
+	CreditName    string `json:"credit_name,omitempty"`
+	GroupName     string `json:"group_name,omitempty"`
+}
+
+type userBusinessRelationsResponse struct {
+	Items []RelationRow `json:"items"`
+}
+
+func (h *UserHandler) userBusinessRelationFilters(c *echo.Context, locale string) error {
+	businessID := userFilterBusinessID(c)
+	if businessID <= 0 {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "business_id required"})
+	}
+	rows, err := h.rel.ListByBusiness(c.Request().Context(), businessID, locale)
+	if err != nil {
+		applog.HTTPError(c, "member user filters business relations", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+	}
+	if rows == nil {
+		rows = []RelationRow{}
+	}
+	return c.JSON(http.StatusOK, userBusinessRelationsResponse{Items: rows})
+}
+
 func (h *UserHandler) userSettingRelationFilters(c *echo.Context, locale string, q api.PageQuery, search string, id int64) error {
 	filter := SettingRelationFilterQuery{
 		Page:   q.Page,
@@ -116,14 +149,38 @@ func (h *UserHandler) userSettingRelationFilters(c *echo.Context, locale string,
 		applog.HTTPError(c, "member user filters setting relations", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
 	}
-	out := make([]userFilterItem, len(items))
+	out := make([]userSettingRelationFilterItem, len(items))
 	for i, row := range items {
-		out[i] = userFilterItem{ID: row.ID, Name: row.Name}
+		out[i] = userSettingRelationFilterItem{
+			ID:            row.ID,
+			BusinessID:    row.BusinessID,
+			CreditID:      row.CreditID,
+			GroupID:       row.GroupID,
+			Name:          row.Name,
+			BusinessTitle: row.BusinessTitle,
+			CreditName:    row.CreditName,
+			GroupName:     row.GroupName,
+		}
 	}
-	return c.JSON(http.StatusOK, userFiltersResponse{
+	return c.JSON(http.StatusOK, struct {
+		Items []userSettingRelationFilterItem `json:"items"`
+		Meta  api.ListMeta                    `json:"meta"`
+	}{
 		Items: out,
 		Meta:  api.ListMeta{Total: total, Page: q.Page, Limit: q.Limit},
 	})
+}
+
+func userFilterBusinessID(c *echo.Context) int64 {
+	v := strings.TrimSpace(c.QueryParam("business_id"))
+	if v == "" {
+		return 0
+	}
+	id, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || id <= 0 {
+		return 0
+	}
+	return id
 }
 
 func (h *UserHandler) userPrefixFilters(c *echo.Context, locale string, q api.PageQuery, search string, id int64) error {

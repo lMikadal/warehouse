@@ -61,6 +61,7 @@
     "branch": "Branch",
     "branchName": "Branch name",
     "recipientName": "Recipient name",
-    "address": "Address"
+    "address": "Address",
+    "note": "Note"
   }
 }

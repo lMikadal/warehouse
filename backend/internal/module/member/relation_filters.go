@@ -10,6 +10,9 @@ import (
 
 type SettingRelationFilterItem struct {
 	ID            int64  `json:"id"`
+	BusinessID    int64  `json:"business_id"`
+	CreditID      int64  `json:"credit_id"`
+	GroupID       int64  `json:"group_id"`
 	Name          string `json:"name"`
 	BusinessTitle string `json:"business_title"`
 	CreditName    string `json:"credit_name"`
@@ -99,7 +102,7 @@ func (r *RelationRepository) ListSettingRelationFilters(ctx context.Context, q S
 		return nil, 0, err
 	}
 
-	listQ := `SELECT r.id, COALESCE(bl.name, ''), COALESCE(cl.name, ''), COALESCE(gl.name, '') ` + whereSQL +
+	listQ := `SELECT r.id, r.business_id, r.credit_id, r.group_id, COALESCE(bl.name, ''), COALESCE(cl.name, ''), COALESCE(gl.name, '') ` + whereSQL +
 		fmt.Sprintf(` ORDER BY b.id ASC, r.id ASC LIMIT $%d OFFSET $%d`, n, n+1)
 	args = append(args, limit, offset)
 
@@ -128,9 +131,9 @@ type filterScanner interface {
 }
 
 func scanSettingRelationFilterItem(rows filterScanner) (SettingRelationFilterItem, error) {
-	var id int64
+	var id, businessID, creditID, groupID int64
 	var business, credit, group string
-	if err := rows.Scan(&id, &business, &credit, &group); err != nil {
+	if err := rows.Scan(&id, &businessID, &creditID, &groupID, &business, &credit, &group); err != nil {
 		return SettingRelationFilterItem{}, err
 	}
 	name := settingRelationFilterLabel(business, credit, group)
@@ -139,6 +142,9 @@ func scanSettingRelationFilterItem(rows filterScanner) (SettingRelationFilterIte
 	}
 	return SettingRelationFilterItem{
 		ID:            id,
+		BusinessID:    businessID,
+		CreditID:      creditID,
+		GroupID:       groupID,
 		Name:          name,
 		BusinessTitle: settingRelationBusinessTitle(business, group),
 		CreditName:    strings.TrimSpace(credit),
@@ -147,7 +153,7 @@ func scanSettingRelationFilterItem(rows filterScanner) (SettingRelationFilterIte
 }
 
 func (r *RelationRepository) loadOneSettingRelationFilter(ctx context.Context, locale string, id int64) (*SettingRelationFilterItem, error) {
-	q := `SELECT r.id, COALESCE(bl.name, ''), COALESCE(cl.name, ''), COALESCE(gl.name, '') ` + settingRelationFilterFrom + ` AND r.id = $2`
+	q := `SELECT r.id, r.business_id, r.credit_id, r.group_id, COALESCE(bl.name, ''), COALESCE(cl.name, ''), COALESCE(gl.name, '') ` + settingRelationFilterFrom + ` AND r.id = $2`
 	row := r.db.QueryRowContext(ctx, q, locale, id)
 	item, err := scanSettingRelationFilterItem(row)
 	if err != nil {

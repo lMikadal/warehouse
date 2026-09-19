@@ -13,7 +13,7 @@ import {
   useComboboxAnchor,
 } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   type RemoteComboboxLoadContext,
   type RemoteComboboxOption,
@@ -32,6 +32,10 @@ export function RemoteMultiComboboxField({
   emptyLabel,
   inputClassName,
   disabled = false,
+  required = false,
+  invalid = false,
+  errorMessage,
+  catalogKey,
   onLoadOptions,
   resolveSelectedLabels,
 }: {
@@ -43,6 +47,10 @@ export function RemoteMultiComboboxField({
   emptyLabel: string;
   inputClassName?: string;
   disabled?: boolean;
+  required?: boolean;
+  invalid?: boolean;
+  errorMessage?: string;
+  catalogKey?: string | number;
   onLoadOptions: (
     ctx: RemoteComboboxLoadContext
   ) => Promise<RemoteComboboxOption[]>;
@@ -57,6 +65,7 @@ export function RemoteMultiComboboxField({
     useRemoteMultiComboboxOptions({
       enabled: !disabled,
       values,
+      catalogKey,
       onLoadOptions,
       resolveSelectedLabels,
     });
@@ -71,8 +80,16 @@ export function RemoteMultiComboboxField({
   };
 
   return (
-    <Field className="gap-1.5">
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <Field className="gap-1.5" data-invalid={invalid ? true : undefined}>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required ? (
+          <span className="text-[#dc2626]" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        ) : null}
+      </FieldLabel>
       <Combobox
         items={items}
         value={null}
@@ -85,7 +102,7 @@ export function RemoteMultiComboboxField({
         }}
       >
         <div ref={anchorRef} className={cn("w-full", inputClassName)}>
-          <ComboboxChips aria-invalid={undefined}>
+          <ComboboxChips aria-invalid={invalid || undefined}>
             {values.map((value) => (
               <span
                 key={value}
@@ -136,6 +153,9 @@ export function RemoteMultiComboboxField({
           <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
         </ComboboxContent>
       </Combobox>
+      {errorMessage ? (
+        <FieldError id={id ? `${id}-error` : undefined}>{errorMessage}</FieldError>
+      ) : null}
     </Field>
   );
 }

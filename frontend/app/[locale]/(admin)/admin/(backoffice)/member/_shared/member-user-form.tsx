@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   Fragment,
   type ComponentProps,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -54,12 +55,22 @@ import {
   type MemberUserFileRow,
 } from "@/lib/member-user-api";
 import {
-  filterProfileOptions,
-  loadMemberProfileComboOptions,
   loadMemberUserAdminOptions,
+  loadMemberUserBusinessFilterOptions,
   loadMemberUserPrefixOptions,
   loadMemberUserTierOptions,
+  fetchMemberUserBusinessRelations,
+  fetchMemberUserSettingRelationById,
 } from "@/lib/member-user-filters-combobox";
+import {
+  creditOptionsFromRelations,
+  filterOptionsBySearch,
+  groupOptionsFromRelations,
+  hydrateProfileFromRelationRows,
+  pruneGroupIds,
+  resolveSettingRelationIds,
+  type MemberBusinessRelationRow,
+} from "@/lib/member-user-relations";
 import {
   loadGeoComboboxOptions,
   resolveGeoComboboxLabel,
@@ -164,7 +175,9 @@ const emptyDocument = (): DocumentState => ({
 
 function comboboxPinned(value: string, label: string) {
   if (!value) return [];
-  return [{ value, label: label.trim() || value }];
+  const trimmed = label.trim();
+  if (!trimmed) return [];
+  return [{ value, label: trimmed }];
 }
 
 function taxDigitsOnly(value: string): string {
@@ -227,18 +240,49 @@ function TaxNumberOtpField({
   );
 }
 
+function FieldLabelRequired({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+}) {
+  return (
+    <FieldLabel htmlFor={htmlFor}>
+      {children}
+      <span className="text-[#dc2626]" aria-hidden="true">
+        {" "}
+        *
+      </span>
+    </FieldLabel>
+  );
+}
+
 function LabeledRemoteCombobox({
   fieldId,
   labelText,
+  required,
+  invalid,
   ...rest
 }: {
   fieldId: string;
   labelText: string;
+  required?: boolean;
+  invalid?: boolean;
 } & Omit<ComponentProps<typeof RemoteComboboxField>, "id" | "label">) {
   return (
-    <Field className="gap-1.5">
-      <FieldLabel htmlFor={fieldId}>{labelText}</FieldLabel>
-      <RemoteComboboxField id={fieldId} label={labelText} {...rest} />
+    <Field className="gap-1.5" data-invalid={invalid ? true : undefined}>
+      {required ? (
+        <FieldLabelRequired htmlFor={fieldId}>{labelText}</FieldLabelRequired>
+      ) : (
+        <FieldLabel htmlFor={fieldId}>{labelText}</FieldLabel>
+      )}
+      <RemoteComboboxField
+        id={fieldId}
+        label={labelText}
+        invalid={invalid}
+        {...rest}
+      />
     </Field>
   );
 }
@@ -496,7 +540,13 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
   const [docSame, setDocSame] = useState(false);
   const [memberTierId, setMemberTierId] = useState("");
   const [memberTierName, setMemberTierName] = useState("");
-  const [settingRelationIds, setSettingRelationIds] = useState<string[]>([]);
+  const [businessId, setBusinessId] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [creditIds, setCreditIds] = useState<string[]>([]);
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [businessRelations, setBusinessRelations] = useState<
+    MemberBusinessRelationRow[]
+  >([]);
   const [ownerAdminUserIds, setOwnerAdminUserIds] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -526,7 +576,32 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
       setDocSame(docAddr?.is_same_information ?? false);
       setMemberTierId(d.member_tier_id != null ? String(d.member_tier_id) : "");
       setMemberTierName("");
-      setSettingRelationIds(d.setting_relation_ids.map(String));
+      const relRows = (
+        await Promise.all(
+          d.setting_relation_ids.map((id) =>
+            fetchMemberUserSettingRelationById(locale, id)
+          )
+        )
+      ).filter((row): row is NonNullable<typeof row> => row != null);
+      const profile = hydrateProfileFromRelationRows(relRows);
+      setBusinessId(profile.businessId);
+      setCreditIds(profile.creditIds);
+      setGroupIds(profile.groupIds);
+      if (profile.businessId) {
+        const bizNum = Number(profile.businessId);
+        const rels = await fetchMemberUserBusinessRelations(locale, bizNum);
+        setBusinessRelations(rels);
+        const { options } = await loadMemberUserBusinessFilterOptions(
+          locale,
+          "",
+          1,
+          bizNum
+        );
+        setBusinessName(options[0]?.label ?? "");
+      } else {
+        setBusinessRelations([]);
+        setBusinessName("");
+      }
       setOwnerAdminUserIds(d.owner_admin_user_ids.map(String));
       setNote(d.note ?? "");
       setIsActive(d.is_active);
@@ -563,9 +638,50 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     return [tax, doc, financialToAddress(financial)];
   }, [general, taxInfo, taxSame, documentInfo, docSame, financial]);
 
+  useEffect(() => {
+    if (!businessId) {
+      setBusinessRelations([]);
+      return;
+    }
+    let cancelled = false;
+    void fetchMemberUserBusinessRelations(locale, Number(businessId))
+      .then((rows) => {
+        if (!cancelled) setBusinessRelations(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setBusinessRelations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId, locale]);
+
+  useEffect(() => {
+    setGroupIds((prev) => pruneGroupIds(businessRelations, creditIds, prev));
+  }, [creditIds, businessRelations]);
+
+  const creditProfileOptions = useMemo(
+    () => creditOptionsFromRelations(businessRelations),
+    [businessRelations]
+  );
+  const groupProfileOptions = useMemo(
+    () => groupOptionsFromRelations(businessRelations, creditIds),
+    [businessRelations, creditIds]
+  );
+
+  const relationCatalogKey = useMemo(() => {
+    if (!businessId) return "";
+    const ids = [...businessRelations.map((r) => r.id)].sort((a, b) => a - b);
+    return `${businessId}:${ids.join(",")}`;
+  }, [businessId, businessRelations]);
+
   const validate = () => {
     const errs: Record<string, boolean> = {};
+    if (!businessId) errs.business = true;
+    if (creditIds.length === 0) errs.credits = true;
+    if (groupIds.length === 0) errs.groups = true;
     if (!general.name.trim()) errs.name = true;
+    if (!general.tel.trim()) errs.tel = true;
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -583,13 +699,18 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         avatarItems,
         initialFileId
       );
+      const relationIds = resolveSettingRelationIds(
+        businessRelations,
+        creditIds,
+        groupIds
+      );
       const body = {
         sku: sku.trim() || null,
         member_tier_id: memberTierId ? Number(memberTierId) : null,
         ...generalToMainBody(general),
         note: note.trim() || null,
         is_active: isActive,
-        setting_relation_ids: settingRelationIds.map(Number),
+        setting_relation_ids: relationIds,
         owner_admin_user_ids: ownerAdminUserIds.map(Number),
         addresses: addressesPayload,
         ...(fileId !== undefined ? { system_file_id: fileId } : {}),
@@ -722,6 +843,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
       disabled?: boolean;
       prefix: string;
       requireName?: boolean;
+      requireTel?: boolean;
       headerSwitch?: {
         checked: boolean;
         onCheckedChange: (v: boolean) => void;
@@ -730,6 +852,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     }
   ) => {
     const disabled = (opts.disabled ?? false) || formReadOnly;
+    const isCompany = block.memberType === "company";
     const set = (patch: Partial<GeneralState>) =>
       setBlock({ ...block, ...patch });
     const hideBody = opts.headerSwitch?.checked === true;
@@ -759,9 +882,22 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
               <FieldLabel>{t("infoType")}</FieldLabel>
               <RadioGroup
                 value={block.memberType}
-                onValueChange={(v) =>
-                  set({ memberType: v as "person" | "company" })
-                }
+                onValueChange={(v) => {
+                  const next = v as "person" | "company";
+                  if (next === block.memberType) return;
+                  const patch: Partial<GeneralState> = {
+                    memberType: next,
+                    setting_prefix_id: "",
+                    setting_prefix_name: "",
+                  };
+                  if (next === "company") {
+                    patch.store_name = "";
+                  } else {
+                    patch.branch = "";
+                    patch.branch_name = "";
+                  }
+                  set(patch);
+                }}
                 className="flex flex-wrap gap-4"
                 disabled={disabled}
               >
@@ -785,53 +921,60 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
                 </div>
               </RadioGroup>
             </Field>
-            <LabeledRemoteCombobox
-              fieldId={`${opts.prefix}-prefix`}
-              labelText={tCol("prefix")}
-              value={block.setting_prefix_id}
-              inputClassName="w-full"
-              emptyLabel={tForm("combobox.noResults")}
-              placeholder={tForm("placeholder.select", {
-                label: tCol("prefix"),
-              })}
-              disabled={disabled}
-              pinnedItems={comboboxPinned(
-                block.setting_prefix_id,
-                block.setting_prefix_name
-              )}
-              onValueChange={(v) => set({ setting_prefix_id: v })}
-              onLoadOptions={async ({ search }) => {
-                const { options } = await loadMemberUserPrefixOptions(
-                  locale,
-                  block.memberType,
-                  search,
-                  1,
-                  block.setting_prefix_id
-                    ? Number(block.setting_prefix_id)
-                    : undefined
-                );
-                return options;
-              }}
-            />
-            <FormField
-              id={`${opts.prefix}-name`}
-              labelKey="memberUser.customerName"
-              required={opts.requireName}
-              invalid={!!(fieldErrors.name && opts.requireName)}
-              onClearInvalid={() =>
-                setFieldErrors((e) => ({ ...e, name: false }))
-              }
-              value={block.name}
-              onChange={(v) => set({ name: v })}
-              readOnly={disabled}
-            />
-            <FormField
-              id={`${opts.prefix}-store`}
-              labelKey="memberUser.storeName"
-              value={block.store_name}
-              onChange={(v) => set({ store_name: v })}
-              readOnly={disabled}
-            />
+            <div
+              className={`md:col-span-2 grid grid-cols-1 gap-4 ${isCompany ? "md:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]" : "md:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_minmax(0,1fr)]"}`}
+            >
+              <LabeledRemoteCombobox
+                key={`${opts.prefix}-prefix-${block.memberType}`}
+                fieldId={`${opts.prefix}-prefix`}
+                labelText={tCol("prefix")}
+                value={block.setting_prefix_id}
+                inputClassName="w-full"
+                emptyLabel={tForm("combobox.noResults")}
+                placeholder={tForm("placeholder.select", {
+                  label: tCol("prefix"),
+                })}
+                disabled={disabled}
+                pinnedItems={comboboxPinned(
+                  block.setting_prefix_id,
+                  block.setting_prefix_name
+                )}
+                onValueChange={(v) => set({ setting_prefix_id: v })}
+                onLoadOptions={async ({ search }) => {
+                  const { options } = await loadMemberUserPrefixOptions(
+                    locale,
+                    block.memberType,
+                    search,
+                    1,
+                    block.setting_prefix_id
+                      ? Number(block.setting_prefix_id)
+                      : undefined
+                  );
+                  return options;
+                }}
+              />
+              <FormField
+                id={`${opts.prefix}-name`}
+                labelKey="memberUser.customerName"
+                required={opts.requireName}
+                invalid={!!(fieldErrors.name && opts.requireName)}
+                onClearInvalid={() =>
+                  setFieldErrors((e) => ({ ...e, name: false }))
+                }
+                value={block.name}
+                onChange={(v) => set({ name: v })}
+                readOnly={disabled}
+              />
+              {!isCompany ? (
+                <FormField
+                  id={`${opts.prefix}-store`}
+                  labelKey="memberUser.storeName"
+                  value={block.store_name}
+                  onChange={(v) => set({ store_name: v })}
+                  readOnly={disabled}
+                />
+              ) : null}
+            </div>
             <div className="md:col-span-2">
               <TaxNumberOtpField
                 id={`${opts.prefix}-tax`}
@@ -841,45 +984,52 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
                 onChange={(v) => set({ tax_number: v })}
               />
             </div>
-            <Field className="md:col-span-2 gap-1.5">
-              <FieldLabel>{tCol("branch")}</FieldLabel>
-              <div className="flex flex-wrap items-center gap-4">
-                <RadioGroup
-                  value={block.branch || ""}
-                  onValueChange={(v) =>
-                    set({ branch: v as GeneralState["branch"] })
-                  }
-                  className="flex flex-wrap gap-4"
-                  disabled={disabled}
-                >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem
-                      value="headquarter"
-                      id={`${opts.prefix}-hq`}
-                    />
-                    <Label htmlFor={`${opts.prefix}-hq`}>
-                      {t("headquarter")}
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="branch" id={`${opts.prefix}-br`} />
-                    <Label htmlFor={`${opts.prefix}-br`}>{tCol("branch")}</Label>
-                  </div>
-                </RadioGroup>
-                {block.branch === "branch" ? (
-                  <Input
-                    id={`${opts.prefix}-branch-name`}
-                    value={block.branch_name}
+            {isCompany ? (
+              <Field className="md:col-span-2 gap-1.5">
+                <FieldLabel>{tCol("branch")}</FieldLabel>
+                <div className="flex flex-wrap items-center gap-4">
+                  <RadioGroup
+                    value={block.branch || ""}
+                    onValueChange={(v) =>
+                      set({ branch: v as GeneralState["branch"] })
+                    }
+                    className="flex flex-wrap gap-4"
                     disabled={disabled}
-                    placeholder={tForm("placeholder.input", {
-                      label: tCol("branchName"),
-                    })}
-                    onChange={(e) => set({ branch_name: e.target.value })}
-                    className="min-w-[10rem] flex-1"
-                  />
-                ) : null}
-              </div>
-            </Field>
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem
+                        value="headquarter"
+                        id={`${opts.prefix}-hq`}
+                      />
+                      <Label htmlFor={`${opts.prefix}-hq`}>
+                        {t("headquarter")}
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem
+                        value="branch"
+                        id={`${opts.prefix}-br`}
+                      />
+                      <Label htmlFor={`${opts.prefix}-br`}>
+                        {tCol("branch")}
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  {block.branch === "branch" ? (
+                    <Input
+                      id={`${opts.prefix}-branch-name`}
+                      value={block.branch_name}
+                      disabled={disabled}
+                      placeholder={tForm("placeholder.input", {
+                        label: tCol("branchName"),
+                      })}
+                      onChange={(e) => set({ branch_name: e.target.value })}
+                      className="min-w-[10rem] flex-1"
+                    />
+                  ) : null}
+                </div>
+              </Field>
+            ) : null}
             <Field className="md:col-span-2 gap-1.5">
               <FieldLabel htmlFor={`${opts.prefix}-address`}>
                 {tCol("address")}
@@ -899,6 +1049,11 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
               id={`${opts.prefix}-tel`}
               labelKey="col.tel"
               type="tel"
+              required={opts.requireTel}
+              invalid={!!(fieldErrors.tel && opts.requireTel)}
+              onClearInvalid={() =>
+                setFieldErrors((e) => ({ ...e, tel: false }))
+              }
               value={block.tel}
               onChange={(v) => set({ tel: v.replace(/[^0-9-]/g, "") })}
               readOnly={disabled}
@@ -921,28 +1076,6 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     <aside className="min-w-0 flex flex-col gap-4">
       <FormCard>
         <FormCardContent className="flex flex-col gap-4">
-          <LabeledRemoteCombobox
-            fieldId="mu-tier"
-            labelText={t("memberTier")}
-            value={memberTierId}
-            inputClassName="w-full"
-            emptyLabel={tForm("combobox.noResults")}
-            placeholder={tForm("placeholder.select", {
-              label: t("memberTier"),
-            })}
-            disabled={formReadOnly}
-            pinnedItems={comboboxPinned(memberTierId, memberTierName)}
-            onValueChange={setMemberTierId}
-            onLoadOptions={async ({ search }) => {
-              const { options } = await loadMemberUserTierOptions(
-                locale,
-                search,
-                1,
-                memberTierId ? Number(memberTierId) : undefined
-              );
-              return options;
-            }}
-          />
           <StatusSwitchField
             checked={isActive}
             onCheckedChange={setIsActive}
@@ -997,28 +1130,144 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     </aside>
   );
 
-  const profileField = (
-    <RemoteMultiComboboxField
-      id="mu-profiles"
-      label={t("business")}
-      values={settingRelationIds}
-      onValuesChange={setSettingRelationIds}
-      placeholder={tForm("placeholder.select", { label: t("business") })}
-      emptyLabel={tForm("combobox.noResults")}
-      disabled={formReadOnly}
-      onLoadOptions={async ({ search }) => {
-        const all = await loadMemberProfileComboOptions(locale);
-        return filterProfileOptions(all, search).map((o) => ({
-          value: o.value,
-          label: o.label,
-        }));
-      }}
-      resolveSelectedLabels={async (vals) => {
-        const all = await loadMemberProfileComboOptions(locale);
-        const map = new Map(all.map((o) => [o.value, o]));
-        return vals.map((v) => map.get(v) ?? { value: v, label: v });
-      }}
-    />
+  const memberProfileRow = (
+    <div className="grid gap-3 lg:grid-cols-4">
+      <LabeledRemoteCombobox
+        fieldId="mu-business"
+        labelText={t("business")}
+        required
+        invalid={!!fieldErrors.business}
+        value={businessId}
+        inputClassName="w-full"
+        emptyLabel={tForm("combobox.noResults")}
+        placeholder={tForm("placeholder.select", { label: t("business") })}
+        disabled={formReadOnly}
+        pinnedItems={comboboxPinned(businessId, businessName)}
+        onValueChange={(v) => {
+          setBusinessId(v);
+          setBusinessRelations([]);
+          void loadMemberUserBusinessFilterOptions(locale, "", 1, Number(v)).then(
+            ({ options }) => {
+              setBusinessName(options[0]?.label ?? "");
+            }
+          );
+          setCreditIds([]);
+          setGroupIds([]);
+          setFieldErrors((prev) => {
+            const next = { ...prev };
+            delete next.business;
+            return next;
+          });
+        }}
+        onLoadOptions={async ({ search, page }) => {
+          const { options } = await loadMemberUserBusinessFilterOptions(
+            locale,
+            search,
+            page ?? 1
+          );
+          return options;
+        }}
+        resolveSelectedLabel={
+          formReadOnly
+            ? undefined
+            : async (value) => {
+                const { options } = await loadMemberUserBusinessFilterOptions(
+                  locale,
+                  "",
+                  1,
+                  Number(value)
+                );
+                const label = options[0]?.label ?? null;
+                if (label) setBusinessName(label);
+                return label;
+              }
+        }
+      />
+      <RemoteMultiComboboxField
+        id="mu-credits"
+        label={t("creditType")}
+        required
+        invalid={!!fieldErrors.credits}
+        catalogKey={relationCatalogKey}
+        values={creditIds}
+        onValuesChange={(vals) => {
+          setCreditIds(vals);
+          setFieldErrors((prev) => {
+            const next = { ...prev };
+            delete next.credits;
+            return next;
+          });
+        }}
+        placeholder={tForm("placeholder.select", { label: t("creditType") })}
+        emptyLabel={tForm("combobox.noResults")}
+        disabled={formReadOnly || !businessId}
+        onLoadOptions={async ({ search }) =>
+          filterOptionsBySearch(creditProfileOptions, search)
+        }
+        resolveSelectedLabels={async (vals) =>
+          vals.map(
+            (v) =>
+              creditProfileOptions.find((o) => o.value === v) ?? {
+                value: v,
+                label: v,
+              }
+          )
+        }
+      />
+      <RemoteMultiComboboxField
+        id="mu-groups"
+        label={t("groupType")}
+        required
+        invalid={!!fieldErrors.groups}
+        catalogKey={`${relationCatalogKey}:${creditIds.join(",")}`}
+        values={groupIds}
+        onValuesChange={(vals) => {
+          setGroupIds(vals);
+          setFieldErrors((prev) => {
+            const next = { ...prev };
+            delete next.groups;
+            return next;
+          });
+        }}
+        placeholder={tForm("placeholder.select", { label: t("groupType") })}
+        emptyLabel={tForm("combobox.noResults")}
+        disabled={formReadOnly || creditIds.length === 0}
+        onLoadOptions={async ({ search }) =>
+          filterOptionsBySearch(groupProfileOptions, search)
+        }
+        resolveSelectedLabels={async (vals) =>
+          vals.map(
+            (v) =>
+              groupProfileOptions.find((o) => o.value === v) ?? {
+                value: v,
+                label: v,
+              }
+          )
+        }
+      />
+      <LabeledRemoteCombobox
+        fieldId="mu-tier"
+        labelText={t("memberTier")}
+        value={memberTierId}
+        inputClassName="w-full"
+        emptyLabel={tForm("combobox.noResults")}
+        placeholder={tForm("placeholder.select", {
+          label: t("memberTier"),
+        })}
+        disabled={formReadOnly}
+        pinnedItems={comboboxPinned(memberTierId, memberTierName)}
+        onValueChange={setMemberTierId}
+        onLoadOptions={async ({ search }) => {
+          const { options } = await loadMemberUserTierOptions(
+            locale,
+            search,
+            1,
+            memberTierId ? Number(memberTierId) : undefined
+          );
+          return options;
+        }}
+      />
+    </div>
   );
 
   const memberInfoCard = (
@@ -1026,8 +1275,8 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
       <FormCardHeader>
         <FormCardTitle>{t("memberInfo")}</FormCardTitle>
       </FormCardHeader>
-      <FormCardContent className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
+      <FormCardContent className="flex flex-col gap-4">
+        {!isEdit ? (
           <ImageUploadField
             id="mu-avatar"
             labelKey="memberUser.uploadImage"
@@ -1039,15 +1288,17 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
             showLabel
             disabled={formReadOnly || saving}
           />
-        </div>
-        <FormField
-          id="mu-sku"
-          labelKey="col.sku"
-          value={sku}
-          onChange={setSku}
-          readOnly={formReadOnly}
-        />
-        {profileField}
+        ) : null}
+        {memberProfileRow}
+        {isEdit ? (
+          <FormField
+            id="mu-sku"
+            labelKey="col.sku"
+            value={sku}
+            onChange={setSku}
+            readOnly={formReadOnly}
+          />
+        ) : null}
       </FormCardContent>
     </FormCard>
   );
@@ -1057,6 +1308,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
       {renderGeneralBlock(t("generalInfo"), general, setGeneral, {
         prefix: "general",
         requireName: true,
+        requireTel: true,
       })}
       {renderGeneralBlock(t("taxInfo"), taxInfo, setTaxInfo, {
         prefix: "tax",
@@ -1076,8 +1328,25 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         </FormCardHeader>
         <FormCardContent className="grid gap-4 md:grid-cols-2">
           <FormField
+            id="fin-credit-limit"
+            labelKey="memberUser.creditLimit"
+            type="number"
+            value={financial.credit_limit}
+            onChange={(v) => setFinancial({ ...financial, credit_limit: v })}
+            readOnly={formReadOnly}
+          />
+          <FormField
+            id="fin-credit-date"
+            labelKey="memberUser.creditDate"
+            type="number"
+            value={financial.credit_date}
+            onChange={(v) => setFinancial({ ...financial, credit_date: v })}
+            readOnly={formReadOnly}
+          />
+          <FormField
             id="fin-name"
             labelKey="memberUser.guarantorName"
+            className="md:col-span-2"
             value={financial.name}
             onChange={(v) => setFinancial({ ...financial, name: v })}
             readOnly={formReadOnly}
@@ -1116,22 +1385,6 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
             readOnly={formReadOnly}
           />
           <FormField
-            id="fin-credit-limit"
-            labelKey="memberUser.creditLimit"
-            type="number"
-            value={financial.credit_limit}
-            onChange={(v) => setFinancial({ ...financial, credit_limit: v })}
-            readOnly={formReadOnly}
-          />
-          <FormField
-            id="fin-credit-date"
-            labelKey="memberUser.creditDate"
-            type="number"
-            value={financial.credit_date}
-            onChange={(v) => setFinancial({ ...financial, credit_date: v })}
-            readOnly={formReadOnly}
-          />
-          <FormField
             id="fin-relationship"
             labelKey="memberUser.relationship"
             value={financial.relationship}
@@ -1165,6 +1418,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
             <FormField
               id="doc-name"
               labelKey="memberUser.contactName"
+              className="md:col-span-2"
               value={documentInfo.name}
               onChange={(v) =>
                 setDocumentInfo({ ...documentInfo, name: v })

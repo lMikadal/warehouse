@@ -16,6 +16,7 @@
   "memberSettingBusiness": {
     "relationsTitle": "Payment format and type",
     "paymentMethods": "Payment format",
-    "types": "Type"
+    "types": "Type",
+    "errorRelationSyncFailed": "Could not save payment formats and types. Please try again."
   }
 }

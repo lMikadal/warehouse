@@ -1453,12 +1453,21 @@
               }
             },
             {
+              "name": "Member user filters (business relations)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=business_relations&business_id=1",
+                "description": "member.member_user.view — cascade credit/group options for a business (form profile row)."
+              }
+            },
+            {
               "name": "Member user filters (setting relations)",
               "request": {
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": "{{baseUrl}}/member/users/filters?facet=setting_relations&page=1&limit=50",
-                "description": "member.member_user.view — form profile combobox without member_tier.view"
+                "description": "member.member_user.view — includes business_id, credit_id, group_id on each item; ?id= for hydrate."
               }
             },
             {

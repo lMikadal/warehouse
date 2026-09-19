@@ -1,8 +1,12 @@
 import {
+  fetchMemberUserBusinessRelations,
   fetchMemberUserFilters,
+  fetchMemberUserSettingRelationById,
   memberFilterItemsToOptions,
 } from "@/lib/member-user-filters-api";
 import type { RemoteComboboxOption } from "@/hooks/use-remote-combobox-options";
+
+export { fetchMemberUserBusinessRelations, fetchMemberUserSettingRelationById };
 
 /** ponytail: paginated user filters API; cap pages to avoid unbounded load. */
 const MAX_FILTER_PAGES = 3;

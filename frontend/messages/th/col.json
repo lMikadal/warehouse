@@ -61,6 +61,7 @@
     "branch": "สาขา",
     "branchName": "ชื่อสาขา",
     "recipientName": "ชื่อติดต่อ",
-    "address": "ที่อยู่"
+    "address": "ที่อยู่",
+    "note": "หมายเหตุ"
   }
 }
