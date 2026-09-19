@@ -5,13 +5,15 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
+	"github.com/lMikadal/warehouse/backend/internal/module/system"
 )
 
 func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	setRepo := NewSettingRepository(db)
 	relRepo := NewRelationRepository(db)
 	tierRepo := NewTierRepository(db)
-	userRepo := NewUserRepository(db)
+	codePrefix := system.NewCodePrefixRepository(db)
+	userRepo := NewUserRepository(db, codePrefix)
 	langRepo := setting.NewLangRepository(db)
 
 	credit := NewSettingHandler(SettingCredit, setRepo, relRepo)

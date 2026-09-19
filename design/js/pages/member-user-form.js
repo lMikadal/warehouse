@@ -2549,11 +2549,12 @@
       global.store.update("member_user", memberId, payload);
       addHistory(t("memberUser.updatedHistory"), "Profile updated", draft.info.name, draft.info.name);
     } else {
+      var sku = global.systemCodeLib.nextCode("member_user");
       var created = global.store.create(
         "member_user",
         Object.assign(
           {
-            sku: null,
+            sku: sku,
             created_at: now(),
             created_by: actorId(),
             deleted_at: null,
@@ -2562,9 +2563,6 @@
         )
       );
       memberId = created.id;
-      global.store.update("member_user", memberId, {
-        sku: "MEM-" + String(memberId).padStart(3, "0"),
-      });
       addHistory(t("memberUser.createdHistory"), "Member created", draft.info.name, draft.info.name);
     }
     upsertAddress("tax", addrPayload(taxSrc, "tax", draft.tax.is_same_information));

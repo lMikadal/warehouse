@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	"github.com/lMikadal/warehouse/backend/internal/tree"
 )
 
@@ -134,11 +135,12 @@ type UserPatch struct {
 }
 
 type UserRepository struct {
-	db *sql.DB
+	db    *sql.DB
+	codes *system.CodePrefixRepository
 }
 
-func NewUserRepository(db *sql.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *sql.DB, codes *system.CodePrefixRepository) *UserRepository {
+	return &UserRepository{db: db, codes: codes}
 }
 
 func (r *UserRepository) List(ctx context.Context, f UserListFilter, locale string) ([]UserRow, int64, error) {
@@ -332,13 +334,27 @@ func (r *UserRepository) Create(ctx context.Context, in UserCreateInput) (int64,
 		return 0, err
 	}
 	defer tx.Rollback()
+	skuVal := in.SKU
+	if skuVal == nil || strings.TrimSpace(*skuVal) == "" {
+		if r.codes == nil {
+			return 0, errors.New("code prefix allocator unavailable")
+		}
+		generated, err := r.codes.NextCode(ctx, tx, "member_user", time.Now())
+		if err != nil {
+			return 0, err
+		}
+		skuVal = &generated
+	} else {
+		trimmed := strings.TrimSpace(*skuVal)
+		skuVal = &trimmed
+	}
 	act := nullActor(in.ActorID)
 	var id int64
 	err = tx.QueryRowContext(ctx, `
 INSERT INTO member_user (sku, member_tier_id, type, setting_prefix_id, name, store_name, tax_number, branch, branch_name,
   tel, email, address, website_province_id, website_district_id, website_sub_district_id, postcode, system_file_id, note, is_active, created_by, updated_by)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$20) RETURNING id`,
-		in.SKU, in.MemberTierID, in.Type, in.SettingPrefixID, in.Name, in.StoreName, in.TaxNumber, in.Branch, in.BranchName,
+		skuVal, in.MemberTierID, in.Type, in.SettingPrefixID, in.Name, in.StoreName, in.TaxNumber, in.Branch, in.BranchName,
 		in.Tel, in.Email, in.Address, in.WebsiteProvinceID, in.WebsiteDistrictID, in.WebsiteSubDistrictID, in.Postcode,
 		in.SystemFileID, in.Note, in.IsActive, act).Scan(&id)
 	if err != nil {

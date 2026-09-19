@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "member-user-table-rename-1";
+  global.SEED_VERSION = "system-code-prefix-1";
 
   var tables = {};
 
@@ -84,6 +84,10 @@
   });
 
   if (global.SEED_SYSTEM_FILE) tables.system_file = global.SEED_SYSTEM_FILE;
+
+  if (global.SEED_SYSTEM_CODE_PREFIX) {
+    tables.system_code_prefix = global.SEED_SYSTEM_CODE_PREFIX;
+  }
 
   var memberUserTables = [
     "member_user",

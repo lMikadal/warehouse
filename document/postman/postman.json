@@ -1481,6 +1481,19 @@
             {
               "name": "Get member",
               "request": { "method": "GET", "url": "{{baseUrl}}/member/users/1" }
+            },
+            {
+              "name": "Create member",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"person\",\n  \"name\": \"Demo Member\",\n  \"tel\": \"081-2345678\",\n  \"is_active\": true\n}"
+                },
+                "url": "{{baseUrl}}/member/users",
+                "description": "member.member_user.create — omit `sku` (or null) to auto-assign from `system_code_prefix` (`member_user` → e.g. MEM-202603-00001). Send explicit `sku` to override."
+              }
             }
           ]
         }
