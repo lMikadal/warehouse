@@ -98,6 +98,7 @@ export type MemberUserDetail = {
   system_file_id?: number | null;
   note?: string | null;
   is_active: boolean;
+  created_at?: string;
   updated_at: string;
   addresses: MemberAddressInput[];
   setting_relation_ids: number[];

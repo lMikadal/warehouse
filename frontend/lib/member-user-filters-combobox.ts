@@ -59,7 +59,7 @@ export async function loadMemberUserBusinessFilterOptions(
   });
   return {
     options: memberFilterItemsToOptions(items),
-    total: meta?.total ?? items.length,
+    total: meta?.total ?? (items?.length ?? 0),
   };
 }
 
@@ -78,7 +78,7 @@ export async function loadMemberUserPrefixOptions(
   });
   return {
     options: memberFilterItemsToOptions(items),
-    total: meta?.total ?? items.length,
+    total: meta?.total ?? (items?.length ?? 0),
   };
 }
 
@@ -95,7 +95,7 @@ export async function loadMemberUserTierOptions(
   });
   return {
     options: memberFilterItemsToOptions(items),
-    total: meta?.total ?? items.length,
+    total: meta?.total ?? (items?.length ?? 0),
   };
 }
 
@@ -112,7 +112,7 @@ export async function loadMemberUserAdminOptions(
   });
   return {
     options: memberFilterItemsToOptions(items),
-    total: meta?.total ?? items.length,
+    total: meta?.total ?? (items?.length ?? 0),
   };
 }
 
@@ -129,7 +129,7 @@ export async function loadMemberUserProductItemOptions(
   );
   return {
     options: memberFilterItemsToOptions(items),
-    total: meta?.total ?? items.length,
+    total: meta?.total ?? (items?.length ?? 0),
   };
 }
 
@@ -146,6 +146,6 @@ export async function loadMemberUserCreditOptions(
   );
   return {
     options: memberFilterItemsToOptions(items),
-    total: meta?.total ?? items.length,
+    total: meta?.total ?? (items?.length ?? 0),
   };
 }

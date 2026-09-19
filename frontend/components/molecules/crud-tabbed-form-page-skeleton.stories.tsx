@@ -27,3 +27,13 @@ export const ProductListFormPricing: Story = {
     pricingVariantStrips: 2,
   },
 };
+
+export const MemberUserEdit: Story = {
+  args: {
+    showPageHeader: false,
+    showFixedFooter: true,
+    leftCardCount: 4,
+    showEditProfileHeader: true,
+    rightSidebarCards: 3,
+  },
+};

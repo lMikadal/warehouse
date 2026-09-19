@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  ClipboardList,
+  FileText,
+  Star,
+  User,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   Fragment,
@@ -53,6 +59,7 @@ import {
   type MemberUserDetail,
   type MemberUserDiscountRow,
   type MemberUserFileRow,
+  type MemberUserHistoryRow,
 } from "@/lib/member-user-api";
 import {
   loadMemberUserAdminOptions,
@@ -82,6 +89,8 @@ import {
 } from "@/lib/system-file-api";
 
 import { MemberUserFormDiscountsTab } from "./member-user-form-discounts-tab";
+import { MemberUserFormEditAside } from "./member-user-form-edit-aside";
+import { MemberUserFormEditHeader } from "./member-user-form-edit-header";
 import { MemberUserFormFilesTab } from "./member-user-form-files-tab";
 import { MemberUserFormOrdersTab } from "./member-user-form-orders-tab";
 
@@ -554,6 +563,9 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
   const [initialFileId, setInitialFileId] = useState<number | null>(null);
   const [discounts, setDiscounts] = useState<MemberUserDiscountRow[]>([]);
   const [files, setFiles] = useState<MemberUserFileRow[]>([]);
+  const [histories, setHistories] = useState<MemberUserHistoryRow[]>([]);
+  const [createdAt, setCreatedAt] = useState("");
+  const [staffLabels, setStaffLabels] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   const canSave = isEdit ? perms.update : perms.create;
@@ -576,9 +588,10 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
       setDocSame(docAddr?.is_same_information ?? false);
       setMemberTierId(d.member_tier_id != null ? String(d.member_tier_id) : "");
       setMemberTierName("");
+      const relationIds = d.setting_relation_ids ?? [];
       const relRows = (
         await Promise.all(
-          d.setting_relation_ids.map((id) =>
+          relationIds.map((id) =>
             fetchMemberUserSettingRelationById(locale, id)
           )
         )
@@ -602,11 +615,13 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         setBusinessRelations([]);
         setBusinessName("");
       }
-      setOwnerAdminUserIds(d.owner_admin_user_ids.map(String));
+      setOwnerAdminUserIds((d.owner_admin_user_ids ?? []).map(String));
       setNote(d.note ?? "");
       setIsActive(d.is_active);
       setDiscounts(d.discounts);
       setFiles(d.files);
+      setHistories(d.histories ?? []);
+      setCreatedAt(d.created_at ?? "");
       setInitialFileId(d.system_file_id ?? null);
       if (d.system_file_id) {
         const file = await fetchSystemFile(locale, d.system_file_id);
@@ -627,6 +642,38 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- edit fetch hydrates form state
     void loadDetail();
   }, [loadDetail]);
+
+  useEffect(() => {
+    if (!memberTierId) {
+      setMemberTierName("");
+      return;
+    }
+    void loadMemberUserTierOptions(locale, "", 1, Number(memberTierId)).then(
+      ({ options }) => {
+        setMemberTierName(options[0]?.label ?? "");
+      }
+    );
+  }, [memberTierId, locale]);
+
+  useEffect(() => {
+    if (ownerAdminUserIds.length === 0) {
+      setStaffLabels({});
+      return;
+    }
+    void Promise.all(
+      ownerAdminUserIds.map(async (id) => {
+        const { options } = await loadMemberUserAdminOptions(
+          locale,
+          "",
+          1,
+          Number(id)
+        );
+        return [id, options[0]?.label ?? id] as const;
+      })
+    ).then((pairs) => {
+      setStaffLabels(Object.fromEntries(pairs));
+    });
+  }, [ownerAdminUserIds, locale]);
 
   const addressesPayload = useMemo((): MemberAddressInput[] => {
     const tax = taxSame
@@ -1290,15 +1337,6 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
           />
         ) : null}
         {memberProfileRow}
-        {isEdit ? (
-          <FormField
-            id="mu-sku"
-            labelKey="col.sku"
-            value={sku}
-            onChange={setSku}
-            readOnly={formReadOnly}
-          />
-        ) : null}
       </FormCardContent>
     </FormCard>
   );
@@ -1481,6 +1519,8 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     return (
       <CrudTabbedFormPageSkeleton
         leftCardCount={isEdit ? 4 : 3}
+        showEditProfileHeader={isEdit}
+        rightSidebarCards={isEdit ? 3 : undefined}
         showFixedFooter
       />
     );
@@ -1498,57 +1538,91 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
             {sidebarPanel}
           </div>
         ) : (
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as MemberFormTab)}
-            className="w-full"
-          >
-            <TabsList variant="line">
-              <TabsTrigger value="info">{t("tabInfo")}</TabsTrigger>
-              <TabsTrigger value="orders">{t("tabOrders")}</TabsTrigger>
-              <TabsTrigger value="discounts">{t("tabDiscounts")}</TabsTrigger>
-              <TabsTrigger value="files">{t("tabFiles")}</TabsTrigger>
-            </TabsList>
-            <div
-              className={cn(
-                "mt-4 grid gap-4 lg:items-start",
-                activeTab === "info"
-                  ? "lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]"
-                  : ""
-              )}
+          <>
+            {editId != null ? (
+              <MemberUserFormEditHeader
+                userId={editId}
+                sku={sku}
+                displayName={general.name}
+                tel={general.tel}
+                email={general.email}
+                createdAt={createdAt}
+                memberTierName={memberTierName}
+                isActive={isActive}
+                canToggleStatus={perms.update}
+                onIsActiveChange={setIsActive}
+                avatarItems={avatarItems}
+                onAvatarChange={setAvatarItems}
+                avatarDisabled={formReadOnly || saving}
+                staffIds={ownerAdminUserIds}
+                staffLabels={staffLabels}
+                onStaffIdsChange={setOwnerAdminUserIds}
+                staffDisabled={formReadOnly}
+              />
+            ) : null}
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as MemberFormTab)}
+              className="w-full"
             >
-              <div className="min-w-0 flex flex-col gap-4">
-                <TabsContent value="info" className="mt-0 flex flex-col gap-4">
-                  {memberInfoCard}
-                  {infoBlocks}
-                </TabsContent>
-                <TabsContent value="orders" className="mt-0">
-                  <MemberUserFormOrdersTab />
-                </TabsContent>
-                <TabsContent value="discounts" className="mt-0">
-                  {editId != null ? (
-                    <MemberUserFormDiscountsTab
-                      userId={editId}
-                      discounts={discounts}
-                      canManage={perms.update}
-                      onReload={loadDetail}
-                    />
-                  ) : null}
-                </TabsContent>
-                <TabsContent value="files" className="mt-0">
-                  {editId != null ? (
-                    <MemberUserFormFilesTab
-                      userId={editId}
-                      files={files}
-                      canManage={perms.update}
-                      onReload={loadDetail}
-                    />
-                  ) : null}
-                </TabsContent>
+              <TabsList variant="line">
+                <TabsTrigger value="info" className="gap-1.5">
+                  <User className="size-4 shrink-0" aria-hidden />
+                  {t("tabInfo")}
+                </TabsTrigger>
+                <TabsTrigger value="orders" className="gap-1.5">
+                  <ClipboardList className="size-4 shrink-0" aria-hidden />
+                  {t("tabOrders")}
+                </TabsTrigger>
+                <TabsTrigger value="discounts" className="gap-1.5">
+                  <Star className="size-4 shrink-0" aria-hidden />
+                  {t("tabDiscounts")}
+                </TabsTrigger>
+                <TabsTrigger value="files" className="gap-1.5">
+                  <FileText className="size-4 shrink-0" aria-hidden />
+                  {t("tabFiles")}
+                </TabsTrigger>
+              </TabsList>
+              <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-start">
+                <div className="min-w-0 flex flex-col gap-4">
+                  <TabsContent value="info" className="mt-0 flex flex-col gap-4">
+                    {memberInfoCard}
+                    {infoBlocks}
+                  </TabsContent>
+                  <TabsContent value="orders" className="mt-0">
+                    <MemberUserFormOrdersTab />
+                  </TabsContent>
+                  <TabsContent value="discounts" className="mt-0">
+                    {editId != null ? (
+                      <MemberUserFormDiscountsTab
+                        userId={editId}
+                        discounts={discounts}
+                        canManage={perms.update}
+                        onReload={loadDetail}
+                      />
+                    ) : null}
+                  </TabsContent>
+                  <TabsContent value="files" className="mt-0">
+                    {editId != null ? (
+                      <MemberUserFormFilesTab
+                        userId={editId}
+                        files={files}
+                        canManage={perms.update}
+                        onReload={loadDetail}
+                      />
+                    ) : null}
+                  </TabsContent>
+                </div>
+                <MemberUserFormEditAside
+                  creditLimit={financial.credit_limit}
+                  note={note}
+                  onNoteChange={setNote}
+                  noteReadOnly={formReadOnly}
+                  histories={histories}
+                />
               </div>
-              {activeTab === "info" ? sidebarPanel : null}
-            </div>
-          </Tabs>
+            </Tabs>
+          </>
         )}
       </div>
 

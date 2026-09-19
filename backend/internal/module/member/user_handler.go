@@ -89,7 +89,7 @@ func (h *UserHandler) get(c *echo.Context) error {
 		"tel": base.Tel, "email": base.Email, "address": base.Address,
 		"website_province_id": base.WebsiteProvinceID, "website_district_id": base.WebsiteDistrictID,
 		"website_sub_district_id": base.WebsiteSubDistrictID, "postcode": base.Postcode,
-		"system_file_id": base.SystemFileID, "note": base.Note, "is_active": base.IsActive, "updated_at": base.UpdatedAt,
+		"system_file_id": base.SystemFileID, "note": base.Note, "is_active": base.IsActive, "created_at": base.CreatedAt, "updated_at": base.UpdatedAt,
 		"addresses": addrs, "setting_relation_ids": settings, "owner_admin_user_ids": owners,
 		"files": files, "discounts": discounts, "histories": histories,
 	})

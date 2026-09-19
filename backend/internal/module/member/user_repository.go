@@ -271,11 +271,11 @@ func (r *UserRepository) GetAggregate(ctx context.Context, id int64, locale stri
 	var branch sql.NullString
 	err := r.db.QueryRowContext(ctx, `
 SELECT id, sku, member_tier_id, type::text, setting_prefix_id, name, store_name, tax_number, branch::text, branch_name,
-  tel, email, address, website_province_id, website_district_id, website_sub_district_id, postcode, system_file_id, note, is_active, updated_at
+  tel, email, address, website_province_id, website_district_id, website_sub_district_id, postcode, system_file_id, note, is_active, created_at, updated_at
 FROM member_user WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
 		&row.ID, &row.SKU, &row.MemberTierID, &row.Type, &row.SettingPrefixID, &row.Name, &row.StoreName, &row.TaxNumber,
 		&branch, &row.BranchName, &row.Tel, &row.Email, &row.Address, &row.WebsiteProvinceID, &row.WebsiteDistrictID,
-		&row.WebsiteSubDistrictID, &row.Postcode, &row.SystemFileID, &row.Note, &row.IsActive, &row.UpdatedAt)
+		&row.WebsiteSubDistrictID, &row.Postcode, &row.SystemFileID, &row.Note, &row.IsActive, &row.CreatedAt, &row.UpdatedAt)
 	if branch.Valid {
 		s := branch.String
 		row.Branch = &s

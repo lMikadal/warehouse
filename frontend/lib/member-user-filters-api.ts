@@ -62,13 +62,14 @@ export async function fetchMemberUserFilters(
   if (!res.ok) {
     throw new Error(`filters ${res.status}`);
   }
-  return (await res.json()) as FiltersResponse;
+  const data = (await res.json()) as FiltersResponse;
+  return { items: data.items ?? [], meta: data.meta };
 }
 
 export function memberFilterItemsToOptions(
-  items: FilterItem[]
+  items: FilterItem[] | null | undefined
 ): RemoteComboboxOption[] {
-  return items.map((row) => ({ value: String(row.id), label: row.name }));
+  return (items ?? []).map((row) => ({ value: String(row.id), label: row.name }));
 }
 
 export async function fetchMemberUserBusinessRelations(

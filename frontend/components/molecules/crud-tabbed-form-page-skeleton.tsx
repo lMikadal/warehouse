@@ -14,6 +14,10 @@ export type CrudTabbedFormPageSkeletonProps = {
   leftCardCount?: number;
   /** Collapsed pricing-tab variant row strips (product list form). */
   pricingVariantStrips?: number;
+  /** Member user edit profile header card above tabs. */
+  showEditProfileHeader?: boolean;
+  /** Stacked right sidebar cards (e.g. member edit aside); default single card. */
+  rightSidebarCards?: number;
   className?: string;
 };
 
@@ -22,6 +26,8 @@ export function CrudTabbedFormPageSkeleton({
   showFixedFooter = true,
   leftCardCount = 3,
   pricingVariantStrips = 0,
+  showEditProfileHeader = false,
+  rightSidebarCards = 1,
   className,
 }: CrudTabbedFormPageSkeletonProps) {
   const tCrud = useTranslations("crud");
@@ -41,6 +47,21 @@ export function CrudTabbedFormPageSkeleton({
             <Skeleton className="h-4 w-80 max-w-full" />
           </div>
         </header>
+      ) : null}
+
+      {showEditProfileHeader ? (
+        <FormCard>
+          <FormCardContent className="grid gap-4 p-4 md:grid-cols-[auto_minmax(0,1fr)]">
+            <Skeleton className="size-24 shrink-0 rounded-md" />
+            <div className="min-w-0 space-y-3">
+              <Skeleton className="ml-auto h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-7 w-48 max-w-full" />
+              <Skeleton className="h-4 w-56 max-w-full" />
+              <Skeleton className="h-4 w-full max-w-md" />
+            </div>
+          </FormCardContent>
+        </FormCard>
       ) : null}
 
       <div className="flex gap-6 border-b border-border pb-1">
@@ -80,23 +101,27 @@ export function CrudTabbedFormPageSkeleton({
             </FormCard>
           ))}
         </div>
-        <FormCard className="h-fit">
-          <FormCardHeader>
-            <Skeleton className="h-5 w-24" />
-          </FormCardHeader>
-          <FormCardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-6 w-28" />
-          </FormCardContent>
-        </FormCard>
+        <div className="flex min-w-0 flex-col gap-4">
+          {Array.from({ length: rightSidebarCards }, (_, i) => (
+            <FormCard key={`aside-${i}`} className="h-fit">
+              <FormCardHeader>
+                <Skeleton className="h-5 w-32" />
+              </FormCardHeader>
+              <FormCardContent className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-3/4" />
+              </FormCardContent>
+            </FormCard>
+          ))}
+        </div>
       </div>
 
       {showFixedFooter ? (
         <div
           className={cn(
             "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
-            footerInsetLeft ? "left-(--sidebar-width)`" : "left-0",
+            footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0",
           )}
           aria-hidden
         >
