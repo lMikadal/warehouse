@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import type { SettingLangListConfig } from "./setting-config";
+import { settingLangTableColumnCount } from "./setting-list-skeleton";
 import {
   SettingLangEditSheet,
   type SettingLangEditPayload,
@@ -73,19 +74,6 @@ import {
 import { fetchSystemFile, resolveSettingLogoFileId } from "@/lib/system-file-api";
 
 type TriFilter = "" | "yes" | "no";
-
-function settingLangTableColumnCount(config: SettingLangListConfig): number {
-  let n = 1;
-  if (config.logoPurpose) n += 1;
-  n += 1;
-  if (config.showCodeColumn) n += 1;
-  if (config.paymentFilters) n += 2;
-  if (config.saleDefault) n += 1;
-  if (config.claimFlags) n += 2;
-  if (config.prefixFlags) n += 2;
-  n += 3;
-  return n;
-}
 
 function settingLangApiErrorMessage(
   config: SettingLangListConfig,

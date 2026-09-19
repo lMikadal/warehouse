@@ -4,7 +4,7 @@ export default function AdminBackofficeLoading() {
   return (
     <CrudListPageSkeleton
       tableColumns={6}
-      showDragColumn
+      showDragColumn={false}
       toolbarFilterSlots={0}
     />
   );

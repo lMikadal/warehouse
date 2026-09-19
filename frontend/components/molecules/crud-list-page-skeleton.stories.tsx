@@ -26,3 +26,28 @@ export const WithToolbarFilters: Story = {
     toolbarFilterSlots: 2,
   },
 };
+
+export const HeaderOnlyNoCreate: Story = {
+  args: {
+    tableColumns: 6,
+    showDragColumn: true,
+    showHeaderAction: false,
+  },
+};
+
+export const SearchOnlyToolbar: Story = {
+  args: {
+    tableColumns: 3,
+    showHeaderAction: false,
+    showStatusFilter: false,
+  },
+};
+
+export const WithFixedFooter: Story = {
+  args: {
+    tableColumns: 3,
+    showHeaderAction: false,
+    showStatusFilter: false,
+    showFixedFooter: true,
+  },
+};

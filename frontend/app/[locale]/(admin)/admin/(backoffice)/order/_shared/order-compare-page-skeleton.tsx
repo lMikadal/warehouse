@@ -2,6 +2,12 @@ import { CrudListPageSkeleton } from "@/components/molecules/crud-list-page-skel
 
 export function OrderComparePageSkeleton() {
   return (
-    <CrudListPageSkeleton tableColumns={3} tableRows={10} />
+    <CrudListPageSkeleton
+      tableColumns={3}
+      tableRows={10}
+      showHeaderAction={false}
+      showStatusFilter={false}
+      showFixedFooter
+    />
   );
 }

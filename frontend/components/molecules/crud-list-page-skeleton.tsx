@@ -19,6 +19,12 @@ export type CrudListPageSkeletonProps = {
   tableRows?: number;
   showDragColumn?: boolean;
   toolbarFilterSlots?: number;
+  /** When false, omit the header create/action button placeholder. */
+  showHeaderAction?: boolean;
+  /** When false, omit the status-filter toolbar placeholder (search-only toolbars). */
+  showStatusFilter?: boolean;
+  /** Fixed bottom action bar (e.g. order compare save/cancel). */
+  showFixedFooter?: boolean;
   className?: string;
 };
 
@@ -27,6 +33,9 @@ export function CrudListPageSkeleton({
   tableRows = 10,
   showDragColumn = false,
   toolbarFilterSlots = 0,
+  showHeaderAction = true,
+  showStatusFilter = true,
+  showFixedFooter = false,
   className,
 }: CrudListPageSkeletonProps) {
   const tCrud = useTranslations("crud");
@@ -42,7 +51,9 @@ export function CrudListPageSkeleton({
           <Skeleton className="h-7 w-48 max-w-full" />
           <Skeleton className="h-4 w-72 max-w-full" />
         </div>
-        <Skeleton className="h-10 w-28 shrink-0 rounded-md" />
+        {showHeaderAction ? (
+          <Skeleton className="h-10 w-28 shrink-0 rounded-md" />
+        ) : null}
       </header>
 
       <div className="mb-4 flex flex-wrap gap-3">
@@ -50,7 +61,9 @@ export function CrudListPageSkeleton({
         {Array.from({ length: toolbarFilterSlots }, (_, i) => (
           <Skeleton key={i} className="h-10 w-44 rounded-md" />
         ))}
-        <Skeleton className="h-10 w-52 rounded-md" />
+        {showStatusFilter ? (
+          <Skeleton className="h-10 w-52 rounded-md" />
+        ) : null}
       </div>
 
       <div className="rounded-md border bg-background">
@@ -85,6 +98,21 @@ export function CrudListPageSkeleton({
           <Skeleton className="size-9 rounded-md" />
         </div>
       </div>
+
+      {showFixedFooter ? (
+        <div
+          className="fixed bottom-0 right-0 left-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm"
+          aria-hidden
+        >
+          <div className="mx-auto flex w-full max-w-crud-page items-center justify-between gap-4 px-admin-content py-3">
+            <Skeleton className="h-4 w-48 max-w-full" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-10 w-24 rounded-md" />
+              <Skeleton className="h-10 w-28 rounded-md" />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -6,7 +6,7 @@ Production UI for sidebar **ตั้งค่า** (7 leaves). Bank/sale-channe
 
 - [x] BFF proxy `app/api/v1/auth/proxy/setting/*` + [`lib/bff-setting-handlers.ts`](../../../frontend/lib/bff-setting-handlers.ts) + [`lib/setting-api.ts`](../../../frontend/lib/setting-api.ts)
 - [x] Shared list/sheets under `setting/_shared/` (lang stack, codes, VAT list + edit sheet)
-- [x] Routes: `/admin/setting/{bank,vat,payment-method,sale-channel,code,claim-reason,prefix}`
+- [x] Routes: `/admin/setting/{bank,vat,payment-method,sale-channel,code,claim-reason,prefix}` + co-located `loading.tsx` ([`setting-list-skeleton.ts`](../../../frontend/app/[locale]/(admin)/admin/(backoffice)/setting/_shared/setting-list-skeleton.ts))
 - [x] i18n `page-setting.json` (th/en) + col keys
 - [x] List DnD reorder when unfiltered (prefix reorder when one of `is_person` / `is_company` filters is yes)
 - [x] Payment method toolbar filters `is_sale` / `is_purchase` (select combobox); inline switches on sale/purchase columns

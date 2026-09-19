@@ -3,7 +3,7 @@ import { CrudListPageSkeleton } from "@/components/molecules/crud-list-page-skel
 export default function SystemPermissionLoading() {
   return (
     <CrudListPageSkeleton
-      tableColumns={6}
+      tableColumns={5}
       showDragColumn={false}
       toolbarFilterSlots={2}
     />

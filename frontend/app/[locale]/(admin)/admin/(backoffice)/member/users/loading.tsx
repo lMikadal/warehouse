@@ -2,6 +2,6 @@ import { CrudListPageSkeleton } from "@/components/molecules/crud-list-page-skel
 
 export default function MemberUsersLoading() {
   return (
-    <CrudListPageSkeleton tableColumns={9} toolbarFilterSlots={4} />
+    <CrudListPageSkeleton tableColumns={9} toolbarFilterSlots={2} />
   );
 }

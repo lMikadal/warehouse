@@ -1,11 +1,12 @@
 import { CrudListPageSkeleton } from "@/components/molecules/crud-list-page-skeleton";
 
+import { GEO_SUB_DISTRICT_CONFIG } from "../_shared/system-geo-config";
+import { systemGeoListSkeletonProps } from "../_shared/system-geo-skeleton";
+
 export default function SystemAddressSubDistrictLoading() {
   return (
     <CrudListPageSkeleton
-      tableColumns={5}
-      showDragColumn
-      toolbarFilterSlots={3}
+      {...systemGeoListSkeletonProps(GEO_SUB_DISTRICT_CONFIG)}
     />
   );
 }

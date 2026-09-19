@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import { WarehouseViewPageSkeleton } from "./warehouse-view-page-skeleton";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
   conditionsFromApi,
@@ -286,14 +286,7 @@ export function WarehouseManagementView({
       />
 
       {loading ? (
-        <div className="flex flex-col gap-6" aria-busy="true">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {Array.from({ length: 5 }, (_, i) => (
-              <Skeleton key={i} className="h-[4.5rem] rounded-lg" />
-            ))}
-          </div>
-          <Skeleton className="min-h-64 w-full rounded-lg" />
-        </div>
+        <WarehouseViewPageSkeleton showPageHeader={false} />
       ) : (
         <>
           {viewStats ? <WarehouseViewStatCards stats={viewStats} /> : null}

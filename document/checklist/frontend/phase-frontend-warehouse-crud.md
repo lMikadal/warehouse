@@ -14,7 +14,7 @@ Sidebar **คลังสินค้า → รายการ / การจ�
 
 ## Required checklist
 
-- [x] `loading.tsx` on list + view segments
+- [x] `loading.tsx` on list + view segments ([`warehouse-view-page-skeleton.tsx`](../../../frontend/app/[locale]/(admin)/admin/(backoffice)/warehouse/_shared/warehouse-view-page-skeleton.tsx) for view route + in-page fetch)
 - [x] Permissions `warehouse.warehouse_list.*` on actions and status switches
 - [ ] Manual: login `admin`/`admin` → expand ATW → zone cards read-only quotas; edit via zone sheet (active ≤ max); Management dialog or list warehouse view (`view?id=`) → all zones collapsed; zone card view (`view?id=&zone=`) → only that zone expanded; management tree **one bordered card per zone** (stacked gap); stat cards + legend + nested design tree items (L-connectors, one row per node); add/edit/delete shelf/rack/bin; drag grip on slots only — menu-style DnD via `move`; zone rows not draggable; nest into zone over quota → toast `warehouse.moveQuotaFull` (not raw API English)
 - [ ] Storybook: no new shared components (page-local `_shared` only)

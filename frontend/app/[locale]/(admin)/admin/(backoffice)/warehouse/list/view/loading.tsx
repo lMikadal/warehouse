@@ -1,5 +1,5 @@
-import { CrudListPageSkeleton } from "@/components/molecules/crud-list-page-skeleton";
+import { WarehouseViewPageSkeleton } from "../../_shared/warehouse-view-page-skeleton";
 
 export default function Loading() {
-  return <CrudListPageSkeleton tableColumns={1} toolbarFilterSlots={0} />;
+  return <WarehouseViewPageSkeleton />;
 }

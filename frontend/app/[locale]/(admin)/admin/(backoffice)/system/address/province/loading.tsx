@@ -1,11 +1,10 @@
 import { CrudListPageSkeleton } from "@/components/molecules/crud-list-page-skeleton";
 
+import { GEO_PROVINCE_CONFIG } from "../_shared/system-geo-config";
+import { systemGeoListSkeletonProps } from "../_shared/system-geo-skeleton";
+
 export default function SystemAddressProvinceLoading() {
   return (
-    <CrudListPageSkeleton
-      tableColumns={5}
-      showDragColumn
-      toolbarFilterSlots={1}
-    />
+    <CrudListPageSkeleton {...systemGeoListSkeletonProps(GEO_PROVINCE_CONFIG)} />
   );
 }
