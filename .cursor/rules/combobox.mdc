@@ -23,7 +23,7 @@ Applies when a Combobox (or design `crud-filter-select`) loads options from a pa
 
 ## Allowed exceptions
 
-- Dedicated **facet/options** endpoints designed to return a complete dimension (e.g. `GET /system/permissions/filters`) — filter in memory inside `RemoteComboboxField`’s `onLoadOptions`; document if a facet can grow unbounded.
+- Dedicated **facet/options** endpoints designed to return a complete dimension (e.g. `GET /system/permissions/filters`, `GET /member/settings/businesses/filters?facet=credits`) — filter in memory inside `RemoteComboboxField`’s `onLoadOptions`; document if a facet can grow unbounded. Pickers must use the **page resource’s** filters path when the alternative list API requires a different RBAC type — see [permissions.mdc](permissions.mdc) **Related-route API calls**.
 - **Bounded static** option lists (enums, product-documented max) — no API.
 - **`fetchAllListPages`** only for catalogs with an explicit **max row ceiling** in code (`ponytail:` comment + upgrade path).
 

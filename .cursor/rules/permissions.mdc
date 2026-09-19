@@ -1,0 +1,70 @@
+---
+description: RBAC placement — seed catalog, Go route mapping, menu keys, and frontend gating for admin modules.
+globs: backend/**,frontend/app/**,frontend/lib/**,design/**
+---
+
+# Permissions (RBAC placement)
+
+When shipping a new admin menu page or `/api/v1/*` resource, wire permissions in **three layers**. Missing the Go runtime catalog causes `403` with message **`no permission mapping`** (middleware never checks the role grant).
+
+## Three layers (keep in sync)
+
+| Layer | Where | Purpose |
+|-------|--------|---------|
+| Menu → RBAC keys | [`frontend/lib/menu-perm-resolve.ts`](../../frontend/lib/menu-perm-resolve.ts) | Maps `system_menu.module` (+ parent) to `permModule` / `permType` for role–menu junction seeds |
+| DB catalog | [`06_system_permission_catalog.sql`](../../backend/internal/infra/postgres/seeds/init/06_system_permission_catalog.sql) | Six rows per page: `{module}.{type}.{view\|create\|update\|delete\|import\|export}` + resource path + method |
+| Runtime routing | [`backend/internal/rbac/perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go) **`CatalogPermPages`** | `CodeForRoute` prefix-matches request path → permission code for `RequirePermission` |
+
+Regenerate init SQL from [`frontend/scripts/lib/perm-catalog-seed.ts`](../../frontend/scripts/lib/perm-catalog-seed.ts) when adding catalog pages. **Every** new row in that seed (or in `06_*.sql`) needs a matching `CatalogPermPages` entry with the **same** `Resource` prefix (e.g. `/api/v1/member/tiers`).
+
+Wave-1 resources use `WavePermPages` + seeds `02`–`05`; catalog pages use `CatalogPermPages` only (no `StartID` in Go).
+
+## Permission code shape
+
+- Code: `{module}.{type}.{action}` (e.g. `member.member_tier.view`).
+- HTTP mapping in `CodeForRoute`: `GET` → `view`, `POST` → `create`, `PATCH`/`PUT` → `update`, `DELETE` → `delete`.
+- Subpaths under the resource prefix use the **same** `{module}.{type}` (e.g. `GET /member/tiers/stats` → `member.member_tier.view`; `PATCH /member/tiers/reorder` → `member.member_tier.update`).
+- Superadmin `user.type` bypasses RBAC; everyone else needs the code on their role.
+
+## Backend checklist (new module)
+
+1. Register routes on the authed Echo group in `cmd/server/main.go`.
+2. Add **`CatalogPermPages`** entry(ies) in `perm_catalog.go` (mirror supplier / member pattern).
+3. Ensure init seed permissions exist (via `perm-catalog-seed.ts` if new page).
+4. Add `TestCodeForRoute` cases in `perm_catalog_test.go` for list, stats/filters, and at least one mutating subpath.
+5. Postman + `document/knowledge/backend.md` when behavior is new.
+
+## Frontend gating (view-only and mutate)
+
+- Load actor permissions in admin layout; use **`useResourcePermissions(module, type)`** from [`admin-backoffice-actor-context.tsx`](../../frontend/lib/admin-backoffice-actor-context.tsx) — same `module`/`type` as backend catalog.
+- **View:** allow list/detail/stats fetches when `perms.view`; show forbidden empty state when `!perms.view` (optional early return before fetch).
+- **Mutate:** show create/save/delete/reorder only when `perms.create` / `perms.update` / `perms.delete`; disable inputs when user lacks the matching action (see supplier list/form, member tier page).
+- BFF proxy routes do **not** enforce RBAC; they forward to Go. UI gating is UX only — backend remains authoritative.
+
+Reference: [`supplier-user-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/supplier/_shared/supplier-user-list.tsx), [`member-tier-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-tier-page.tsx).
+
+## View-only cross-module data
+
+Users with only `{module}.{type}.view` must not be forced to call unrelated modules for **display-only** labels.
+
+- Prefer **embedded read-only fields** on aggregate `GET` (e.g. supplier `information.*` prefix/geo names).
+- Or add **`GET …/filters`** (or facet list) under the **same** resource prefix so `CodeForRoute` maps to parent `.view` (e.g. `GET /supplier/users/filters`, `GET /product/lists/filters`).
+
+Do not require `setting.*.view` or `admin.*.view` solely to render another module’s list/detail UI.
+
+## Related-route API calls (forms and pickers)
+
+When adding or changing UI that loads data from an HTTP path, check which **`{module}.{type}`** that path maps to in [`perm_catalog.go`](../../backend/internal/rbac/perm_catalog.go). If it differs from the page’s `useResourcePermissions(module, type)`, roles granted **only** the page menu will get **403** on the picker (empty combobox, toast errors).
+
+**Before** wiring [`RemoteComboboxField`](../../frontend/components/molecules/remote-combobox-field.tsx), [`RemoteMultiComboboxField`](../../frontend/components/molecules/remote-multi-combobox-field.tsx), or helpers like `loadProfileComboOptions` to another resource’s **list** or **get-by-id**:
+
+1. Add **`GET …/filters?facet=…`** on the **page resource prefix** (inherits page `.view`) — examples: [`GET /member/tiers/filters`](../../backend/internal/module/member/tier_filters.go) (`setting_relations`), [`GET /member/settings/businesses/filters`](../../backend/internal/module/member/business_filters.go) (`credits`, `groups`).
+2. Or **embed** ids + labels on the page’s aggregate **`GET`** response.
+3. Do not assume operators have every related member/product menu; verify with a single-menu test role.
+
+When shipping a new facet: register route under the correct prefix (before `/:id` routes), add **`TestCodeForRoute`**, row in [`document/knowledge/backend.md`](../../document/knowledge/backend.md) Filters table, Postman, and frontend client helper. See also [combobox.mdc](combobox.mdc) facet exceptions.
+
+## Related
+
+- Route mutations and reorder RBAC: [crud-mutations.mdc](crud-mutations.mdc)
+- Docs when codes or routes change: [document.mdc](document.mdc)

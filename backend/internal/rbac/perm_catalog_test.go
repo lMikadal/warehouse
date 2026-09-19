@@ -65,4 +65,24 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "warehouse.warehouse_list.update" {
 		t.Fatalf("warehouse move: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/member/tiers")
+	if !ok || code != "member.member_tier.view" {
+		t.Fatalf("member tier list: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/member/tiers/stats")
+	if !ok || code != "member.member_tier.view" {
+		t.Fatalf("member tier stats: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("PATCH", "/api/v1/member/tiers/reorder")
+	if !ok || code != "member.member_tier.update" {
+		t.Fatalf("member tier reorder: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/member/tiers/filters")
+	if !ok || code != "member.member_tier.view" {
+		t.Fatalf("member tier filters: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/member/settings/businesses/filters")
+	if !ok || code != "member.member_setting_business.view" {
+		t.Fatalf("member business filters: got %q %v", code, ok)
+	}
 }

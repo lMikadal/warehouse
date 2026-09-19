@@ -79,6 +79,37 @@ export async function deleteMemberSetting(
   return client(segment).delete(locale, id);
 }
 
+export type MemberBusinessFilterFacet = "credits" | "groups";
+
+export type MemberBusinessFiltersParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  id?: number;
+};
+
+export async function fetchMemberBusinessSettingFilters(
+  locale: string,
+  facet: MemberBusinessFilterFacet,
+  params: MemberBusinessFiltersParams = {}
+) {
+  const q = new URLSearchParams();
+  q.set("facet", facet);
+  q.set("page", String(params.page ?? 1));
+  q.set("limit", String(params.limit ?? 50));
+  if (params.search?.trim()) q.set("search", params.search.trim());
+  if (params.id != null && params.id > 0) q.set("id", String(params.id));
+  const res = await authFetch(
+    `${proxyBase("businesses")}/filters?${q}`,
+    { headers: bffJsonHeaders(locale) }
+  );
+  if (!res.ok) throw await parseBffError(res);
+  return (await res.json()) as {
+    items: { id: number; name: string }[];
+    meta: { total: number; page: number; limit: number };
+  };
+}
+
 export async function fetchBusinessRelations(
   locale: string,
   businessId: number

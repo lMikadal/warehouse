@@ -38,6 +38,11 @@ var CatalogPermPages = []PermPage{
 	{Module: "product", Type: "product_category", Resource: "/api/v1/product/categories"},
 	{Module: "product", Type: "product_brand", Resource: "/api/v1/product/brands"},
 	{Module: "product", Type: "product_car", Resource: "/api/v1/product/cars"},
+	{Module: "member", Type: "member_setting_credit", Resource: "/api/v1/member/settings/credits"},
+	{Module: "member", Type: "member_setting_group", Resource: "/api/v1/member/settings/groups"},
+	{Module: "member", Type: "member_setting_business", Resource: "/api/v1/member/settings/businesses"},
+	{Module: "member", Type: "member_tier", Resource: "/api/v1/member/tiers"},
+	{Module: "member", Type: "member_user", Resource: "/api/v1/member/users"},
 }
 
 func routePermPages() []PermPage {

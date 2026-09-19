@@ -1382,6 +1382,15 @@
               }
             },
             {
+              "name": "Business filters (credits / groups)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/settings/businesses/filters?facet=credits&page=1&limit=50",
+                "description": "member.member_setting_business.view — business form pickers; facet=groups for group multi-combobox"
+              }
+            },
+            {
               "name": "Business relations",
               "request": {
                 "method": "GET",
@@ -1408,6 +1417,15 @@
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": "{{baseUrl}}/member/tiers/stats"
+              }
+            },
+            {
+              "name": "Tier filters (setting relations)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/tiers/filters?facet=setting_relations&page=1&limit=50",
+                "description": "member.member_tier.view — profile combobox for tier relation dialog without member_setting_business.view"
               }
             },
             {

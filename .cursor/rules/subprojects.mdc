@@ -29,6 +29,7 @@ Notes:
 - **Date/datetime display** → follow [`.cursor/rules/dates.mdc`](dates.mdc)
 - **Warehouse layout / item placement** → follow [`.cursor/rules/warehouse.mdc`](warehouse.mdc) (bin-only `product_item_warehouse`)
 - **Goose migrations / Postgres seeds** → follow [`.cursor/rules/migrations-seed.mdc`](migrations-seed.mdc) (schema-only migrations; init vs test seeds)
+- **New admin APIs / RBAC / view-only pages** → follow [`.cursor/rules/permissions.mdc`](permissions.mdc) (`CatalogPermPages` + seed + frontend `useResourcePermissions`)
 - **Frontend component reuse** → follow [`.cursor/rules/storybook.mdc`](storybook.mdc) (Storybook as baseline)
 - **Frontend route pages** (`frontend/app/**`) → follow [storybook.mdc](storybook.mdc) **Warehouse pages** workflow (match UI/Molecules stories; forms/tables rules stay authoritative)
 - **Admin `(admin)` routes / loading UI** → follow [`.cursor/rules/skeleton.mdc`](skeleton.mdc) (`loading.tsx` + skeleton layout parity on page changes)

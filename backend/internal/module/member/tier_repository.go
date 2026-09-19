@@ -629,13 +629,25 @@ type TierRelationRow struct {
 	ScopeType              string    `json:"type"`
 	IsPromotion            bool      `json:"is_promotion"`
 	AttributeIDs           []int64   `json:"attribute_ids,omitempty"`
+	ProfileBusinessTitle   string    `json:"profile_business_title,omitempty"`
+	ProfileCreditName      string    `json:"profile_credit_name,omitempty"`
 	UpdatedAt              time.Time `json:"updated_at"`
 }
 
-func (r *TierRepository) ListRelations(ctx context.Context, tierID int64) ([]TierRelationRow, error) {
+func (r *TierRepository) ListRelations(ctx context.Context, tierID int64, locale string) ([]TierRelationRow, error) {
+	if locale == "" {
+		locale = "th"
+	}
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, member_setting_relation_id, purchase_start, purchase_end, discount, discount_type::text, type::text, is_promotion, updated_at
-FROM member_tier_relation WHERE member_tier_id = $1 AND deleted_at IS NULL ORDER BY id`, tierID)
+SELECT tr.id, tr.member_setting_relation_id, tr.purchase_start, tr.purchase_end, tr.discount, tr.discount_type::text, tr.type::text, tr.is_promotion, tr.updated_at,
+       COALESCE(bl.name, ''), COALESCE(cl.name, ''), COALESCE(gl.name, '')
+FROM member_tier_relation tr
+INNER JOIN member_setting_relation msr ON msr.id = tr.member_setting_relation_id AND msr.deleted_at IS NULL
+INNER JOIN member_setting_business b ON b.id = msr.business_id AND b.deleted_at IS NULL
+LEFT JOIN member_setting_business_language bl ON bl.member_setting_business_id = b.id AND bl.locale = $2
+LEFT JOIN member_setting_credit_language cl ON cl.member_setting_credit_id = msr.credit_id AND cl.locale = $2
+LEFT JOIN member_setting_group_language gl ON gl.member_setting_group_id = msr.group_id AND gl.locale = $2
+WHERE tr.member_tier_id = $1 AND tr.deleted_at IS NULL ORDER BY tr.id`, tierID, locale)
 	if err != nil {
 		return nil, err
 	}
@@ -643,10 +655,14 @@ FROM member_tier_relation WHERE member_tier_id = $1 AND deleted_at IS NULL ORDER
 	var out []TierRelationRow
 	for rows.Next() {
 		var row TierRelationRow
+		var business, credit, group string
 		if err := rows.Scan(&row.ID, &row.MemberSettingRelationID, &row.PurchaseStart, &row.PurchaseEnd,
-			&row.Discount, &row.DiscountType, &row.ScopeType, &row.IsPromotion, &row.UpdatedAt); err != nil {
+			&row.Discount, &row.DiscountType, &row.ScopeType, &row.IsPromotion, &row.UpdatedAt,
+			&business, &credit, &group); err != nil {
 			return nil, err
 		}
+		row.ProfileBusinessTitle = settingRelationBusinessTitle(business, group)
+		row.ProfileCreditName = strings.TrimSpace(credit)
 		attrs, _ := r.loadRelationAttributes(ctx, row.ID)
 		row.AttributeIDs = attrs
 		out = append(out, row)

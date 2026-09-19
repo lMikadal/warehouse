@@ -63,10 +63,16 @@ export function MemberTierRelationRow({
   onDelete,
 }: MemberTierRelationRowProps) {
   const t = useTranslations("memberTier");
-  const profile = profileDisplayById(
-    profileOptions,
-    rel.member_setting_relation_id
-  );
+  const embeddedProfile =
+    rel.profile_business_title != null && rel.profile_business_title !== ""
+      ? {
+          businessTitle: rel.profile_business_title,
+          creditName: rel.profile_credit_name?.trim() ?? "",
+        }
+      : null;
+  const profile =
+    embeddedProfile ??
+    profileDisplayById(profileOptions, rel.member_setting_relation_id);
   const attrCount = rel.attribute_ids?.length ?? 0;
   const rangeLabel = `${formatBaht(rel.purchase_start)}–${formatBaht(rel.purchase_end)} ${t("bahtUnit")}`;
   const discountBadge =

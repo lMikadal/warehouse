@@ -51,6 +51,17 @@ export async function handleMemberSettingDelete(
   return crud(segment).deleteById(request, id);
 }
 
+export async function handleMemberBusinessFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = qs
+    ? `${segmentBase("businesses")}/filters?${qs}`
+    : `${segmentBase("businesses")}/filters`;
+  return proxyAuthedBackendJson(request, path);
+}
+
 export async function handleMemberBusinessRelationsGet(
   request: Request,
   businessId: string

@@ -16,7 +16,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	group := NewSettingHandler(SettingGroup, setRepo, relRepo)
 	business := NewSettingHandler(SettingBusiness, setRepo, relRepo)
 	rel := NewRelationHandler(relRepo)
-	tier := NewTierHandler(tierRepo)
+	tier := NewTierHandler(tierRepo, relRepo)
 	user := NewUserHandler(userRepo)
 
 	s := g.Group("/settings")
@@ -33,6 +33,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	s.DELETE("/groups/:id", group.delete)
 
 	s.GET("/businesses", business.list)
+	s.GET("/businesses/filters", business.listFilters)
 	s.GET("/businesses/:id", business.get)
 	s.POST("/businesses", business.create)
 	s.PATCH("/businesses/:id", business.patch)
@@ -44,6 +45,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 
 	g.GET("/tiers", tier.list)
 	g.GET("/tiers/stats", tier.stats)
+	g.GET("/tiers/filters", tier.listFilters)
 	g.GET("/tiers/:id", tier.get)
 	g.POST("/tiers", tier.create)
 	g.PATCH("/tiers/:id", tier.patch)

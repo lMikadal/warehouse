@@ -22,6 +22,15 @@ export async function handleMemberTierStatsGet(
   return proxyAuthedBackendJson(request, `${BASE}/stats`);
 }
 
+export async function handleMemberTierFiltersGet(
+  request: Request
+): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = qs ? `${BASE}/filters?${qs}` : `${BASE}/filters`;
+  return proxyAuthedBackendJson(request, path);
+}
+
 export async function handleMemberTierCreate(
   request: Request
 ): Promise<NextResponse> {

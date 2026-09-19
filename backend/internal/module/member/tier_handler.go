@@ -14,10 +14,11 @@ import (
 
 type TierHandler struct {
 	repo *TierRepository
+	rel  *RelationRepository
 }
 
-func NewTierHandler(repo *TierRepository) *TierHandler {
-	return &TierHandler{repo: repo}
+func NewTierHandler(repo *TierRepository, rel *RelationRepository) *TierHandler {
+	return &TierHandler{repo: repo, rel: rel}
 }
 
 type tierListItem struct {
@@ -92,7 +93,7 @@ func (h *TierHandler) get(c *echo.Context) error {
 	if row == nil {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 	}
-	rels, _ := h.repo.ListRelations(c.Request().Context(), id)
+	rels, _ := h.repo.ListRelations(c.Request().Context(), id, api.LocaleFromRequest(c))
 	return c.JSON(http.StatusOK, map[string]any{
 		"id": row.ID, "parent_id": row.ParentID, "tree_path": row.TreePath, "sort_order": row.SortOrder,
 		"system_file_id": row.SystemFileID, "is_default": row.IsDefault, "is_active": row.IsActive,

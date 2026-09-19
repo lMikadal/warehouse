@@ -295,7 +295,9 @@ export function MemberTierPage() {
     setExpanded((p) => {
       const next = !p[tierId];
       if (next) {
-        void ensureProfileOptions();
+        if (perms.create || perms.update) {
+          void ensureProfileOptions();
+        }
         if (!tierDetails[tierId]) {
           void loadTierDetail(tierId);
         }

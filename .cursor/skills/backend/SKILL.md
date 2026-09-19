@@ -23,6 +23,7 @@ Warehouse app API in `backend/` (Go + Echo v5) and Docker in `infrastructure/`.
 | List APIs (page, limit, sort) | [`.cursor/rules/tables.mdc`](../../rules/tables.mdc) |
 | Bin placement | [`.cursor/rules/warehouse.mdc`](../../rules/warehouse.mdc) |
 | Docs + Postman | [`.cursor/rules/document.mdc`](../../rules/document.mdc) |
+| RBAC / new API resources | [`.cursor/rules/permissions.mdc`](../../rules/permissions.mdc) |
 | Commands | [`.cursor/rules/makefile.mdc`](../../rules/makefile.mdc) |
 | Minimal diffs | [`.cursor/rules/ponytail.mdc`](../../rules/ponytail.mdc) |
 | Structured logging | [`.cursor/rules/logging.mdc`](../../rules/logging.mdc) |

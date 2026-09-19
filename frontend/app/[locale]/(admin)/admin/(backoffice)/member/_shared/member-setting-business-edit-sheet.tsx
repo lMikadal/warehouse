@@ -16,7 +16,7 @@ import {
 } from "@/components/molecules/remote-multi-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
 import type { MemberSettingItem } from "@/lib/member-setting-api";
-import { fetchMemberSettingById, fetchMemberSettingList } from "@/lib/member-setting-api";
+import { fetchMemberBusinessSettingFilters } from "@/lib/member-setting-api";
 
 export type MemberBusinessEditPayload = {
   sku: string;
@@ -124,11 +124,10 @@ function MemberBusinessEditForm({
 
   const loadCredits = useCallback(
     async (ctx: RemoteComboboxLoadContext) => {
-      const res = await fetchMemberSettingList(locale, "credits", {
+      const res = await fetchMemberBusinessSettingFilters(locale, "credits", {
         page: 1,
         limit: 50,
         search: ctx.search.trim() || undefined,
-        isActive: true,
       });
       if (ctx.signal.aborted) return [];
       return res.items.map((i) => ({ value: String(i.id), label: i.name }));
@@ -138,11 +137,10 @@ function MemberBusinessEditForm({
 
   const loadGroups = useCallback(
     async (ctx: RemoteComboboxLoadContext) => {
-      const res = await fetchMemberSettingList(locale, "groups", {
+      const res = await fetchMemberBusinessSettingFilters(locale, "groups", {
         page: 1,
         limit: 50,
         search: ctx.search.trim() || undefined,
-        isActive: true,
       });
       if (ctx.signal.aborted) return [];
       return res.items.map((i) => ({ value: String(i.id), label: i.name }));
@@ -157,8 +155,13 @@ function MemberBusinessEditForm({
         const id = Number(v);
         if (!id) continue;
         try {
-          const row = await fetchMemberSettingById(locale, "credits", id);
-          out.push({ value: v, label: row.name });
+          const res = await fetchMemberBusinessSettingFilters(locale, "credits", {
+            id,
+            page: 1,
+            limit: 1,
+          });
+          const row = res.items[0];
+          out.push({ value: v, label: row?.name ?? v });
         } catch {
           out.push({ value: v, label: v });
         }
@@ -175,8 +178,13 @@ function MemberBusinessEditForm({
         const id = Number(v);
         if (!id) continue;
         try {
-          const row = await fetchMemberSettingById(locale, "groups", id);
-          out.push({ value: v, label: row.name });
+          const res = await fetchMemberBusinessSettingFilters(locale, "groups", {
+            id,
+            page: 1,
+            limit: 1,
+          });
+          const row = res.items[0];
+          out.push({ value: v, label: row?.name ?? v });
         } catch {
           out.push({ value: v, label: v });
         }

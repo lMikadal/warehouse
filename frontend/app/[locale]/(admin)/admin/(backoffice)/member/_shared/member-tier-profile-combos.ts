@@ -1,8 +1,4 @@
-import {
-  fetchBusinessRelations,
-  fetchMemberSettingList,
-  type MemberRelationItem,
-} from "@/lib/member-setting-api";
+import { fetchTierSettingRelationFilters } from "@/lib/member-tier-api";
 
 export type ProfileComboOption = {
   value: string;
@@ -16,55 +12,29 @@ export type ProfileDisplay = {
   creditName: string;
 };
 
-/** ponytail: loads up to 300 active businesses × relations; upgrade path = dedicated relations list API. */
-const MAX_BUSINESS_PAGES = 3;
-const BUSINESS_PAGE_SIZE = 100;
-
-function profileBusinessTitle(businessName: string, rel: MemberRelationItem): string {
-  const business = businessName.trim();
-  const group = rel.group_name?.trim() ?? "";
-  if (group && group !== business) {
-    return `${business}${group}`;
-  }
-  return business || "—";
-}
-
-function comboLabel(
-  businessName: string,
-  rel: MemberRelationItem
-): string {
-  const parts = [
-    businessName.trim(),
-    rel.credit_name?.trim() ?? "",
-    rel.group_name?.trim() ?? "",
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : `#${rel.id}`;
-}
+/** ponytail: paginated tier filters API; cap pages to avoid unbounded load on huge catalogs. */
+const MAX_FILTER_PAGES = 3;
+const FILTER_PAGE_SIZE = 100;
 
 export async function loadProfileComboOptions(
   locale: string
 ): Promise<ProfileComboOption[]> {
   const out: ProfileComboOption[] = [];
   let page = 1;
-  while (page <= MAX_BUSINESS_PAGES) {
-    const { items, meta } = await fetchMemberSettingList(locale, "businesses", {
+  while (page <= MAX_FILTER_PAGES) {
+    const { items, meta } = await fetchTierSettingRelationFilters(locale, {
       page,
-      limit: BUSINESS_PAGE_SIZE,
-      isActive: true,
+      limit: FILTER_PAGE_SIZE,
     });
-    for (const biz of items) {
-      const rels = await fetchBusinessRelations(locale, biz.id);
-      for (const rel of rels) {
-        if (!rel.is_active) continue;
-        out.push({
-          value: String(rel.id),
-          label: comboLabel(biz.name, rel),
-          businessTitle: profileBusinessTitle(biz.name, rel),
-          creditName: rel.credit_name?.trim() ?? "",
-        });
-      }
+    for (const row of items) {
+      out.push({
+        value: String(row.id),
+        label: row.name,
+        businessTitle: row.business_title,
+        creditName: row.credit_name?.trim() ?? "",
+      });
     }
-    if (page * BUSINESS_PAGE_SIZE >= meta.total) break;
+    if (page * FILTER_PAGE_SIZE >= meta.total) break;
     page += 1;
   }
   return out;

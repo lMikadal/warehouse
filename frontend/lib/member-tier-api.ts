@@ -50,7 +50,17 @@ export type MemberTierRelation = {
   type: TierScopeType;
   is_promotion: boolean;
   attribute_ids?: number[];
+  profile_business_title?: string;
+  profile_credit_name?: string;
   updated_at: string;
+};
+
+export type TierSettingRelationFilterItem = {
+  id: number;
+  name: string;
+  business_title: string;
+  credit_name: string;
+  group_name: string;
 };
 
 export type MemberTierDetail = {
@@ -96,6 +106,33 @@ export async function fetchTierList(
 
 export async function fetchTierStats(locale: string) {
   return client.getJson<MemberTierStats>(locale, "/stats");
+}
+
+export type TierSettingRelationFiltersParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  id?: number;
+};
+
+export async function fetchTierSettingRelationFilters(
+  locale: string,
+  params: TierSettingRelationFiltersParams = {}
+) {
+  const q = new URLSearchParams();
+  q.set("facet", "setting_relations");
+  q.set("page", String(params.page ?? 1));
+  q.set("limit", String(params.limit ?? 100));
+  if (params.search?.trim()) q.set("search", params.search.trim());
+  if (params.id != null && params.id > 0) q.set("id", String(params.id));
+  const res = await authFetch(`${PROXY_BASE}/filters?${q}`, {
+    headers: bffJsonHeaders(locale),
+  });
+  if (!res.ok) throw await parseBffError(res);
+  return (await res.json()) as {
+    items: TierSettingRelationFilterItem[];
+    meta: { total: number; page: number; limit: number };
+  };
 }
 
 export async function fetchTierById(locale: string, id: number) {
