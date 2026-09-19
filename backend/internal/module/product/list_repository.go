@@ -75,8 +75,9 @@ type listItemBody struct {
 	Price              float64                `json:"price"`
 	PriceWholesale     float64                `json:"price_wholesale"`
 	PriceVat           float64                `json:"price_vat"`
-	PriceWholesaleVat  float64                `json:"price_wholesale_vat"`
-	VatType            string                 `json:"vat_type,omitempty"`
+	PriceWholesaleVat    float64                `json:"price_wholesale_vat"`
+	AmountPriceWholesale int                    `json:"amount_price_wholesale"`
+	VatType              string                 `json:"vat_type,omitempty"`
 	VatRate            float64                `json:"vat_rate,omitempty"`
 	TypePrice          string                 `json:"type_price"`
 	Unit               string                 `json:"unit"`
@@ -293,6 +294,7 @@ func loadListItems(ctx context.Context, db *sql.DB, listID int64) ([]listItemBod
 	rows, err := db.QueryContext(ctx, `
 SELECT id, COALESCE(sku, ''), COALESCE(barcode, ''), COALESCE(qrcode, ''),
        price::float8, price_wholesale::float8, price_vat::float8, price_wholesale_vat::float8,
+       amount_price_wholesale,
        vat_type::text, vat_rate::float8, type_price::text, unit::text, qty_per_unit,
        weight::float8, width::float8, length::float8, height::float8,
        minimum_stock, old_product_item_id, is_new, is_active, is_stopped, is_authentic, promotion
@@ -308,7 +310,7 @@ FROM product_item WHERE product_list_id = $1 AND deleted_at IS NULL ORDER BY id`
 		var w, wi, l, h sql.NullFloat64
 		var oldItemID sql.NullInt64
 		if err := rows.Scan(&itemID, &it.SKU, &it.Barcode, &it.Qrcode, &it.Price, &it.PriceWholesale,
-			&it.PriceVat, &it.PriceWholesaleVat, &it.VatType, &it.VatRate,
+			&it.PriceVat, &it.PriceWholesaleVat, &it.AmountPriceWholesale, &it.VatType, &it.VatRate,
 			&it.TypePrice, &it.Unit, &it.QtyPerUnit, &w, &wi, &l, &h,
 			&it.MinimumStock, &oldItemID, &it.IsNew, &it.IsActive, &it.IsStopped, &it.IsAuthentic, &it.Promotion); err != nil {
 			return nil, err
@@ -708,13 +710,14 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 		var itemID int64
 		err := tx.QueryRowContext(ctx, `
 INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, price_vat, price_wholesale_vat,
-  vat_type, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock,
+  amount_price_wholesale, vat_type, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock,
   old_product_item_id, is_new, is_stopped, is_authentic, is_active, created_by, updated_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::setting_vat_type, $10, $11, $12::product_item_type_price, $13::product_unit,
-  $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $25)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::setting_vat_type, $11, $12, $13::product_item_type_price, $14::product_unit,
+  $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $26)
 RETURNING id`,
 			listID, strOrNull(norm.SKU), strOrNull(norm.Barcode), strOrNull(norm.Qrcode),
-			norm.Price, norm.PriceWholesale, norm.PriceVat, norm.PriceWholesaleVat, norm.VatType, norm.VatRate,
+			norm.Price, norm.PriceWholesale, norm.PriceVat, norm.PriceWholesaleVat, norm.AmountPriceWholesale,
+			norm.VatType, norm.VatRate,
 			strings.TrimSpace(norm.Promotion), tp, unit, norm.QtyPerUnit,
 			norm.Weight, norm.Width, norm.Length, norm.Height, norm.MinimumStock, int64OrNull(norm.OldProductItemID),
 			norm.IsNew, norm.IsStopped, norm.IsAuthentic, norm.IsActive, nullActor(actorID)).Scan(&itemID)
@@ -744,13 +747,14 @@ func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it lis
 	normalizeStorefrontPrices(snap, &norm)
 	res, err := tx.ExecContext(ctx, `
 UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, price_vat = $7,
-  price_wholesale_vat = $8, vat_type = $9::setting_vat_type, vat_rate = $10, promotion = $11,
-  type_price = $12::product_item_type_price, unit = $13::product_unit, qty_per_unit = $14,
-  weight = $15, width = $16, length = $17, height = $18, minimum_stock = $19, is_new = $20, is_stopped = $21,
-  is_authentic = $22, is_active = $23, updated_at = NOW(), updated_by = $24
-WHERE id = $1 AND product_list_id = $25 AND deleted_at IS NULL`,
+  price_wholesale_vat = $8, amount_price_wholesale = $9, vat_type = $10::setting_vat_type, vat_rate = $11, promotion = $12,
+  type_price = $13::product_item_type_price, unit = $14::product_unit, qty_per_unit = $15,
+  weight = $16, width = $17, length = $18, height = $19, minimum_stock = $20, is_new = $21, is_stopped = $22,
+  is_authentic = $23, is_active = $24, updated_at = NOW(), updated_by = $25
+WHERE id = $1 AND product_list_id = $26 AND deleted_at IS NULL`,
 		itemID, strOrNull(norm.SKU), strOrNull(norm.Barcode), strOrNull(norm.Qrcode),
-		norm.Price, norm.PriceWholesale, norm.PriceVat, norm.PriceWholesaleVat, norm.VatType, norm.VatRate,
+		norm.Price, norm.PriceWholesale, norm.PriceVat, norm.PriceWholesaleVat, norm.AmountPriceWholesale,
+		norm.VatType, norm.VatRate,
 		strings.TrimSpace(norm.Promotion), tp, unit, norm.QtyPerUnit,
 		norm.Weight, norm.Width, norm.Length, norm.Height, norm.MinimumStock, norm.IsNew, norm.IsStopped,
 		norm.IsAuthentic, norm.IsActive, nullActor(actorID), listID)

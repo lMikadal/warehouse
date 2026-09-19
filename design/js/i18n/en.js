@@ -385,6 +385,7 @@ window.I18N_EN = {
   "productListForm.itemPriceInclVat": "Price incl. VAT",
   "productListForm.itemWholesaleExVat": "Wholesale (ex-VAT)",
   "productListForm.itemWholesaleInclVat": "Wholesale (incl. VAT)",
+  "productListForm.itemWholesaleMinQty": "Minimum quantity for wholesale price",
   "productListForm.itemAutoVat": "Auto VAT",
   "productListForm.itemColChannel": "Channel",
   "productListForm.itemColPriceExVat": "Price (ex-VAT)",

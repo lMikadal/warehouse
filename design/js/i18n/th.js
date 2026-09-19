@@ -385,6 +385,7 @@ window.I18N_TH = {
   "productListForm.itemPriceInclVat": "ราคารวม VAT",
   "productListForm.itemWholesaleExVat": "ราคาส่ง (ไม่รวม VAT)",
   "productListForm.itemWholesaleInclVat": "ราคาส่ง (รวม VAT)",
+  "productListForm.itemWholesaleMinQty": "จำนวนขั้นต่ำสำหรับราคาส่ง",
   "productListForm.itemAutoVat": "คำนวณ VAT อัตโนมัติ",
   "productListForm.itemColChannel": "ช่องทางขาย",
   "productListForm.itemColPriceExVat": "ราคา (ไม่รวม VAT)",

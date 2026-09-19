@@ -471,7 +471,7 @@
       };
     }
     var wholesale = Number(item.price_wholesale);
-    var minWholesale = Number(item.amount_wholesale_price);
+    var minWholesale = Number(item.amount_price_wholesale);
     var row = {
       id: item.id,
       product_list_id: item.product_list_id,

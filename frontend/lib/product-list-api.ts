@@ -313,6 +313,7 @@ export type ListItemBody = {
   price_wholesale: number;
   price_vat: number;
   price_wholesale_vat: number;
+  amount_price_wholesale: number;
   vat_type?: "exclude" | "include";
   vat_rate?: number;
   type_price: string;

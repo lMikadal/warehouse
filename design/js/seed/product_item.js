@@ -13,7 +13,7 @@
         price_vat: 481.5,
         price_wholesale_vat: 428,
         vat_type: "include",
-        amount_wholesale_price: 1,
+        amount_price_wholesale: 1,
         vat_rate: 7,
         promotion: "ส่วนลด 10% เดือนมีนาคม (ตัวอย่าง)",
         unit: "piece",

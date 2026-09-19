@@ -1037,57 +1037,80 @@ export function ProductListFormVariantSections({
           </label>
         </div>
         {item.type_price !== "stock" ? (
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <PricePair
-              labelEx={tList("colNetPrice")}
-              labelIncl={tForm("itemPriceInclVat")}
-              vatType={vatType}
-              exValue={item.price}
-              inclValue={
-                item.price_vat > 0
-                  ? item.price_vat
-                  : priceInclVat(item.price, vatRate)
-              }
-              vatRate={vatRate}
-              readOnly={readOnly}
-              onExChange={(price) =>
-                patch({
-                  price,
-                  price_vat: priceInclVat(price, vatRate),
-                })
-              }
-              onInclChange={(price_vat) =>
-                patch({
-                  price_vat,
-                  price: priceExFromIncl(price_vat, vatRate),
-                })
-              }
-            />
-            <PricePair
-              labelEx={tForm("itemWholesaleExVat")}
-              labelIncl={tForm("itemWholesaleInclVat")}
-              vatType={vatType}
-              exValue={item.price_wholesale}
-              inclValue={
-                item.price_wholesale_vat > 0
-                  ? item.price_wholesale_vat
-                  : priceInclVat(item.price_wholesale, vatRate)
-              }
-              vatRate={vatRate}
-              readOnly={readOnly}
-              onExChange={(price_wholesale) =>
-                patch({
-                  price_wholesale,
-                  price_wholesale_vat: priceInclVat(price_wholesale, vatRate),
-                })
-              }
-              onInclChange={(price_wholesale_vat) =>
-                patch({
-                  price_wholesale_vat,
-                  price_wholesale: priceExFromIncl(price_wholesale_vat, vatRate),
-                })
-              }
-            />
+          <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
+            <div className="col-span-2 min-w-0">
+              <PricePair
+                labelEx={tList("colNetPrice")}
+                labelIncl={tForm("itemPriceInclVat")}
+                vatType={vatType}
+                exValue={item.price}
+                inclValue={
+                  item.price_vat > 0
+                    ? item.price_vat
+                    : priceInclVat(item.price, vatRate)
+                }
+                vatRate={vatRate}
+                readOnly={readOnly}
+                onExChange={(price) =>
+                  patch({
+                    price,
+                    price_vat: priceInclVat(price, vatRate),
+                  })
+                }
+                onInclChange={(price_vat) =>
+                  patch({
+                    price_vat,
+                    price: priceExFromIncl(price_vat, vatRate),
+                  })
+                }
+              />
+            </div>
+            <div className="col-span-2 min-w-0">
+              <PricePair
+                labelEx={tForm("itemWholesaleExVat")}
+                labelIncl={tForm("itemWholesaleInclVat")}
+                vatType={vatType}
+                exValue={item.price_wholesale}
+                inclValue={
+                  item.price_wholesale_vat > 0
+                    ? item.price_wholesale_vat
+                    : priceInclVat(item.price_wholesale, vatRate)
+                }
+                vatRate={vatRate}
+                readOnly={readOnly}
+                onExChange={(price_wholesale) =>
+                  patch({
+                    price_wholesale,
+                    price_wholesale_vat: priceInclVat(price_wholesale, vatRate),
+                  })
+                }
+                onInclChange={(price_wholesale_vat) =>
+                  patch({
+                    price_wholesale_vat,
+                    price_wholesale: priceExFromIncl(price_wholesale_vat, vatRate),
+                  })
+                }
+              />
+            </div>
+            <Field className="min-w-0 gap-1.5">
+              <FieldLabel>{tForm("itemWholesaleMinQty")}</FieldLabel>
+              <Input
+                {...locked}
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                placeholder={tFormPh("placeholder.input", {
+                  label: tForm("itemWholesaleMinQty"),
+                })}
+                value={String(item.amount_price_wholesale ?? 0)}
+                onChange={(e) =>
+                  patch({
+                    amount_price_wholesale: Number(e.target.value) || 0,
+                  })
+                }
+              />
+            </Field>
           </div>
         ) : null}
       </Section>

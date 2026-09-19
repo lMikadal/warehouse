@@ -139,6 +139,7 @@
         unit: "piece",
         qty_per_unit: "1",
         minimum_stock: "0",
+        amount_price_wholesale: "0",
         is_active: true,
         is_stopped: false,
         name_th: "",
@@ -206,6 +207,9 @@
         unit: it.unit || "piece",
         qty_per_unit: String(it.qty_per_unit != null ? it.qty_per_unit : 1),
         minimum_stock: String(it.minimum_stock != null ? it.minimum_stock : 0),
+        amount_price_wholesale: String(
+          it.amount_price_wholesale != null ? it.amount_price_wholesale : 0
+        ),
         is_active: !!it.is_active,
         is_stopped: !!it.is_stopped,
         name_th: (thL && thL.name) || "",
@@ -508,6 +512,8 @@
         unit: itemFieldFromBlock(block, "unit") || "piece",
         qty_per_unit: itemFieldFromBlock(block, "qty_per_unit") || "1",
         minimum_stock: itemFieldFromBlock(block, "minimum_stock") || "0",
+        amount_price_wholesale:
+          itemFieldFromBlock(block, "amount_price_wholesale") || "0",
         name_th: itemFieldFromBlock(block, "name_th"),
         name_en: itemFieldFromBlock(block, "name_en"),
         barcode: itemFieldFromBlock(block, "barcode"),
@@ -3178,6 +3184,15 @@
         : storeRow && storeRow.price_wholesale != null
           ? Number(storeRow.price_wholesale)
           : 0;
+    var amountWholesaleRaw = item.amount_price_wholesale;
+    var amountWholesale =
+      amountWholesaleRaw !== "" &&
+      amountWholesaleRaw != null &&
+      String(amountWholesaleRaw).trim() !== ""
+        ? Number(amountWholesaleRaw)
+        : storeRow && storeRow.amount_price_wholesale != null
+          ? Number(storeRow.amount_price_wholesale)
+          : 0;
     var promotion =
       item.promotion != null && item.promotion !== ""
         ? String(item.promotion)
@@ -3204,6 +3219,10 @@
             "productListForm.itemWholesaleInclVat",
             "price_wholesale"
           ) +
+          '<div class="form-field"><label><span data-i18n="productListForm.itemWholesaleMinQty"></span></label>' +
+          '<input type="number" min="0" step="1" data-field="amount_price_wholesale" data-i18n-placeholder-input="productListForm.itemWholesaleMinQty" placeholder="กรุณากรอกจำนวนขั้นต่ำสำหรับราคาส่ง" value="' +
+          escapeAttr(String(amountWholesale)) +
+          '" /></div>' +
           "</div>";
 
     var unitOpts = ["piece", "box", "set"]
@@ -5888,6 +5907,7 @@
         length: optionalItemNumber(it.length),
         height: optionalItemNumber(it.height),
         minimum_stock: Number(it.minimum_stock) || 0,
+        amount_price_wholesale: Number(it.amount_price_wholesale) || 0,
         is_active: !!it.is_active,
         is_stopped: !!it.is_stopped,
         is_authentic:

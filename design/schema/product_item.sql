@@ -21,6 +21,7 @@ CREATE TABLE product_item (
     price_wholesale       NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- ex-VAT wholesale price
     price_vat             NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- retail price incl. VAT (storefront)
     price_wholesale_vat   NUMERIC(15,4)           NOT NULL DEFAULT 0,            -- wholesale price incl. VAT (storefront)
+    amount_price_wholesale INTEGER                NOT NULL DEFAULT 0,            -- min qty to apply price_wholesale
     vat_type              setting_vat_type        NOT NULL DEFAULT 'exclude',    -- snapshot from setting_vat.vat_type at save time
     vat_rate              NUMERIC(5,2)            NOT NULL DEFAULT 0,            -- VAT rate snapshot from setting_vat.rate at save time
     promotion             TEXT                    NOT NULL DEFAULT '',           -- promotion conditions (v1 condition_promotion)

@@ -216,7 +216,7 @@ ON CONFLICT (product_list_id, locale) DO UPDATE SET
   sub_name = EXCLUDED.sub_name,
   updated_at = EXCLUDED.updated_at;
 
-INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, price_vat, price_wholesale_vat, vat_type, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_authentic, is_active, created_by, updated_by, created_at, updated_at)
+INSERT INTO product_item (id, product_list_id, sku, barcode, qrcode, price, price_wholesale, price_vat, price_wholesale_vat, amount_price_wholesale, vat_type, vat_rate, promotion, type_price, unit, qty_per_unit, weight, width, length, height, minimum_stock, is_stopped, is_authentic, is_active, created_by, updated_by, created_at, updated_at)
 VALUES
 `;
 prodSql += pi
@@ -231,7 +231,8 @@ prodSql += pi
         ? r.price_wholesale_vat
         : wholesale * (1 + rate / 100);
     const vatType = sqlStr(r.vat_type || "exclude");
-    return `  (${r.id}, ${r.product_list_id}, ${sqlStr(r.sku)}, ${sqlStr(r.barcode)}, ${sqlStr(r.qrcode)}, ${price}, ${wholesale}, ${priceVat}, ${wholesaleVat}, ${vatType}, ${rate}, ${sqlStr(r.promotion || "")}, ${sqlStr(r.type_price || "manual")}, ${sqlStr(r.unit || "piece")}, ${r.qty_per_unit ?? 1}, ${r.weight ?? "NULL"}, ${r.width ?? "NULL"}, ${r.length ?? "NULL"}, ${r.height ?? "NULL"}, ${r.minimum_stock ?? 0}, ${sqlBool(r.is_stopped)}, ${sqlBool(r.is_authentic ?? (r.is_fake != null ? !r.is_fake : true))}, ${sqlBool(r.is_active)}, 1, 1, ${sqlStr(TS)}, ${sqlStr(TS)})`;
+    const amountWholesale = r.amount_price_wholesale ?? r.amount_wholesale_price ?? 0;
+    return `  (${r.id}, ${r.product_list_id}, ${sqlStr(r.sku)}, ${sqlStr(r.barcode)}, ${sqlStr(r.qrcode)}, ${price}, ${wholesale}, ${priceVat}, ${wholesaleVat}, ${amountWholesale}, ${vatType}, ${rate}, ${sqlStr(r.promotion || "")}, ${sqlStr(r.type_price || "manual")}, ${sqlStr(r.unit || "piece")}, ${r.qty_per_unit ?? 1}, ${r.weight ?? "NULL"}, ${r.width ?? "NULL"}, ${r.length ?? "NULL"}, ${r.height ?? "NULL"}, ${r.minimum_stock ?? 0}, ${sqlBool(r.is_stopped)}, ${sqlBool(r.is_authentic ?? (r.is_fake != null ? !r.is_fake : true))}, ${sqlBool(r.is_active)}, 1, 1, ${sqlStr(TS)}, ${sqlStr(TS)})`;
   })
   .join(",\n");
 prodSql += `

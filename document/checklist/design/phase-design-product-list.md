@@ -22,7 +22,7 @@ Item-level list mockup for sidebar **สินค้า → รายการ**
 - [x] Bin-only placement (`.cursor/rules/warehouse.mdc`); `product_item_warehouse` seed stores `bin_id` only; UI resolves path via `warehouse-lib`
 - [x] One bin → one product_item (unique `bin_id` in schema + seed; item 4 on bin 37)
 - [x] Seeds: `product_item_price`, `product_item_supplier` (demo rows for variant expanded UI)
-- [x] Pricing tab: expanded variant body — 5 sections; section 2 editable + saves `product_item` + `product_item_language`; section 1 without status switch
+- [x] Pricing tab: expanded variant body — 5 sections; section 2 editable + saves `product_item` + `product_item_language`; section 1 without status switch; section 3 **`amount_price_wholesale`** after wholesale incl-VAT (main save)
 - [x] Pricing tab sections 4–5: section 4 channel prices in draft (defaults at 0, big save to `product_item_price`); `setting_vat` pricing axis; section 5 suppliers in draft (linked to Data tab partners, big save to `product_item_supplier`); warehouse tab cascade rows (draft → `product_item_warehouse` + qty on main save); promotion on main save
 - [x] History tab: `data-plf-hist-tab` purchase / sales; read-only, styled like lot dialog (summary cards + colored grouped table, pager)
 - [x] History tab: 3-view filter bar (day date-range / month range / year from-to) + รหัสสินค้า (`product_item`) + คู่ค้า/ลูกค้า selects, Clear filters, mock Export toast; per-tab `historyState`, period grouping
