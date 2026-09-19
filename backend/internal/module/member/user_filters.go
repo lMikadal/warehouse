@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
@@ -29,10 +30,23 @@ type userFiltersResponse struct {
 }
 
 type userStatsResponse struct {
-	TotalCustomers int64   `json:"total_customers"`
-	ActiveMembers  int64   `json:"active_members"`
-	NewThisMonth   int64   `json:"new_this_month"`
-	SalesThisMonth float64 `json:"sales_this_month"`
+	TotalCustomers int64    `json:"total_customers"`
+	ActiveMembers  int64    `json:"active_members"`
+	NewThisMonth   int64    `json:"new_this_month"`
+	SalesThisMonth *float64 `json:"sales_this_month,omitempty"`
+}
+
+func userStatsResponseFor(row UserStats, userType string) userStatsResponse {
+	out := userStatsResponse{
+		TotalCustomers: row.TotalCustomers,
+		ActiveMembers:  row.ActiveMembers,
+		NewThisMonth:     row.NewThisMonth,
+	}
+	if userType == "superadmin" {
+		v := row.SalesThisMonth
+		out.SalesThisMonth = &v
+	}
+	return out
 }
 
 func userFilterFacet(facet string) (string, bool) {
@@ -50,12 +64,11 @@ func (h *UserHandler) stats(c *echo.Context) error {
 		applog.HTTPError(c, "member user stats", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load stats"})
 	}
-	return c.JSON(http.StatusOK, userStatsResponse{
-		TotalCustomers: row.TotalCustomers,
-		ActiveMembers:  row.ActiveMembers,
-		NewThisMonth:   row.NewThisMonth,
-		SalesThisMonth: row.SalesThisMonth,
-	})
+	userType := ""
+	if p, ok := pkgauth.PrincipalFrom(c); ok {
+		userType = p.UserType
+	}
+	return c.JSON(http.StatusOK, userStatsResponseFor(row, userType))
 }
 
 func (h *UserHandler) listFilters(c *echo.Context) error {

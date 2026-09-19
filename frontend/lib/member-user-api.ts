@@ -53,7 +53,7 @@ export type MemberUserStats = {
   total_customers: number;
   active_members: number;
   new_this_month: number;
-  sales_this_month: number;
+  sales_this_month?: number;
 };
 
 export type MemberUserFileRow = {

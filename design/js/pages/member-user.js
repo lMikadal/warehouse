@@ -436,15 +436,21 @@
       return isThisMonth(r.created_at);
     }).length;
 
+    var statsHtml =
+      statCard("users", "", "memberUser.totalCustomers", all.length, "memberUser.listUnit") +
+      statCard("user-check", "", "memberUser.members", all.length, "memberUser.personUnit") +
+      statCard("user-plus", "member-user-stat__icon--green", "memberUser.newThisMonth", newCount, "memberUser.listUnit");
+    if (global.auth && global.auth.isSuperAdmin(global.auth.getUser())) {
+      statsHtml +=
+        statCard("coins", "member-user-stat__icon--gold", "memberUser.salesThisMonth", "0", "memberUser.bahtUnit");
+    }
+
     return (
       '<div class="crud-page">' +
       pageHeaderHtml() +
       toolbarHtml() +
       '<div class="member-user-stats">' +
-      statCard("users", "", "memberUser.totalCustomers", all.length, "memberUser.listUnit") +
-      statCard("user-check", "", "memberUser.members", all.length, "memberUser.personUnit") +
-      statCard("user-plus", "member-user-stat__icon--green", "memberUser.newThisMonth", newCount, "memberUser.listUnit") +
-      statCard("coins", "member-user-stat__icon--gold", "memberUser.salesThisMonth", "0", "memberUser.bahtUnit") +
+      statsHtml +
       "</div>" +
       '<div class="crud-table-wrap"><div class="crud-table-wrap__body"><table class="data-table"><thead><tr>' +
       '<th class="data-table__col-center" data-i18n="memberUser.colIndex"></th>' +

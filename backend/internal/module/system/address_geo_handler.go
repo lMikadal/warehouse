@@ -3,7 +3,6 @@ package system
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -85,49 +84,28 @@ func (h *AddressGeoHandler) listFilters(c *echo.Context) error {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid or missing facet"})
 	}
 	q := api.ParsePageQuery(c)
-	active := true
-	f := GeoListFilter{
+	p := GeoFilterListParams{
 		Page: q.Page, Limit: q.Limit, Locale: api.LocaleFromRequest(c),
-		Search: strings.TrimSpace(c.QueryParam("search")), IsActive: &active,
-		Sort: "name", Order: "asc",
+		Search:           strings.TrimSpace(c.QueryParam("search")),
+		SystemCountryID:  api.QueryOptionalInt64(c, "system_country_id"),
+		SystemProvinceID: api.QueryOptionalInt64(c, "system_province_id"),
+		SystemDistrictID: api.QueryOptionalInt64(c, "system_district_id"),
 	}
-	if id, ok := queryInt64(c, "system_country_id"); ok {
-		f.SystemCountryID = &id
+	if id, ok := api.QueryInt64(c, "id"); ok {
+		p.ID = id
 	}
-	if id, ok := queryInt64(c, "system_province_id"); ok {
-		f.SystemProvinceID = &id
-	}
-	if id, ok := queryInt64(c, "system_district_id"); ok {
-		f.SystemDistrictID = &id
-	}
-	if id, ok := queryInt64(c, "id"); ok {
-		f.Search = ""
-		_ = id
-		row, err := h.repo.Get(c.Request().Context(), queryLevel, id, f.Locale)
-		if err != nil {
-			applog.HTTPError(c, "geo filters by id", err)
-			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
-		}
-		if row == nil {
-			return c.JSON(http.StatusOK, geoFiltersResponse{Items: []geoFilterItem{}, Meta: api.ListMeta{Total: 0, Page: 1, Limit: q.Limit}})
-		}
-		return c.JSON(http.StatusOK, geoFiltersResponse{
-			Items: []geoFilterItem{{ID: row.ID, Name: row.Name}},
-			Meta:  api.ListMeta{Total: 1, Page: 1, Limit: q.Limit},
-		})
-	}
-	rows, total, err := h.repo.List(c.Request().Context(), queryLevel, f)
+	result, err := GeoFilterList(c.Request().Context(), h.repo, queryLevel, p)
 	if err != nil {
-		applog.HTTPError(c, "geo filters list", err)
+		applog.HTTPError(c, "geo filters", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
 	}
-	items := make([]geoFilterItem, len(rows))
-	for i, r := range rows {
+	items := make([]geoFilterItem, len(result.Items))
+	for i, r := range result.Items {
 		items[i] = geoFilterItem{ID: r.ID, Name: r.Name}
 	}
 	return c.JSON(http.StatusOK, geoFiltersResponse{
 		Items: items,
-		Meta:  api.ListMeta{Total: int64(total), Page: q.Page, Limit: q.Limit},
+		Meta:  api.ListMeta{Total: result.Total, Page: result.Page, Limit: result.Limit},
 	})
 }
 
@@ -138,13 +116,13 @@ func (h *AddressGeoHandler) list(c *echo.Context) error {
 		active := v == "true" || v == "1"
 		f.IsActive = &active
 	}
-	if id, ok := queryInt64(c, "system_country_id"); ok {
+	if id, ok := api.QueryInt64(c, "system_country_id"); ok {
 		f.SystemCountryID = &id
 	}
-	if id, ok := queryInt64(c, "system_province_id"); ok {
+	if id, ok := api.QueryInt64(c, "system_province_id"); ok {
 		f.SystemProvinceID = &id
 	}
-	if id, ok := queryInt64(c, "system_district_id"); ok {
+	if id, ok := api.QueryInt64(c, "system_district_id"); ok {
 		f.SystemDistrictID = &id
 	}
 	sortCol := strings.TrimSpace(c.QueryParam("sort"))
@@ -303,18 +281,6 @@ func (h *AddressGeoHandler) reorder(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "reorder failed"})
 	}
 	return c.NoContent(http.StatusNoContent)
-}
-
-func queryInt64(c *echo.Context, key string) (int64, bool) {
-	v := strings.TrimSpace(c.QueryParam(key))
-	if v == "" {
-		return 0, false
-	}
-	id, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || id <= 0 {
-		return 0, false
-	}
-	return id, true
 }
 
 func RegisterAddressGeoRoutes(g *echo.Group, repo *AddressGeoRepository) {

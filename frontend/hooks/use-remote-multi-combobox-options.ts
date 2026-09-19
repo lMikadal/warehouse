@@ -4,17 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   REMOTE_COMBOBOX_DEBOUNCE_MS,
+  USER_FILTER_INPUT_REASONS,
   type RemoteComboboxInputChangeDetails,
   type RemoteComboboxLoadContext,
   type RemoteComboboxOption,
 } from "@/hooks/use-remote-combobox-options";
-
-const USER_FILTER_INPUT_REASONS = new Set([
-  "input-change",
-  "input-paste",
-  "input-clear",
-  "clear-press",
-]);
 
 function mergeOptions(
   pinned: RemoteComboboxOption[],

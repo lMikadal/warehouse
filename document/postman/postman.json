@@ -1441,7 +1441,8 @@
               "name": "Member user stats",
               "request": {
                 "method": "GET",
-                "url": "{{baseUrl}}/member/users/stats"
+                "url": "{{baseUrl}}/member/users/stats",
+                "description": "member.member_user.view — always total_customers, active_members, new_this_month; sales_this_month only when JWT user_type is superadmin"
               }
             },
             {

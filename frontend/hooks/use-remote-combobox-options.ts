@@ -13,7 +13,7 @@ export type RemoteComboboxLoadContext = {
 };
 
 /** Base UI combobox reasons that reflect user-driven filter text, not label sync. */
-const USER_FILTER_INPUT_REASONS = new Set([
+export const USER_FILTER_INPUT_REASONS = new Set([
   "input-change",
   "input-paste",
   "input-clear",

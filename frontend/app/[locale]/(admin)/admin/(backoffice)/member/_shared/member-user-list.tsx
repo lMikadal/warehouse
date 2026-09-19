@@ -33,7 +33,10 @@ import {
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import type { PageSizeOption } from "@/lib/crud-pagination";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
+import {
+  useAdminBackofficeActor,
+  useResourcePermissions,
+} from "@/lib/admin-backoffice-actor-context";
 import { tableIconActionsFromResource } from "@/lib/admin-permissions";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -47,6 +50,7 @@ import {
   type MemberUserStats,
 } from "@/lib/member-user-api";
 import { loadMemberUserBusinessFilterOptions } from "@/lib/member-user-filters-combobox";
+import { cn } from "@/lib/utils";
 
 const COLUMN_COUNT = 9;
 
@@ -107,6 +111,8 @@ export function MemberUserList() {
   const tError = useTranslations("error");
   const t = useTranslations();
   const perms = useResourcePermissions("member", "member_user");
+  const actor = useAdminBackofficeActor();
+  const showSalesStat = actor.type === "superadmin";
 
   const [dateRange, setDateRange] = useState<DateRangeValue | undefined>(
     undefined
@@ -281,7 +287,12 @@ export function MemberUserList() {
       />
 
       {stats ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          className={cn(
+            "grid gap-3 sm:grid-cols-2",
+            showSalesStat ? "xl:grid-cols-4" : "xl:grid-cols-3"
+          )}
+        >
           <StatCard
             icon={Users}
             label={tMu("totalCustomers")}
@@ -300,12 +311,14 @@ export function MemberUserList() {
             value={String(stats.new_this_month)}
             unit={tMu("personUnit")}
           />
-          <StatCard
-            icon={Coins}
-            label={tMu("salesThisMonth")}
-            value={String(stats.sales_this_month)}
-            unit={tMu("bahtUnit")}
-          />
+          {showSalesStat ? (
+            <StatCard
+              icon={Coins}
+              label={tMu("salesThisMonth")}
+              value={String(stats.sales_this_month ?? 0)}
+              unit={tMu("bahtUnit")}
+            />
+          ) : null}
         </div>
       ) : null}
 

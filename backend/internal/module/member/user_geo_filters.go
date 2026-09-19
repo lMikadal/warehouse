@@ -2,7 +2,6 @@ package member
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -24,18 +23,6 @@ func memberUserGeoFilterLevel(facet string) (system.GeoLevel, bool) {
 	}
 }
 
-func userFilterQueryInt64Optional(c *echo.Context, key string) *int64 {
-	v := strings.TrimSpace(c.QueryParam(key))
-	if v == "" {
-		return nil
-	}
-	id, err := strconv.ParseInt(v, 10, 64)
-	if err != nil || id <= 0 {
-		return nil
-	}
-	return &id
-}
-
 func (h *UserHandler) userGeoFilters(c *echo.Context, facet string) error {
 	if h.geo == nil {
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "geo filters unavailable"})
@@ -46,42 +33,27 @@ func (h *UserHandler) userGeoFilters(c *echo.Context, facet string) error {
 	}
 	q := api.ParsePageQuery(c)
 	locale := api.LocaleFromRequest(c)
-	active := true
-	f := system.GeoListFilter{
+	p := system.GeoFilterListParams{
 		Page: q.Page, Limit: q.Limit, Locale: locale,
-		Search: strings.TrimSpace(c.QueryParam("search")), IsActive: &active,
-		Sort: "name", Order: "asc",
+		Search:           strings.TrimSpace(c.QueryParam("search")),
+		SystemCountryID:  api.QueryOptionalInt64(c, "system_country_id"),
+		SystemProvinceID: api.QueryOptionalInt64(c, "system_province_id"),
+		SystemDistrictID: api.QueryOptionalInt64(c, "system_district_id"),
 	}
-	f.SystemCountryID = userFilterQueryInt64Optional(c, "system_country_id")
-	f.SystemProvinceID = userFilterQueryInt64Optional(c, "system_province_id")
-	f.SystemDistrictID = userFilterQueryInt64Optional(c, "system_district_id")
-
 	if id := userFilterQueryID(c); id > 0 {
-		row, err := h.geo.Get(c.Request().Context(), level, id, locale)
-		if err != nil {
-			applog.HTTPError(c, "member user geo filters by id", err)
-			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
-		}
-		if row == nil {
-			return c.JSON(http.StatusOK, userFiltersResponse{Items: []userFilterItem{}, Meta: api.ListMeta{Total: 0, Page: 1, Limit: q.Limit}})
-		}
-		return c.JSON(http.StatusOK, userFiltersResponse{
-			Items: []userFilterItem{{ID: row.ID, Name: row.Name}},
-			Meta:  api.ListMeta{Total: 1, Page: 1, Limit: q.Limit},
-		})
+		p.ID = id
 	}
-
-	rows, total, err := h.geo.List(c.Request().Context(), level, f)
+	result, err := system.GeoFilterList(c.Request().Context(), h.geo, level, p)
 	if err != nil {
-		applog.HTTPError(c, "member user geo filters list", err)
+		applog.HTTPError(c, "member user geo filters", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
 	}
-	items := make([]userFilterItem, len(rows))
-	for i, r := range rows {
+	items := make([]userFilterItem, len(result.Items))
+	for i, r := range result.Items {
 		items[i] = userFilterItem{ID: r.ID, Name: r.Name}
 	}
 	return c.JSON(http.StatusOK, userFiltersResponse{
 		Items: items,
-		Meta:  api.ListMeta{Total: int64(total), Page: q.Page, Limit: q.Limit},
+		Meta:  api.ListMeta{Total: result.Total, Page: result.Page, Limit: result.Limit},
 	})
 }

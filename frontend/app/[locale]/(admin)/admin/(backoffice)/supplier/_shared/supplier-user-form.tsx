@@ -23,6 +23,7 @@ import {
 import { FormField } from "@/components/molecules/form-field";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
+import { WebsiteGeoFields } from "@/components/molecules/website-geo-fields";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -46,10 +47,13 @@ import {
   loadSupplierUserPrefixComboboxOptions,
   resolveSupplierUserPrefixLabel,
 } from "@/lib/supplier-user-filters-combobox";
+import { comboboxPinned } from "@/lib/combobox-pinned";
+import type { GeoResource } from "@/lib/system-geo-api";
 import {
   loadGeoComboboxOptions,
   resolveGeoComboboxLabel,
 } from "@/lib/system-geo-combobox";
+import type { WebsiteGeoResource } from "@/lib/website-geo-form";
 import {
   createSupplierBank,
   createSupplierContact,
@@ -177,14 +181,6 @@ function infoFromApi(row?: SupplierInformationInput): InfoState {
 
 function copyInfo(src: InfoState): InfoState {
   return { ...src };
-}
-
-function comboboxPinned(
-  value: string,
-  label: string
-): { value: string; label: string }[] {
-  if (!value) return [];
-  return [{ value, label: label.trim() || value }];
 }
 
 const TAX_OTP_GROUPS = [1, 4, 5, 2, 1] as const;
@@ -327,6 +323,29 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
 
   const canSave = isEdit ? perms.update : perms.create;
   const formReadOnly = isEdit && !canSave;
+
+  const supplierGeoLoaders = useMemo(
+    () => ({
+      loadOptions: (
+        resource: WebsiteGeoResource,
+        ctx: {
+          search: string;
+          signal: AbortSignal;
+          systemProvinceId?: number;
+          systemDistrictId?: number;
+        }
+      ) =>
+        loadGeoComboboxOptions(resource as GeoResource, locale, {
+          search: ctx.search,
+          signal: ctx.signal,
+          systemProvinceId: ctx.systemProvinceId,
+          systemDistrictId: ctx.systemDistrictId,
+        }),
+      resolveLabel: (resource: WebsiteGeoResource, value: string) =>
+        resolveGeoComboboxLabel(resource as GeoResource, locale, value),
+    }),
+    [locale]
+  );
 
   const loadDetail = useCallback(async (options?: { keepUi?: boolean }) => {
     if (!isEdit || supplierId == null) return;
@@ -774,106 +793,14 @@ export function SupplierUserForm({ supplierId }: SupplierUserFormProps) {
               onChange={(e) => set({ address: e.target.value })}
             />
           </Field>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:col-span-2 lg:grid-cols-4">
-            <LabeledRemoteCombobox
-              fieldId={`${prefix}-province`}
-              labelText={tCol("province")}
-              value={block.website_province_id}
-              inputClassName="w-full"
-              emptyLabel={tForm("combobox.noResults")}
-              placeholder={tForm("placeholder.select", {
-                label: tCol("province"),
-              })}
-              disabled={disabled}
-              pinnedItems={comboboxPinned(
-                block.website_province_id,
-                block.website_province_name
-              )}
-              onValueChange={(v) =>
-                set({
-                  website_province_id: v,
-                  website_district_id: "",
-                  website_sub_district_id: "",
-                })
-              }
-              onLoadOptions={({ search, signal }) =>
-                loadGeoComboboxOptions("provinces", locale, { search, signal })
-              }
-              resolveSelectedLabel={
-                formReadOnly
-                  ? undefined
-                  : (value) =>
-                      resolveGeoComboboxLabel("provinces", locale, value)
-              }
-            />
-            <LabeledRemoteCombobox
-              fieldId={`${prefix}-district`}
-              labelText={tCol("district")}
-              value={block.website_district_id}
-              inputClassName="w-full"
-              emptyLabel={tForm("combobox.noResults")}
-              placeholder={tForm("placeholder.select", {
-                label: tCol("district"),
-              })}
-              disabled={disabled || !block.website_province_id}
-              pinnedItems={comboboxPinned(
-                block.website_district_id,
-                block.website_district_name
-              )}
-              onValueChange={(v) =>
-                set({ website_district_id: v, website_sub_district_id: "" })
-              }
-              onLoadOptions={({ search, signal }) =>
-                loadGeoComboboxOptions("districts", locale, {
-                  search,
-                  signal,
-                  systemProvinceId: Number(block.website_province_id),
-                })
-              }
-              resolveSelectedLabel={
-                formReadOnly
-                  ? undefined
-                  : (value) =>
-                      resolveGeoComboboxLabel("districts", locale, value)
-              }
-            />
-            <LabeledRemoteCombobox
-              fieldId={`${prefix}-sub-district`}
-              labelText={tCol("subDistrict")}
-              value={block.website_sub_district_id}
-              inputClassName="w-full"
-              emptyLabel={tForm("combobox.noResults")}
-              placeholder={tForm("placeholder.select", {
-                label: tCol("subDistrict"),
-              })}
-              disabled={disabled || !block.website_district_id}
-              pinnedItems={comboboxPinned(
-                block.website_sub_district_id,
-                block.website_sub_district_name
-              )}
-              onValueChange={(v) => set({ website_sub_district_id: v })}
-              onLoadOptions={({ search, signal }) =>
-                loadGeoComboboxOptions("sub-districts", locale, {
-                  search,
-                  signal,
-                  systemDistrictId: Number(block.website_district_id),
-                })
-              }
-              resolveSelectedLabel={
-                formReadOnly
-                  ? undefined
-                  : (value) =>
-                      resolveGeoComboboxLabel("sub-districts", locale, value)
-              }
-            />
-            <FormField
-              id={`${prefix}-postcode`}
-              labelKey="col.postcode"
-              value={block.postcode}
-              onChange={(v) => set({ postcode: v })}
-              readOnly={disabled}
-            />
-          </div>
+          <WebsiteGeoFields
+            prefix={prefix}
+            value={block}
+            onChange={(patch) => set(patch)}
+            disabled={disabled}
+            readOnly={formReadOnly}
+            loaders={supplierGeoLoaders}
+          />
           {showContactFields ? (
             <>
               <FormField

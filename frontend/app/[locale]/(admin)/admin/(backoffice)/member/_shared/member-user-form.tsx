@@ -64,8 +64,10 @@ import {
 import {
   loadMemberUserAdminOptions,
   loadMemberUserBusinessFilterOptions,
+  loadMemberUserGeoComboboxOptions,
   loadMemberUserPrefixOptions,
   loadMemberUserTierOptions,
+  resolveMemberUserGeoComboboxLabel,
   fetchMemberUserBusinessRelations,
   fetchMemberUserSettingRelationById,
 } from "@/lib/member-user-filters-combobox";
@@ -78,10 +80,14 @@ import {
   resolveSettingRelationIds,
   type MemberBusinessRelationRow,
 } from "@/lib/member-user-relations";
+import { WebsiteGeoFields } from "@/components/molecules/website-geo-fields";
+import { comboboxPinned } from "@/lib/combobox-pinned";
+import type { GeoResource } from "@/lib/system-geo-api";
 import {
-  loadMemberUserGeoComboboxOptions,
-  resolveMemberUserGeoComboboxLabel,
-} from "@/lib/member-user-geo-combobox";
+  emptyWebsiteGeo,
+  type WebsiteGeoFormValue,
+  type WebsiteGeoResource,
+} from "@/lib/website-geo-form";
 import {
   fetchSystemFile,
   resolveSettingLogoFileId,
@@ -99,15 +105,7 @@ const TAX_OTP_GROUPS = [1, 4, 5, 2, 1] as const;
 
 type MemberFormTab = "info" | "orders" | "discounts" | "files";
 
-type GeoState = {
-  website_province_id: string;
-  website_province_name: string;
-  website_district_id: string;
-  website_district_name: string;
-  website_sub_district_id: string;
-  website_sub_district_name: string;
-  postcode: string;
-};
+type GeoState = WebsiteGeoFormValue;
 
 type GeneralState = GeoState & {
   memberType: "person" | "company";
@@ -139,15 +137,7 @@ type DocumentState = GeoState & {
   email: string;
 };
 
-const emptyGeo = (): GeoState => ({
-  website_province_id: "",
-  website_province_name: "",
-  website_district_id: "",
-  website_district_name: "",
-  website_sub_district_id: "",
-  website_sub_district_name: "",
-  postcode: "",
-});
+const emptyGeo = emptyWebsiteGeo;
 
 const emptyGeneral = (): GeneralState => ({
   memberType: "person",
@@ -181,13 +171,6 @@ const emptyDocument = (): DocumentState => ({
   email: "",
   ...emptyGeo(),
 });
-
-function comboboxPinned(value: string, label: string) {
-  if (!value) return [];
-  const trimmed = label.trim();
-  if (!trimmed) return [];
-  return [{ value, label: trimmed }];
-}
 
 function taxDigitsOnly(value: string): string {
   return value.replace(/\D/g, "").slice(0, 13);
@@ -808,133 +791,47 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     }
   };
 
+  const memberGeoLoaders = useMemo(
+    () => ({
+      loadOptions: (
+        resource: WebsiteGeoResource,
+        ctx: {
+          search: string;
+          signal: AbortSignal;
+          systemProvinceId?: number;
+          systemDistrictId?: number;
+        }
+      ) =>
+        loadMemberUserGeoComboboxOptions(resource as GeoResource, locale, {
+          search: ctx.search,
+          signal: ctx.signal,
+          systemProvinceId: ctx.systemProvinceId,
+          systemDistrictId: ctx.systemDistrictId,
+        }),
+      resolveLabel: (resource: WebsiteGeoResource, value: string) =>
+        resolveMemberUserGeoComboboxLabel(
+          resource as GeoResource,
+          locale,
+          value
+        ),
+    }),
+    [locale]
+  );
+
   const renderGeoFields = (
     prefix: string,
     block: GeoState,
     setBlock: (patch: Partial<GeoState>) => void,
     disabled: boolean
   ) => (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:col-span-2 lg:grid-cols-4">
-      <LabeledRemoteCombobox
-        fieldId={`${prefix}-province`}
-        labelText={tCol("province")}
-        value={block.website_province_id}
-        inputClassName="w-full"
-        emptyLabel={tForm("combobox.noResults")}
-        placeholder={tForm("placeholder.select", { label: tCol("province") })}
-        disabled={disabled}
-        pinnedItems={comboboxPinned(
-          block.website_province_id,
-          block.website_province_name
-        )}
-        onValueChange={(v) =>
-          setBlock({
-            website_province_id: v,
-            website_province_name: v ? block.website_province_name : "",
-            website_district_id: "",
-            website_sub_district_id: "",
-            website_district_name: "",
-            website_sub_district_name: "",
-          })
-        }
-        autoComplete="off"
-        onLoadOptions={({ search, signal }) =>
-          loadMemberUserGeoComboboxOptions("provinces", locale, {
-            search,
-            signal,
-          })
-        }
-        resolveSelectedLabel={
-          formReadOnly
-            ? undefined
-            : (value) =>
-                resolveMemberUserGeoComboboxLabel("provinces", locale, value)
-        }
-      />
-      <LabeledRemoteCombobox
-        fieldId={`${prefix}-district`}
-        labelText={tCol("district")}
-        value={block.website_district_id}
-        inputClassName="w-full"
-        emptyLabel={tForm("combobox.noResults")}
-        placeholder={tForm("placeholder.select", { label: tCol("district") })}
-        disabled={disabled || !block.website_province_id}
-        pinnedItems={comboboxPinned(
-          block.website_district_id,
-          block.website_district_name
-        )}
-        catalogKey={block.website_province_id}
-        autoComplete="off"
-        onValueChange={(v) =>
-          setBlock({
-            website_district_id: v,
-            website_sub_district_id: "",
-            website_district_name: v ? block.website_district_name : "",
-            website_sub_district_name: "",
-          })
-        }
-        onLoadOptions={({ search, signal }) =>
-          loadMemberUserGeoComboboxOptions("districts", locale, {
-            search,
-            signal,
-            systemProvinceId: Number(block.website_province_id),
-          })
-        }
-        resolveSelectedLabel={
-          formReadOnly
-            ? undefined
-            : (value) =>
-                resolveMemberUserGeoComboboxLabel("districts", locale, value)
-        }
-      />
-      <LabeledRemoteCombobox
-        fieldId={`${prefix}-sub-district`}
-        labelText={tCol("subDistrict")}
-        value={block.website_sub_district_id}
-        inputClassName="w-full"
-        emptyLabel={tForm("combobox.noResults")}
-        placeholder={tForm("placeholder.select", {
-          label: tCol("subDistrict"),
-        })}
-        disabled={disabled || !block.website_district_id}
-        pinnedItems={comboboxPinned(
-          block.website_sub_district_id,
-          block.website_sub_district_name
-        )}
-        catalogKey={`${block.website_province_id}:${block.website_district_id}`}
-        autoComplete="off"
-        onValueChange={(v) =>
-          setBlock({
-            website_sub_district_id: v,
-            website_sub_district_name: v ? block.website_sub_district_name : "",
-          })
-        }
-        onLoadOptions={({ search, signal }) =>
-          loadMemberUserGeoComboboxOptions("sub-districts", locale, {
-            search,
-            signal,
-            systemDistrictId: Number(block.website_district_id),
-          })
-        }
-        resolveSelectedLabel={
-          formReadOnly
-            ? undefined
-            : (value) =>
-                resolveMemberUserGeoComboboxLabel(
-                  "sub-districts",
-                  locale,
-                  value
-                )
-        }
-      />
-      <FormField
-        id={`${prefix}-postcode`}
-        labelKey="col.postcode"
-        value={block.postcode}
-        onChange={(v) => setBlock({ postcode: v })}
-        readOnly={disabled}
-      />
-    </div>
+    <WebsiteGeoFields
+      prefix={prefix}
+      value={block}
+      onChange={setBlock}
+      disabled={disabled}
+      readOnly={formReadOnly}
+      loaders={memberGeoLoaders}
+    />
   );
 
   const renderGeneralBlock = (
