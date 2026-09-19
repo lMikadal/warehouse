@@ -50,72 +50,112 @@ export function CrudTabbedFormPageSkeleton({
       ) : null}
 
       {showEditProfileHeader ? (
-        <FormCard>
-          <FormCardContent className="grid gap-4 p-4 md:grid-cols-[auto_minmax(0,1fr)]">
-            <Skeleton className="size-24 shrink-0 rounded-md" />
-            <div className="min-w-0 space-y-3">
-              <Skeleton className="ml-auto h-6 w-20 rounded-full" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-7 w-48 max-w-full" />
-              <Skeleton className="h-4 w-56 max-w-full" />
-              <Skeleton className="h-4 w-full max-w-md" />
-            </div>
-          </FormCardContent>
-        </FormCard>
-      ) : null}
-
-      <div className="flex gap-6 border-b border-border pb-1">
-        <Skeleton className="h-5 w-20" />
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-5 w-28" />
-      </div>
-
-      <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-4">
-          {Array.from({ length: pricingVariantStrips }, (_, i) => (
-            <div
-              key={`variant-${i}`}
-              className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-3"
-            >
-              <Skeleton className="size-11 shrink-0 rounded-md" />
-              <Skeleton className="h-10 w-24" />
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-10 w-16" />
-              <Skeleton className="h-10 w-28" />
-              <Skeleton className="ml-auto size-9 rounded-md" />
-            </div>
-          ))}
-          {Array.from({ length: leftCardCount }, (_, i) => (
-            <FormCard key={i}>
-              <FormCardHeader>
-                <Skeleton className="h-5 w-40" />
-              </FormCardHeader>
-              <FormCardContent className="grid gap-4 md:grid-cols-2">
-                <Skeleton className="h-10 w-full md:col-span-2" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full md:col-span-2" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+        <div className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-4 lg:col-start-1">
+            <FormCard>
+              <FormCardContent className="grid gap-4 p-4 md:grid-cols-[auto_minmax(0,1fr)]">
+                <Skeleton className="size-24 shrink-0 rounded-md" />
+                <div className="min-w-0 space-y-3">
+                  <Skeleton className="ml-auto h-6 w-20 rounded-full" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-48 max-w-full" />
+                  <Skeleton className="h-4 w-56 max-w-full" />
+                  <Skeleton className="h-4 w-full max-w-md" />
+                </div>
               </FormCardContent>
             </FormCard>
-          ))}
+            <div className="flex gap-6 border-b border-border pb-1">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-28" />
+            </div>
+            {Array.from({ length: leftCardCount }, (_, i) => (
+              <FormCard key={i}>
+                <FormCardHeader>
+                  <Skeleton className="h-5 w-40" />
+                </FormCardHeader>
+                <FormCardContent className="grid gap-4 md:grid-cols-2">
+                  <Skeleton className="h-10 w-full md:col-span-2" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full md:col-span-2" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </FormCardContent>
+              </FormCard>
+            ))}
+          </div>
+          <div className="flex min-w-0 w-full flex-col gap-4 lg:col-start-2 lg:self-start">
+            {Array.from({ length: rightSidebarCards }, (_, i) => (
+              <FormCard key={`aside-${i}`} className="h-fit">
+                <FormCardHeader>
+                  <Skeleton className="h-5 w-32" />
+                </FormCardHeader>
+                <FormCardContent className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                </FormCardContent>
+              </FormCard>
+            ))}
+          </div>
         </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          {Array.from({ length: rightSidebarCards }, (_, i) => (
-            <FormCard key={`aside-${i}`} className="h-fit">
-              <FormCardHeader>
-                <Skeleton className="h-5 w-32" />
-              </FormCardHeader>
-              <FormCardContent className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-3/4" />
-              </FormCardContent>
-            </FormCard>
-          ))}
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex gap-6 border-b border-border pb-1">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-28" />
+          </div>
+
+          <div className="mt-2 grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] lg:items-start">
+            <div className="flex min-w-0 flex-col gap-4 lg:col-start-1">
+              {Array.from({ length: pricingVariantStrips }, (_, i) => (
+                <div
+                  key={`variant-${i}`}
+                  className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-3"
+                >
+                  <Skeleton className="size-11 shrink-0 rounded-md" />
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-32" />
+                  <Skeleton className="h-10 w-16" />
+                  <Skeleton className="h-10 w-28" />
+                  <Skeleton className="ml-auto size-9 rounded-md" />
+                </div>
+              ))}
+              {Array.from({ length: leftCardCount }, (_, i) => (
+                <FormCard key={i}>
+                  <FormCardHeader>
+                    <Skeleton className="h-5 w-40" />
+                  </FormCardHeader>
+                  <FormCardContent className="grid gap-4 md:grid-cols-2">
+                    <Skeleton className="h-10 w-full md:col-span-2" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full md:col-span-2" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </FormCardContent>
+                </FormCard>
+              ))}
+            </div>
+            <div className="flex min-w-0 w-full flex-col gap-4 lg:col-start-2 lg:self-start">
+              {Array.from({ length: rightSidebarCards }, (_, i) => (
+                <FormCard key={`aside-${i}`} className="h-fit">
+                  <FormCardHeader>
+                    <Skeleton className="h-5 w-32" />
+                  </FormCardHeader>
+                  <FormCardContent className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-3/4" />
+                  </FormCardContent>
+                </FormCard>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {showFixedFooter ? (
         <div

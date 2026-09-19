@@ -1120,7 +1120,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
   };
 
   const sidebarPanel = (
-    <aside className="min-w-0 flex flex-col gap-4">
+    <aside className="flex min-w-0 w-full flex-col gap-4 lg:col-start-2 lg:self-start">
       <FormCard>
         <FormCardContent className="flex flex-col gap-4">
           <StatusSwitchField
@@ -1530,61 +1530,61 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
     <>
       <div className="flex flex-col gap-4 pb-20">
         {!isEdit ? (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-start">
-            <div className="flex min-w-0 flex-col gap-4">
+          <div className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] lg:items-start">
+            <div className="flex min-w-0 flex-col gap-4 lg:col-start-1">
               {memberInfoCard}
               {infoBlocks}
             </div>
             {sidebarPanel}
           </div>
         ) : (
-          <>
-            {editId != null ? (
-              <MemberUserFormEditHeader
-                userId={editId}
-                sku={sku}
-                displayName={general.name}
-                tel={general.tel}
-                email={general.email}
-                createdAt={createdAt}
-                memberTierName={memberTierName}
-                isActive={isActive}
-                canToggleStatus={perms.update}
-                onIsActiveChange={setIsActive}
-                avatarItems={avatarItems}
-                onAvatarChange={setAvatarItems}
-                avatarDisabled={formReadOnly || saving}
-                staffIds={ownerAdminUserIds}
-                staffLabels={staffLabels}
-                onStaffIdsChange={setOwnerAdminUserIds}
-                staffDisabled={formReadOnly}
-              />
-            ) : null}
-            <Tabs
-              value={activeTab}
-              onValueChange={(v) => setActiveTab(v as MemberFormTab)}
-              className="w-full"
-            >
-              <TabsList variant="line">
-                <TabsTrigger value="info" className="gap-1.5">
-                  <User className="size-4 shrink-0" aria-hidden />
-                  {t("tabInfo")}
-                </TabsTrigger>
-                <TabsTrigger value="orders" className="gap-1.5">
-                  <ClipboardList className="size-4 shrink-0" aria-hidden />
-                  {t("tabOrders")}
-                </TabsTrigger>
-                <TabsTrigger value="discounts" className="gap-1.5">
-                  <Star className="size-4 shrink-0" aria-hidden />
-                  {t("tabDiscounts")}
-                </TabsTrigger>
-                <TabsTrigger value="files" className="gap-1.5">
-                  <FileText className="size-4 shrink-0" aria-hidden />
-                  {t("tabFiles")}
-                </TabsTrigger>
-              </TabsList>
-              <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-start">
-                <div className="min-w-0 flex flex-col gap-4">
+          <div className="grid w-full min-w-0 gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] lg:items-start">
+            <div className="flex min-w-0 flex-col gap-4 lg:col-start-1">
+              {editId != null ? (
+                <MemberUserFormEditHeader
+                  userId={editId}
+                  sku={sku}
+                  displayName={general.name}
+                  tel={general.tel}
+                  email={general.email}
+                  createdAt={createdAt}
+                  memberTierName={memberTierName}
+                  isActive={isActive}
+                  canToggleStatus={perms.update}
+                  onIsActiveChange={setIsActive}
+                  avatarItems={avatarItems}
+                  onAvatarChange={setAvatarItems}
+                  avatarDisabled={formReadOnly || saving}
+                  staffIds={ownerAdminUserIds}
+                  staffLabels={staffLabels}
+                  onStaffIdsChange={setOwnerAdminUserIds}
+                  staffDisabled={formReadOnly}
+                />
+              ) : null}
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as MemberFormTab)}
+                className="w-full"
+              >
+                <TabsList variant="line">
+                  <TabsTrigger value="info" className="gap-1.5">
+                    <User className="size-4 shrink-0" aria-hidden />
+                    {t("tabInfo")}
+                  </TabsTrigger>
+                  <TabsTrigger value="orders" className="gap-1.5">
+                    <ClipboardList className="size-4 shrink-0" aria-hidden />
+                    {t("tabOrders")}
+                  </TabsTrigger>
+                  <TabsTrigger value="discounts" className="gap-1.5">
+                    <Star className="size-4 shrink-0" aria-hidden />
+                    {t("tabDiscounts")}
+                  </TabsTrigger>
+                  <TabsTrigger value="files" className="gap-1.5">
+                    <FileText className="size-4 shrink-0" aria-hidden />
+                    {t("tabFiles")}
+                  </TabsTrigger>
+                </TabsList>
+                <div className="mt-4 min-w-0 flex flex-col gap-4">
                   <TabsContent value="info" className="mt-0 flex flex-col gap-4">
                     {memberInfoCard}
                     {infoBlocks}
@@ -1613,16 +1613,16 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
                     ) : null}
                   </TabsContent>
                 </div>
-                <MemberUserFormEditAside
-                  creditLimit={financial.credit_limit}
-                  note={note}
-                  onNoteChange={setNote}
-                  noteReadOnly={formReadOnly}
-                  histories={histories}
-                />
-              </div>
-            </Tabs>
-          </>
+              </Tabs>
+            </div>
+            <MemberUserFormEditAside
+              creditLimit={financial.credit_limit}
+              note={note}
+              onNoteChange={setNote}
+              noteReadOnly={formReadOnly}
+              histories={histories}
+            />
+          </div>
         )}
       </div>
 

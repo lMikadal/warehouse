@@ -145,14 +145,14 @@ export function MemberUserFormEditHeader({
               {canToggleStatus ? (
                 <button
                   type="button"
-                  className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={togglingStatus}
                   onClick={() => void onStatusClick()}
                 >
-                  <StatusBadge active={isActive} />
+                  <StatusBadge className="cursor-pointer" active={isActive} />
                 </button>
               ) : (
-                <StatusBadge active={isActive} />
+                <StatusBadge className="cursor-pointer" active={isActive} />
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2 pr-28">

@@ -91,9 +91,10 @@ export function MemberUserFormEditAside({
   };
 
   return (
-    <>
-      <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4">
-        <FormCard>
+    <aside
+      className="flex min-w-0 w-full flex-col gap-4 lg:col-start-2 lg:max-h-[calc(100svh-3.5rem-1rem-4.5rem)] lg:self-start lg:overflow-y-auto lg:overscroll-y-contain lg:sticky lg:top-[calc(3.5rem+1rem)]"
+    >
+      <FormCard className="shrink-0">
           <FormCardHeader>
             <FormCardTitle>{t("currentBalance")}</FormCardTitle>
           </FormCardHeader>
@@ -129,9 +130,9 @@ export function MemberUserFormEditAside({
               </div>
             </div>
           </FormCardContent>
-        </FormCard>
+      </FormCard>
 
-        <FormCard>
+      <FormCard className="shrink-0">
           <FormCardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <FormCardTitle>{t("recentActivity")}</FormCardTitle>
             {histories.length > 0 ? (
@@ -164,9 +165,9 @@ export function MemberUserFormEditAside({
               </ul>
             )}
           </FormCardContent>
-        </FormCard>
+      </FormCard>
 
-        <FormCard>
+      <FormCard className="shrink-0">
           <FormCardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <FormCardTitle>{tCol("note")}</FormCardTitle>
             {!noteReadOnly ? (
@@ -187,8 +188,7 @@ export function MemberUserFormEditAside({
               {note.trim() || "—"}
             </p>
           </FormCardContent>
-        </FormCard>
-      </aside>
+      </FormCard>
 
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent className="max-h-[min(32rem,90vh)] max-w-lg overflow-y-auto">
@@ -250,6 +250,6 @@ export function MemberUserFormEditAside({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </aside>
   );
 }
