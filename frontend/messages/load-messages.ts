@@ -10,6 +10,7 @@ import enPageAuth from "./en/page-auth.json";
 import enPageMemberSetting from "./en/page-member-setting.json";
 import enPageMemberTier from "./en/page-member-tier.json";
 import enPageMemberUser from "./en/page-member-user.json";
+import enPageOrderCompare from "./en/page-order-compare.json";
 import enPageSetting from "./en/page-setting.json";
 import enPageLocation from "./en/page-location.json";
 import enPageProduct from "./en/page-product.json";
@@ -34,6 +35,7 @@ import thPageAuth from "./th/page-auth.json";
 import thPageMemberSetting from "./th/page-member-setting.json";
 import thPageMemberTier from "./th/page-member-tier.json";
 import thPageMemberUser from "./th/page-member-user.json";
+import thPageOrderCompare from "./th/page-order-compare.json";
 import thPageSetting from "./th/page-setting.json";
 import thPageLocation from "./th/page-location.json";
 import thPageProduct from "./th/page-product.json";
@@ -87,6 +89,7 @@ const FRAGMENTS: MessageTree[] = [
   thPageMemberSetting,
   thPageMemberTier,
   thPageMemberUser,
+  thPageOrderCompare,
   thPageLocation,
   thPageWarehouse,
   thPageProduct,
@@ -114,6 +117,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageMemberSetting,
   enPageMemberTier,
   enPageMemberUser,
+  enPageOrderCompare,
   enPageLocation,
   enPageWarehouse,
   enPageProduct,

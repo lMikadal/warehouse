@@ -43,6 +43,7 @@ var CatalogPermPages = []PermPage{
 	{Module: "member", Type: "member_setting_business", Resource: "/api/v1/member/settings/businesses"},
 	{Module: "member", Type: "member_tier", Resource: "/api/v1/member/tiers"},
 	{Module: "member", Type: "member_user", Resource: "/api/v1/member/users"},
+	{Module: "order", Type: "order_compare", Resource: "/api/v1/order/compares"},
 }
 
 func routePermPages() []PermPage {

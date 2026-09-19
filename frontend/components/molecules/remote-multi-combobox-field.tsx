@@ -95,6 +95,9 @@ export function RemoteMultiComboboxField({
         items={items}
         value={null}
         autoComplete="none"
+        itemToStringLabel={(itemValue) =>
+          items.find((o) => o.value === itemValue)?.label ?? String(itemValue)
+        }
         onInputValueChange={(next, details) => {
           if (disabled) return;
           onInputValueChange(next, details);

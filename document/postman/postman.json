@@ -1685,6 +1685,66 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Order",
+      "item": [
+        {
+          "name": "Compare (special price)",
+          "item": [
+            {
+              "name": "Tree (brands + categories)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/compares/tree?page=1&limit=10",
+                "description": "order.order_compare.view — paginated brand rows with nested category tree and is_defined flags"
+              }
+            },
+            {
+              "name": "Rules for scope",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/compares/rules?brand_id=1&category_id=1",
+                "description": "order.order_compare.view — omit category_id for brand-level scope; all active member_setting_relation rows with discounts"
+              }
+            },
+            {
+              "name": "Save rules",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"brand_id\": 1,\n  \"category_id\": null,\n  \"rules\": [\n    { \"member_setting_relation_id\": 1, \"discount\": 5, \"discount_type\": \"percent\" }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/compares/rules",
+                "description": "order.order_compare.update — discount 0 removes row"
+              }
+            },
+            {
+              "name": "Export rules",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/compares/export",
+                "description": "order.order_compare.view (export perm for UI gating)"
+              }
+            },
+            {
+              "name": "Import rules",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": [\n    {\n      \"brand_id\": 1,\n      \"category_id\": null,\n      \"member_setting_relation_id\": 1,\n      \"discount\": 5,\n      \"discount_type\": \"percent\"\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/compares/import",
+                "description": "order.order_compare.create (import perm for UI gating)"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

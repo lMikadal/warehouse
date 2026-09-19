@@ -1,0 +1,30 @@
+{
+  "page": {
+    "orderCompare": {
+      "title": "ตั้งราคาพิเศษ (ส่วนลด)",
+      "description": "จัดการและปรับส่วนลดราคาตามหมวดหมู่และแบรนด์"
+    }
+  },
+  "orderCompare": {
+    "searchPlaceholder": "ค้นหาแบรนด์ / หมวดหมู่",
+    "colBrandCategory": "แบรนด์ / หมวดหมู่",
+    "colSetDiscount": "กำหนดส่วนลด",
+    "colStatus": "สถานะ",
+    "selectBusinessGroup": "เลือกกลุ่มธุรกิจ",
+    "statusDefined": "กำหนดแล้ว",
+    "statusUndefined": "ยังไม่ได้กำหนด",
+    "categoryCount": "{count} หมวดหมู่",
+    "dialogTitle": "กำหนดส่วนลดหมวดหมู่ เฉพาะกลุ่มธุรกิจ",
+    "colBusiness": "กลุ่มธุรกิจ",
+    "colGroup": "ประเภท",
+    "colCredit": "รูปแบบชำระ",
+    "colDiscountPercent": "ส่วนลด (%)",
+    "applyAll": "อัพทั้งชุด",
+    "applyAllPlaceholder": "ส่วนลด (%)",
+    "autoSaved": "บันทึกอัตโนมัติเมื่อ {time}",
+    "importSuccess": "นำเข้าข้อมูลสำเร็จ",
+    "exportSuccess": "ส่งออกข้อมูลสำเร็จ",
+    "saveSuccess": "บันทึกสำเร็จ",
+    "importInvalid": "ไฟล์นำเข้าไม่ถูกต้อง"
+  }
+}

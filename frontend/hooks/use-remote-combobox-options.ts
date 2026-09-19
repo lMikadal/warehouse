@@ -84,7 +84,7 @@ export function useRemoteComboboxOptions({
         if (!cancelled) setRemoteItems(rows);
       } catch {
         if (cancelled || controller.signal.aborted) return;
-        setRemoteItems([]);
+        setRemoteItems((prev) => (prev.length === 0 ? prev : []));
       }
     })();
     return () => {

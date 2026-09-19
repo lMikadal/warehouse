@@ -93,4 +93,24 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "member.member_user.view" {
 		t.Fatalf("member user filters: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/compares/tree")
+	if !ok || code != "order.order_compare.view" {
+		t.Fatalf("order compare tree: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/compares/rules")
+	if !ok || code != "order.order_compare.view" {
+		t.Fatalf("order compare rules: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("PUT", "/api/v1/order/compares/rules")
+	if !ok || code != "order.order_compare.update" {
+		t.Fatalf("order compare put rules: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/compares/export")
+	if !ok || code != "order.order_compare.view" {
+		t.Fatalf("order compare export: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("POST", "/api/v1/order/compares/import")
+	if !ok || code != "order.order_compare.create" {
+		t.Fatalf("order compare import: got %q %v", code, ok)
+	}
 }

@@ -70,7 +70,7 @@ export function useRemoteMultiComboboxOptions({
         if (!cancelled) setRemoteItems(rows);
       } catch {
         if (cancelled || controller.signal.aborted) return;
-        setRemoteItems([]);
+        setRemoteItems((prev) => (prev.length === 0 ? prev : []));
       }
     })();
     return () => {
@@ -85,9 +85,18 @@ export function useRemoteMultiComboboxOptions({
     return mergeOptions(withPinned, remoteItems);
   }, [enabled, pinnedItems, extraPinned, remoteItems]);
 
+  const itemValuesKey = useMemo(
+    () =>
+      items
+        .map((o) => o.value)
+        .sort()
+        .join(","),
+    [items]
+  );
+
   useEffect(() => {
     if (!resolveSelectedLabels || values.length === 0) return;
-    const inList = new Set(items.map((o) => o.value));
+    const inList = new Set(itemValuesKey ? itemValuesKey.split(",") : []);
     const missing = values.filter((v) => !inList.has(v));
     if (missing.length === 0) return;
 
@@ -108,7 +117,7 @@ export function useRemoteMultiComboboxOptions({
     return () => {
       cancelled = true;
     };
-  }, [values, items, resolveSelectedLabels]);
+  }, [values, itemValuesKey, resolveSelectedLabels]);
 
   const labelByValue = useMemo(() => {
     const map = new Map<string, string>();

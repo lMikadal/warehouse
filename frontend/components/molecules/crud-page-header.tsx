@@ -25,7 +25,7 @@ export function CrudPageHeader({
       <div className="min-w-0 space-y-1">
         <h1 className="text-xl font-bold text-foreground">{title}</h1>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <div className="text-sm text-muted-foreground">{description}</div>
         ) : null}
       </div>
       {actions ? (

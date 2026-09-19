@@ -46,7 +46,7 @@ type CreateInput struct {
 type Patch struct {
 	IsActive *bool
 	Names    map[string]string
-	ParentID *optionalInt64
+	ParentID optionalInt64
 	TypeCar  *string
 	BrandIDs []int64
 	SetBrand bool
