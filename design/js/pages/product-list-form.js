@@ -104,6 +104,22 @@
     return Number.isFinite(n) && n > 0 ? n : null;
   }
 
+  function applyFormDeepLinkFromUrl() {
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get("tab");
+    if (tab === "pricing" || tab === "history" || tab === "data") {
+      activeTab = tab;
+    }
+    var itemRaw = params.get("item");
+    if (!itemRaw || !draft || !draft.items) return;
+    var itemId = Number(itemRaw);
+    if (!Number.isFinite(itemId) || itemId <= 0) return;
+    activeTab = "pricing";
+    draft.items.forEach(function (it) {
+      if (it.id === itemId) it.open = true;
+    });
+  }
+
   function attrName(attrId, loc) {
     loc = loc || locale();
     var rows = global.store.getAll("product_attribute_language");
@@ -6380,6 +6396,7 @@
 
     if (isEdit) {
       draft = loadDraftFromStore(listId);
+      if (draft) applyFormDeepLinkFromUrl();
       if (!draft) {
         global.layout.mount({
           pageTitle: t("page.productListForm"),

@@ -504,6 +504,8 @@
         (can("update")
           ? '<button type="button" class="btn btn--icon product-list__edit" data-list-id="' +
             escapeAttr(row.product_list_id) +
+            '" data-item-id="' +
+            escapeAttr(row.id) +
             '" aria-label="' +
             escapeAttr(t("crud.edit")) +
             '"><img src="../assets/icons/pencil.svg" alt="" width="16" height="16" /></button>'
@@ -817,7 +819,14 @@
     });
     rootEl.querySelectorAll(".product-list__edit").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        location.href = "product-list-form.html?product_list_id=" + encodeURIComponent(btn.getAttribute("data-list-id"));
+        var listId = btn.getAttribute("data-list-id");
+        var itemId = btn.getAttribute("data-item-id");
+        var q =
+          "product_list_id=" +
+          encodeURIComponent(listId) +
+          "&tab=pricing" +
+          (itemId ? "&item=" + encodeURIComponent(itemId) : "");
+        location.href = "product-list-form.html?" + q;
       });
     });
     var imp = rootEl.querySelector("#product-list-import");

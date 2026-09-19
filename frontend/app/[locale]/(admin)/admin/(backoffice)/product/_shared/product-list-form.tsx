@@ -159,7 +159,19 @@ function ProductCodeListEditor({
   );
 }
 
-export function ProductListForm({ listId }: { listId?: number }) {
+export type ProductListFormTab = "data" | "pricing" | "history";
+
+type ProductListFormProps = {
+  listId?: number;
+  initialTab?: ProductListFormTab;
+  focusItemId?: number;
+};
+
+export function ProductListForm({
+  listId,
+  initialTab,
+  focusItemId,
+}: ProductListFormProps) {
   const isEdit = listId != null && listId > 0;
   const locale = useLocale() as DisplayLocale;
   const router = useRouter();
@@ -176,7 +188,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
   const { open: sidebarOpen, isMobile } = useSidebar();
   const footerInsetLeft = !isMobile && sidebarOpen;
 
-  const [tab, setTab] = useState("data");
+  const [tab, setTab] = useState<ProductListFormTab>(initialTab ?? "data");
   const [draft, setDraft] = useState<ProductListAggregate>(emptyDraft);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -192,6 +204,26 @@ export function ProductListForm({ listId }: { listId?: number }) {
   saleChannelsRef.current = saleChannels;
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [categoryBreadcrumb, setCategoryBreadcrumb] = useState("");
+  const deepLinkAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (deepLinkAppliedRef.current || loading) return;
+    if (!focusItemId && !initialTab) return;
+
+    deepLinkAppliedRef.current = true;
+
+    if (focusItemId) {
+      const index = draft.items.findIndex((it) => it.id === focusItemId);
+      if (index >= 0) {
+        setTab("pricing");
+        setExpandVariantKey(variantItemKey(draft.items[index]!, index));
+        return;
+      }
+    }
+    if (initialTab) {
+      setTab(initialTab);
+    }
+  }, [loading, draft.items, focusItemId, initialTab]);
 
   useEffect(() => {
     void fetchProductListFilters(locale, "sale_channels", {
@@ -441,7 +473,11 @@ export function ProductListForm({ listId }: { listId?: number }) {
     <div className="flex flex-col gap-4 pb-20">
       <CrudPageHeader title={tPage("title")} description={tPage("desc")} />
 
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as ProductListFormTab)}
+        className="w-full"
+      >
         <TabsList variant="line">
           <TabsTrigger value="data">{tForm("tabData")}</TabsTrigger>
           <TabsTrigger value="pricing">{tForm("tabPricing")}</TabsTrigger>

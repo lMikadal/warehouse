@@ -212,7 +212,9 @@ export function ProductListTable({
 
   const onRowAction = (row: ProductItemBrowseRow, action: TableIconActionKey) => {
     if (tableRowDetailAction(action)) {
-      router.push(`/admin/product/list/${row.product_list_id}`);
+      router.push(
+        `/admin/product/list/${row.product_list_id}?tab=pricing&item=${row.id}`
+      );
       return;
     }
     if (action === "delete") onDelete(row);
