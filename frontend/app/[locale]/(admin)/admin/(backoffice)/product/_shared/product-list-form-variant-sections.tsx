@@ -107,15 +107,18 @@ function SaleChannelLogoPlaceholder() {
 function SaleChannelLogoThumbLoaded({
   fileId,
   locale,
+  skipFetch = false,
 }: {
   fileId: number;
   locale: string;
+  skipFetch?: boolean;
 }) {
   const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
+  const [loading, setLoading] = useState(!skipFetch);
+  const [failed, setFailed] = useState(skipFetch);
 
   useEffect(() => {
+    if (skipFetch) return;
     let cancelled = false;
     void fetchSystemFile(locale, fileId)
       .then((item) => {
@@ -130,7 +133,7 @@ function SaleChannelLogoThumbLoaded({
     return () => {
       cancelled = true;
     };
-  }, [fileId, locale]);
+  }, [fileId, locale, skipFetch]);
 
   if (loading) {
     return (
@@ -160,15 +163,22 @@ function SaleChannelLogoThumbLoaded({
 function SaleChannelLogoThumb({
   fileId,
   locale,
+  skipFetch = false,
 }: {
   fileId?: number;
   locale: string;
+  skipFetch?: boolean;
 }) {
   if (fileId == null || fileId <= 0) {
     return <SaleChannelLogoPlaceholder />;
   }
   return (
-    <SaleChannelLogoThumbLoaded key={fileId} fileId={fileId} locale={locale} />
+    <SaleChannelLogoThumbLoaded
+      key={fileId}
+      fileId={fileId}
+      locale={locale}
+      skipFetch={skipFetch}
+    />
   );
 }
 
@@ -191,6 +201,7 @@ type Props = {
   onClearFieldError?: (key: keyof ItemSalesFieldErrors) => void;
   canCloneItem: boolean;
   onCloneAlternateSku: (newSuffix: string) => void | Promise<void>;
+  readOnly?: boolean;
   /** Bump when lot stock changes so channel margin refetches used lot cost. */
   stocksRefreshKey?: number;
   listSupplierIds: number[];
@@ -209,9 +220,14 @@ export function ProductListFormVariantSections({
   onClearFieldError,
   canCloneItem,
   onCloneAlternateSku,
+  readOnly = false,
   stocksRefreshKey = 0,
   listSupplierIds,
 }: Props) {
+  const mutate = !readOnly;
+  const locked = readOnly
+    ? ({ readOnly: true, disabled: true } as const)
+    : ({} as const);
   const pendingAlternateClone = hasPendingAlternateClone(allItems);
   const locale = useLocale() as DisplayLocale;
   const tForm = useTranslations("productListForm");
@@ -266,6 +282,10 @@ export function ProductListFormVariantSections({
       setGalleryValue([]);
       return;
     }
+    if (readOnly) {
+      setGalleryValue([]);
+      return;
+    }
     void (async () => {
       const items: ImageUploadItem[] = [];
       for (const f of sorted) {
@@ -289,7 +309,7 @@ export function ProductListFormVariantSections({
     };
     // fileIdsKey gates hydrate; order comes from item.files at change time only
     // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-fetch on reorder-only patch
-  }, [fileIdsKey, locale]);
+  }, [fileIdsKey, locale, readOnly]);
 
   const sortedChannelRows = useMemo(
     () => sortChannelPriceRows(item.channel_prices ?? [], saleChannels),
@@ -399,29 +419,29 @@ export function ProductListFormVariantSections({
       return;
     }
     let cancelled = false;
-    void Promise.all([
+    void Promise.allSettled([
       fetchProductItemWarehousePlacements(locale, item.id),
-      fetchAllProductItemStocks(locale, item.id),
-    ])
-      .then(([placements, stocks]) => {
-        if (!cancelled) {
-          setWarehousePlacementMeta(placements);
-          setStockRows(stocks);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setWarehousePlacementMeta([]);
-          setStockRows([]);
-        }
-      });
+      readOnly
+        ? Promise.resolve([] as ProductItemStockRow[])
+        : fetchAllProductItemStocks(locale, item.id),
+    ]).then((results) => {
+      if (cancelled) return;
+      const placements =
+        results[0].status === "fulfilled" ? results[0].value : [];
+      const stocks =
+        results[1].status === "fulfilled" ? results[1].value : [];
+      setWarehousePlacementMeta(placements);
+      setStockRows(stocks);
+    });
     return () => {
       cancelled = true;
     };
-  }, [item.id, locale, stocksRefreshKey]);
+  }, [item.id, locale, stocksRefreshKey, readOnly]);
 
-  const patch = (partial: Partial<ListItemBody>) =>
+  const patch = (partial: Partial<ListItemBody>) => {
+    if (readOnly) return;
     onChange({ ...item, ...partial });
+  };
 
   const updateChannelRow = (
     channelId: number,
@@ -508,6 +528,7 @@ export function ProductListFormVariantSections({
     );
 
   const onGalleryChange = (items: ImageUploadItem[]) => {
+    if (readOnly) return;
     setGalleryValue(items);
     for (const it of items) {
       if (it.kind === "remote") {
@@ -531,6 +552,7 @@ export function ProductListFormVariantSections({
           onChange={onGalleryChange}
           maxFiles={PRODUCT_ITEM_GALLERY_MAX}
           uploadTiming="immediate"
+          disabled={readOnly}
         />
       </Section>
 
@@ -552,6 +574,7 @@ export function ProductListFormVariantSections({
                 </span>
               </FieldLabel>
               <Input
+                {...locked}
                 value={item.names.th}
                 aria-invalid={fieldErrors?.nameTh ? true : undefined}
                 className={fieldErrors?.nameTh ? "aria-invalid:ring-0" : undefined}
@@ -575,6 +598,7 @@ export function ProductListFormVariantSections({
                 </span>
               </FieldLabel>
               <Input
+                {...locked}
                 value={item.names.en}
                 aria-invalid={fieldErrors?.nameEn ? true : undefined}
                 className={fieldErrors?.nameEn ? "aria-invalid:ring-0" : undefined}
@@ -614,6 +638,7 @@ export function ProductListFormVariantSections({
                     </span>
                   </InputGroupAddon>
                   <InputGroupInput
+                    {...locked}
                     value={skuSuffix}
                     aria-invalid={fieldErrors?.sku ? true : undefined}
                     placeholder={tFormPh("placeholder.input", {
@@ -629,34 +654,36 @@ export function ProductListFormVariantSections({
                     }}
                   />
                 </InputGroup>
-                <Button
-                  type="button"
-                  size="lg"
-                  className={VARIANT_SALES_ROW_BTN_CLASS}
-                  disabled={
-                    !canCloneItem ||
-                    !item.id ||
-                    stripOpen ||
-                    pendingAlternateClone ||
-                    alternateSkus.length > 0
-                  }
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setStripError("");
-                    setStripSuffix(
-                      nextVariantSkuSuffix(
-                        allItems,
-                        listSku,
-                        item._draftKey
-                      )
-                    );
-                    setStripOpen(true);
-                  }}
-                >
-                  {tForm("itemStripCode")}
-                </Button>
+                {mutate ? (
+                  <Button
+                    type="button"
+                    size="lg"
+                    className={VARIANT_SALES_ROW_BTN_CLASS}
+                    disabled={
+                      !canCloneItem ||
+                      !item.id ||
+                      stripOpen ||
+                      pendingAlternateClone ||
+                      alternateSkus.length > 0
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStripError("");
+                      setStripSuffix(
+                        nextVariantSkuSuffix(
+                          allItems,
+                          listSku,
+                          item._draftKey
+                        )
+                      );
+                      setStripOpen(true);
+                    }}
+                  >
+                    {tForm("itemStripCode")}
+                  </Button>
+                ) : null}
               </div>
-              {stripOpen ? (
+              {mutate && stripOpen ? (
                 <div className="flex flex-wrap items-start gap-2 pt-1">
                   <InputGroup
                     className="min-w-0 flex-1 rounded-login"
@@ -754,6 +781,7 @@ export function ProductListFormVariantSections({
               <FieldLabel>{tForm("itemBarcode")}</FieldLabel>
               <div className="flex flex-wrap items-start gap-2">
                 <Input
+                  {...locked}
                   className="min-w-0 flex-1"
                   value={item.barcode ?? ""}
                   placeholder={tFormPh("placeholder.input", {
@@ -761,24 +789,27 @@ export function ProductListFormVariantSections({
                   })}
                   onChange={(e) => patch({ barcode: e.target.value })}
                 />
-                <Button
-                  type="button"
-                  size="lg"
-                  className={VARIANT_SALES_ROW_BTN_CLASS}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    patch({ barcode: generateItemBarcode() });
-                    toast.success(tForm("toastBarcodeGenerated"));
-                  }}
-                >
-                  {tForm("itemCreateBarcode")}
-                </Button>
+                {mutate ? (
+                  <Button
+                    type="button"
+                    size="lg"
+                    className={VARIANT_SALES_ROW_BTN_CLASS}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      patch({ barcode: generateItemBarcode() });
+                      toast.success(tForm("toastBarcodeGenerated"));
+                    }}
+                  >
+                    {tForm("itemCreateBarcode")}
+                  </Button>
+                ) : null}
               </div>
             </Field>
             <Field className="gap-1.5">
               <FieldLabel>{tForm("itemQrcode")}</FieldLabel>
               <div className="flex flex-wrap items-start gap-2">
                 <Input
+                  {...locked}
                   className="min-w-0 flex-1"
                   value={item.qrcode ?? ""}
                   placeholder={tFormPh("placeholder.input", {
@@ -786,23 +817,26 @@ export function ProductListFormVariantSections({
                   })}
                   onChange={(e) => patch({ qrcode: e.target.value })}
                 />
-                <Button
-                  type="button"
-                  size="lg"
-                  className={VARIANT_SALES_ROW_BTN_CLASS}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    patch({ qrcode: generateItemQrcode() });
-                    toast.success(tForm("toastQrcodeGenerated"));
-                  }}
-                >
-                  {tForm("itemGenerateQrcode")}
-                </Button>
+                {mutate ? (
+                  <Button
+                    type="button"
+                    size="lg"
+                    className={VARIANT_SALES_ROW_BTN_CLASS}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      patch({ qrcode: generateItemQrcode() });
+                      toast.success(tForm("toastQrcodeGenerated"));
+                    }}
+                  >
+                    {tForm("itemGenerateQrcode")}
+                  </Button>
+                ) : null}
               </div>
             </Field>
             <StatusSwitchField
               labelKey="productListForm.itemAuthenticSpare"
               checked={item.is_authentic}
+              disabled={readOnly}
               onCheckedChange={(checked) => patch({ is_authentic: checked })}
             />
           </div>
@@ -828,6 +862,7 @@ export function ProductListFormVariantSections({
                   )}
                 >
                   <InputGroupInput
+                    {...locked}
                     type="number"
                     inputMode="decimal"
                     required
@@ -867,6 +902,7 @@ export function ProductListFormVariantSections({
                       <div className="flex min-w-18 flex-1 flex-col gap-1">
                         <InputGroup className="rounded-login">
                           <InputGroupInput
+                            {...locked}
                             type="number"
                             inputMode="decimal"
                             value={
@@ -896,6 +932,7 @@ export function ProductListFormVariantSections({
                 <Field className="min-w-0 flex-1 gap-1.5">
                   <FieldLabel>{tForm("qtyPerPack")}</FieldLabel>
                   <Input
+                    {...locked}
                     type="number"
                     value={String(item.qty_per_unit)}
                     placeholder={tFormPh("placeholder.input", {
@@ -916,6 +953,7 @@ export function ProductListFormVariantSections({
                   <FieldLabel>{tForm("itemUnit")}</FieldLabel>
                   <Select
                     value={item.unit}
+                    disabled={readOnly}
                     onValueChange={(v) => v && patch({ unit: v })}
                   >
                     <SelectTrigger>
@@ -962,6 +1000,7 @@ export function ProductListFormVariantSections({
               <Field className="gap-1.5">
                 <FieldLabel>{tForm("itemMinQty")}</FieldLabel>
                 <Input
+                  {...locked}
                   type="number"
                   value={String(item.minimum_stock)}
                   onChange={(e) =>
@@ -981,6 +1020,7 @@ export function ProductListFormVariantSections({
               type="radio"
               name={`type-price-${item.id ?? "new"}`}
               checked={item.type_price !== "stock"}
+              disabled={readOnly}
               onChange={() => patch({ type_price: "manual" })}
             />
             {tForm("itemPriceManual")}
@@ -990,6 +1030,7 @@ export function ProductListFormVariantSections({
               type="radio"
               name={`type-price-${item.id ?? "new"}`}
               checked={item.type_price === "stock"}
+              disabled={readOnly}
               onChange={() => patch({ type_price: "stock" })}
             />
             {tForm("itemPriceStock")}
@@ -1008,6 +1049,7 @@ export function ProductListFormVariantSections({
                   : priceInclVat(item.price, vatRate)
               }
               vatRate={vatRate}
+              readOnly={readOnly}
               onExChange={(price) =>
                 patch({
                   price,
@@ -1032,6 +1074,7 @@ export function ProductListFormVariantSections({
                   : priceInclVat(item.price_wholesale, vatRate)
               }
               vatRate={vatRate}
+              readOnly={readOnly}
               onExChange={(price_wholesale) =>
                 patch({
                   price_wholesale,
@@ -1090,9 +1133,11 @@ export function ProductListFormVariantSections({
                           <SaleChannelLogoThumb
                             fileId={channelMeta?.system_file_id}
                             locale={locale}
+                            skipFetch={readOnly}
                           />
                           <Select
                             value={chId > 0 ? String(chId) : undefined}
+                            disabled={readOnly}
                             onValueChange={(v) => setChannelId(chId, Number(v))}
                           >
                           <SelectTrigger className="min-w-0 flex-1">
@@ -1123,6 +1168,7 @@ export function ProductListFormVariantSections({
                           />
                         ) : (
                           <Input
+                            {...locked}
                             type="number"
                             inputMode="decimal"
                             className="ml-auto max-w-36 text-right tabular-nums"
@@ -1141,6 +1187,7 @@ export function ProductListFormVariantSections({
                       <TableCell className="text-right tabular-nums">
                         {vatType === "include" ? (
                           <Input
+                            {...locked}
                             type="number"
                             inputMode="decimal"
                             className="ml-auto max-w-36 text-right tabular-nums"
@@ -1176,10 +1223,12 @@ export function ProductListFormVariantSections({
                         %
                       </TableCell>
                       <TableCell className="text-center">
-                        <TableIconActions
-                          actions={["delete"]}
-                          onAction={() => removeChannelRow(chId)}
-                        />
+                        {mutate ? (
+                          <TableIconActions
+                            actions={["delete"]}
+                            onAction={() => removeChannelRow(chId)}
+                          />
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   );
@@ -1200,18 +1249,21 @@ export function ProductListFormVariantSections({
             onPageSizeChange={() => {}}
           />
         ) : null}
-        <Button
-          type="button"
-          size="lg"
-          className="mt-3 w-full"
-          onClick={addChannelRow}
-        >
-          <Plus className="mr-1 size-4" />
-          {tForm("itemAddChannel")}
-        </Button>
+        {mutate ? (
+          <Button
+            type="button"
+            size="lg"
+            className="mt-3 w-full"
+            onClick={addChannelRow}
+          >
+            <Plus className="mr-1 size-4" />
+            {tForm("itemAddChannel")}
+          </Button>
+        ) : null}
         <Field className="mt-3 gap-1.5">
           <FieldLabel>{tForm("itemPromotion")}</FieldLabel>
           <Textarea
+            {...locked}
             rows={3}
             value={item.promotion ?? ""}
             placeholder={tFormPh("placeholder.input", {
@@ -1283,6 +1335,7 @@ export function ProductListFormVariantSections({
                                   ? String(row.supplier_user_id)
                                   : undefined
                               }
+                              disabled={readOnly}
                               onValueChange={(v) =>
                                 updateSupplierRow(si, {
                                   supplier_user_id: Number(v),
@@ -1309,6 +1362,7 @@ export function ProductListFormVariantSections({
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             <Input
+                              {...locked}
                               type="number"
                               inputMode="decimal"
                               className="ml-auto max-w-32 text-right tabular-nums"
@@ -1323,6 +1377,7 @@ export function ProductListFormVariantSections({
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             <Input
+                              {...locked}
                               type="number"
                               inputMode="decimal"
                               className="ml-auto max-w-32 text-right tabular-nums"
@@ -1338,6 +1393,7 @@ export function ProductListFormVariantSections({
                           <TableCell className="text-center">
                             <Select
                               value={row.discount_type ?? "baht"}
+                              disabled={readOnly}
                               onValueChange={(v) =>
                                 v &&
                                 updateSupplierRow(si, { discount_type: v })
@@ -1360,16 +1416,18 @@ export function ProductListFormVariantSections({
                             {supplierNetPrice(row).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-center">
-                            <TableIconActions
-                              actions={["delete"]}
-                              onAction={() => {
-                                patch({
-                                  suppliers: (item.suppliers ?? []).filter(
-                                    (_, i) => i !== si
-                                  ),
-                                });
-                              }}
-                            />
+                            {mutate ? (
+                              <TableIconActions
+                                actions={["delete"]}
+                                onAction={() => {
+                                  patch({
+                                    suppliers: (item.suppliers ?? []).filter(
+                                      (_, i) => i !== si
+                                    ),
+                                  });
+                                }}
+                              />
+                            ) : null}
                           </TableCell>
                         </TableRow>
                       );
@@ -1378,6 +1436,7 @@ export function ProductListFormVariantSections({
                 </TableBody>
               </Table>
             </div>
+            {mutate ? (
             <Button
               type="button"
               size="lg"
@@ -1407,6 +1466,7 @@ export function ProductListFormVariantSections({
               <Plus className="mr-1 size-4" />
               {tForm("itemAddSupplier")}
             </Button>
+            ) : null}
           </TabsContent>
           <TabsContent value="warehouse" className="mt-3 space-y-3">
             <div className="overflow-x-auto rounded-md border border-border">
@@ -1471,6 +1531,7 @@ export function ProductListFormVariantSections({
                             layout="table"
                             binId={effectiveBinId}
                             pathHints={pathHints}
+                            disabled={readOnly}
                             onBinChange={(bin_id) => {
                               if (
                                 bin_id > 0 &&
@@ -1496,16 +1557,18 @@ export function ProductListFormVariantSections({
                             />
                           </TableCell>
                           <TableCell className="text-center">
-                            <TableIconActions
-                              actions={["delete"]}
-                              onAction={() =>
-                                patch({
-                                  warehouse_placements: (
-                                    item.warehouse_placements ?? []
-                                  ).filter((_, i) => i !== wi),
-                                })
-                              }
-                            />
+                            {mutate ? (
+                              <TableIconActions
+                                actions={["delete"]}
+                                onAction={() =>
+                                  patch({
+                                    warehouse_placements: (
+                                      item.warehouse_placements ?? []
+                                    ).filter((_, i) => i !== wi),
+                                  })
+                                }
+                              />
+                            ) : null}
                           </TableCell>
                         </TableRow>
                       );
@@ -1514,22 +1577,24 @@ export function ProductListFormVariantSections({
                 </TableBody>
               </Table>
             </div>
-            <Button
-              type="button"
-              size="lg"
-              className="w-full"
-              onClick={() =>
-                patch({
-                  warehouse_placements: [
-                    ...(item.warehouse_placements ?? []),
-                    { bin_id: 0 },
-                  ],
-                })
-              }
-            >
-              <Plus className="mr-1 size-4" />
-              {tForm("itemAddWarehouse")}
-            </Button>
+            {mutate ? (
+              <Button
+                type="button"
+                size="lg"
+                className="w-full"
+                onClick={() =>
+                  patch({
+                    warehouse_placements: [
+                      ...(item.warehouse_placements ?? []),
+                      { bin_id: 0 },
+                    ],
+                  })
+                }
+              >
+                <Plus className="mr-1 size-4" />
+                {tForm("itemAddWarehouse")}
+              </Button>
+            ) : null}
           </TabsContent>
         </Tabs>
       </Section>
@@ -1573,6 +1638,7 @@ function PricePair({
   exValue,
   inclValue,
   vatRate,
+  readOnly = false,
   onExChange,
   onInclChange,
 }: {
@@ -1582,9 +1648,13 @@ function PricePair({
   exValue: number;
   inclValue: number;
   vatRate: number;
+  readOnly?: boolean;
   onExChange: (v: number) => void;
   onInclChange: (v: number) => void;
 }) {
+  const locked = readOnly
+    ? ({ readOnly: true, disabled: true } as const)
+    : ({} as const);
   const derivedEx =
     vatType === "include"
       ? priceExFromIncl(inclValue, vatRate)
@@ -1605,6 +1675,7 @@ function PricePair({
           />
         ) : (
           <Input
+            {...locked}
             type="number"
             inputMode="decimal"
             value={String(exValue)}
@@ -1616,6 +1687,7 @@ function PricePair({
         <FieldLabel>{labelIncl}</FieldLabel>
         {vatType === "include" ? (
           <Input
+            {...locked}
             type="number"
             inputMode="decimal"
             value={String(inclValue)}

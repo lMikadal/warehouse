@@ -163,6 +163,7 @@ export function ProductListFormSidebar({
           <StatusSwitchField
             labelKey="col.status"
             checked={draft.is_active}
+            disabled={!canEditNote}
             onCheckedChange={onActiveChange}
           />
         </FormCardContent>

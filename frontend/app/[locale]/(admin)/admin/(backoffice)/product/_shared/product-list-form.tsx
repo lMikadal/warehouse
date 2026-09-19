@@ -34,7 +34,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import { resolveCategoryBreadcrumb } from "@/lib/product-category-cascade";
+import {
+  resolveProductListFormCategoryLabel,
+} from "@/lib/product-category-combobox";
 import {
   loadProductBrandComboboxOptions,
   resolveProductBrandLabels,
@@ -95,6 +97,7 @@ function ProductCodeListEditor({
   inputPlaceholder,
   deleteAriaLabel,
   idPrefix,
+  readOnly = false,
 }: {
   values: string[];
   onChange: (next: string[]) => void;
@@ -102,20 +105,23 @@ function ProductCodeListEditor({
   inputPlaceholder: string;
   deleteAriaLabel: string;
   idPrefix: string;
+  readOnly?: boolean;
 }) {
   const rows = values.length ? values : [""];
 
   return (
     <div className="flex flex-col gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={() => onChange([...rows, ""])}
-      >
-        <Plus className="mr-1 size-4" />
-        {addLabel}
-      </Button>
+      {!readOnly ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => onChange([...rows, ""])}
+        >
+          <Plus className="mr-1 size-4" />
+          {addLabel}
+        </Button>
+      ) : null}
       {rows.map((code, i) => (
         <div key={`${idPrefix}-${i}`} className="flex items-center gap-1.5">
           <Input
@@ -123,13 +129,16 @@ function ProductCodeListEditor({
             className="min-w-0 flex-1"
             value={code}
             placeholder={inputPlaceholder}
+            readOnly={readOnly}
+            disabled={readOnly}
             onChange={(e) => {
+              if (readOnly) return;
               const next = [...rows];
               next[i] = e.target.value;
               onChange(next);
             }}
           />
-          {rows.length > 1 ? (
+          {!readOnly && rows.length > 1 ? (
             <ButtonIcon
               type="button"
               variant="outline"
@@ -162,6 +171,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
   const tFormPh = useTranslations("form");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("product", "product_list");
+  const canSave = isEdit ? perms.update : perms.create;
+  const formReadOnly = isEdit && !canSave;
   const { open: sidebarOpen, isMobile } = useSidebar();
   const footerInsetLeft = !isMobile && sidebarOpen;
 
@@ -263,9 +274,13 @@ export function ProductListForm({ listId }: { listId?: number }) {
       return;
     }
     let cancelled = false;
-    void resolveCategoryBreadcrumb(locale, id).then((label) => {
-      if (!cancelled) setCategoryBreadcrumb(label);
-    });
+    void resolveProductListFormCategoryLabel(locale, String(id))
+      .then((label) => {
+        if (!cancelled) setCategoryBreadcrumb(label ?? "");
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryBreadcrumb("");
+      });
     return () => {
       cancelled = true;
     };
@@ -377,6 +392,27 @@ export function ProductListForm({ listId }: { listId?: number }) {
     [locale]
   );
 
+  const resolveSupplierLabels = useCallback(
+    async (ids: string[]) => {
+      const out: { value: string; label: string }[] = [];
+      for (const id of ids) {
+        const num = Number(id);
+        if (!Number.isFinite(num) || num <= 0) continue;
+        try {
+          const res = await fetchProductListFilters(locale, "suppliers", {
+            id: num,
+          });
+          const name = res.items[0]?.name;
+          if (name) out.push({ value: id, label: name });
+        } catch {
+          /* skip missing */
+        }
+      }
+      return out;
+    },
+    [locale]
+  );
+
   const loadBrandOptions = useCallback(
     (ctx: RemoteComboboxLoadContext) =>
       loadProductBrandComboboxOptions(locale, {
@@ -390,6 +426,14 @@ export function ProductListForm({ listId }: { listId?: number }) {
   if (loading) {
     return (
       <CrudTabbedFormPageSkeleton leftCardCount={3} pricingVariantStrips={2} />
+    );
+  }
+
+  if (isEdit && !perms.view) {
+    return (
+      <p className="text-muted-foreground py-12 text-center text-sm">
+        {tError("forbidden")}
+      </p>
     );
   }
 
@@ -421,6 +465,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     id="plf-name-th"
                     labelKey="col.nameTh"
                     required
+                    readOnly={formReadOnly}
                     value={draft.languages.th.name}
                     invalid={!!fieldErrors.nameTh}
                     errorMessage={fieldErrors.nameTh}
@@ -439,6 +484,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     id="plf-name-en"
                     labelKey="col.nameEn"
                     required
+                    readOnly={formReadOnly}
                     value={draft.languages.en.name}
                     invalid={!!fieldErrors.nameEn}
                     errorMessage={fieldErrors.nameEn}
@@ -467,7 +513,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <Input
                       id="plf-category"
                       readOnly
-                      className="cursor-pointer"
+                      disabled={formReadOnly}
+                      className={formReadOnly ? undefined : "cursor-pointer"}
                       value={categoryBreadcrumb}
                       placeholder={tFormPh("placeholder.select", {
                         label: tList("filterProductCategory"),
@@ -481,8 +528,11 @@ export function ProductListForm({ listId }: { listId?: number }) {
                           ? "plf-category-error"
                           : undefined
                       }
-                      onClick={() => setCategoryDialogOpen(true)}
+                      onClick={() => {
+                        if (!formReadOnly) setCategoryDialogOpen(true);
+                      }}
                       onFocus={(e) => {
+                        if (formReadOnly) return;
                         e.target.blur();
                         setCategoryDialogOpen(true);
                       }}
@@ -507,6 +557,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <RemoteComboboxField
                       id="plf-brand"
                       label={tCol("brand")}
+                      disabled={formReadOnly}
                       value={
                         draft.product_brand_id != null
                           ? String(draft.product_brand_id)
@@ -554,6 +605,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <FieldLabel>{tForm("subNameTh")}</FieldLabel>
                     <Input
                       value={draft.languages.th.sub_name ?? ""}
+                      readOnly={formReadOnly}
+                      disabled={formReadOnly}
                       placeholder={tFormPh("placeholder.input", {
                         label: tForm("subNameTh"),
                       })}
@@ -572,6 +625,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <FieldLabel>{tForm("subNameEn")}</FieldLabel>
                     <Input
                       value={draft.languages.en.sub_name ?? ""}
+                      readOnly={formReadOnly}
+                      disabled={formReadOnly}
                       placeholder={tFormPh("placeholder.input", {
                         label: tForm("subNameEn"),
                       })}
@@ -590,6 +645,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <FieldLabel>{tForm("descTh")}</FieldLabel>
                     <Textarea
                       value={draft.languages.th.description ?? ""}
+                      readOnly={formReadOnly}
+                      disabled={formReadOnly}
                       placeholder={tFormPh("placeholder.input", {
                         label: tForm("descTh"),
                       })}
@@ -611,6 +668,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <FieldLabel>{tForm("descEn")}</FieldLabel>
                     <Textarea
                       value={draft.languages.en.description ?? ""}
+                      readOnly={formReadOnly}
+                      disabled={formReadOnly}
                       placeholder={tFormPh("placeholder.input", {
                         label: tForm("descEn"),
                       })}
@@ -633,6 +692,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     <CommaTagsField
                       id="plf-tag"
                       value={draft.tag ?? ""}
+                      disabled={formReadOnly}
                       placeholder={tFormPh("placeholder.input", {
                         label: tForm("tag"),
                       })}
@@ -665,6 +725,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       <Input
                         id="plf-sku"
                         required
+                        readOnly={formReadOnly}
+                        disabled={formReadOnly}
                         value={draft.sku}
                         aria-invalid={fieldErrors.sku ? true : undefined}
                         aria-describedby={
@@ -696,6 +758,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       <ProductCodeListEditor
                         idPrefix="plf-factory"
                         values={draft.factory_codes ?? [""]}
+                        readOnly={formReadOnly}
                         addLabel={tForm("addFactoryCodeOe")}
                         inputPlaceholder={tForm("factoryCodeInputPlaceholder")}
                         deleteAriaLabel={tCrud("btn.delete")}
@@ -713,6 +776,8 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       <Input
                         id="plf-supplier-sku"
                         value={draft.supplier_sku ?? ""}
+                        readOnly={formReadOnly}
+                        disabled={formReadOnly}
                         placeholder={tFormPh("placeholder.input", {
                           label: tForm("supplierSkuProduct"),
                         })}
@@ -732,6 +797,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                       <ProductCodeListEditor
                         idPrefix="plf-other"
                         values={draft.other_codes ?? [""]}
+                        readOnly={formReadOnly}
                         addLabel={tForm("addOtherCodeRef")}
                         inputPlaceholder={tForm("otherCodeInputPlaceholder")}
                         deleteAriaLabel={tCrud("btn.delete")}
@@ -751,6 +817,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                 <FormCardContent>
                   <RemoteMultiComboboxField
                     label={tForm("partners")}
+                    disabled={formReadOnly}
                     values={(draft.supplier_ids ?? []).map(String)}
                     onValuesChange={(vals) =>
                       setDraft((d) => ({
@@ -763,6 +830,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                     })}
                     emptyLabel={tFormPh("combobox.noResults")}
                     onLoadOptions={loadSuppliers}
+                    resolveSelectedLabels={resolveSupplierLabels}
                   />
                 </FormCardContent>
               </FormCard>
@@ -774,7 +842,9 @@ export function ProductListForm({ listId }: { listId?: number }) {
                 <FormCardContent>
                   <ProductListFormCars
                     locale={locale}
+                    listId={isEdit ? listId : undefined}
                     cars={draft.cars ?? []}
+                    readOnly={formReadOnly}
                     onChange={(cars) => setDraft((d) => ({ ...d, cars }))}
                   />
                 </FormCardContent>
@@ -793,6 +863,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
                 onExpandVariantHandled={handleExpandVariantHandled}
                 canCloneItem={isEdit && perms.update}
                 canMutateLots={isEdit && perms.update}
+                readOnly={formReadOnly}
                 onStockChanged={() => void refreshItemStockTotals()}
               />
             </TabsContent>
@@ -846,7 +917,7 @@ export function ProductListForm({ listId }: { listId?: number }) {
           >
             {isEdit ? tCrud("btn.cancel") : tCrud("btn.back")}
           </Button>
-          {(isEdit ? perms.update : perms.create) ? (
+          {canSave ? (
             <Button
               type="button"
               size="lg"

@@ -91,7 +91,7 @@ export function useRemoteComboboxOptions({
   }, [enabled, debouncedSearch]);
 
   useEffect(() => {
-    if (!enabled || !value || !resolveSelectedLabel) {
+    if (!value || !resolveSelectedLabel) {
       return;
     }
     const inList = mergeOptions(
@@ -119,8 +119,9 @@ export function useRemoteComboboxOptions({
   }, [enabled, value, pinnedItems, extraPinned, remoteItems, resolveSelectedLabel]);
 
   const items = useMemo(() => {
-    if (!enabled) return mergeOptions(pinnedItems, []);
-    return mergeOptions([...pinnedItems, ...extraPinned], remoteItems);
+    const withPinned = mergeOptions(pinnedItems, extraPinned);
+    if (!enabled) return withPinned;
+    return mergeOptions(withPinned, remoteItems);
   }, [enabled, pinnedItems, extraPinned, remoteItems]);
 
   const handleInputValueChange = useCallback(

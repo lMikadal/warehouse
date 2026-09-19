@@ -23,7 +23,11 @@ import {
   type PageSizeOption,
 } from "@/lib/crud-pagination";
 import type { DisplayLocale } from "@/lib/format-datetime";
-import type { ListCarBody } from "@/lib/product-list-api";
+import {
+  fetchProductListCars,
+  type CarFitmentRow,
+  type ListCarBody,
+} from "@/lib/product-list-api";
 import type { ProductAttributeRow } from "@/lib/product-attribute-api";
 import {
   fetchAllActiveCars,
@@ -32,8 +36,10 @@ import {
 
 type Props = {
   locale: DisplayLocale;
+  listId?: number;
   cars: ListCarBody[];
   onChange: (cars: ListCarBody[]) => void;
+  readOnly?: boolean;
 };
 
 function formatYearRange(
@@ -50,7 +56,13 @@ function rowKey(row: ListCarBody, index: number): string {
   return row.id != null ? `id-${row.id}` : `new-${index}`;
 }
 
-export function ProductListFormCars({ locale, cars, onChange }: Props) {
+export function ProductListFormCars({
+  locale,
+  listId,
+  cars,
+  onChange,
+  readOnly = false,
+}: Props) {
   const tForm = useTranslations("productListForm");
   const tList = useTranslations("productList");
   const tAttr = useTranslations("productAttr");
@@ -58,6 +70,7 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
   const tError = useTranslations("error");
 
   const [catalog, setCatalog] = useState<ProductAttributeRow[]>([]);
+  const [viewRows, setViewRows] = useState<CarFitmentRow[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSizeOption>(PAGE_SIZE_OPTIONS[0]);
@@ -65,14 +78,32 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
   const [editKey, setEditKey] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!readOnly || listId == null || listId <= 0) return;
     let cancelled = false;
-    void fetchAllActiveCars(locale).then((data) => {
-      if (!cancelled) setCatalog(data);
-    });
+    void fetchProductListCars(locale, listId)
+      .then((items) => {
+        if (!cancelled) setViewRows(items);
+      })
+      .catch(() => {
+        if (!cancelled) setViewRows([]);
+      });
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, listId, readOnly]);
+
+  useEffect(() => {
+    if (readOnly) return;
+    let cancelled = false;
+    void fetchAllActiveCars(locale)
+      .then((data) => {
+        if (!cancelled) setCatalog(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, readOnly]);
 
   const resolveName = useCallback(
     (id: number | null | undefined) => nameById(catalog, id) || "—",
@@ -81,9 +112,19 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return cars.map((row, index) => ({ row, index }));
+    if (readOnly && viewRows.length > 0) {
+      const rows = viewRows.map((row, index) => ({ view: row, index }));
+      if (!q) return rows;
+      return rows.filter(({ view }) => {
+        const line = [view.brand_name, view.model_name, view.engine_name]
+          .join(" ")
+          .toLowerCase();
+        return line.includes(q);
+      });
+    }
+    if (!q) return cars.map((row, index) => ({ row, index, view: null as CarFitmentRow | null }));
     return cars
-      .map((row, index) => ({ row, index }))
+      .map((row, index) => ({ row, index, view: null as CarFitmentRow | null }))
       .filter(({ row }) => {
         const line = [
           resolveName(row.product_attribute_brand_id),
@@ -94,7 +135,7 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
           .toLowerCase();
         return line.includes(q);
       });
-  }, [cars, search, resolveName]);
+  }, [cars, search, resolveName, readOnly, viewRows]);
 
   useEffect(() => {
     setPage(1);
@@ -157,15 +198,17 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
           className="min-w-[12rem] flex-1"
           placeholder={tForm("carTableSearchPlaceholder")}
         />
-        <Button
-          type="button"
-          size="lg"
-          className="ml-auto shrink-0"
-          onClick={openAdd}
-        >
-          <Plus className="size-4" />
-          {tForm("addCar")}
-        </Button>
+        {!readOnly ? (
+          <Button
+            type="button"
+            size="lg"
+            className="ml-auto shrink-0"
+            onClick={openAdd}
+          >
+            <Plus className="size-4" />
+            {tForm("addCar")}
+          </Button>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-(--radius-table-wrap) border border-border">
@@ -193,33 +236,51 @@ export function ProductListFormCars({ locale, cars, onChange }: Props) {
                 </TableCell>
               </TableRow>
             ) : (
-              pageRows.map(({ row, index }) => {
-                const key = rowKey(row, index);
+              pageRows.map((entry) => {
+                const { index } = entry;
+                const row = "row" in entry && entry.row ? entry.row : cars[index];
+                const view = "view" in entry ? entry.view : null;
+                const key =
+                  view?.id != null
+                    ? `view-${view.id}`
+                    : rowKey(row ?? { product_attribute_engine_id: 0 }, index);
+                const displayRow = row ?? cars[index];
+                if (!displayRow && !view) return null;
                 return (
                   <TableRow key={key}>
                     <TableCell>
-                      {resolveName(row.product_attribute_brand_id)}
+                      {view?.brand_name ??
+                        resolveName(displayRow?.product_attribute_brand_id)}
                     </TableCell>
                     <TableCell>
-                      {resolveName(row.product_attribute_model_id)}
+                      {view?.model_name ??
+                        resolveName(displayRow?.product_attribute_model_id)}
                     </TableCell>
                     <TableCell>
-                      {resolveName(row.product_attribute_engine_id)}
+                      {view?.engine_name ??
+                        resolveName(displayRow?.product_attribute_engine_id)}
                     </TableCell>
                     <TableCell>
-                      {formatYearRange(row.year_start, row.year_end)}
+                      {formatYearRange(
+                        view?.year_start ?? displayRow?.year_start,
+                        view?.year_end ?? displayRow?.year_end
+                      )}
                     </TableCell>
-                    <TableCell>{gearLabel(row.gear_type)}</TableCell>
+                    <TableCell>
+                      {gearLabel(view?.gear_type ?? displayRow?.gear_type)}
+                    </TableCell>
                     <TableCell className="text-center">
-                      <div className="inline-flex justify-center">
-                        <TableIconActions
-                          actions={["edit", "delete"]}
-                          onAction={(action) => {
-                            if (action === "edit") openEdit(key);
-                            if (action === "delete") handleDelete(key);
-                          }}
-                        />
-                      </div>
+                      {!readOnly ? (
+                        <div className="inline-flex justify-center">
+                          <TableIconActions
+                            actions={["edit", "delete"]}
+                            onAction={(action) => {
+                              if (action === "edit") openEdit(key);
+                              if (action === "delete") handleDelete(key);
+                            }}
+                          />
+                        </div>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 );

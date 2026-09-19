@@ -403,8 +403,7 @@ export function ProductListPage() {
         sortDir={sortDir}
         listFiltered={listFiltered}
         onSortChange={handleSortChange}
-        canUpdate={perms.update}
-        canDelete={perms.delete}
+        perms={perms}
         onToggleActive={onToggleActive}
         onDelete={setDeleteRow}
         onOpenCars={setCarListId}

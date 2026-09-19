@@ -4,16 +4,17 @@ import {
   AlertTriangle,
   EyeOff,
   Image as ImageIcon,
-  Pencil,
-  Trash2,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import { CrudListTableSkeleton } from "@/components/molecules/crud-list-table-skeleton";
 import { StatusSwitchField } from "@/components/molecules/status-switch-field";
+import {
+  TableIconActions,
+  type TableIconActionKey,
+} from "@/components/molecules/table-icon-actions";
 import { Button } from "@/components/ui/button";
-import { ButtonIcon } from "@/components/ui/button-icon";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -31,7 +32,12 @@ import {
   TableSortHead,
   type TableSortDirection,
 } from "@/components/ui/table";
-import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
+import type { ResourceActions } from "@/lib/admin-permissions";
+import {
+  tableIconActionsFromResource,
+  tableRowDetailAction,
+} from "@/lib/admin-permissions";
 import { cn } from "@/lib/utils";
 import type { ProductItemBrowseRow } from "@/lib/product-list-api";
 import { fetchSystemFile } from "@/lib/system-file-api";
@@ -170,8 +176,7 @@ export type ProductListTableProps = {
     sortKey: string | null,
     direction: TableSortDirection | null
   ) => void;
-  canUpdate: boolean;
-  canDelete: boolean;
+  perms: ResourceActions;
   onToggleActive: (row: ProductItemBrowseRow, active: boolean) => void;
   onDelete: (row: ProductItemBrowseRow) => void;
   onOpenCars: (listId: number) => void;
@@ -189,8 +194,7 @@ export function ProductListTable({
   sortDir,
   listFiltered,
   onSortChange,
-  canUpdate,
-  canDelete,
+  perms,
   onToggleActive,
   onDelete,
   onOpenCars,
@@ -200,10 +204,19 @@ export function ProductListTable({
   onToggleRow,
   onTogglePage,
 }: ProductListTableProps) {
+  const router = useRouter();
   const locale = useLocale();
   const tList = useTranslations("productList");
   const tCrud = useTranslations("crud");
   const tError = useTranslations("error");
+
+  const onRowAction = (row: ProductItemBrowseRow, action: TableIconActionKey) => {
+    if (tableRowDetailAction(action)) {
+      router.push(`/admin/product/list/${row.product_list_id}`);
+      return;
+    }
+    if (action === "delete") onDelete(row);
+  };
 
   const columnCount =
     BASE_COLUMN_COUNT + (selectionEnabled ? 1 : 0);
@@ -448,38 +461,15 @@ export function ProductListTable({
                 <TableCell className="text-center">
                   <StatusSwitchField
                     checked={row.is_active}
-                    disabled={!canUpdate}
+                    disabled={!perms.update}
                     onCheckedChange={(checked) => onToggleActive(row, checked)}
                   />
                 </TableCell>
                 <TableCell className="text-center">
-                  <div className="inline-flex justify-center gap-1.5">
-                    {canUpdate ? (
-                      <ButtonIcon
-                        variant="outline"
-                        tone="neutral"
-                        asChild
-                        aria-label={tCrud("btn.edit")}
-                      >
-                        <Link
-                          href={`/admin/product/list/${row.product_list_id}`}
-                        >
-                          <Pencil className="text-current" />
-                        </Link>
-                      </ButtonIcon>
-                    ) : null}
-                    {canDelete ? (
-                      <ButtonIcon
-                        type="button"
-                        variant="outline"
-                        tone="delete"
-                        aria-label={tCrud("btn.delete")}
-                        onClick={() => onDelete(row)}
-                      >
-                        <Trash2 className="text-current" />
-                      </ButtonIcon>
-                    ) : null}
-                  </div>
+                  <TableIconActions
+                    actions={tableIconActionsFromResource(perms)}
+                    onAction={(key) => onRowAction(row, key)}
+                  />
                 </TableCell>
               </TableRow>
             );

@@ -55,6 +55,7 @@ type Props = {
   canCloneItem: boolean;
   onCloneAlternateSku: (newSuffix: string) => void | Promise<void>;
   canMutateLots: boolean;
+  readOnly?: boolean;
   onStockChanged?: () => void;
 };
 
@@ -76,6 +77,7 @@ export function ProductListFormVariantCard({
   canCloneItem,
   onCloneAlternateSku,
   canMutateLots,
+  readOnly = false,
   onStockChanged,
 }: Props) {
   const locale = useLocale() as DisplayLocale;
@@ -117,7 +119,11 @@ export function ProductListFormVariantCard({
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
-            <VariantCoverThumb fileId={coverFileId} locale={locale} />
+            <VariantCoverThumb
+              fileId={coverFileId}
+              locale={locale}
+              skipFetch={readOnly}
+            />
           </div>
           <CollapsibleTrigger
             render={
@@ -160,6 +166,7 @@ export function ProductListFormVariantCard({
           >
             <StatusSwitchField
               checked={item.is_active}
+              disabled={readOnly}
               onCheckedChange={(checked) => onChange({ ...item, is_active: checked })}
             />
             {canRemove ? (
@@ -208,6 +215,7 @@ export function ProductListFormVariantCard({
             allItems={allItems}
             canCloneItem={canCloneItem}
             onCloneAlternateSku={onCloneAlternateSku}
+            readOnly={readOnly}
             stocksRefreshKey={stocksRefreshKey}
             listSupplierIds={listSupplierIds}
           />
@@ -240,9 +248,11 @@ export function ProductListFormVariantCard({
 function VariantCoverThumb({
   fileId,
   locale,
+  skipFetch = false,
 }: {
   fileId: number | null;
   locale: string;
+  skipFetch?: boolean;
 }) {
   if (fileId == null) {
     return (
@@ -255,23 +265,32 @@ function VariantCoverThumb({
     );
   }
 
-  return <VariantCoverThumbLoaded fileId={fileId} locale={locale} />;
+  return (
+    <VariantCoverThumbLoaded
+      fileId={fileId}
+      locale={locale}
+      skipFetch={skipFetch}
+    />
+  );
 }
 
 function VariantCoverThumbLoaded({
   fileId,
   locale,
+  skipFetch = false,
 }: {
   fileId: number;
   locale: string;
+  skipFetch?: boolean;
 }) {
   const t = useTranslations();
   const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
+  const [loading, setLoading] = useState(!skipFetch);
+  const [failed, setFailed] = useState(skipFetch);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
+    if (skipFetch) return;
     let cancelled = false;
     void fetchSystemFile(locale, fileId)
       .then((item) => {
@@ -286,7 +305,7 @@ function VariantCoverThumbLoaded({
     return () => {
       cancelled = true;
     };
-  }, [fileId, locale]);
+  }, [fileId, locale, skipFetch]);
 
   if (loading) {
     return (

@@ -76,7 +76,9 @@ export async function fetchProductAttributes(
   const res = await authFetch(`${bffUrl(segment)}?${q}`, {
     headers: { Accept: "application/json", "Accept-Language": locale },
   });
-  if (!res.ok) throw await parseError(res);
+  if (!res.ok) {
+    throw await parseError(res);
+  }
   return (await res.json()) as ListResponse;
 }
 

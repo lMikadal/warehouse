@@ -19,6 +19,7 @@ type Props = {
   readOnlyQty?: string;
   layout?: "grid" | "table";
   pathHints?: Partial<Record<WarehouseCascadeLevel, string>>;
+  disabled?: boolean;
 };
 
 type Level = WarehouseCascadeLevel;
@@ -39,6 +40,7 @@ export function WarehousePlacementCascadeRow({
   readOnlyQty,
   layout = "grid",
   pathHints,
+  disabled: formDisabled = false,
 }: Props) {
   const locale = useLocale();
   const tList = useTranslations("productList");
@@ -61,6 +63,20 @@ export function WarehousePlacementCascadeRow({
       setHydrating(false);
       return;
     }
+    if (formDisabled) {
+      setIds({ ...EMPTY_IDS, bin: String(binId) });
+      const hints = pathHintsRef.current;
+      if (hints) {
+        const labels: Partial<Record<Level, string>> = {};
+        for (const level of CHAIN) {
+          const hint = hints[level];
+          if (hint) labels[level] = hint;
+        }
+        setPinnedLabels(labels);
+      }
+      setHydrating(false);
+      return;
+    }
     let cancelled = false;
     setHydrating(true);
     void resolveWarehouseChainFromBin(locale, binId)
@@ -80,7 +96,17 @@ export function WarehousePlacementCascadeRow({
       .catch(() => {
         if (!cancelled) {
           setIds({ ...EMPTY_IDS, bin: String(binId) });
-          setPinnedLabels({});
+          const hints = pathHintsRef.current;
+          if (hints) {
+            const labels: Partial<Record<Level, string>> = {};
+            for (const level of CHAIN) {
+              const hint = hints[level];
+              if (hint) labels[level] = hint;
+            }
+            setPinnedLabels(labels);
+          } else {
+            setPinnedLabels({});
+          }
         }
       })
       .finally(() => {
@@ -89,7 +115,7 @@ export function WarehousePlacementCascadeRow({
     return () => {
       cancelled = true;
     };
-  }, [binId, locale]);
+  }, [binId, locale, formDisabled]);
 
   const pathHintsKey = pathHints
     ? CHAIN.map((level) => pathHints[level] ?? "").join("\0")
@@ -104,7 +130,7 @@ export function WarehousePlacementCascadeRow({
       let changed = false;
       for (const level of CHAIN) {
         const hint = hints[level];
-        if (hint && ids[level]) {
+        if (hint && (formDisabled || ids[level])) {
           if (next[level] !== hint) {
             next[level] = hint;
             changed = true;
@@ -113,7 +139,10 @@ export function WarehousePlacementCascadeRow({
       }
       return changed ? next : prev;
     });
-  }, [pathHintsKey, binId, ids]);
+  }, [pathHintsKey, binId, ids, formDisabled]);
+
+  const readOnlyDisplayLabel = (level: Level) =>
+    pathHints?.[level] ?? pinnedLabels[level] ?? "—";
 
   const loadLevel = useCallback(
     (level: Level, parentId?: number) =>
@@ -209,6 +238,7 @@ export function WarehousePlacementCascadeRow({
   const levelFields = CHAIN.map((level) => {
     const parent = parentFor(level);
     const disabled =
+      formDisabled ||
       hydrating ||
       (level !== "warehouse" && (parent == null || parent <= 0));
     const placeholder = tFormPh("placeholder.select", {
@@ -234,11 +264,17 @@ export function WarehousePlacementCascadeRow({
   if (layout === "table") {
     return (
       <>
-        {CHAIN.map((level, i) => (
-          <TableCell key={level} className="min-w-[9rem]">
-            {levelFields[i]}
-          </TableCell>
-        ))}
+        {formDisabled
+          ? CHAIN.map((level) => (
+              <TableCell key={level} className="min-w-[9rem]">
+                <span className="text-sm">{readOnlyDisplayLabel(level)}</span>
+              </TableCell>
+            ))
+          : CHAIN.map((level, i) => (
+              <TableCell key={level} className="min-w-[9rem]">
+                {levelFields[i]}
+              </TableCell>
+            ))}
       </>
     );
   }

@@ -41,6 +41,7 @@ type Props = {
   onExpandVariantHandled: () => void;
   canCloneItem: boolean;
   canMutateLots: boolean;
+  readOnly?: boolean;
   onStockChanged?: () => void;
 };
 
@@ -55,6 +56,7 @@ export function ProductListFormPricingTab({
   onExpandVariantHandled,
   canCloneItem,
   canMutateLots,
+  readOnly = false,
   onStockChanged,
 }: Props) {
   const tForm = useTranslations("productListForm");
@@ -67,8 +69,12 @@ export function ProductListFormPricingTab({
   const [vat, setVat] = useState<SettingVatItem | null>(null);
 
   useEffect(() => {
+    if (readOnly) {
+      setVat(null);
+      return;
+    }
     void fetchSettingVat(locale).then(setVat).catch(() => setVat(null));
-  }, [locale]);
+  }, [locale, readOnly]);
 
   useEffect(() => {
     if (!expandVariantKey) return;
@@ -194,7 +200,8 @@ export function ProductListFormPricingTab({
             }
             onChange={(next) => updateItem(index, next)}
             onRemove={() => setDeleteConfirmIndex(index)}
-            canRemove={draft.items.length > 1}
+            canRemove={draft.items.length > 1 && !readOnly}
+            readOnly={readOnly}
             loadSuppliers={loadSuppliers}
             fieldErrors={itemFieldErrors[key]}
             onClearFieldError={(f) => clearItemFieldError(index, f)}
@@ -206,17 +213,19 @@ export function ProductListFormPricingTab({
           />
         );
       })}
-      <div className="rounded-md border border-dashed border-border py-6">
-        <Button
-          type="button"
-          variant="outline"
-          className="mx-auto flex border-primary text-primary"
-          onClick={addVariant}
-        >
-          <Plus className="mr-1 size-4" />
-          {tForm("addPrice")}
-        </Button>
-      </div>
+      {!readOnly ? (
+        <div className="rounded-md border border-dashed border-border py-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="mx-auto flex border-primary text-primary"
+            onClick={addVariant}
+          >
+            <Plus className="mr-1 size-4" />
+            {tForm("addPrice")}
+          </Button>
+        </div>
+      ) : null}
       <CrudDeleteConfirmDialog
         open={deleteConfirmIndex != null}
         onOpenChange={(open) => {
