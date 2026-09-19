@@ -19,6 +19,8 @@ type userFilterItem struct {
 	BrandName   string  `json:"brand_name,omitempty"`
 	BrandID     *int64  `json:"brand_id,omitempty"`
 	Price       float64 `json:"price,omitempty"`
+	ParentID    *int64  `json:"parent_id,omitempty"`
+	SortOrder   *int32  `json:"sort_order,omitempty"`
 }
 
 type userFiltersResponse struct {
@@ -35,7 +37,7 @@ type userStatsResponse struct {
 
 func userFilterFacet(facet string) (string, bool) {
 	switch strings.TrimSpace(strings.ToLower(facet)) {
-	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "product_brands", "member_credits":
+	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "product_brands", "product_brand_categories", "member_credits":
 		return strings.TrimSpace(strings.ToLower(facet)), true
 	default:
 		return "", false
@@ -98,7 +100,8 @@ func (h *UserHandler) listFilters(c *echo.Context) error {
 		return c.JSON(http.StatusOK, userFiltersToResponse(rows, total, q))
 	case "product_items":
 		brandID := userFilterBrandID(c)
-		rows, total, err := h.repo.FilterProductItems(c.Request().Context(), locale, q.Page, q.Limit, search, id, brandID)
+		categoryID := userFilterCategoryID(c)
+		rows, total, err := h.repo.FilterProductItems(c.Request().Context(), locale, q.Page, q.Limit, search, id, brandID, categoryID)
 		if err != nil {
 			applog.HTTPError(c, "member user filters product items", err)
 			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
@@ -111,6 +114,17 @@ func (h *UserHandler) listFilters(c *echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
 		}
 		return c.JSON(http.StatusOK, userFiltersToResponse(rows, total, q))
+	case "product_brand_categories":
+		brandID := userFilterBrandID(c)
+		if brandID <= 0 {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "brand_id is required"})
+		}
+		rows, total, err := h.repo.FilterProductBrandCategories(c.Request().Context(), locale, brandID)
+		if err != nil {
+			applog.HTTPError(c, "member user filters product brand categories", err)
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+		}
+		return c.JSON(http.StatusOK, userProductBrandCategoriesToResponse(rows, total, q))
 	default:
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid facet"})
 	}
@@ -294,6 +308,36 @@ func userFilterBrandID(c *echo.Context) int64 {
 		return 0
 	}
 	return id
+}
+
+func userFilterCategoryID(c *echo.Context) int64 {
+	v := strings.TrimSpace(c.QueryParam("category_id"))
+	if v == "" {
+		return 0
+	}
+	id, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || id <= 0 {
+		return 0
+	}
+	return id
+}
+
+func userProductBrandCategoriesToResponse(rows []userProductBrandCategoryRow, total int64, q api.PageQuery) userFiltersResponse {
+	items := make([]userFilterItem, len(rows))
+	for i, r := range rows {
+		item := userFilterItem{ID: r.ID, Name: r.Name}
+		if r.ParentID.Valid {
+			pid := r.ParentID.Int64
+			item.ParentID = &pid
+		}
+		sortOrder := r.SortOrder
+		item.SortOrder = &sortOrder
+		items[i] = item
+	}
+	return userFiltersResponse{
+		Items: items,
+		Meta:  api.ListMeta{Total: total, Page: q.Page, Limit: q.Limit},
+	}
 }
 
 func userProductItemsToResponse(rows []userProductItemFilterRow, total int64, q api.PageQuery) userFiltersResponse {

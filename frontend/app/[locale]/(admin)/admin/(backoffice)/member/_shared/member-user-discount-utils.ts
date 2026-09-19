@@ -1,6 +1,11 @@
 import type { MemberUserDiscountRow } from "@/lib/member-user-api";
 import type { MemberUserProductItemFilterItem } from "@/lib/member-user-filters-api";
 
+/** Negative ids — picker staging only; persisted rows use positive DB ids. */
+export function isPendingMemberDiscountId(id: number): boolean {
+  return id < 0;
+}
+
 export function todayIsoDate(): string {
   const d = new Date();
   const y = d.getFullYear();

@@ -689,6 +689,7 @@ window.I18N_TH = {
   "memberUser.discountTabExpired": "หมดอายุ",
   "memberUser.discountPercent": "เปอร์เซ็นต์",
   "memberUser.discountBaht": "บาท",
+  "memberUser.discountType": "ประเภทส่วนลด",
   "memberUser.minQty": "ขั้นต่ำการสั่งซื้อ",
   "memberUser.regularPrice": "ราคาปกติ",
   "memberUser.specialPrice": "ราคาพิเศษ",

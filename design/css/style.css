@@ -7380,7 +7380,8 @@ select.product-list-form__hist-filter-control {
   margin: 0;
 }
 
-.member-user-discount-bulk-bar .form-field input {
+.member-user-discount-bulk-bar .form-field input,
+.member-user-discount-bulk-bar .form-field select {
   width: 100%;
   box-sizing: border-box;
 }

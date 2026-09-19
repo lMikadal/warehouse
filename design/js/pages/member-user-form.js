@@ -1926,7 +1926,7 @@
       '<div class="member-user-discount-bulk-bar">' +
       '<div class="form-field"><label for="mu-bulk-min"><span data-i18n="memberUser.minQty"></span></label>' +
       '<input type="number" id="mu-bulk-min" min="0" step="1" value="0" data-i18n-placeholder-input="memberUser.minQty" placeholder="" /></div>' +
-      '<div class="form-field"><label for="mu-bulk-disc"><span data-i18n="memberTier.discount"></span></label>' +
+      '<div class="form-field"><label for="mu-bulk-disc"><span data-i18n="memberUser.discountPercent"></span></label>' +
       '<input type="number" id="mu-bulk-disc" min="0" step="0.01" value="0" data-i18n-placeholder-input="memberTier.discount" placeholder="" /></div>' +
       '<div class="form-field"><label for="mu-bulk-start"><span data-i18n="memberUser.startDate"></span></label>' +
       '<input type="date" id="mu-bulk-start" /></div>' +
@@ -3547,7 +3547,11 @@
         }
         ids.forEach(function (idStr) {
           var id = Number(idStr);
-          var patch = { updated_at: now(), updated_by: actorId(), discount_type: "percent" };
+          var patch = {
+            updated_at: now(),
+            updated_by: actorId(),
+            discount_type: "percent",
+          };
           if (minEl && minEl.value !== "") patch.minimum_qty = Number(minEl.value) || 0;
           if (discEl && discEl.value !== "") patch.discount = Number(discEl.value) || 0;
           if (startEl && startEl.value) patch.date_start = startEl.value;

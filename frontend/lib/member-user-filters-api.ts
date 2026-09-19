@@ -18,6 +18,7 @@ export type MemberUserFilterFacet =
   | "admin_users"
   | "product_items"
   | "product_brands"
+  | "product_brand_categories"
   | "member_credits";
 
 type FilterItem = { id: number; name: string };
@@ -50,7 +51,13 @@ export type MemberUserFiltersParams = {
   search?: string;
   id?: number;
   brand_id?: number;
+  category_id?: number;
   member_type?: "person" | "company";
+};
+
+export type MemberUserBrandCategoryFilterItem = FilterItem & {
+  parent_id?: number | null;
+  sort_order?: number;
 };
 
 export async function fetchMemberUserFilters(
@@ -66,6 +73,9 @@ export async function fetchMemberUserFilters(
   if (params.id != null && params.id > 0) q.set("id", String(params.id));
   if (params.brand_id != null && params.brand_id > 0) {
     q.set("brand_id", String(params.brand_id));
+  }
+  if (params.category_id != null && params.category_id > 0) {
+    q.set("category_id", String(params.category_id));
   }
   if (params.member_type) q.set("member_type", params.member_type);
   const res = await authFetch(`${PROXY}?${q}`, {
@@ -98,6 +108,9 @@ export async function fetchMemberUserProductItemFilters(
   if (params.brand_id != null && params.brand_id > 0) {
     q.set("brand_id", String(params.brand_id));
   }
+  if (params.category_id != null && params.category_id > 0) {
+    q.set("category_id", String(params.category_id));
+  }
   const res = await authFetch(`${PROXY}?${q}`, {
     headers: { Accept: "application/json", "Accept-Language": locale },
     signal: params.signal,
@@ -110,6 +123,29 @@ export async function fetchMemberUserProductItemFilters(
     meta?: BffListMeta;
   };
   return { items: data.items ?? [], meta: data.meta };
+}
+
+export async function fetchMemberUserBrandCategories(
+  locale: string,
+  brandId: number,
+  signal?: AbortSignal
+): Promise<MemberUserBrandCategoryFilterItem[]> {
+  const q = new URLSearchParams();
+  q.set("facet", "product_brand_categories");
+  q.set("brand_id", String(brandId));
+  q.set("page", "1");
+  q.set("limit", "1000");
+  const res = await authFetch(`${PROXY}?${q}`, {
+    headers: { Accept: "application/json", "Accept-Language": locale },
+    signal,
+  });
+  if (!res.ok) {
+    throw new Error(`filters product_brand_categories ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    items: MemberUserBrandCategoryFilterItem[];
+  };
+  return data.items ?? [];
 }
 
 export async function fetchMemberUserBusinessRelations(

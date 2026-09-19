@@ -1114,7 +1114,76 @@ func scanUserProductItemFilterRow(rows *sql.Rows) ([]userProductItemFilterRow, e
 	return out, rows.Err()
 }
 
-func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, page, limit int, search string, id int64, brandID int64) ([]userProductItemFilterRow, int64, error) {
+type userProductBrandCategoryRow struct {
+	ID        int64
+	Name      string
+	ParentID  sql.NullInt64
+	SortOrder int32
+}
+
+func (r *UserRepository) FilterProductBrandCategories(ctx context.Context, locale string, brandID int64) ([]userProductBrandCategoryRow, int64, error) {
+	const q = `
+WITH RECURSIVE linked AS (
+  SELECT par.related_id AS id
+  FROM product_attribute_relation par
+  INNER JOIN product_attribute cat ON cat.id = par.related_id
+    AND cat.deleted_at IS NULL AND cat.is_active = TRUE AND cat.type = 'category'
+  WHERE par.product_attribute_id = $2
+),
+ancestors AS (
+  SELECT pa.id, pa.parent_id, pa.sort_order
+  FROM product_attribute pa
+  INNER JOIN linked l ON l.id = pa.id
+  WHERE pa.deleted_at IS NULL AND pa.is_active = TRUE AND pa.type = 'category'
+  UNION
+  SELECT pa.id, pa.parent_id, pa.sort_order
+  FROM product_attribute pa
+  INNER JOIN ancestors a ON pa.id = a.parent_id
+  WHERE pa.deleted_at IS NULL AND pa.type = 'category'
+),
+descendants AS (
+  SELECT pa.id, pa.parent_id, pa.sort_order
+  FROM product_attribute pa
+  INNER JOIN linked l ON l.id = pa.id
+  WHERE pa.deleted_at IS NULL AND pa.is_active = TRUE AND pa.type = 'category'
+  UNION
+  SELECT pa.id, pa.parent_id, pa.sort_order
+  FROM product_attribute pa
+  INNER JOIN descendants d ON pa.parent_id = d.id
+  WHERE pa.deleted_at IS NULL AND pa.is_active = TRUE AND pa.type = 'category'
+),
+closure AS (
+  SELECT id, parent_id, sort_order FROM ancestors
+  UNION
+  SELECT id, parent_id, sort_order FROM descendants
+)
+SELECT DISTINCT c.id, COALESCE(al.name, ''), c.parent_id, c.sort_order
+FROM closure c
+LEFT JOIN product_attribute_language al ON al.product_attribute_id = c.id AND al.locale = $1
+ORDER BY c.sort_order, c.id`
+	rows, err := r.db.QueryContext(ctx, q, locale, brandID)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	var out []userProductBrandCategoryRow
+	for rows.Next() {
+		var row userProductBrandCategoryRow
+		if err := rows.Scan(&row.ID, &row.Name, &row.ParentID, &row.SortOrder); err != nil {
+			return nil, 0, err
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	if out == nil {
+		out = []userProductBrandCategoryRow{}
+	}
+	return out, int64(len(out)), nil
+}
+
+func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, page, limit int, search string, id int64, brandID, categoryID int64) ([]userProductItemFilterRow, int64, error) {
 	if id > 0 {
 		row, err := r.loadProductItemFilterByID(ctx, locale, id)
 		if err != nil {
@@ -1138,6 +1207,10 @@ func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, 
 	if brandID > 0 {
 		args = append(args, brandID)
 		clause += fmt.Sprintf(" AND pl.product_brand_id = $%d", len(args))
+	}
+	if categoryID > 0 {
+		args = append(args, categoryID)
+		clause += fmt.Sprintf(" AND pl.product_category_id = $%d", len(args))
 	}
 	if q := strings.TrimSpace(search); q != "" {
 		args = append(args, "%"+strings.ToLower(q)+"%")

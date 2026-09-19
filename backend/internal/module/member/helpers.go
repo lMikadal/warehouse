@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"strings"
+	"time"
 )
 
 type optionalInt64 struct {
@@ -30,6 +31,23 @@ func nullActor(id int64) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: id, Valid: true}
+}
+
+// parseOptionalISODate accepts YYYY-MM-DD (form/API date fields). Echo JSON bind does not
+// parse date-only strings into *time.Time on DiscountRow.
+func parseOptionalISODate(s *string) (*time.Time, error) {
+	if s == nil {
+		return nil, nil
+	}
+	trimmed := strings.TrimSpace(*s)
+	if trimmed == "" {
+		return nil, nil
+	}
+	t, err := time.Parse("2006-01-02", trimmed)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 func validateNames(names map[string]string) error {

@@ -305,11 +305,18 @@ func (h *UserHandler) createDiscount(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
-	var body DiscountRow
-	if err := c.Bind(&body); err != nil || body.ProductItemID <= 0 {
+	var body discountInputBody
+	if err := c.Bind(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
+	}
+	if body.ProductItemID <= 0 {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "product_item_id required"})
 	}
-	id, err := h.repo.CreateDiscount(c.Request().Context(), userID, body, httputil.ActorID(c))
+	row, err := body.toDiscountRow()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid date"})
+	}
+	id, err := h.repo.CreateDiscount(c.Request().Context(), userID, row, httputil.ActorID(c))
 	if err != nil {
 		applog.HTTPError(c, "create member discount", err)
 		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "create failed"})
@@ -326,11 +333,15 @@ func (h *UserHandler) patchDiscount(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
-	var body DiscountRow
+	var body discountInputBody
 	if err := c.Bind(&body); err != nil {
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid body"})
 	}
-	if err := h.repo.PatchDiscount(c.Request().Context(), userID, discountID, body, httputil.ActorID(c)); err != nil {
+	row, err := body.toDiscountRow()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid date"})
+	}
+	if err := h.repo.PatchDiscount(c.Request().Context(), userID, discountID, row, httputil.ActorID(c)); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 		}

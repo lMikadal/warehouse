@@ -571,9 +571,10 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
   const canSave = isEdit ? perms.update : perms.create;
   const formReadOnly = isEdit && !canSave;
 
-  const loadDetail = useCallback(async () => {
+  const loadDetail = useCallback(async (opts?: { silent?: boolean }) => {
     if (!isEdit || editId == null) return;
-    setLoading(true);
+    const silent = opts?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const d = await fetchMemberUser(locale, editId);
       setSku(d.sku ?? "");
@@ -634,7 +635,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         e instanceof MemberUserApiError ? e.message : tErr("generic")
       );
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [isEdit, editId, locale, tErr]);
 
@@ -1600,7 +1601,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
                         creditIds={creditIds}
                         creditOptions={creditProfileOptions}
                         canManage={perms.update}
-                        onReload={loadDetail}
+                        onReload={(opts) => loadDetail(opts)}
                       />
                     ) : null}
                   </TabsContent>

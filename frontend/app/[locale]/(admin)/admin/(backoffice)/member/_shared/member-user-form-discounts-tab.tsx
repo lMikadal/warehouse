@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
@@ -59,6 +59,7 @@ import {
   discountRowOverlapsFilterRange,
   formatBaht,
   isExpiredRow,
+  isPendingMemberDiscountId,
   productDisplayFromFilter,
   todayIsoDate,
   type BulkDraftFields,
@@ -83,7 +84,7 @@ export type MemberUserFormDiscountsTabProps = {
   creditIds: string[];
   creditOptions: RemoteOption[];
   canManage: boolean;
-  onReload: () => void | Promise<void>;
+  onReload: (opts?: { silent?: boolean }) => void | Promise<void>;
 };
 
 export function MemberUserFormDiscountsTab({
@@ -113,6 +114,10 @@ export function MemberUserFormDiscountsTab({
   const [discountPageSize, setDiscountPageSize] =
     useState<PageSizeOption>(10);
 
+  const [pendingDiscounts, setPendingDiscounts] = useState<
+    MemberUserDiscountRow[]
+  >([]);
+  const nextPendingDiscountIdRef = useRef(-1);
   const [bulkDiscountRowIds, setBulkDiscountRowIds] = useState<number[]>([]);
   const [bulkDraft, setBulkDraft] = useState<Record<number, BulkDraftFields>>(
     {}
@@ -124,7 +129,6 @@ export function MemberUserFormDiscountsTab({
   >(new Map());
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerBusy, setPickerBusy] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<MemberUserDiscountRow | null>(
@@ -143,6 +147,9 @@ export function MemberUserFormDiscountsTab({
   const [bulkApplyStart, setBulkApplyStart] = useState("");
   const [bulkApplyEnd, setBulkApplyEnd] = useState("");
 
+  const bulkBarFieldClass =
+    "min-w-[8rem] max-w-[11rem] shrink-0 flex-1 !w-auto gap-1.5";
+
   const creditTabs = useMemo(
     () => creditTabsFromSelection(creditIds, creditOptions),
     [creditIds, creditOptions]
@@ -156,9 +163,24 @@ export function MemberUserFormDiscountsTab({
     return creditTabs[0]?.value ?? "";
   }, [creditTabs, discountCreditId]);
 
+  const allDiscountRows = useMemo(
+    () => [...discounts, ...pendingDiscounts],
+    [discounts, pendingDiscounts]
+  );
+
+  const findDiscountForCredit = (
+    productItemId: number,
+    creditId: number
+  ): MemberUserDiscountRow | undefined =>
+    allDiscountRows.find(
+      (d) =>
+        d.product_item_id === productItemId &&
+        Number(d.member_credit_id) === Number(creditId)
+    );
+
   const filteredRows = useMemo(() => {
     const creditNum = Number(activeCreditId);
-    let rows = discounts.filter((r) => {
+    let rows = allDiscountRows.filter((r) => {
       if (creditNum) {
         if (Number(r.member_credit_id) !== creditNum) return false;
       }
@@ -203,7 +225,7 @@ export function MemberUserFormDiscountsTab({
     }
     return rows;
   }, [
-    discounts,
+    allDiscountRows,
     activeCreditId,
     subTab,
     today,
@@ -298,6 +320,17 @@ export function MemberUserFormDiscountsTab({
 
   const removeRow = async (id: number) => {
     if (!canManage) return;
+    if (isPendingMemberDiscountId(id)) {
+      setPendingDiscounts((prev) => prev.filter((r) => r.id !== id));
+      setBulkDiscountRowIds((prev) => prev.filter((x) => x !== id));
+      setBulkDraft((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setDeleteId(null);
+      return;
+    }
     setBusyId(id);
     try {
       await deleteMemberUserDiscount(locale, userId, id);
@@ -337,16 +370,29 @@ export function MemberUserFormDiscountsTab({
     const d = draftForRow(row);
     setBusyId(row.id);
     try {
-      await patchMemberUserDiscount(locale, userId, row.id, {
+      const body = {
         member_credit_id: row.member_credit_id ?? Number(activeCreditId),
         product_item_id: row.product_item_id,
         minimum_qty: Number(d.minimum_qty) || 0,
         discount: Number(d.discount) || 0,
         discount_type: "percent",
-        date_start: d.date_start.trim() || null,
+        date_start: d.date_start.trim() || today,
         date_end: d.date_end.trim() || null,
         is_active: true,
-      });
+      };
+      if (isPendingMemberDiscountId(row.id)) {
+        const { id: createdId } = await createMemberUserDiscount(
+          locale,
+          userId,
+          body
+        );
+        setPendingDiscounts((prev) => prev.filter((r) => r.id !== row.id));
+        setBulkDiscountRowIds((prev) =>
+          prev.map((id) => (id === row.id ? createdId : id))
+        );
+      } else {
+        await patchMemberUserDiscount(locale, userId, row.id, body);
+      }
       setBulkDraft((prev) => {
         const next = { ...prev };
         delete next[row.id];
@@ -375,16 +421,17 @@ export function MemberUserFormDiscountsTab({
     setSaving(true);
     try {
       for (const id of ids) {
-        const row = discounts.find((r) => r.id === id);
+        const row = allDiscountRows.find((r) => r.id === id);
         if (!row) continue;
+        const draft = bulkDraft[id] ?? bulkDraftFromRow(row);
         const patch: Parameters<typeof patchMemberUserDiscount>[3] = {
           member_credit_id: row.member_credit_id ?? Number(activeCreditId),
           product_item_id: row.product_item_id,
           discount_type: "percent",
-          discount: row.discount,
-          minimum_qty: row.minimum_qty,
-          date_start: row.date_start ?? null,
-          date_end: row.date_end ?? null,
+          discount: Number(draft.discount) || row.discount,
+          minimum_qty: Number(draft.minimum_qty) || row.minimum_qty,
+          date_start: draft.date_start.trim() || row.date_start || today,
+          date_end: draft.date_end.trim() || row.date_end || null,
           is_active: true,
         };
         if (bulkApplyMin.trim() !== "") {
@@ -395,10 +442,19 @@ export function MemberUserFormDiscountsTab({
         }
         if (bulkApplyStart.trim()) patch.date_start = bulkApplyStart;
         if (bulkApplyEnd.trim()) patch.date_end = bulkApplyEnd;
-        await patchMemberUserDiscount(locale, userId, id, patch);
+        if (isPendingMemberDiscountId(id)) {
+          await createMemberUserDiscount(locale, userId, patch);
+          setPendingDiscounts((prev) => prev.filter((r) => r.id !== id));
+        } else {
+          await patchMemberUserDiscount(locale, userId, id, patch);
+        }
       }
       setBulkChecked({});
       setBulkDraft({});
+      setBulkApplyMin("");
+      setBulkApplyDisc("");
+      setBulkApplyStart("");
+      setBulkApplyEnd("");
       if (subTab === "bulk") {
         setBulkDiscountRowIds((prev) =>
           prev.filter((id) => !ids.includes(id))
@@ -416,59 +472,52 @@ export function MemberUserFormDiscountsTab({
     }
   };
 
-  const handlePickerConfirm = async (productIds: number[]) => {
+  const handlePickerConfirm = (productIds: number[]) => {
     if (!creditIds.length) {
       toast.info(t("noCredits"));
       return;
     }
-    setPickerBusy(true);
-    try {
-      const newBulkIds: number[] = [];
-      for (const pid of productIds) {
-        for (const creditId of creditIds) {
-          const existing = discounts.find(
-            (d) =>
-              d.product_item_id === pid &&
-              Number(d.member_credit_id) === Number(creditId)
-          );
-          if (existing) {
-            newBulkIds.push(existing.id);
-            continue;
-          }
-          const { id: createdId } = await createMemberUserDiscount(
-            locale,
-            userId,
-            {
-              member_credit_id: Number(creditId),
-              product_item_id: pid,
-              minimum_qty: 1,
-              discount: 0,
-              discount_type: "percent",
-              date_start: today,
-              date_end: null,
-              is_active: true,
-            }
-          );
-          newBulkIds.push(createdId);
+    const newPending: MemberUserDiscountRow[] = [];
+    const newBulkIds: number[] = [];
+    const stagedKeys = new Set<string>();
+    for (const pid of productIds) {
+      for (const creditId of creditIds) {
+        const key = `${pid}:${creditId}`;
+        if (stagedKeys.has(key)) continue;
+        const existing = findDiscountForCredit(pid, Number(creditId));
+        if (existing) {
+          newBulkIds.push(existing.id);
+          continue;
         }
+        const tempId = nextPendingDiscountIdRef.current;
+        nextPendingDiscountIdRef.current -= 1;
+        newPending.push({
+          id: tempId,
+          member_credit_id: Number(creditId),
+          product_item_id: pid,
+          minimum_qty: 1,
+          discount: 0,
+          discount_type: "percent",
+          date_start: today,
+          date_end: null,
+          is_active: true,
+        });
+        newBulkIds.push(tempId);
+        stagedKeys.add(key);
       }
-      setBulkDiscountRowIds((prev) => {
-        const set = new Set(prev);
-        for (const id of newBulkIds) set.add(id);
-        return [...set];
-      });
-      setSubTab("bulk");
-      setDiscountPage(1);
-      setPickerOpen(false);
-      toast.success(tCrud("toast.created"));
-      await onReload();
-    } catch (err) {
-      toast.error(
-        err instanceof MemberUserApiError ? err.message : tErr("generic")
-      );
-    } finally {
-      setPickerBusy(false);
     }
+    if (newPending.length) {
+      setPendingDiscounts((prev) => [...prev, ...newPending]);
+    }
+    setBulkDiscountRowIds((prev) => {
+      const set = new Set(prev);
+      for (const id of newBulkIds) set.add(id);
+      return [...set];
+    });
+    setSubTab("bulk");
+    setDiscountPage(1);
+    setPickerOpen(false);
+    if (newBulkIds.length) toast.success(tCrud("toast.created"));
   };
 
   const pageRowIds = sliced.rows.map((r) => r.id);
@@ -793,11 +842,12 @@ export function MemberUserFormDiscountsTab({
       ) : null}
 
       {showBulkBar ? (
-        <div className="flex flex-wrap items-end gap-3 rounded-md border bg-muted/30 p-3">
+        <div className="flex flex-nowrap items-end gap-3 overflow-x-auto rounded-md border bg-muted/30 p-3">
           <FormField
             id="mu-bulk-min"
             labelKey="memberUser.minQty"
             type="number"
+            className={bulkBarFieldClass}
             value={bulkApplyMin}
             onChange={setBulkApplyMin}
             readOnly={!canManage || saving}
@@ -806,6 +856,7 @@ export function MemberUserFormDiscountsTab({
             id="mu-bulk-disc"
             labelKey="memberUser.discountPercent"
             type="number"
+            className={bulkBarFieldClass}
             value={bulkApplyDisc}
             onChange={setBulkApplyDisc}
             readOnly={!canManage || saving}
@@ -814,6 +865,7 @@ export function MemberUserFormDiscountsTab({
             id="mu-bulk-start"
             labelKey="memberUser.startDate"
             type="date"
+            className={bulkBarFieldClass}
             value={bulkApplyStart}
             onChange={setBulkApplyStart}
             readOnly={!canManage || saving}
@@ -822,13 +874,14 @@ export function MemberUserFormDiscountsTab({
             id="mu-bulk-end"
             labelKey="memberUser.endDate"
             type="date"
+            className={bulkBarFieldClass}
             value={bulkApplyEnd}
             onChange={setBulkApplyEnd}
             readOnly={!canManage || saving}
           />
           <Button
             type="button"
-            size="sm"
+            className="mb-0.5 shrink-0"
             disabled={!canManage || saving}
             onClick={() => void applyBulkToChecked()}
           >
@@ -904,7 +957,6 @@ export function MemberUserFormDiscountsTab({
       <MemberUserDiscountProductPickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        confirming={pickerBusy}
         onConfirm={handlePickerConfirm}
       />
 

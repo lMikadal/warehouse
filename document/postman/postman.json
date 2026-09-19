@@ -1471,6 +1471,24 @@
               }
             },
             {
+              "name": "Member user filters (product items)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=product_items&page=1&limit=10&brand_id=1&category_id=1",
+                "description": "member.member_user.view — discount product picker; optional brand_id and category_id."
+              }
+            },
+            {
+              "name": "Member user filters (product brand categories)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=product_brand_categories&brand_id=1",
+                "description": "member.member_user.view — brand-linked categories plus ancestors and descendants (parent_id, sort_order on items)."
+              }
+            },
+            {
               "name": "List members",
               "request": {
                 "method": "GET",

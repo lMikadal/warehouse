@@ -689,6 +689,7 @@ window.I18N_EN = {
   "memberUser.discountTabExpired": "Expired",
   "memberUser.discountPercent": "Percent",
   "memberUser.discountBaht": "Baht",
+  "memberUser.discountType": "Discount type",
   "memberUser.minQty": "Min. order qty",
   "memberUser.regularPrice": "Regular price",
   "memberUser.specialPrice": "Special price",
