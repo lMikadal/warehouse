@@ -246,6 +246,29 @@ export function buildPermissionCatalog(): {
       continue;
     }
 
+    if (page.type === "order_compare") {
+      const comparePairs: { action: PermAction; id: number }[] = [
+        { action: "view", id: 205 },
+        { action: "update", id: 207 },
+      ];
+      for (const { action, id } of comparePairs) {
+        const code = `${page.permModule}.${page.type}.${action}`;
+        rows.push({
+          id,
+          code,
+          module: page.permModule,
+          type: page.type,
+          action,
+          resource: page.resource,
+          method: PERM_METHOD[action],
+          is_active: !GLOBAL_INACTIVE[action],
+        });
+        codeToId.set(code, id);
+      }
+      nextId = 211;
+      continue;
+    }
+
     const waveKey = `${page.permModule}.${page.type}`;
     let startId = WAVE_START_ID[waveKey];
     if (startId == null) {

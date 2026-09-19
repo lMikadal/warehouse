@@ -110,7 +110,15 @@ func TestCodeForRoute(t *testing.T) {
 		t.Fatalf("order compare export: got %q %v", code, ok)
 	}
 	code, ok = CodeForRoute("POST", "/api/v1/order/compares/import")
-	if !ok || code != "order.order_compare.create" {
+	if !ok || code != "order.order_compare.update" {
 		t.Fatalf("order compare import: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/purchases")
+	if !ok || code != "order.order_purchase.view" {
+		t.Fatalf("order purchase list: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/store-sales")
+	if !ok || code != "order.order_store.view" {
+		t.Fatalf("order store list: got %q %v", code, ok)
 	}
 }

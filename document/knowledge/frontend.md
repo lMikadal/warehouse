@@ -315,9 +315,9 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 |------|--------|
 | Route | `/admin/order/compare` + [`loading.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/compare/loading.tsx) |
 | BFF / API | [`lib/bff-order-compare-handlers.ts`](../../frontend/lib/bff-order-compare-handlers.ts) → [`app/api/v1/auth/proxy/order/compares/`](../../frontend/app/api/v1/auth/proxy/order/compares/); client [`lib/order-compare-api.ts`](../../frontend/lib/order-compare-api.ts) |
-| UI | [`order/_shared/order-compare-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/_shared/order-compare-page.tsx) — brand/category tree, discount dialog per scope (all `member_setting_relation` rows), draft map + footer save; JSON import/export |
+| UI | [`order/_shared/order-compare-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/_shared/order-compare-page.tsx) — brand/category tree, discount dialog per scope (all `member_setting_relation` rows); **`.view`** opens dialog read-only; **`.update`** enables edits, dialog Save, and fixed footer draft save; future JSON import/export → gate on `.update` / `.view` |
 | i18n | [`messages/{th,en}/page-order-compare.json`](../../frontend/messages/th/page-order-compare.json) |
-| RBAC | `order.order_compare` |
+| RBAC | `order.order_compare` — catalog actions **view + update** only |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-order-compare.md`](../checklist/frontend/phase-frontend-order-compare.md) |
 
 ### Product list (item browse + aggregate form)

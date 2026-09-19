@@ -25,7 +25,6 @@ export type TreeScopePick = {
 
 type Props = {
   brands: OrderCompareTreeNode[];
-  canEdit: boolean;
   onSelectScope: (scope: TreeScopePick) => void;
   scopeDefined?: (brandId: number, categoryId?: number | null) => boolean;
 };
@@ -37,7 +36,6 @@ function NodeRows({
   brandName,
   expanded,
   toggle,
-  canEdit,
   onSelectScope,
   scopeDefined,
   isBrand,
@@ -48,7 +46,6 @@ function NodeRows({
   brandName: string;
   expanded: Set<string>;
   toggle: (key: string) => void;
-  canEdit: boolean;
   onSelectScope: (scope: TreeScopePick) => void;
   scopeDefined?: Props["scopeDefined"];
   isBrand?: boolean;
@@ -95,7 +92,6 @@ function NodeRows({
         <TableCell className="text-center">
           <Button
             type="button"
-            disabled={!canEdit}
             onClick={() =>
               onSelectScope({
                 brandId,
@@ -130,7 +126,6 @@ function NodeRows({
               brandName={brandName}
               expanded={expanded}
               toggle={toggle}
-              canEdit={canEdit}
               onSelectScope={onSelectScope}
               scopeDefined={scopeDefined}
             />
@@ -142,7 +137,6 @@ function NodeRows({
 
 export function OrderCompareTreeTable({
   brands,
-  canEdit,
   onSelectScope,
   scopeDefined,
 }: Props) {
@@ -178,7 +172,6 @@ export function OrderCompareTreeTable({
               brandName={brand.name}
               expanded={expanded}
               toggle={toggle}
-              canEdit={canEdit}
               onSelectScope={onSelectScope}
               scopeDefined={scopeDefined}
               isBrand

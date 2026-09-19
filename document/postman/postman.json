@@ -1726,7 +1726,7 @@
               "request": {
                 "method": "GET",
                 "url": "{{baseUrl}}/order/compares/export",
-                "description": "order.order_compare.view (export perm for UI gating)"
+                "description": "order.order_compare.view — JSON export"
               }
             },
             {
@@ -1739,7 +1739,7 @@
                   "raw": "{\n  \"items\": [\n    {\n      \"brand_id\": 1,\n      \"category_id\": null,\n      \"member_setting_relation_id\": 1,\n      \"discount\": 5,\n      \"discount_type\": \"percent\"\n    }\n  ]\n}"
                 },
                 "url": "{{baseUrl}}/order/compares/import",
-                "description": "order.order_compare.create (import perm for UI gating)"
+                "description": "order.order_compare.update — bulk JSON import (catalog has view+update only)"
               }
             }
           ]

@@ -58,7 +58,7 @@ export function shouldLinkMenuPermissions(
   opts: { isDialog?: boolean }
 ): boolean {
   const rawPath = menu.path;
-  if (!rawPath || rawPath === "#" || opts.isDialog) return false;
+  if (!rawPath || opts.isDialog) return false;
   if (/dashboard\.html/i.test(rawPath)) return false;
   return true;
 }

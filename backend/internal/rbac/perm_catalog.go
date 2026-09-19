@@ -1,5 +1,7 @@
 package rbac
 
+import "strings"
+
 // PermPage is one API resource with six CRUD-style actions in system_permission.
 type PermPage struct {
 	Module   string
@@ -43,7 +45,16 @@ var CatalogPermPages = []PermPage{
 	{Module: "member", Type: "member_setting_business", Resource: "/api/v1/member/settings/businesses"},
 	{Module: "member", Type: "member_tier", Resource: "/api/v1/member/tiers"},
 	{Module: "member", Type: "member_user", Resource: "/api/v1/member/users"},
+	{Module: "order", Type: "order_ticket", Resource: "/api/v1/order/tickets"},
+	{Module: "order", Type: "order_store", Resource: "/api/v1/order/store-sales"},
+	{Module: "order", Type: "order_order", Resource: "/api/v1/order/orders"},
+	{Module: "order", Type: "order_store_claim", Resource: "/api/v1/order/store-claims"},
+	{Module: "order", Type: "order_store_claim_list", Resource: "/api/v1/order/store-claim-lists"},
+	{Module: "order", Type: "order_purchase", Resource: "/api/v1/order/purchases"},
 	{Module: "order", Type: "order_compare", Resource: "/api/v1/order/compares"},
+	{Module: "order", Type: "order_receive", Resource: "/api/v1/order/receives"},
+	{Module: "order", Type: "order_claim", Resource: "/api/v1/order/claims"},
+	{Module: "order", Type: "order_sales_claim", Resource: "/api/v1/order/sales-claims"},
 }
 
 func routePermPages() []PermPage {
@@ -121,6 +132,10 @@ func matchResource(path, resource string) bool {
 }
 
 func methodToAction(method, path string) string {
+	if method == "POST" && strings.HasSuffix(path, "/import") &&
+		strings.HasPrefix(path, "/api/v1/order/compares/") {
+		return "update"
+	}
 	switch method {
 	case "GET":
 		return "view"
@@ -131,7 +146,6 @@ func methodToAction(method, path string) string {
 	case "DELETE":
 		return "delete"
 	default:
-		_ = path
 		return ""
 	}
 }

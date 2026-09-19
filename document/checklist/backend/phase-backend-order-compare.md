@@ -10,6 +10,6 @@
 
 ## Required checklist
 
-- [x] RBAC seeds already had `order.order_compare.*` — runtime catalog wired
+- [x] RBAC catalog `order.order_compare` — **view + update** only (205/207); POST `/import` → `.update`
 - [x] No seed data in migration (schema only)
 - [ ] Manual smoke after `make backend-migrate-up` with dev product + member seeds

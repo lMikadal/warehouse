@@ -78,6 +78,13 @@
       nextPermId = 67;
       return;
     }
+    if (page.type === "order_compare") {
+      var compareStart = nextPermId;
+      pushPermRow(page, "view", compareStart);
+      pushPermRow(page, "update", compareStart + 2);
+      nextPermId = compareStart + 6;
+      return;
+    }
     ACTIONS.forEach(function (action) {
       pushPermRow(page, action, nextPermId);
       nextPermId += 1;

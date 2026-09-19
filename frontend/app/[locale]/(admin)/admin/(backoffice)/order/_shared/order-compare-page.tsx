@@ -167,7 +167,12 @@ export function OrderComparePage() {
     : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-24">
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col gap-4",
+        perms.update && "pb-24"
+      )}
+    >
       <CrudPageHeader
         title={tPage("title")}
         description={tPage("description")}
@@ -199,7 +204,6 @@ export function OrderComparePage() {
         <>
           <OrderCompareTreeTable
             brands={brands}
-            canEdit={perms.update}
             onSelectScope={openScope}
             scopeDefined={scopeDefined}
           />
@@ -216,48 +220,50 @@ export function OrderComparePage() {
         </>
       )}
 
-      <div
-        className={cn(
-          "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
-          footerInsetLeft ? "left-(--sidebar-width)" : "left-0"
-        )}
-      >
-        <div className="mx-auto flex w-full max-w-crud-page items-center justify-between gap-4 px-admin-content py-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {lastSavedAt ? (
-              <>
-                <Check
-                  className="size-4 text-green-600 dark:text-green-400"
-                  aria-hidden
-                />
-                {t("autoSaved", {
-                  time: formatDateTime(lastSavedAt.toISOString(), locale),
-                })}
-              </>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              disabled={dirtyKeys.length === 0 || saving}
-              onClick={handleCancel}
-            >
-              {tCrud("btn.cancel")}
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              disabled={!perms.update || dirtyKeys.length === 0 || saving}
-              onClick={() => void handleSaveAll()}
-            >
-              <Save className="size-4" aria-hidden />
-              {tCrud("btn.save")}
-            </Button>
+      {perms.update ? (
+        <div
+          className={cn(
+            "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+            footerInsetLeft ? "left-(--sidebar-width)" : "left-0"
+          )}
+        >
+          <div className="mx-auto flex w-full max-w-crud-page items-center justify-between gap-4 px-admin-content py-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {lastSavedAt ? (
+                <>
+                  <Check
+                    className="size-4 text-green-600 dark:text-green-400"
+                    aria-hidden
+                  />
+                  {t("autoSaved", {
+                    time: formatDateTime(lastSavedAt.toISOString(), locale),
+                  })}
+                </>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={dirtyKeys.length === 0 || saving}
+                onClick={handleCancel}
+              >
+                {tCrud("btn.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                disabled={dirtyKeys.length === 0 || saving}
+                onClick={() => void handleSaveAll()}
+              >
+                <Save className="size-4" aria-hidden />
+                {tCrud("btn.save")}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <OrderCompareDiscountDialog
         open={dialogOpen}

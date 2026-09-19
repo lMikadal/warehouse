@@ -13,4 +13,5 @@
 - [x] `useResourcePermissions("order", "order_compare")`
 - [x] Brand pagination + search
 - [x] Dialog batch fill (apply all) + draft until footer save
+- [x] View-only: scope dialog + rules fetch; no footer save bar; update-only for edits
 - [ ] Manual smoke with locale `th` (no `MISSING_MESSAGE`)

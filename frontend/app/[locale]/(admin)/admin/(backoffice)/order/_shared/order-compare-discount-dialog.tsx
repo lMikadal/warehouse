@@ -168,7 +168,7 @@ export function OrderCompareDiscountDialog({
                       type="number"
                       min={0}
                       max={100}
-                      className="h-8 min-w-0 flex-1 tabular-nums"
+                      className="h-10 min-w-0 flex-1 tabular-nums"
                       placeholder={t("applyAllPlaceholder")}
                       value={applyAll}
                       onChange={(e) => setApplyAll(e.target.value)}
@@ -176,7 +176,6 @@ export function OrderCompareDiscountDialog({
                     />
                     <Button
                       type="button"
-                      size="sm"
                       className="shrink-0"
                       onClick={handleApplyAll}
                       disabled={!canSave}
@@ -232,9 +231,11 @@ export function OrderCompareDiscountDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {tCrud("btn.cancel")}
           </Button>
-          <Button type="button" onClick={handleSave} disabled={!canSave || loading}>
-            {tCrud("btn.save")}
-          </Button>
+          {canSave ? (
+            <Button type="button" onClick={handleSave} disabled={loading}>
+              {tCrud("btn.save")}
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
