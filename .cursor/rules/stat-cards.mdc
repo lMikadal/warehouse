@@ -1,0 +1,35 @@
+---
+description: KPI / summary stat cards — icon well vertically centered against label/value column.
+alwaysApply: true
+---
+
+# Stat cards (KPI / summary)
+
+Applies to horizontal **summary stat cards** in `design/` mockups and `frontend/` production UI: icon well on the left (or leading edge) + label and value text on the right.
+
+## In scope
+
+- List page KPI rows (e.g. member user totals, warehouse view counts)
+- Form or modal summary strips (e.g. lot/history KPI cards)
+
+## Out of scope
+
+- Table cells, form field rows, page headers, avatars beside long prose — use normal layout rules; do not force stat-card centering there.
+
+## Row alignment (required)
+
+The **card row** flex container must vertically center the icon block against the text column:
+
+| Area | Requirement |
+|------|-------------|
+| **Frontend** | Outer card wrapper: `flex items-center` (plus `gap-*`, border, padding as designed) |
+| **Design** | Stat card class: `align-items: center` on the row (not `flex-start`) |
+
+The icon **well** (`__icon`, rounded square/circle behind the glyph) still uses internal centering (`items-center justify-center` / flex center on the well) so the Lucide/SVG sits in the middle of the well. This rule is about **row** cross-axis alignment only.
+
+## Reference
+
+- **Frontend:** [`warehouse-view-stat-cards.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/warehouse/_shared/warehouse-view-stat-cards.tsx)
+- **Design CSS:** `.member-user-stat`, `.wh-view-stat`, `.product-list-form__lot-stat` in [`design/css/style.css`](../../design/css/style.css)
+
+When adding a new stat card pattern, match this row alignment in the same change.

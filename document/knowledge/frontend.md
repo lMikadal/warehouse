@@ -298,6 +298,16 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | i18n | [`messages/{th,en}/page-member-tier.json`](../../frontend/messages/th/page-member-tier.json) |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-member-tier.md`](../checklist/frontend/phase-frontend-member-tier.md) |
 
+### Member users (list + form)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/member/users`, `/new`, `/[id]` + co-located `loading.tsx` |
+| BFF / API | [`lib/bff-member-user-handlers.ts`](../../frontend/lib/bff-member-user-handlers.ts) → [`app/api/v1/auth/proxy/member/users/`](../../frontend/app/api/v1/auth/proxy/member/users/) (+ `stats`, `filters`, nested files/discounts/histories); client [`lib/member-user-api.ts`](../../frontend/lib/member-user-api.ts) — list filters **`created_from` / `created_to` / `business_id`** via `client.list` **`appendQuery`** (not only extra fields on params; [`bff-crud-client`](../../frontend/lib/bff-crud-client.ts) serializes standard list keys only); filter facets [`lib/member-user-filters-combobox.ts`](../../frontend/lib/member-user-filters-combobox.ts) on **`GET …/users/filters?facet=`** (`member.member_user.view`) |
+| UI | Design [`member-user.html`](../../design/pages/member-user.html): [`member-user-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-user-list.tsx), [`member-user-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-user-form.tsx) + tab modules (orders placeholder, discounts, files) |
+| i18n | [`messages/{th,en}/page-member-user.json`](../../frontend/messages/th/page-member-user.json), [`member-user.json`](../../frontend/messages/th/member-user.json) |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-member-user.md`](../checklist/frontend/phase-frontend-member-user.md) |
+
 ### Product list (item browse + aggregate form)
 
 | Item | Detail |

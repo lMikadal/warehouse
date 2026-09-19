@@ -31,7 +31,7 @@
     );
   }
 
-  global.SEED_MEMBER_ADDRESS = [
+  global.SEED_MEMBER_USER_ADDRESS = [
     addr(1, 1, "tax", {
       member_type: "person",
       setting_prefix_id: 1,

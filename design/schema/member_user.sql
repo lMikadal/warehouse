@@ -4,9 +4,9 @@
 --   - member_tier_id: FK to the assigned tier (optional)
 --   - type: person (natural person) or company (legal entity)
 --   - setting_prefix_id, store_name, tax_number: identity basics (prefix lookup in setting module)
---   - address + geo: primary address on user row (list/display without JOIN member_address)
+--   - address + geo: primary address on user row (list/display without JOIN member_user_address)
 --   - branch / branch_name: HQ vs branch distinction (v1 added in 183)
---   - image_url → system_file_id (purpose: member_avatar); documents stay in member_file
+--   - image_url → system_file_id (purpose: member_avatar); documents stay in member_user_file
 
 CREATE TABLE member_user (
     id                      BIGSERIAL            PRIMARY KEY,              -- surrogate PK

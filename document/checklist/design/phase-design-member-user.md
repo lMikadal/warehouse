@@ -5,13 +5,13 @@ CRUD mockup for sidebar **สมาชิก → รายชื่อ** (`membe
 ## Phase checklist
 
 - [x] Wire menu id 36 to `pages/member-user.html`
-- [x] Add seeds: `member_user`, `member_address`, `member_user_setting`, `member_user_owner`, `member_file` (+ `system_file`), `member_discount`, `member_history`, `member_history_language`
+- [x] Add seeds: `member_user`, `member_user_address`, `member_user_setting`, `member_user_owner`, `member_user_file` (+ `system_file`), `member_user_discount`, `member_history`, `member_history_language`
 - [x] Merge tables in `seed/index.js`; bump `SEED_VERSION` to `member-user-1`
 - [x] Add member-user seed script tags on pages that load member tier seeds
 - [x] List page: filters, stat cards, paginated table, copy SKU, status switch, delete confirm
 - [x] Full-page form: create 75/25 cards; edit header + tabs (info / orders / discounts / files) + right panel
 - [x] Edit tab **ประวัติการสั่งซื้อ**: KPI + charts + carousel + filters + paginated order table from `order_payment` (+ joins); seeds `order_payment`, `order_payment_item`, `order_shipping`
-- [x] Persist to design schema (`member_user` identity + `member_address` tax/doc/financial + junctions)
+- [x] Persist to design schema (`member_user` identity + `member_user_address` tax/doc/financial + junctions)
 - [x] th/en i18n for page titles, filters, form, discounts, files, history
 - [x] Lucide icons: `copy`, `user-plus`, `user-check`, `phone`, `mail`, `calendar-days`, `file-text`
 - [x] List UI aligned with CRUD chrome (header import/export/add, toolbar filters, stat card icons)

@@ -1,0 +1,13 @@
+{
+  "page": {
+    "memberUser": {
+      "title": "Members",
+      "desc": "Manage members, contact profiles, business settings, and special discounts",
+      "add": "Add member",
+      "create": "Add member",
+      "edit": "Edit member",
+      "importSoon": "Import — coming soon",
+      "exportSoon": "Export — coming soon"
+    }
+  }
+}

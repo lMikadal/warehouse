@@ -2,7 +2,7 @@
 --   - sort_order: document display order (same pattern as product_item_file)
 --   - display name from system_file.original_name (no local name column)
 --   - purpose on system_file: 'member_document'
-CREATE TABLE member_file (
+CREATE TABLE member_user_file (
     id              BIGSERIAL    PRIMARY KEY,              -- surrogate PK
     member_user_id  BIGINT       NOT NULL REFERENCES member_user(id)  ON DELETE CASCADE, -- owning member
     system_file_id BIGINT       NOT NULL REFERENCES system_file(id)   ON DELETE RESTRICT, -- stored file reference
@@ -14,14 +14,14 @@ CREATE TABLE member_file (
     updated_by      BIGINT       REFERENCES admin_user(id) ON DELETE SET NULL
 );
 
-CREATE UNIQUE INDEX uq_member_file_user_file
-    ON member_file (member_user_id, system_file_id)
+CREATE UNIQUE INDEX uq_member_user_file_user_file
+    ON member_user_file (member_user_id, system_file_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_member_file_user_sort
-    ON member_file (member_user_id, sort_order)
+CREATE INDEX idx_member_user_file_user_sort
+    ON member_user_file (member_user_id, sort_order)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_member_file_file        ON member_file (system_file_id);
-CREATE INDEX idx_member_file_created_by  ON member_file (created_by) WHERE created_by IS NOT NULL;
-CREATE INDEX idx_member_file_updated_by  ON member_file (updated_by) WHERE updated_by IS NOT NULL;
+CREATE INDEX idx_member_user_file_file        ON member_user_file (system_file_id);
+CREATE INDEX idx_member_user_file_created_by  ON member_user_file (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX idx_member_user_file_updated_by  ON member_user_file (updated_by) WHERE updated_by IS NOT NULL;

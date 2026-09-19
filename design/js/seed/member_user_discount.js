@@ -1,6 +1,6 @@
 (function (global) {
   var audit = global.ADMIN_SEED_SHARED.audit;
-  global.SEED_MEMBER_DISCOUNT = [
+  global.SEED_MEMBER_USER_DISCOUNT = [
     Object.assign(
       {
         id: 1,

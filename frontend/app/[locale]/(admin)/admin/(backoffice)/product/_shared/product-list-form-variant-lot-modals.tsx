@@ -614,7 +614,7 @@ function StatCard({
         : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400";
 
   return (
-    <div className="border-border bg-background flex gap-2.5 rounded-[var(--radius)] border p-3">
+    <div className="border-border bg-background flex items-center gap-2.5 rounded-[var(--radius)] border p-3">
       <span
         className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconWellClass}`}
       >

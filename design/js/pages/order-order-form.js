@@ -48,7 +48,7 @@
   function memberCreditLimit() {
     var o = activeOrder();
     if (!o || !o.member_user_id) return null;
-    var addr = lib.activeRows("member_address").find(function (a) {
+    var addr = lib.activeRows("member_user_address").find(function (a) {
       return a.member_user_id === o.member_user_id && a.type === "financial";
     });
     return addr && addr.credit_limit != null ? Number(addr.credit_limit) : null;

@@ -16,7 +16,7 @@ Legend: **active** = `?is_active=` + `PATCH { "is_active" }`; **reorder** = `PAT
 | `location_location` | `/location/locations` | active, reorder | [x] | Sidebar inject is frontend-only |
 | `member_tier` | `/member/tiers` | active, move | [x] | Tree |
 | `member_user` | `/member/users` | active | [x] | Aggregate + nested files/discounts/history |
-| `member_discount` | `/member/users/:id/discounts` | active | [x] | Nested under user |
+| `member_user_discount` | `/member/users/:id/discounts` | active | [x] | Nested under user |
 | `member_setting_business` | `/member/settings/businesses` | active | [x] | Relations via business patch + `/settings/relations` |
 | `member_setting_credit` | `/member/settings/credits` | active | [x] | |
 | `member_setting_group` | `/member/settings/groups` | active | [x] | |

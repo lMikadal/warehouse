@@ -470,19 +470,19 @@
       updated_at: ts,
       updated_by: actorId(),
     });
-    global.store.getAll("member_address").forEach(function (r, idx) {
+    global.store.getAll("member_user_address").forEach(function (r, idx) {
       if (r.member_user_id === id && r.deleted_at == null) {
-        global.store.updateAt("member_address", idx, { deleted_at: ts, updated_at: ts });
+        global.store.updateAt("member_user_address", idx, { deleted_at: ts, updated_at: ts });
       }
     });
-    global.store.getAll("member_discount").forEach(function (r, idx) {
+    global.store.getAll("member_user_discount").forEach(function (r, idx) {
       if (r.member_user_id === id && r.deleted_at == null) {
-        global.store.updateAt("member_discount", idx, { deleted_at: ts, updated_at: ts });
+        global.store.updateAt("member_user_discount", idx, { deleted_at: ts, updated_at: ts });
       }
     });
-    global.store.getAll("member_file").forEach(function (r, idx) {
+    global.store.getAll("member_user_file").forEach(function (r, idx) {
       if (r.member_user_id === id && r.deleted_at == null) {
-        global.store.updateAt("member_file", idx, { deleted_at: ts, updated_at: ts });
+        global.store.updateAt("member_user_file", idx, { deleted_at: ts, updated_at: ts });
       }
     });
   }

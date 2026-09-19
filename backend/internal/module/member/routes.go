@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/labstack/echo/v5"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 )
 
 func RegisterRoutes(g *echo.Group, db *sql.DB) {
@@ -11,13 +12,14 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	relRepo := NewRelationRepository(db)
 	tierRepo := NewTierRepository(db)
 	userRepo := NewUserRepository(db)
+	langRepo := setting.NewLangRepository(db)
 
 	credit := NewSettingHandler(SettingCredit, setRepo, relRepo)
 	group := NewSettingHandler(SettingGroup, setRepo, relRepo)
 	business := NewSettingHandler(SettingBusiness, setRepo, relRepo)
 	rel := NewRelationHandler(relRepo)
 	tier := NewTierHandler(tierRepo, relRepo)
-	user := NewUserHandler(userRepo)
+	user := NewUserHandler(userRepo, relRepo, setRepo, langRepo)
 
 	s := g.Group("/settings")
 	s.GET("/credits", credit.list)
@@ -57,6 +59,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	g.DELETE("/tiers/:id/relations/:relationId", tier.deleteRelation)
 
 	g.GET("/users/filters", user.listFilters)
+	g.GET("/users/stats", user.stats)
 	g.GET("/users", user.list)
 	g.GET("/users/:id", user.get)
 	g.POST("/users", user.create)

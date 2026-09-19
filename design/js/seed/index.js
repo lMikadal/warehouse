@@ -1,6 +1,6 @@
 /** Merge seed tables into window.SEED — keys match design/schema/ table names. */
 (function (global) {
-  global.SEED_VERSION = "system-geo-rename-1";
+  global.SEED_VERSION = "member-user-table-rename-1";
 
   var tables = {};
 
@@ -87,11 +87,11 @@
 
   var memberUserTables = [
     "member_user",
-    "member_address",
+    "member_user_address",
     "member_user_setting",
     "member_user_owner",
-    "member_file",
-    "member_discount",
+    "member_user_file",
+    "member_user_discount",
     "member_history",
     "member_history_language",
   ];

@@ -266,12 +266,12 @@ export function WarehousePlacementCascadeRow({
       <>
         {formDisabled
           ? CHAIN.map((level) => (
-              <TableCell key={level} className="min-w-[9rem]">
+              <TableCell key={level} className="min-w-36">
                 <span className="text-sm">{readOnlyDisplayLabel(level)}</span>
               </TableCell>
             ))
           : CHAIN.map((level, i) => (
-              <TableCell key={level} className="min-w-[9rem]">
+              <TableCell key={level} className="min-w-36">
                 {levelFields[i]}
               </TableCell>
             ))}

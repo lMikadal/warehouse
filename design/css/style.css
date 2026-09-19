@@ -4007,7 +4007,7 @@ body.modal-open {
 
 .product-list-form__lot-stat {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.625rem;
   padding: 0.75rem;
   border: 1px solid var(--color-muted);
@@ -5697,7 +5697,7 @@ select.product-list-form__hist-filter-control {
 
 .wh-view-stat {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   border: 1px solid var(--color-muted);
@@ -6846,7 +6846,7 @@ select.product-list-form__hist-filter-control {
 
 .member-user-stat {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   border: 1px solid var(--color-muted);

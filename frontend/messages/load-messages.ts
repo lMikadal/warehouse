@@ -9,6 +9,7 @@ import enModal from "./en/modal.json";
 import enPageAuth from "./en/page-auth.json";
 import enPageMemberSetting from "./en/page-member-setting.json";
 import enPageMemberTier from "./en/page-member-tier.json";
+import enPageMemberUser from "./en/page-member-user.json";
 import enPageSetting from "./en/page-setting.json";
 import enPageLocation from "./en/page-location.json";
 import enPageProduct from "./en/page-product.json";
@@ -19,6 +20,7 @@ import enPageSupplier from "./en/page-supplier.json";
 import enWarehouse from "./en/warehouse.json";
 import enPageSystem from "./en/page-system.json";
 import enSupplier from "./en/supplier.json";
+import enMemberUser from "./en/member-user.json";
 import enUser from "./en/user.json";
 import thAction from "./th/action.json";
 import thApp from "./th/app.json";
@@ -31,6 +33,7 @@ import thModal from "./th/modal.json";
 import thPageAuth from "./th/page-auth.json";
 import thPageMemberSetting from "./th/page-member-setting.json";
 import thPageMemberTier from "./th/page-member-tier.json";
+import thPageMemberUser from "./th/page-member-user.json";
 import thPageSetting from "./th/page-setting.json";
 import thPageLocation from "./th/page-location.json";
 import thPageProduct from "./th/page-product.json";
@@ -41,6 +44,7 @@ import thPageSupplier from "./th/page-supplier.json";
 import thWarehouse from "./th/warehouse.json";
 import thPageSystem from "./th/page-system.json";
 import thSupplier from "./th/supplier.json";
+import thMemberUser from "./th/member-user.json";
 import thUser from "./th/user.json";
 
 export type AppLocale = "en" | "th";
@@ -82,6 +86,7 @@ const FRAGMENTS: MessageTree[] = [
   thPageSetting,
   thPageMemberSetting,
   thPageMemberTier,
+  thPageMemberUser,
   thPageLocation,
   thPageWarehouse,
   thPageProduct,
@@ -90,6 +95,7 @@ const FRAGMENTS: MessageTree[] = [
   thPageSupplier,
   thWarehouse,
   thSupplier,
+  thMemberUser,
   thUser,
 ];
 
@@ -107,6 +113,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageSetting,
   enPageMemberSetting,
   enPageMemberTier,
+  enPageMemberUser,
   enPageLocation,
   enPageWarehouse,
   enPageProduct,
@@ -115,6 +122,7 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageSupplier,
   enWarehouse,
   enSupplier,
+  enMemberUser,
   enUser,
 ];
 

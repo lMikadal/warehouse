@@ -1128,7 +1128,7 @@ export function ProductListFormVariantSections({
                   });
                   return (
                     <TableRow key={chId}>
-                      <TableCell className="min-w-[12rem]">
+                      <TableCell className="min-w-48">
                         <div className="flex items-center gap-2">
                           <SaleChannelLogoThumb
                             fileId={channelMeta?.system_file_id}
@@ -1328,7 +1328,7 @@ export function ProductListFormVariantSections({
                               : `draft-sup-${si}`
                           }
                         >
-                          <TableCell className="min-w-[12rem]">
+                          <TableCell className="min-w-48">
                             <Select
                               value={
                                 row.supplier_user_id > 0

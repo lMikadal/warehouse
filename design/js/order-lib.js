@@ -422,7 +422,7 @@
     if (!memberId) return null;
     var creditId = ctx && ctx.memberCreditId ? Number(ctx.memberCreditId) : null;
     var todayYmd = localDateYmd(new Date());
-    var candidates = activeRows("member_discount").filter(function (r) {
+    var candidates = activeRows("member_user_discount").filter(function (r) {
       return (
         r.member_user_id === memberId &&
         r.product_item_id === itemId &&

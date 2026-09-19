@@ -10,6 +10,7 @@
     "type": "Type",
     "name": "Name",
     "country": "Country",
+    "created_at": "Member since",
     "province": "Province",
     "district": "District",
     "postcode": "Postcode",

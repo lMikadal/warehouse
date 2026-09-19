@@ -26,7 +26,7 @@
       audit(1)
     ),
   ];
-  global.SEED_MEMBER_FILE = [
+  global.SEED_MEMBER_USER_FILE = [
     Object.assign(
       {
         id: 1,

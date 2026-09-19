@@ -6,6 +6,8 @@
       "create": "Add",
       "delete": "Delete",
       "edit": "Edit",
+      "export": "Export",
+      "import": "Import",
       "save": "Save",
       "view": "View"
     },

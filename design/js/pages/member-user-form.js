@@ -818,7 +818,7 @@
 
   function addressByType(type) {
     return (
-      global.store.getAll("member_address").find(function (r) {
+      global.store.getAll("member_user_address").find(function (r) {
         return r.member_user_id === memberId && r.type === type && r.deleted_at == null;
       }) || null
     );
@@ -978,7 +978,7 @@
   function findMemberDiscountRowForCredit(productItemId, creditId) {
     var pid = Number(productItemId);
     return (
-      lib.activeRows("member_discount").find(function (r) {
+      lib.activeRows("member_user_discount").find(function (r) {
         return (
           Number(r.member_user_id) === Number(memberId) &&
           Number(r.product_item_id) === pid &&
@@ -1002,7 +1002,7 @@
   function discountsForCredit(creditId, expiredOnly) {
     var today = todayIso();
     return lib
-      .activeRows("member_discount")
+      .activeRows("member_user_discount")
       .filter(function (r) {
         if (Number(r.member_user_id) !== Number(memberId)) return false;
         if (creditId && Number(r.member_credit_id) !== Number(creditId)) return false;
@@ -2003,7 +2003,7 @@
 
   function memberFiles() {
     return lib
-      .activeRows("member_file")
+      .activeRows("member_user_file")
       .filter(function (r) {
         return r.member_user_id === memberId;
       })
@@ -2351,10 +2351,10 @@
       payload
     );
     if (existing) {
-      global.store.update("member_address", existing.id, row);
+      global.store.update("member_user_address", existing.id, row);
     } else {
       global.store.create(
-        "member_address",
+        "member_user_address",
         Object.assign({ created_at: now(), created_by: actorId() }, row)
       );
     }
@@ -3230,7 +3230,7 @@
               added += 1;
               return;
             }
-            var created = global.store.create("member_discount", {
+            var created = global.store.create("member_user_discount", {
               member_user_id: memberId,
               member_credit_id: n(creditId),
               product_item_id: pid,
@@ -3265,7 +3265,7 @@
     if (discOk) {
       discOk.addEventListener("click", function () {
         var id = Number(val("mu-disc-id"));
-        global.store.update("member_discount", id, {
+        global.store.update("member_user_discount", id, {
           minimum_qty: numOrNull("mu-disc-min") || 0,
           discount: numOrNull("mu-disc-val") || 0,
           discount_type: "percent",
@@ -3316,7 +3316,7 @@
   }
 
   function seedBulkDraftFromStore(discId) {
-    var row = global.store.getById("member_discount", discId);
+    var row = global.store.getById("member_user_discount", discId);
     if (!row) return;
     bulkDraft[discId] = {
       minimum_qty: row.minimum_qty != null ? String(row.minimum_qty) : "0",
@@ -3328,7 +3328,7 @@
   }
 
   function updateBulkSpecialCell(root, discId) {
-    var row = global.store.getById("member_discount", discId);
+    var row = global.store.getById("member_user_discount", discId);
     if (!row) return;
     if (!bulkDraft[discId]) seedBulkDraftFromStore(discId);
     var d = bulkDraft[discId];
@@ -3338,10 +3338,10 @@
   }
 
   function saveBulkDiscountRow(discId) {
-    var row = global.store.getById("member_discount", discId);
+    var row = global.store.getById("member_user_discount", discId);
     if (!row) return;
     var d = bulkDraft[discId] || bulkRowDraft(row);
-    global.store.update("member_discount", discId, {
+    global.store.update("member_user_discount", discId, {
       minimum_qty: Number(d.minimum_qty) || 0,
       discount: Number(d.discount) || 0,
       discount_type: "percent",
@@ -3554,7 +3554,7 @@
           if (discEl && discEl.value !== "") patch.discount = Number(discEl.value) || 0;
           if (startEl && startEl.value) patch.date_start = startEl.value;
           if (endEl && endEl.value) patch.date_end = endEl.value;
-          global.store.update("member_discount", id, patch);
+          global.store.update("member_user_discount", id, patch);
           delete bulkDraft[id];
           delete bulkChecked[id];
           if (discountTab === "bulk") removeBulkDiscountRowId(id);
@@ -3569,7 +3569,7 @@
     }
     root.querySelectorAll(".mu-disc-edit").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var row = global.store.getById("member_discount", Number(btn.getAttribute("data-id")));
+        var row = global.store.getById("member_user_discount", Number(btn.getAttribute("data-id")));
         openOverlay("disc", discEditHtml(row));
       });
     });
@@ -3577,7 +3577,7 @@
       btn.addEventListener("click", function () {
         var id = Number(btn.getAttribute("data-id"));
         openConfirm(function () {
-          global.store.update("member_discount", id, { deleted_at: now(), updated_at: now() });
+          global.store.update("member_user_discount", id, { deleted_at: now(), updated_at: now() });
           delete bulkDraft[id];
           delete bulkChecked[id];
           removeBulkDiscountRowId(id);
@@ -3709,7 +3709,7 @@
             memberFiles().reduce(function (m, r) {
               return Math.max(m, r.sort_order || 0);
             }, 0) + 100;
-          global.store.create("member_file", {
+          global.store.create("member_user_file", {
             member_user_id: memberId,
             system_file_id: wf.id,
             sort_order: sort,
@@ -3729,7 +3729,7 @@
       btn.addEventListener("click", function () {
         var id = Number(btn.getAttribute("data-id"));
         openConfirm(function () {
-          global.store.update("member_file", id, { deleted_at: now(), updated_at: now() });
+          global.store.update("member_user_file", id, { deleted_at: now(), updated_at: now() });
           global.toast.show(t("crud.deleted"), "success");
           render();
         });

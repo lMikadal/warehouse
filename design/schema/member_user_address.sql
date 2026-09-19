@@ -6,7 +6,7 @@
 --   - setting_prefix_id: FK to setting_prefix (replaces member_address_prefix enum)
 CREATE TYPE member_address_type AS ENUM ('tax', 'doc', 'financial');
 
-CREATE TABLE member_address (
+CREATE TABLE member_user_address (
     id                       BIGSERIAL             PRIMARY KEY,              -- surrogate PK
     member_user_id           BIGINT                NOT NULL REFERENCES member_user(id)    ON DELETE CASCADE, -- owning member
     type                     member_address_type   NOT NULL,                 -- tax, doc, or financial address
@@ -35,12 +35,12 @@ CREATE TABLE member_address (
     updated_by               BIGINT                REFERENCES admin_user(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_member_address_user          ON member_address (member_user_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_member_address_type          ON member_address (member_user_id, type) WHERE deleted_at IS NULL;
-CREATE INDEX idx_member_address_member_type   ON member_address (member_user_id, member_type) WHERE deleted_at IS NULL;
-CREATE INDEX idx_member_address_prefix        ON member_address (setting_prefix_id) WHERE setting_prefix_id IS NOT NULL;
-CREATE INDEX idx_member_address_province      ON member_address (website_province_id) WHERE website_province_id IS NOT NULL;
-CREATE INDEX idx_member_address_district      ON member_address (website_district_id) WHERE website_district_id IS NOT NULL;
-CREATE INDEX idx_member_address_sub_district  ON member_address (website_sub_district_id) WHERE website_sub_district_id IS NOT NULL;
-CREATE INDEX idx_member_address_created_by    ON member_address (created_by) WHERE created_by IS NOT NULL;
-CREATE INDEX idx_member_address_updated_by    ON member_address (updated_by) WHERE updated_by IS NOT NULL;
+CREATE INDEX idx_member_user_address_user          ON member_user_address (member_user_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_member_user_address_type          ON member_user_address (member_user_id, type) WHERE deleted_at IS NULL;
+CREATE INDEX idx_member_user_address_member_type   ON member_user_address (member_user_id, member_type) WHERE deleted_at IS NULL;
+CREATE INDEX idx_member_user_address_prefix        ON member_user_address (setting_prefix_id) WHERE setting_prefix_id IS NOT NULL;
+CREATE INDEX idx_member_user_address_province      ON member_user_address (website_province_id) WHERE website_province_id IS NOT NULL;
+CREATE INDEX idx_member_user_address_district      ON member_user_address (website_district_id) WHERE website_district_id IS NOT NULL;
+CREATE INDEX idx_member_user_address_sub_district  ON member_user_address (website_sub_district_id) WHERE website_sub_district_id IS NOT NULL;
+CREATE INDEX idx_member_user_address_created_by    ON member_user_address (created_by) WHERE created_by IS NOT NULL;
+CREATE INDEX idx_member_user_address_updated_by    ON member_user_address (updated_by) WHERE updated_by IS NOT NULL;

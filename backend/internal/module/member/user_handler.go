@@ -10,15 +10,19 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
 type UserHandler struct {
 	repo *UserRepository
+	rel  *RelationRepository
+	set  *SettingRepository
+	lang *setting.LangRepository
 }
 
-func NewUserHandler(repo *UserRepository) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(repo *UserRepository, rel *RelationRepository, set *SettingRepository, lang *setting.LangRepository) *UserHandler {
+	return &UserHandler{repo: repo, rel: rel, set: set, lang: lang}
 }
 
 type userListItem struct {
@@ -29,16 +33,8 @@ type userListItem struct {
 	BusinessLabel string    `json:"business_label,omitempty"`
 	MemberTierID  *int64    `json:"member_tier_id,omitempty"`
 	IsActive      bool      `json:"is_active"`
+	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
-}
-
-func (h *UserHandler) listFilters(c *echo.Context) error {
-	out, err := h.repo.ListFilters(c.Request().Context(), api.LocaleFromRequest(c))
-	if err != nil {
-		applog.HTTPError(c, "member user filters", err)
-		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
-	}
-	return c.JSON(http.StatusOK, out)
 }
 
 func (h *UserHandler) list(c *echo.Context) error {
@@ -59,6 +55,8 @@ func (h *UserHandler) list(c *echo.Context) error {
 			f.BusinessID = &id
 		}
 	}
+	f.CreatedFrom = strings.TrimSpace(c.QueryParam("created_from"))
+	f.CreatedTo = strings.TrimSpace(c.QueryParam("created_to"))
 	rows, total, err := h.repo.List(c.Request().Context(), f, api.LocaleFromRequest(c))
 	if err != nil {
 		applog.HTTPError(c, "list member users", err)
@@ -66,7 +64,7 @@ func (h *UserHandler) list(c *echo.Context) error {
 	}
 	items := make([]userListItem, len(rows))
 	for i, r := range rows {
-		items[i] = userListItem{ID: r.ID, SKU: r.SKU, Name: r.Name, Tel: r.Tel, BusinessLabel: r.BusinessLabel, MemberTierID: r.MemberTierID, IsActive: r.IsActive, UpdatedAt: r.UpdatedAt}
+		items[i] = userListItem{ID: r.ID, SKU: r.SKU, Name: r.Name, Tel: r.Tel, BusinessLabel: r.BusinessLabel, MemberTierID: r.MemberTierID, IsActive: r.IsActive, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 	}
 	return c.JSON(http.StatusOK, api.NewListResponse(items, total, q))
 }

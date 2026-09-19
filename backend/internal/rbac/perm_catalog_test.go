@@ -85,4 +85,12 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "member.member_setting_business.view" {
 		t.Fatalf("member business filters: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/member/users/stats")
+	if !ok || code != "member.member_user.view" {
+		t.Fatalf("member user stats: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/member/users/filters")
+	if !ok || code != "member.member_user.view" {
+		t.Fatalf("member user filters: got %q %v", code, ok)
+	}
 }

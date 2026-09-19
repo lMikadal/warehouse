@@ -47,6 +47,9 @@ export type DatePickerRangeProps = DatePickerCommonProps & {
   mode: "range";
   value?: DateRangeValue;
   onChange?: (range: DateRangeValue | undefined) => void;
+  /** Popover footer; defaults to English for Storybook. */
+  confirmLabel?: string;
+  cancelLabel?: string;
 };
 
 export type DatePickerProps = DatePickerSingleProps | DatePickerRangeProps;
@@ -136,18 +139,57 @@ function DateRangePickerInner({
   value,
   onChange,
   placeholder = "Pick a date range",
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   disabled,
   className,
   id,
   "aria-label": ariaLabel,
 }: DatePickerRangeProps) {
   const [open, setOpen] = React.useState(false);
-  const selected = fromRangeValue(value);
-  const label = formatRangeLabel(value, placeholder);
-  const hasValue = Boolean(value?.from || value?.to);
+  const [draft, setDraft] = React.useState<DateRangeValue | undefined>(value);
+
+  React.useEffect(() => {
+    if (!open) {
+      setDraft(value);
+    }
+  }, [open, value]);
+
+  const displayValue = open ? draft : value;
+  const selected = fromRangeValue(draft);
+  const label = formatRangeLabel(displayValue, placeholder);
+  const hasValue = Boolean(displayValue?.from || displayValue?.to);
+
+  const hasCommittedValue = Boolean(value?.from || value?.to);
+  const canConfirm =
+    Boolean(draft?.from && draft?.to) ||
+    (!draft?.from && !draft?.to && hasCommittedValue);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setDraft(value);
+    } else {
+      setDraft(value);
+    }
+    setOpen(nextOpen);
+  };
+
+  const handleCancel = () => {
+    setDraft(value);
+    setOpen(false);
+  };
+
+  const handleConfirm = () => {
+    if (!draft?.from && !draft?.to) {
+      onChange?.(undefined);
+    } else if (draft?.from && draft?.to) {
+      onChange?.(draft);
+    }
+    setOpen(false);
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <Button
@@ -173,14 +215,23 @@ function DateRangePickerInner({
           numberOfMonths={2}
           selected={selected}
           onSelect={(range) => {
-            const next = toRangeValue(range);
-            onChange?.(next);
-            if (next?.from && next?.to) {
-              setOpen(false);
-            }
+            setDraft(toRangeValue(range) ?? undefined);
           }}
           defaultMonth={selected?.from ?? selected?.to}
         />
+        <div className="flex justify-end gap-2 border-t p-2">
+          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
+            {cancelLabel}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!canConfirm}
+            onClick={handleConfirm}
+          >
+            {confirmLabel}
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );

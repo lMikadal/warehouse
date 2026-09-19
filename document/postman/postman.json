@@ -1438,11 +1438,27 @@
           "name": "Users",
           "item": [
             {
-              "name": "Member user filters",
+              "name": "Member user stats",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/member/users/stats"
+              }
+            },
+            {
+              "name": "Member user filters (businesses)",
               "request": {
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
-                "url": "{{baseUrl}}/member/users/filters"
+                "url": "{{baseUrl}}/member/users/filters?facet=businesses&page=1&limit=50"
+              }
+            },
+            {
+              "name": "Member user filters (setting relations)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=setting_relations&page=1&limit=50",
+                "description": "member.member_user.view — form profile combobox without member_tier.view"
               }
             },
             {
@@ -1450,7 +1466,7 @@
               "request": {
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
-                "url": "{{baseUrl}}/member/users?page=1&limit=10&is_active=true"
+                "url": "{{baseUrl}}/member/users?page=1&limit=10&is_active=true&created_from=2026-01-01"
               }
             },
             {

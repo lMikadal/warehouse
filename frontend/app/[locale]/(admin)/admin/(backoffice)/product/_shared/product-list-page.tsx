@@ -299,7 +299,7 @@ export function ProductListPage() {
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-3">
-          <CrudSearchField value={query} onChange={onSearchChange} className="min-w-[12rem] flex-1" />
+          <CrudSearchField value={query} onChange={onSearchChange} className="min-w-48 flex-1" />
           <RemoteComboboxField
             label={categoryLabel}
             value={categoryId}

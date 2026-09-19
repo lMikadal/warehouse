@@ -46,7 +46,7 @@ export function CrudListPageSkeleton({
       </header>
 
       <div className="mb-4 flex flex-wrap gap-3">
-        <Skeleton className="h-10 w-full max-w-sm min-w-[12rem] flex-1 rounded-md" />
+        <Skeleton className="h-10 w-full max-w-sm min-w-48 flex-1 rounded-md" />
         {Array.from({ length: toolbarFilterSlots }, (_, i) => (
           <Skeleton key={i} className="h-10 w-44 rounded-md" />
         ))}

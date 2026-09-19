@@ -201,7 +201,7 @@ export function MemberTierRelationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-[min(42rem,calc(100vw-2rem))] overflow-y-auto sm:max-w-[42rem]">
+      <DialogContent className="max-h-[90vh] max-w-[min(42rem,calc(100vw-2rem))] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("editRelation") : t("addRelation")}

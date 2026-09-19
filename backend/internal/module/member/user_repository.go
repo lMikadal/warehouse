@@ -32,6 +32,7 @@ type UserRow struct {
 	SystemFileID         *int64
 	Note                 *string
 	IsActive             bool
+	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	BusinessLabel        string
 }
@@ -42,7 +43,16 @@ type UserListFilter struct {
 	IsActive          *bool
 	MemberTierID      *int64
 	BusinessID        *int64
+	CreatedFrom       string
+	CreatedTo         string
 	Sort, Order       string
+}
+
+type UserStats struct {
+	TotalCustomers   int64
+	ActiveMembers    int64
+	NewThisMonth     int64
+	SalesThisMonth   float64
 }
 
 type AddressInput struct {
@@ -135,7 +145,7 @@ func (r *UserRepository) List(ctx context.Context, f UserListFilter, locale stri
 	if locale == "" {
 		locale = "th"
 	}
-	w, args := userListWhere(f, locale, 1)
+	w, args := userListFilterWhere(f, 1)
 	var total int64
 	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(DISTINCT u.id) FROM member_user u `+w, args...).Scan(&total); err != nil {
 		return nil, 0, err
@@ -149,12 +159,13 @@ func (r *UserRepository) List(ctx context.Context, f UserListFilter, locale stri
 		page = 1
 	}
 	offset := (page - 1) * limit
-	wList, listArgs := userListWhere(f, locale, 1)
+	wList, filterArgs := userListFilterWhere(f, 2)
+	listArgs := append([]any{locale}, filterArgs...)
 	li := len(listArgs) + 1
 	oi := li + 1
 	q := fmt.Sprintf(`
 SELECT DISTINCT u.id, u.sku, u.member_tier_id, u.type::text, u.setting_prefix_id, u.name, u.store_name, u.tax_number,
-  u.branch::text, u.branch_name, u.tel, u.email, u.is_active, u.updated_at,
+  u.branch::text, u.branch_name, u.tel, u.email, u.is_active, u.created_at, u.updated_at,
   COALESCE((
     SELECT bl.name FROM member_user_setting mus
     JOIN member_setting_relation msr ON msr.id = mus.member_setting_relation_id AND msr.deleted_at IS NULL
@@ -175,7 +186,7 @@ LIMIT $%d OFFSET $%d`, wList, userListOrder(f.Sort, f.Order), li, oi)
 		var row UserRow
 		var branch sql.NullString
 		if err := rows.Scan(&row.ID, &row.SKU, &row.MemberTierID, &row.Type, &row.SettingPrefixID, &row.Name, &row.StoreName, &row.TaxNumber,
-			&branch, &row.BranchName, &row.Tel, &row.Email, &row.IsActive, &row.UpdatedAt, &row.BusinessLabel); err != nil {
+			&branch, &row.BranchName, &row.Tel, &row.Email, &row.IsActive, &row.CreatedAt, &row.UpdatedAt, &row.BusinessLabel); err != nil {
 			return nil, 0, err
 		}
 		if branch.Valid {
@@ -187,10 +198,10 @@ LIMIT $%d OFFSET $%d`, wList, userListOrder(f.Sort, f.Order), li, oi)
 	return out, total, rows.Err()
 }
 
-func userListWhere(f UserListFilter, locale string, start int) (string, []any) {
-	args := []any{locale}
-	clauses := []string{"WHERE u.deleted_at IS NULL"}
-	n := start + 1
+func userListFilterWhere(f UserListFilter, paramStart int) (string, []any) {
+	args := []any{}
+	clauses := []string{"u.deleted_at IS NULL"}
+	n := paramStart
 	if f.IsActive != nil {
 		clauses = append(clauses, fmt.Sprintf("u.is_active = $%d", n))
 		args = append(args, *f.IsActive)
@@ -215,8 +226,19 @@ func userListWhere(f UserListFilter, locale string, start int) (string, []any) {
   LOWER(u.name) LIKE $%d OR LOWER(COALESCE(u.sku, '')) LIKE $%d OR LOWER(COALESCE(u.tel, '')) LIKE $%d OR LOWER(COALESCE(u.email, '')) LIKE $%d
 )`, n, n, n, n))
 		args = append(args, pat)
+		n++
 	}
-	return strings.Join(clauses, " "), args
+	if from := strings.TrimSpace(f.CreatedFrom); from != "" {
+		clauses = append(clauses, fmt.Sprintf("u.created_at >= $%d::date", n))
+		args = append(args, from)
+		n++
+	}
+	if to := strings.TrimSpace(f.CreatedTo); to != "" {
+		clauses = append(clauses, fmt.Sprintf("u.created_at < ($%d::date + interval '1 day')", n))
+		args = append(args, to)
+		n++
+	}
+	return "WHERE " + strings.Join(clauses, " AND "), args
 }
 
 func userListOrder(sort, order string) string {
@@ -228,6 +250,8 @@ func userListOrder(sort, order string) string {
 		col = "u.sku"
 	case "updated_at":
 		col = "u.updated_at"
+	case "created_at":
+		col = "u.created_at"
 	case "is_active":
 		col = "u.is_active"
 	}
@@ -519,10 +543,10 @@ func upsertAddressTx(ctx context.Context, tx *sql.Tx, userID int64, a AddressInp
 	}
 	var existing int64
 	err := tx.QueryRowContext(ctx, `
-SELECT id FROM member_address WHERE member_user_id = $1 AND type = $2::member_address_type AND deleted_at IS NULL`, userID, a.Type).Scan(&existing)
+SELECT id FROM member_user_address WHERE member_user_id = $1 AND type = $2::member_address_type AND deleted_at IS NULL`, userID, a.Type).Scan(&existing)
 	if errors.Is(err, sql.ErrNoRows) {
 		_, err = tx.ExecContext(ctx, `
-INSERT INTO member_address (member_user_id, type, member_type, setting_prefix_id, name, store_name, tax_number, branch, branch_name,
+INSERT INTO member_user_address (member_user_id, type, member_type, setting_prefix_id, name, store_name, tax_number, branch, branch_name,
   address, website_province_id, website_district_id, website_sub_district_id, postcode, tel, email, credit_limit, credit_date, relationship, is_same_information, created_by, updated_by)
 VALUES ($1,$2::member_address_type,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$21)`,
 			userID, a.Type, memberType, a.SettingPrefixID, a.Name, a.StoreName, a.TaxNumber, a.Branch, a.BranchName,
@@ -534,7 +558,7 @@ VALUES ($1,$2::member_address_type,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
 		return err
 	}
 	_, err = tx.ExecContext(ctx, `
-UPDATE member_address SET member_type = $3, setting_prefix_id = $4, name = $5, store_name = $6, tax_number = $7, branch = $8, branch_name = $9,
+UPDATE member_user_address SET member_type = $3, setting_prefix_id = $4, name = $5, store_name = $6, tax_number = $7, branch = $8, branch_name = $9,
   address = $10, website_province_id = $11, website_district_id = $12, website_sub_district_id = $13, postcode = $14, tel = $15, email = $16,
   credit_limit = $17, credit_date = $18, relationship = $19, is_same_information = $20, updated_at = NOW(), updated_by = $21
 WHERE id = $2 AND member_user_id = $1`,
@@ -548,7 +572,7 @@ func (r *UserRepository) loadAddresses(ctx context.Context, userID int64) ([]Add
 	rows, err := r.db.QueryContext(ctx, `
 SELECT type::text, member_type::text, setting_prefix_id, name, store_name, tax_number, branch::text, branch_name, address,
   website_province_id, website_district_id, website_sub_district_id, postcode, tel, email, credit_limit, credit_date, relationship, is_same_information
-FROM member_address WHERE member_user_id = $1 AND deleted_at IS NULL`, userID)
+FROM member_user_address WHERE member_user_id = $1 AND deleted_at IS NULL`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -609,7 +633,7 @@ type FileRow struct {
 
 func (r *UserRepository) loadFiles(ctx context.Context, userID int64) ([]FileRow, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, system_file_id, sort_order, updated_at FROM member_file WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id`, userID)
+SELECT id, system_file_id, sort_order, updated_at FROM member_user_file WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -640,7 +664,7 @@ type DiscountRow struct {
 func (r *UserRepository) loadDiscounts(ctx context.Context, userID int64) ([]DiscountRow, error) {
 	rows, err := r.db.QueryContext(ctx, `
 SELECT id, member_credit_id, product_item_id, minimum_qty, discount, discount_type::text, date_start, date_end, is_active
-FROM member_discount WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY id`, userID)
+FROM member_user_discount WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY id`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -702,16 +726,16 @@ func (r *UserRepository) loadHistoryNames(ctx context.Context, historyID int64) 
 
 func (r *UserRepository) CreateFile(ctx context.Context, userID, fileID int64, actorID int64) (int64, error) {
 	var maxSort int
-	_ = r.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(sort_order), 0) FROM member_file WHERE member_user_id = $1 AND deleted_at IS NULL`, userID).Scan(&maxSort)
+	_ = r.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(sort_order), 0) FROM member_user_file WHERE member_user_id = $1 AND deleted_at IS NULL`, userID).Scan(&maxSort)
 	var id int64
 	err := r.db.QueryRowContext(ctx, `
-INSERT INTO member_file (member_user_id, system_file_id, sort_order, created_by, updated_by)
+INSERT INTO member_user_file (member_user_id, system_file_id, sort_order, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $4) RETURNING id`, userID, fileID, maxSort+10, nullActor(actorID)).Scan(&id)
 	return id, err
 }
 
 func (r *UserRepository) ReorderFiles(ctx context.Context, userID, dragID, targetID, actorID int64) error {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, sort_order FROM member_file WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id`, userID)
+	rows, err := r.db.QueryContext(ctx, `SELECT id, sort_order FROM member_user_file WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id`, userID)
 	if err != nil {
 		return err
 	}
@@ -735,7 +759,7 @@ func (r *UserRepository) ReorderFiles(ctx context.Context, userID, dragID, targe
 	defer tx.Rollback()
 	act := nullActor(actorID)
 	for _, n := range next {
-		if _, err := tx.ExecContext(ctx, `UPDATE member_file SET sort_order = $2, updated_at = NOW(), updated_by = $3 WHERE id = $1`, n.ID, n.SortOrder, act); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE member_user_file SET sort_order = $2, updated_at = NOW(), updated_by = $3 WHERE id = $1`, n.ID, n.SortOrder, act); err != nil {
 			return err
 		}
 	}
@@ -744,7 +768,7 @@ func (r *UserRepository) ReorderFiles(ctx context.Context, userID, dragID, targe
 
 func (r *UserRepository) DeleteFile(ctx context.Context, userID, fileID int64, actorID int64) error {
 	res, err := r.db.ExecContext(ctx, `
-UPDATE member_file SET deleted_at = NOW(), updated_at = NOW(), updated_by = $3
+UPDATE member_user_file SET deleted_at = NOW(), updated_at = NOW(), updated_by = $3
 WHERE id = $1 AND member_user_id = $2 AND deleted_at IS NULL`, fileID, userID, nullActor(actorID))
 	if err != nil {
 		return err
@@ -763,7 +787,7 @@ func (r *UserRepository) CreateDiscount(ctx context.Context, userID int64, d Dis
 	}
 	var id int64
 	err := r.db.QueryRowContext(ctx, `
-INSERT INTO member_discount (member_user_id, member_credit_id, product_item_id, minimum_qty, discount, discount_type, date_start, date_end, is_active, created_by, updated_by)
+INSERT INTO member_user_discount (member_user_id, member_credit_id, product_item_id, minimum_qty, discount, discount_type, date_start, date_end, is_active, created_by, updated_by)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10) RETURNING id`,
 		userID, d.MemberCreditID, d.ProductItemID, d.MinimumQty, d.Discount, dt, d.DateStart, d.DateEnd, d.IsActive, nullActor(actorID)).Scan(&id)
 	return id, err
@@ -771,7 +795,7 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10) RETURNING id`,
 
 func (r *UserRepository) PatchDiscount(ctx context.Context, userID, discountID int64, d DiscountRow, actorID int64) error {
 	res, err := r.db.ExecContext(ctx, `
-UPDATE member_discount SET member_credit_id = $3, product_item_id = $4, minimum_qty = $5, discount = $6, discount_type = $7,
+UPDATE member_user_discount SET member_credit_id = $3, product_item_id = $4, minimum_qty = $5, discount = $6, discount_type = $7,
   date_start = $8, date_end = $9, is_active = $10, updated_at = NOW(), updated_by = $11
 WHERE id = $2 AND member_user_id = $1 AND deleted_at IS NULL`,
 		userID, discountID, d.MemberCreditID, d.ProductItemID, d.MinimumQty, d.Discount, d.DiscountType, d.DateStart, d.DateEnd, d.IsActive, nullActor(actorID))
@@ -787,7 +811,7 @@ WHERE id = $2 AND member_user_id = $1 AND deleted_at IS NULL`,
 
 func (r *UserRepository) DeleteDiscount(ctx context.Context, userID, discountID int64, actorID int64) error {
 	res, err := r.db.ExecContext(ctx, `
-UPDATE member_discount SET deleted_at = NOW(), updated_at = NOW(), updated_by = $3 WHERE id = $2 AND member_user_id = $1 AND deleted_at IS NULL`,
+UPDATE member_user_discount SET deleted_at = NOW(), updated_at = NOW(), updated_by = $3 WHERE id = $2 AND member_user_id = $1 AND deleted_at IS NULL`,
 		userID, discountID, nullActor(actorID))
 	if err != nil {
 		return err
@@ -824,34 +848,223 @@ ON CONFLICT (member_history_id, locale) DO UPDATE SET title = EXCLUDED.title, up
 	return id, tx.Commit()
 }
 
-func (r *UserRepository) ListFilters(ctx context.Context, locale string) (map[string]any, error) {
-	if locale == "" {
-		locale = "th"
-	}
-	businesses, err := r.filterBusinesses(ctx, locale)
+func (r *UserRepository) Stats(ctx context.Context) (UserStats, error) {
+	var s UserStats
+	err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM member_user WHERE deleted_at IS NULL`).Scan(&s.TotalCustomers)
 	if err != nil {
-		return nil, err
+		return s, err
 	}
-	return map[string]any{"businesses": businesses}, nil
+	err = r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM member_user WHERE deleted_at IS NULL AND is_active = TRUE`).Scan(&s.ActiveMembers)
+	if err != nil {
+		return s, err
+	}
+	err = r.db.QueryRowContext(ctx, `
+SELECT COUNT(*) FROM member_user
+WHERE deleted_at IS NULL AND created_at >= date_trunc('month', CURRENT_TIMESTAMP)`).Scan(&s.NewThisMonth)
+	if err != nil {
+		return s, err
+	}
+	s.SalesThisMonth = 0
+	return s, nil
 }
 
-func (r *UserRepository) filterBusinesses(ctx context.Context, locale string) ([]map[string]any, error) {
-	rows, err := r.db.QueryContext(ctx, `
-SELECT b.id, COALESCE(l.name, '') FROM member_setting_business b
+type userFilterRow struct {
+	ID   int64
+	Name string
+}
+
+func (r *UserRepository) FilterBusinesses(ctx context.Context, locale string, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
+	if id > 0 {
+		var name string
+		err := r.db.QueryRowContext(ctx, `
+SELECT COALESCE(l.name, '') FROM member_setting_business b
 LEFT JOIN member_setting_business_language l ON l.member_setting_business_id = b.id AND l.locale = $1
-WHERE b.deleted_at IS NULL AND b.is_active = TRUE ORDER BY b.id`, locale)
+WHERE b.id = $2 AND b.deleted_at IS NULL`, locale, id).Scan(&name)
+		if err == sql.ErrNoRows {
+			return nil, 0, nil
+		}
+		if err != nil {
+			return nil, 0, err
+		}
+		return []userFilterRow{{ID: id, Name: name}}, 1, nil
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	base := `FROM member_setting_business b
+LEFT JOIN member_setting_business_language l ON l.member_setting_business_id = b.id AND l.locale = $1
+WHERE b.deleted_at IS NULL AND b.is_active = TRUE`
+	args := []any{locale}
+	clause := ""
+	if q := strings.TrimSpace(search); q != "" {
+		args = append(args, "%"+strings.ToLower(q)+"%")
+		clause = fmt.Sprintf(" AND LOWER(COALESCE(l.name, '')) LIKE $%d", len(args))
+	}
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) `+base+clause, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	li := len(args) - 1
+	oi := len(args)
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`SELECT b.id, COALESCE(l.name, '') %s%s ORDER BY b.id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
-	var out []map[string]any
-	for rows.Next() {
-		var id int64
+	return scanUserFilterRows(rows, total)
+}
+
+func (r *UserRepository) FilterTiers(ctx context.Context, locale string, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
+	if id > 0 {
 		var name string
-		if err := rows.Scan(&id, &name); err != nil {
-			return nil, err
+		err := r.db.QueryRowContext(ctx, `
+SELECT COALESCE(tl.name, '') FROM member_tier t
+LEFT JOIN member_tier_language tl ON tl.member_tier_id = t.id AND tl.locale = $1
+WHERE t.id = $2 AND t.deleted_at IS NULL`, locale, id).Scan(&name)
+		if err == sql.ErrNoRows {
+			return nil, 0, nil
 		}
-		out = append(out, map[string]any{"id": id, "name": name})
+		if err != nil {
+			return nil, 0, err
+		}
+		return []userFilterRow{{ID: id, Name: name}}, 1, nil
 	}
-	return out, rows.Err()
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	base := `FROM member_tier t
+LEFT JOIN member_tier_language tl ON tl.member_tier_id = t.id AND tl.locale = $1
+WHERE t.deleted_at IS NULL AND t.is_active = TRUE`
+	args := []any{locale}
+	clause := ""
+	if q := strings.TrimSpace(search); q != "" {
+		args = append(args, "%"+strings.ToLower(q)+"%")
+		clause = fmt.Sprintf(" AND LOWER(COALESCE(tl.name, '')) LIKE $%d", len(args))
+	}
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) `+base+clause, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	li := len(args) - 1
+	oi := len(args)
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`SELECT t.id, COALESCE(tl.name, '') %s%s ORDER BY t.sort_order, t.id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	return scanUserFilterRows(rows, total)
+}
+
+func (r *UserRepository) FilterAdminUsers(ctx context.Context, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
+	if id > 0 {
+		var name string
+		err := r.db.QueryRowContext(ctx, `SELECT username FROM admin_user WHERE id = $1 AND deleted_at IS NULL`, id).Scan(&name)
+		if err == sql.ErrNoRows {
+			return nil, 0, nil
+		}
+		if err != nil {
+			return nil, 0, err
+		}
+		return []userFilterRow{{ID: id, Name: name}}, 1, nil
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	base := `FROM admin_user WHERE deleted_at IS NULL AND status = 'active'`
+	args := []any{}
+	clause := ""
+	if q := strings.TrimSpace(search); q != "" {
+		args = append(args, "%"+strings.ToLower(q)+"%")
+		clause = fmt.Sprintf(" AND (LOWER(username) LIKE $%d OR LOWER(COALESCE(email, '')) LIKE $%d)", len(args), len(args))
+	}
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) `+base+clause, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	li := len(args) - 1
+	oi := len(args)
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`SELECT id, username %s%s ORDER BY id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	return scanUserFilterRows(rows, total)
+}
+
+func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, page, limit int, search string, id int64) ([]userFilterRow, int64, error) {
+	if id > 0 {
+		var label string
+		err := r.db.QueryRowContext(ctx, `
+SELECT COALESCE(i.sku, '') || ' ' || COALESCE(il.name, '')
+FROM product_item i
+LEFT JOIN product_item_language il ON il.product_item_id = i.id AND il.locale = $1
+WHERE i.id = $2 AND i.deleted_at IS NULL`, locale, id).Scan(&label)
+		if err == sql.ErrNoRows {
+			return nil, 0, nil
+		}
+		if err != nil {
+			return nil, 0, err
+		}
+		return []userFilterRow{{ID: id, Name: strings.TrimSpace(label)}}, 1, nil
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	base := `FROM product_item i
+LEFT JOIN product_item_language il ON il.product_item_id = i.id AND il.locale = $1
+WHERE i.deleted_at IS NULL AND i.is_active = TRUE`
+	args := []any{locale}
+	clause := ""
+	if q := strings.TrimSpace(search); q != "" {
+		args = append(args, "%"+strings.ToLower(q)+"%")
+		clause = fmt.Sprintf(" AND (LOWER(COALESCE(i.sku, '')) LIKE $%d OR LOWER(COALESCE(il.name, '')) LIKE $%d)", len(args), len(args))
+	}
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) `+base+clause, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	li := len(args) - 1
+	oi := len(args)
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
+SELECT i.id, TRIM(COALESCE(i.sku, '') || ' ' || COALESCE(il.name, '')) %s%s ORDER BY i.id LIMIT $%d OFFSET $%d`, base, clause, li, oi), args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	return scanUserFilterRows(rows, total)
+}
+
+func scanUserFilterRows(rows *sql.Rows, total int64) ([]userFilterRow, int64, error) {
+	var out []userFilterRow
+	for rows.Next() {
+		var row userFilterRow
+		if err := rows.Scan(&row.ID, &row.Name); err != nil {
+			return nil, 0, err
+		}
+		out = append(out, row)
+	}
+	if out == nil {
+		out = []userFilterRow{}
+	}
+	return out, total, rows.Err()
 }

@@ -45,6 +45,7 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | [`combobox.mdc`](rules/combobox.mdc) | UI | no | `frontend/**`, `design/**` | API-backed Combobox | Remote search options; `RemoteComboboxField`; no silent 100-row preload. |
 | [`dates.mdc`](rules/dates.mdc) | UI | yes | — | `design/`, `frontend/` display | Date and datetime display format for design mockups and frontend UI. |
 | [`icons.mdc`](rules/icons.mdc) | UI | yes | — | `design/`, `frontend/` | Use Lucide icons only — SVG files in design, lucide-react in frontend. |
+| [`stat-cards.mdc`](rules/stat-cards.mdc) | UI | yes | — | `design/`, `frontend/` | KPI/summary stat cards — icon well vertically centered on the card row (`items-center` / `align-items: center`). |
 | [`warehouse.mdc`](rules/warehouse.mdc) | Domain | yes | — | placement, stock | Warehouse layout tree and product item stock placement — bin-only anchor. |
 | [`migrations-seed.mdc`](rules/migrations-seed.mdc) | Backend | no | `backend/**` | goose, Postgres seeds | Migrations schema-only; init seed vs repeatable test seed. |
 | [`logging.mdc`](rules/logging.mdc) | Backend | no | `backend/**` | handlers, cmd | Structured slog, Echo request logging, log before 5xx. |

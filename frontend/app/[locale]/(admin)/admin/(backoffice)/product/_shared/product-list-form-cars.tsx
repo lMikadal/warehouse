@@ -195,7 +195,7 @@ export function ProductListFormCars({
           id="plf-car-search"
           value={search}
           onChange={setSearch}
-          className="min-w-[12rem] flex-1"
+          className="min-w-48 flex-1"
           placeholder={tForm("carTableSearchPlaceholder")}
         />
         {!readOnly ? (
@@ -296,7 +296,7 @@ export function ProductListFormCars({
         meta={{ total, totalPages }}
         onPageChange={setPage}
         onPageSizeChange={(size) => {
-          setPageSize(size);
+          setPageSize(size as PageSizeOption);
           setPage(1);
         }}
       />
