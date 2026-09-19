@@ -4,16 +4,17 @@ import (
 	"database/sql"
 
 	"github.com/labstack/echo/v5"
+	"github.com/lMikadal/warehouse/backend/internal/config"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 )
 
-func RegisterRoutes(g *echo.Group, db *sql.DB) {
+func RegisterRoutes(g *echo.Group, db *sql.DB, cfg config.Config) {
 	setRepo := NewSettingRepository(db)
 	relRepo := NewRelationRepository(db)
 	tierRepo := NewTierRepository(db)
 	codePrefix := system.NewCodePrefixRepository(db)
-	userRepo := NewUserRepository(db, codePrefix)
+	userRepo := NewUserRepository(db, codePrefix, cfg)
 	langRepo := setting.NewLangRepository(db)
 
 	credit := NewSettingHandler(SettingCredit, setRepo, relRepo)

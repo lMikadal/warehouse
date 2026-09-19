@@ -2,24 +2,12 @@
 
 import { useTranslations } from "next-intl";
 
-import {
-  FormCard,
-  FormCardContent,
-  FormCardHeader,
-  FormCardTitle,
-} from "@/components/molecules/form-card";
-
 export function MemberUserFormOrdersTab() {
   const t = useTranslations("memberUser");
 
   return (
-    <FormCard>
-      <FormCardHeader>
-        <FormCardTitle>{t("ordersListTitle")}</FormCardTitle>
-      </FormCardHeader>
-      <FormCardContent>
-        <p className="text-sm text-muted-foreground">{t("ordersEmpty")}</p>
-      </FormCardContent>
-    </FormCard>
+    <p className="text-muted-foreground py-12 text-center text-sm">
+      {t("ordersPhasePending")}
+    </p>
   );
 }

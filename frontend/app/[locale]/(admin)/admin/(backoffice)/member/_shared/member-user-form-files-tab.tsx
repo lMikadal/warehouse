@@ -1,10 +1,13 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Trash2, Upload } from "lucide-react";
+import { DragDropProvider } from "@dnd-kit/react";
+import { ExternalLink, Info, Upload } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { CrudDeleteConfirmDialog } from "@/components/molecules/crud-delete-confirm-dialog";
+import { CrudNestedSortableListItem } from "@/components/molecules/crud-nested-sortable-list";
 import {
   FormCard,
   FormCardContent,
@@ -12,14 +15,8 @@ import {
   FormCardTitle,
 } from "@/components/molecules/form-card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useCrudSortableReorder } from "@/hooks/use-crud-sortable-reorder";
+import { sortBySortOrderThenId } from "@/lib/crud-list-rows";
 import type { DisplayLocale } from "@/lib/format-datetime";
 import { formatDateTime } from "@/lib/format-datetime";
 import {
@@ -33,6 +30,7 @@ import {
   uploadSystemFile,
   type ImageUploadItemRemote,
 } from "@/lib/system-file-api";
+import { cn } from "@/lib/utils";
 
 const DOC_PURPOSE = "member_document";
 const DOC_MAX = 10 * 1024 * 1024;
@@ -42,12 +40,32 @@ const DOC_TYPES = new Set([
   "image/png",
 ]);
 
-type FileMeta = {
-  id: number;
-  systemFileId: number;
-  name: string;
-  updatedAt: string;
-};
+function formatByteSize(bytes: number): string {
+  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(2)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function fileTypeLabel(contentType: string, originalName: string): string {
+  if (/pdf/i.test(contentType)) return "PDF";
+  if (/jpe?g/i.test(contentType)) return "JPG";
+  if (/png/i.test(contentType)) return "PNG";
+  const ext = originalName.split(".").pop()?.trim();
+  return (ext || "FILE").toUpperCase();
+}
+
+function fileIconClass(contentType: string): string {
+  if (/pdf/i.test(contentType)) {
+    return "bg-red-500/15 text-red-600 dark:text-red-400";
+  }
+  if (/jpe?g/i.test(contentType)) {
+    return "bg-green-500/15 text-green-600 dark:text-green-400";
+  }
+  if (/png/i.test(contentType)) {
+    return "bg-blue-500/15 text-blue-600 dark:text-blue-400";
+  }
+  return "bg-primary/10 text-primary";
+}
 
 export type MemberUserFormFilesTabProps = {
   userId: number;
@@ -64,34 +82,35 @@ export function MemberUserFormFilesTab({
 }: MemberUserFormFilesTabProps) {
   const locale = useLocale() as DisplayLocale;
   const t = useTranslations("memberUser");
-  const tCol = useTranslations("col");
   const tCrud = useTranslations("crud");
   const tErr = useTranslations("error");
   const inputRef = useRef<HTMLInputElement>(null);
-  const [rows, setRows] = useState<FileMeta[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MemberUserFileRow | null>(
+    null
+  );
+  const [deleting, setDeleting] = useState(false);
 
-  const loadMeta = useCallback(async () => {
-    const sortedFiles = [...files].sort(
-      (a, b) => a.sort_order - b.sort_order || a.id - b.id
-    );
-    const next: FileMeta[] = [];
-    for (const f of sortedFiles) {
-      next.push({
-        id: f.id,
-        systemFileId: f.system_file_id,
-        name: `File #${f.system_file_id}`,
-        updatedAt: f.updated_at,
-      });
-    }
-    setRows(next);
-  }, [locale, files]);
+  const sorted = useMemo(() => sortBySortOrderThenId(files), [files]);
+  const dragEnabled = canManage && sorted.length > 1;
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- file meta fetch
-    void loadMeta();
-  }, [loadMeta]);
+  const { sortableEpoch, handleDragEnd } = useCrudSortableReorder({
+    rows: sorted,
+    dragEnabled,
+    persistReorder: canManage
+      ? (dragId, targetId) =>
+          reorderMemberUserFiles(locale, userId, dragId, targetId)
+      : undefined,
+    onSuccess: () => {
+      void onReload();
+      toast.success(tCrud("toast.reordered"));
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof MemberUserApiError ? err.message : tErr("generic")
+      );
+    },
+  });
 
   const onPickFile = () => inputRef.current?.click();
 
@@ -126,146 +145,140 @@ export function MemberUserFormFilesTab({
     }
   };
 
-  const removeFile = async (fileId: number) => {
-    if (!canManage) return;
-    setBusyId(fileId);
+  const confirmDelete = async () => {
+    const row = deleteTarget;
+    if (!row || !canManage) return;
+    setDeleting(true);
     try {
-      await deleteMemberUserFile(locale, userId, fileId);
+      await deleteMemberUserFile(locale, userId, row.id);
       toast.success(tCrud("toast.deleted"));
+      setDeleteTarget(null);
       await onReload();
     } catch (err) {
       toast.error(
         err instanceof MemberUserApiError ? err.message : tErr("generic")
       );
     } finally {
-      setBusyId(null);
-    }
-  };
-
-  const moveFile = async (index: number, direction: -1 | 1) => {
-    if (!canManage) return;
-    const sortedFiles = [...files].sort(
-      (a, b) => a.sort_order - b.sort_order || a.id - b.id
-    );
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= sortedFiles.length) return;
-    const drag = sortedFiles[index]!;
-    const target = sortedFiles[targetIndex]!;
-    setBusyId(drag.id);
-    try {
-      await reorderMemberUserFiles(locale, userId, drag.id, target.id);
-      await onReload();
-    } catch (err) {
-      toast.error(
-        err instanceof MemberUserApiError ? err.message : tErr("generic")
-      );
-    } finally {
-      setBusyId(null);
+      setDeleting(false);
     }
   };
 
   return (
     <FormCard>
       <FormCardHeader>
-        <FormCardTitle>{t("tabFiles")}</FormCardTitle>
+        <FormCardTitle>{t("filesSectionTitle")}</FormCardTitle>
       </FormCardHeader>
       <FormCardContent className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">{t("filesHint")}</p>
-        {canManage ? (
-          <>
-            <input
-              ref={inputRef}
-              type="file"
-              className="sr-only"
-              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-              onChange={(e) => void onFileChange(e)}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="h-10 flex min-w-0 flex-1 items-start gap-2 rounded-lg border px-3 py-2 text-sm text-muted-foreground">
+            <Info
+              className="mt-0.5 size-4 shrink-0 text-primary"
+              aria-hidden
             />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={uploading}
-              onClick={onPickFile}
-            >
-              <Upload className="size-4" aria-hidden />
-              {t("filesUpload")}
-            </Button>
-          </>
-        ) : null}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("productName")}</TableHead>
-                <TableHead>{tCol("updatedAt")}</TableHead>
-                {canManage ? (
-                  <TableHead className="w-32 text-center">
-                    {tCrud("table.actions")}
-                  </TableHead>
-                ) : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={canManage ? 3 : 2}
-                    className="text-center text-muted-foreground"
-                  >
-                    {t("emptyData")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row, index) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.name}</TableCell>
-                    <TableCell>
-                      {formatDateTime(row.updatedAt, locale)}
-                    </TableCell>
-                    {canManage ? (
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            disabled={busyId != null || index === 0}
-                            aria-label={tCrud("sort.asc")}
-                            onClick={() => void moveFile(index, -1)}
-                          >
-                            <ArrowUp className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            disabled={
-                              busyId != null || index === rows.length - 1
-                            }
-                            aria-label={tCrud("sort.desc")}
-                            onClick={() => void moveFile(index, 1)}
-                          >
-                            <ArrowDown className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive"
-                            disabled={busyId === row.id}
-                            aria-label={tCrud("btn.delete")}
-                            onClick={() => void removeFile(row.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+            <span>{t("filesHint")}</span>
+          </div>
+          {canManage ? (
+            <>
+              <input
+                ref={inputRef}
+                type="file"
+                className="sr-only"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                onChange={(e) => void onFileChange(e)}
+              />
+              <Button
+                type="button"
+                size="lg"
+                className="shrink-0"
+                disabled={uploading}
+                onClick={onPickFile}
+              >
+                <Upload className="size-4" aria-hidden />
+                {t("filesUpload")}
+              </Button>
+            </>
+          ) : null}
         </div>
+
+        {sorted.length === 0 ? (
+          <div className="rounded-lg border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+            {t("emptyData")}
+          </div>
+        ) : (
+          <DragDropProvider onDragEnd={handleDragEnd}>
+            <div
+              key={dragEnabled ? sortableEpoch : "static"}
+              className="flex flex-col gap-2"
+            >
+              {sorted.map((row, index) => {
+                const label = fileTypeLabel(row.content_type, row.original_name);
+                const uploader = row.uploaded_by_username?.trim() || "—";
+                const metaDate = row.file_created_at || row.updated_at;
+                const openUrl = row.url?.trim();
+
+                return (
+                  <CrudNestedSortableListItem
+                    key={row.id}
+                    id={row.id}
+                    index={index}
+                    dragEnabled={dragEnabled}
+                    actions={canManage ? ["delete"] : []}
+                    onEdit={() => {}}
+                    onDelete={() => setDeleteTarget(row)}
+                    className="items-center"
+                  >
+                    <span
+                      className={cn(
+                        "flex size-10 shrink-0 items-center justify-center rounded-md text-xs font-semibold",
+                        fileIconClass(row.content_type)
+                      )}
+                    >
+                      {label}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">
+                        {row.original_name || "—"}
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {t("filesUploadedBy", {
+                          name: uploader,
+                          date: formatDateTime(metaDate, locale),
+                          size: formatByteSize(row.size_bytes ?? 0),
+                        })}
+                      </div>
+                    </div>
+                    {openUrl ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-lg"
+                        className="shrink-0"
+                        asChild
+                      >
+                        <a
+                          href={openUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={t("filesOpen")}
+                        >
+                          <ExternalLink className="size-4" />
+                        </a>
+                      </Button>
+                    ) : null}
+                  </CrudNestedSortableListItem>
+                );
+              })}
+            </div>
+          </DragDropProvider>
+        )}
+
+        <CrudDeleteConfirmDialog
+          open={deleteTarget != null}
+          onOpenChange={(open) => {
+            if (!open && !deleting) setDeleteTarget(null);
+          }}
+          onConfirm={() => void confirmDelete()}
+        />
       </FormCardContent>
     </FormCard>
   );

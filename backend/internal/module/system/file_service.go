@@ -18,12 +18,28 @@ import (
 var ErrValidation = errors.New("validation")
 
 const maxUploadBytes = 5 << 20 // 5MB
+const maxDocumentUploadBytes = 10 << 20 // 10MB — member_document, purchase_order_attachment
 
 var allowedImageTypes = map[string]string{
 	"image/jpeg": ".jpg",
 	"image/png":  ".png",
 	"image/webp": ".webp",
 	"image/gif":  ".gif",
+}
+
+var allowedDocumentTypes = map[string]string{
+	"application/pdf": ".pdf",
+	"image/jpeg":      ".jpg",
+	"image/png":       ".png",
+}
+
+func uploadTypeAndMaxBytes(purpose string) (allowed map[string]string, maxBytes int64) {
+	switch purpose {
+	case "member_document", "purchase_order_attachment":
+		return allowedDocumentTypes, maxDocumentUploadBytes
+	default:
+		return allowedImageTypes, maxUploadBytes
+	}
 }
 
 type FileService struct {
@@ -53,11 +69,12 @@ func (s *FileService) Upload(ctx context.Context, purpose, originalName, content
 	if !ValidPurpose(purpose) {
 		return nil, ErrValidation
 	}
-	ext, ok := allowedImageTypes[strings.ToLower(strings.TrimSpace(contentType))]
+	allowedTypes, maxBytes := uploadTypeAndMaxBytes(purpose)
+	ext, ok := allowedTypes[strings.ToLower(strings.TrimSpace(contentType))]
 	if !ok {
 		return nil, ErrValidation
 	}
-	if size <= 0 || size > maxUploadBytes {
+	if size <= 0 || size > maxBytes {
 		return nil, ErrValidation
 	}
 

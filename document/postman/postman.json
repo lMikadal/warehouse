@@ -1480,7 +1480,23 @@
             },
             {
               "name": "Get member",
-              "request": { "method": "GET", "url": "{{baseUrl}}/member/users/1" }
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/member/users/1",
+                "description": "Aggregate includes `files[]` (junction + embedded `system_file`): `id`, `system_file_id`, `sort_order`, `updated_at`, `original_name`, `content_type`, `size_bytes`, `file_created_at`, `url`, optional `uploaded_by_username`."
+              }
+            },
+            {
+              "name": "Reorder member files",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"drag_id\": 1,\n  \"target_id\": 2\n}"
+                },
+                "url": "{{baseUrl}}/member/users/1/files/reorder"
+              }
             },
             {
               "name": "Create member",

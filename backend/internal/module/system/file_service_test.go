@@ -41,6 +41,14 @@ func TestFileServiceUploadValidation(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected validation for size")
 	}
+
+	allowed, maxDoc := uploadTypeAndMaxBytes("member_document")
+	if _, ok := allowed["application/pdf"]; !ok {
+		t.Fatal("member_document must allow PDF")
+	}
+	if maxDoc != maxDocumentUploadBytes {
+		t.Fatalf("member_document max bytes = %d, want %d", maxDoc, maxDocumentUploadBytes)
+	}
 }
 
 func TestDeleteIfUnreferencedSkipsZeroID(t *testing.T) {

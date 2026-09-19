@@ -618,8 +618,8 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
       setOwnerAdminUserIds((d.owner_admin_user_ids ?? []).map(String));
       setNote(d.note ?? "");
       setIsActive(d.is_active);
-      setDiscounts(d.discounts);
-      setFiles(d.files);
+      setDiscounts(d.discounts ?? []);
+      setFiles(d.files ?? []);
       setHistories(d.histories ?? []);
       setCreatedAt(d.created_at ?? "");
       setInitialFileId(d.system_file_id ?? null);

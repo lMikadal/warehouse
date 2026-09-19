@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lMikadal/warehouse/backend/internal/config"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	"github.com/lMikadal/warehouse/backend/internal/tree"
 )
@@ -137,10 +138,11 @@ type UserPatch struct {
 type UserRepository struct {
 	db    *sql.DB
 	codes *system.CodePrefixRepository
+	cfg   config.Config
 }
 
-func NewUserRepository(db *sql.DB, codes *system.CodePrefixRepository) *UserRepository {
-	return &UserRepository{db: db, codes: codes}
+func NewUserRepository(db *sql.DB, codes *system.CodePrefixRepository, cfg config.Config) *UserRepository {
+	return &UserRepository{db: db, codes: codes, cfg: cfg}
 }
 
 func (r *UserRepository) List(ctx context.Context, f UserListFilter, locale string) ([]UserRow, int64, error) {
@@ -641,15 +643,28 @@ func (r *UserRepository) loadOwnerIDs(ctx context.Context, userID int64) ([]int6
 }
 
 type FileRow struct {
-	ID           int64     `json:"id"`
-	SystemFileID int64     `json:"system_file_id"`
-	SortOrder    int       `json:"sort_order"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                 int64     `json:"id"`
+	SystemFileID       int64     `json:"system_file_id"`
+	SortOrder          int       `json:"sort_order"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	OriginalName       string    `json:"original_name"`
+	ContentType        string    `json:"content_type"`
+	SizeBytes          int64     `json:"size_bytes"`
+	FileCreatedAt      time.Time `json:"file_created_at"`
+	URL                string    `json:"url"`
+	UploadedByUsername *string   `json:"uploaded_by_username,omitempty"`
 }
 
 func (r *UserRepository) loadFiles(ctx context.Context, userID int64) ([]FileRow, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, system_file_id, sort_order, updated_at FROM member_user_file WHERE member_user_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id`, userID)
+SELECT muf.id, muf.system_file_id, muf.sort_order, muf.updated_at,
+       sf.original_name, sf.content_type, sf.size_bytes, sf.object_key, sf.created_at,
+       au.username
+FROM member_user_file muf
+INNER JOIN system_file sf ON sf.id = muf.system_file_id AND sf.deleted_at IS NULL
+LEFT JOIN admin_user au ON au.id = sf.created_by AND au.deleted_at IS NULL
+WHERE muf.member_user_id = $1 AND muf.deleted_at IS NULL
+ORDER BY muf.sort_order, muf.id`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -657,8 +672,18 @@ SELECT id, system_file_id, sort_order, updated_at FROM member_user_file WHERE me
 	var out []FileRow
 	for rows.Next() {
 		var row FileRow
-		if err := rows.Scan(&row.ID, &row.SystemFileID, &row.SortOrder, &row.UpdatedAt); err != nil {
+		var objectKey string
+		var uploadedBy sql.NullString
+		if err := rows.Scan(
+			&row.ID, &row.SystemFileID, &row.SortOrder, &row.UpdatedAt,
+			&row.OriginalName, &row.ContentType, &row.SizeBytes, &objectKey, &row.FileCreatedAt,
+			&uploadedBy,
+		); err != nil {
 			return nil, err
+		}
+		row.URL = r.cfg.PublicObjectURL(objectKey)
+		if uploadedBy.Valid {
+			row.UploadedByUsername = &uploadedBy.String
 		}
 		out = append(out, row)
 	}

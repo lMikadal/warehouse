@@ -57,6 +57,12 @@ export type MemberUserFileRow = {
   system_file_id: number;
   sort_order: number;
   updated_at: string;
+  original_name: string;
+  content_type: string;
+  size_bytes: number;
+  file_created_at: string;
+  url: string;
+  uploaded_by_username?: string | null;
 };
 
 export type MemberUserDiscountRow = {

@@ -11,6 +11,7 @@ export type SystemFilePurpose =
   | "product_item_image"
   | "member_avatar"
   | "member_tier_badge"
+  | "member_document"
   | "product_attribute_logo";
 
 export type SystemFileItem = {

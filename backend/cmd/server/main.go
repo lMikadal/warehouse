@@ -109,7 +109,7 @@ func main() {
 	location.RegisterRoutes(rbacProtected.Group("/location"), deps.DB)
 	warehouse.RegisterRoutes(rbacProtected.Group("/warehouse"), deps.DB)
 	product.RegisterRoutes(rbacProtected.Group("/product"), deps.DB)
-	member.RegisterRoutes(rbacProtected.Group("/member"), deps.DB)
+	member.RegisterRoutes(rbacProtected.Group("/member"), deps.DB, cfg)
 
 	if err := server.Listen(e, cfg.Port); err != nil {
 		slog.Error("failed to start server", "error", err)
