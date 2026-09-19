@@ -42,12 +42,15 @@ export function useRemoteComboboxOptions({
   enabled = true,
   pinnedItems = [],
   value,
+  catalogKey = "",
   onLoadOptions,
   resolveSelectedLabel,
 }: {
   enabled?: boolean;
   pinnedItems?: RemoteComboboxOption[];
   value: string;
+  /** When this changes, option list is re-fetched (e.g. parent geo id). */
+  catalogKey?: string | number;
   onLoadOptions: (ctx: RemoteComboboxLoadContext) => Promise<RemoteComboboxOption[]>;
   resolveSelectedLabel?: (value: string) => Promise<string | null>;
 }) {
@@ -88,7 +91,7 @@ export function useRemoteComboboxOptions({
       cancelled = true;
       controller.abort();
     };
-  }, [enabled, debouncedSearch]);
+  }, [enabled, debouncedSearch, catalogKey]);
 
   useEffect(() => {
     if (!value || !resolveSelectedLabel) {

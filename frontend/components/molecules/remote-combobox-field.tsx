@@ -28,8 +28,10 @@ export function RemoteComboboxField({
   invalid = false,
   showClear,
   pinnedItems = [],
+  catalogKey,
   onLoadOptions,
   resolveSelectedLabel,
+  autoComplete = "none",
 }: {
   id?: string;
   label: string;
@@ -42,6 +44,8 @@ export function RemoteComboboxField({
   invalid?: boolean;
   showClear?: boolean;
   pinnedItems?: RemoteComboboxOption[];
+  catalogKey?: string | number;
+  autoComplete?: string;
   onLoadOptions: (ctx: RemoteComboboxLoadContext) => Promise<RemoteComboboxOption[]>;
   resolveSelectedLabel?: (value: string) => Promise<string | null>;
 }) {
@@ -53,6 +57,7 @@ export function RemoteComboboxField({
       enabled: !disabled,
       pinnedItems,
       value,
+      catalogKey,
       onLoadOptions,
       resolveSelectedLabel,
     });
@@ -61,7 +66,7 @@ export function RemoteComboboxField({
     <Combobox
       items={items}
       value={comboboxValue}
-      autoComplete="none"
+      autoComplete={autoComplete}
       itemToStringLabel={(itemValue) =>
         items.find((o) => o.value === itemValue)?.label ?? ""
       }

@@ -19,7 +19,10 @@ export type MemberUserFilterFacet =
   | "product_items"
   | "product_brands"
   | "product_brand_categories"
-  | "member_credits";
+  | "member_credits"
+  | "provinces"
+  | "districts"
+  | "sub_districts";
 
 type FilterItem = { id: number; name: string };
 
@@ -53,6 +56,9 @@ export type MemberUserFiltersParams = {
   brand_id?: number;
   category_id?: number;
   member_type?: "person" | "company";
+  system_country_id?: number;
+  system_province_id?: number;
+  system_district_id?: number;
 };
 
 export type MemberUserBrandCategoryFilterItem = FilterItem & {
@@ -78,6 +84,15 @@ export async function fetchMemberUserFilters(
     q.set("category_id", String(params.category_id));
   }
   if (params.member_type) q.set("member_type", params.member_type);
+  if (params.system_country_id != null && params.system_country_id > 0) {
+    q.set("system_country_id", String(params.system_country_id));
+  }
+  if (params.system_province_id != null && params.system_province_id > 0) {
+    q.set("system_province_id", String(params.system_province_id));
+  }
+  if (params.system_district_id != null && params.system_district_id > 0) {
+    q.set("system_district_id", String(params.system_district_id));
+  }
   const res = await authFetch(`${PROXY}?${q}`, {
     headers: { Accept: "application/json", "Accept-Language": locale },
     signal: params.signal,

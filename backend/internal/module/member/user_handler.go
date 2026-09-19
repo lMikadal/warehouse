@@ -11,6 +11,7 @@ import (
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
+	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 )
 
@@ -19,10 +20,11 @@ type UserHandler struct {
 	rel  *RelationRepository
 	set  *SettingRepository
 	lang *setting.LangRepository
+	geo  *system.AddressGeoRepository
 }
 
-func NewUserHandler(repo *UserRepository, rel *RelationRepository, set *SettingRepository, lang *setting.LangRepository) *UserHandler {
-	return &UserHandler{repo: repo, rel: rel, set: set, lang: lang}
+func NewUserHandler(repo *UserRepository, rel *RelationRepository, set *SettingRepository, lang *setting.LangRepository, geo *system.AddressGeoRepository) *UserHandler {
+	return &UserHandler{repo: repo, rel: rel, set: set, lang: lang, geo: geo}
 }
 
 type userListItem struct {
@@ -82,7 +84,7 @@ func (h *UserHandler) get(c *echo.Context) error {
 	if base == nil {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 	}
-	return c.JSON(http.StatusOK, map[string]any{
+	body := map[string]any{
 		"id": base.ID, "sku": base.SKU, "member_tier_id": base.MemberTierID, "type": base.Type,
 		"setting_prefix_id": base.SettingPrefixID, "name": base.Name, "store_name": base.StoreName,
 		"tax_number": base.TaxNumber, "branch": base.Branch, "branch_name": base.BranchName,
@@ -92,7 +94,12 @@ func (h *UserHandler) get(c *echo.Context) error {
 		"system_file_id": base.SystemFileID, "note": base.Note, "is_active": base.IsActive, "created_at": base.CreatedAt, "updated_at": base.UpdatedAt,
 		"addresses": addrs, "setting_relation_ids": settings, "owner_admin_user_ids": owners,
 		"files": files, "discounts": discounts, "histories": histories,
-	})
+	}
+	putNullString(body, "setting_prefix_name", base.SettingPrefixName)
+	putNullString(body, "website_province_name", base.WebsiteProvinceName)
+	putNullString(body, "website_district_name", base.WebsiteDistrictName)
+	putNullString(body, "website_sub_district_name", base.WebsiteSubDistrictName)
+	return c.JSON(http.StatusOK, body)
 }
 
 type userCreateBody struct {

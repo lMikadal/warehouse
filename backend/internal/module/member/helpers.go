@@ -33,6 +33,12 @@ func nullActor(id int64) sql.NullInt64 {
 	return sql.NullInt64{Int64: id, Valid: true}
 }
 
+func putNullString(m map[string]any, key string, n sql.NullString) {
+	if n.Valid && strings.TrimSpace(n.String) != "" {
+		m[key] = n.String
+	}
+}
+
 // parseOptionalISODate accepts YYYY-MM-DD (form/API date fields). Echo JSON bind does not
 // parse date-only strings into *time.Time on DiscountRow.
 func parseOptionalISODate(s *string) (*time.Time, error) {

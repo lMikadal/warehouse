@@ -79,9 +79,9 @@ import {
   type MemberBusinessRelationRow,
 } from "@/lib/member-user-relations";
 import {
-  loadGeoComboboxOptions,
-  resolveGeoComboboxLabel,
-} from "@/lib/system-geo-combobox";
+  loadMemberUserGeoComboboxOptions,
+  resolveMemberUserGeoComboboxLabel,
+} from "@/lib/member-user-geo-combobox";
 import {
   fetchSystemFile,
   resolveSettingLogoFileId,
@@ -296,12 +296,32 @@ function LabeledRemoteCombobox({
   );
 }
 
+type GeoDisplaySource = {
+  setting_prefix_name?: string | null;
+  website_province_name?: string | null;
+  website_district_name?: string | null;
+  website_sub_district_name?: string | null;
+};
+
+function geoDisplayNames(source: GeoDisplaySource): Pick<
+  GeoState,
+  | "website_province_name"
+  | "website_district_name"
+  | "website_sub_district_name"
+> {
+  return {
+    website_province_name: source.website_province_name?.trim() ?? "",
+    website_district_name: source.website_district_name?.trim() ?? "",
+    website_sub_district_name: source.website_sub_district_name?.trim() ?? "",
+  };
+}
+
 function generalFromDetail(d: MemberUserDetail): GeneralState {
   return {
     memberType: d.type === "company" ? "company" : "person",
     setting_prefix_id:
       d.setting_prefix_id != null ? String(d.setting_prefix_id) : "",
-    setting_prefix_name: "",
+    setting_prefix_name: d.setting_prefix_name?.trim() ?? "",
     name: d.name ?? "",
     store_name: d.store_name ?? "",
     tax_number: d.tax_number ?? "",
@@ -310,15 +330,13 @@ function generalFromDetail(d: MemberUserDetail): GeneralState {
     address: d.address ?? "",
     website_province_id:
       d.website_province_id != null ? String(d.website_province_id) : "",
-    website_province_name: "",
     website_district_id:
       d.website_district_id != null ? String(d.website_district_id) : "",
-    website_district_name: "",
     website_sub_district_id:
       d.website_sub_district_id != null
         ? String(d.website_sub_district_id)
         : "",
-    website_sub_district_name: "",
+    ...geoDisplayNames(d),
     postcode: d.postcode ?? "",
     tel: d.tel ?? "",
     email: d.email ?? "",
@@ -333,6 +351,7 @@ function taxFromAddress(addr?: MemberAddressInput): GeneralState {
     memberType: addr.member_type === "company" ? "company" : "person",
     setting_prefix_id:
       addr.setting_prefix_id != null ? String(addr.setting_prefix_id) : "",
+    setting_prefix_name: addr.setting_prefix_name?.trim() ?? "",
     name: addr.name ?? "",
     store_name: addr.store_name ?? "",
     tax_number: addr.tax_number ?? "",
@@ -347,6 +366,7 @@ function taxFromAddress(addr?: MemberAddressInput): GeneralState {
       addr.website_sub_district_id != null
         ? String(addr.website_sub_district_id)
         : "",
+    ...geoDisplayNames(addr),
     postcode: addr.postcode ?? "",
     tel: addr.tel ?? "",
     email: addr.email ?? "",
@@ -373,6 +393,7 @@ function financialFromAddress(addr?: MemberAddressInput): FinancialState {
       addr.website_sub_district_id != null
         ? String(addr.website_sub_district_id)
         : "",
+    ...geoDisplayNames(addr),
     postcode: addr.postcode ?? "",
   };
 }
@@ -394,6 +415,7 @@ function documentFromAddress(addr?: MemberAddressInput): DocumentState {
       addr.website_sub_district_id != null
         ? String(addr.website_sub_district_id)
         : "",
+    ...geoDisplayNames(addr),
     postcode: addr.postcode ?? "",
   };
 }
@@ -697,7 +719,7 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         if (!cancelled) setBusinessRelations(rows);
       })
       .catch(() => {
-        if (!cancelled) setBusinessRelations([]);
+        // ponytail: keep last catalog from loadDetail when refetch fails (view-only must not wipe groups)
       });
     return () => {
       cancelled = true;
@@ -705,7 +727,12 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
   }, [businessId, locale]);
 
   useEffect(() => {
-    setGroupIds((prev) => pruneGroupIds(businessRelations, creditIds, prev));
+    setGroupIds((prev) => {
+      if (businessRelations.length === 0 && prev.length > 0) {
+        return prev;
+      }
+      return pruneGroupIds(businessRelations, creditIds, prev);
+    });
   }, [creditIds, businessRelations]);
 
   const creditProfileOptions = useMemo(
@@ -803,17 +830,25 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         onValueChange={(v) =>
           setBlock({
             website_province_id: v,
+            website_province_name: v ? block.website_province_name : "",
             website_district_id: "",
             website_sub_district_id: "",
+            website_district_name: "",
+            website_sub_district_name: "",
           })
         }
+        autoComplete="off"
         onLoadOptions={({ search, signal }) =>
-          loadGeoComboboxOptions("provinces", locale, { search, signal })
+          loadMemberUserGeoComboboxOptions("provinces", locale, {
+            search,
+            signal,
+          })
         }
         resolveSelectedLabel={
           formReadOnly
             ? undefined
-            : (value) => resolveGeoComboboxLabel("provinces", locale, value)
+            : (value) =>
+                resolveMemberUserGeoComboboxLabel("provinces", locale, value)
         }
       />
       <LabeledRemoteCombobox
@@ -828,11 +863,18 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
           block.website_district_id,
           block.website_district_name
         )}
+        catalogKey={block.website_province_id}
+        autoComplete="off"
         onValueChange={(v) =>
-          setBlock({ website_district_id: v, website_sub_district_id: "" })
+          setBlock({
+            website_district_id: v,
+            website_sub_district_id: "",
+            website_district_name: v ? block.website_district_name : "",
+            website_sub_district_name: "",
+          })
         }
         onLoadOptions={({ search, signal }) =>
-          loadGeoComboboxOptions("districts", locale, {
+          loadMemberUserGeoComboboxOptions("districts", locale, {
             search,
             signal,
             systemProvinceId: Number(block.website_province_id),
@@ -841,7 +883,8 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
         resolveSelectedLabel={
           formReadOnly
             ? undefined
-            : (value) => resolveGeoComboboxLabel("districts", locale, value)
+            : (value) =>
+                resolveMemberUserGeoComboboxLabel("districts", locale, value)
         }
       />
       <LabeledRemoteCombobox
@@ -858,9 +901,16 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
           block.website_sub_district_id,
           block.website_sub_district_name
         )}
-        onValueChange={(v) => setBlock({ website_sub_district_id: v })}
+        catalogKey={`${block.website_province_id}:${block.website_district_id}`}
+        autoComplete="off"
+        onValueChange={(v) =>
+          setBlock({
+            website_sub_district_id: v,
+            website_sub_district_name: v ? block.website_sub_district_name : "",
+          })
+        }
         onLoadOptions={({ search, signal }) =>
-          loadGeoComboboxOptions("sub-districts", locale, {
+          loadMemberUserGeoComboboxOptions("sub-districts", locale, {
             search,
             signal,
             systemDistrictId: Number(block.website_district_id),
@@ -870,7 +920,11 @@ export function MemberUserForm({ editId }: MemberUserFormProps) {
           formReadOnly
             ? undefined
             : (value) =>
-                resolveGeoComboboxLabel("sub-districts", locale, value)
+                resolveMemberUserGeoComboboxLabel(
+                  "sub-districts",
+                  locale,
+                  value
+                )
         }
       />
       <FormField

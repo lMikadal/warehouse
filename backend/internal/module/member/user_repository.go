@@ -37,6 +37,10 @@ type UserRow struct {
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	BusinessLabel        string
+	SettingPrefixName    sql.NullString
+	WebsiteProvinceName  sql.NullString
+	WebsiteDistrictName  sql.NullString
+	WebsiteSubDistrictName sql.NullString
 }
 
 type UserListFilter struct {
@@ -70,6 +74,10 @@ type AddressInput struct {
 	WebsiteProvinceID    *int64  `json:"website_province_id"`
 	WebsiteDistrictID    *int64  `json:"website_district_id"`
 	WebsiteSubDistrictID *int64  `json:"website_sub_district_id"`
+	SettingPrefixName    *string `json:"setting_prefix_name,omitempty"`
+	WebsiteProvinceName  *string `json:"website_province_name,omitempty"`
+	WebsiteDistrictName  *string `json:"website_district_name,omitempty"`
+	WebsiteSubDistrictName *string `json:"website_sub_district_name,omitempty"`
 	Postcode             *string `json:"postcode"`
 	Tel                  *string `json:"tel"`
 	Email                *string `json:"email"`
@@ -268,16 +276,41 @@ func userListOrder(sort, order string) string {
 	return col
 }
 
+func userDetailLocale(locale string) string {
+	if strings.TrimSpace(locale) == "" {
+		return "th"
+	}
+	return locale
+}
+
 func (r *UserRepository) GetAggregate(ctx context.Context, id int64, locale string) (*UserRow, []AddressInput, []int64, []int64, []FileRow, []DiscountRow, []HistoryRow, error) {
+	loc := userDetailLocale(locale)
 	var row UserRow
 	var branch sql.NullString
 	err := r.db.QueryRowContext(ctx, `
-SELECT id, sku, member_tier_id, type::text, setting_prefix_id, name, store_name, tax_number, branch::text, branch_name,
-  tel, email, address, website_province_id, website_district_id, website_sub_district_id, postcode, system_file_id, note, is_active, created_at, updated_at
-FROM member_user WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
+SELECT u.id, u.sku, u.member_tier_id, u.type::text, u.setting_prefix_id, u.name, u.store_name, u.tax_number, u.branch::text, u.branch_name,
+  u.tel, u.email, u.address, u.website_province_id, u.website_district_id, u.website_sub_district_id, u.postcode, u.system_file_id, u.note, u.is_active, u.created_at, u.updated_at,
+  COALESCE(
+    (SELECT spl.name FROM setting_prefix_language spl WHERE spl.setting_prefix_id = u.setting_prefix_id AND spl.locale = $2 LIMIT 1),
+    (SELECT spl.name FROM setting_prefix_language spl WHERE spl.setting_prefix_id = u.setting_prefix_id AND spl.locale = 'th' LIMIT 1)
+  ) AS setting_prefix_name,
+  COALESCE(
+    (SELECT pl.name FROM system_province_language pl WHERE pl.system_province_id = u.website_province_id AND pl.locale = $2 LIMIT 1),
+    (SELECT pl.name FROM system_province_language pl WHERE pl.system_province_id = u.website_province_id AND pl.locale = 'th' LIMIT 1)
+  ) AS website_province_name,
+  COALESCE(
+    (SELECT dl.name FROM system_district_language dl WHERE dl.system_district_id = u.website_district_id AND dl.locale = $2 LIMIT 1),
+    (SELECT dl.name FROM system_district_language dl WHERE dl.system_district_id = u.website_district_id AND dl.locale = 'th' LIMIT 1)
+  ) AS website_district_name,
+  COALESCE(
+    (SELECT sdl.name FROM system_sub_district_language sdl WHERE sdl.system_sub_district_id = u.website_sub_district_id AND sdl.locale = $2 LIMIT 1),
+    (SELECT sdl.name FROM system_sub_district_language sdl WHERE sdl.system_sub_district_id = u.website_sub_district_id AND sdl.locale = 'th' LIMIT 1)
+  ) AS website_sub_district_name
+FROM member_user u WHERE u.id = $1 AND u.deleted_at IS NULL`, id, loc).Scan(
 		&row.ID, &row.SKU, &row.MemberTierID, &row.Type, &row.SettingPrefixID, &row.Name, &row.StoreName, &row.TaxNumber,
 		&branch, &row.BranchName, &row.Tel, &row.Email, &row.Address, &row.WebsiteProvinceID, &row.WebsiteDistrictID,
-		&row.WebsiteSubDistrictID, &row.Postcode, &row.SystemFileID, &row.Note, &row.IsActive, &row.CreatedAt, &row.UpdatedAt)
+		&row.WebsiteSubDistrictID, &row.Postcode, &row.SystemFileID, &row.Note, &row.IsActive, &row.CreatedAt, &row.UpdatedAt,
+		&row.SettingPrefixName, &row.WebsiteProvinceName, &row.WebsiteDistrictName, &row.WebsiteSubDistrictName)
 	if branch.Valid {
 		s := branch.String
 		row.Branch = &s
@@ -288,7 +321,7 @@ FROM member_user WHERE id = $1 AND deleted_at IS NULL`, id).Scan(
 	if err != nil {
 		return nil, nil, nil, nil, nil, nil, nil, err
 	}
-	addrs, err := r.loadAddresses(ctx, id)
+	addrs, err := r.loadAddresses(ctx, id, loc)
 	if err != nil {
 		return nil, nil, nil, nil, nil, nil, nil, err
 	}
@@ -589,11 +622,27 @@ WHERE id = $2 AND member_user_id = $1`,
 	return err
 }
 
-func (r *UserRepository) loadAddresses(ctx context.Context, userID int64) ([]AddressInput, error) {
+func (r *UserRepository) loadAddresses(ctx context.Context, userID int64, locale string) ([]AddressInput, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT type::text, member_type::text, setting_prefix_id, name, store_name, tax_number, branch::text, branch_name, address,
-  website_province_id, website_district_id, website_sub_district_id, postcode, tel, email, credit_limit, credit_date, relationship, is_same_information
-FROM member_user_address WHERE member_user_id = $1 AND deleted_at IS NULL`, userID)
+SELECT a.type::text, a.member_type::text, a.setting_prefix_id, a.name, a.store_name, a.tax_number, a.branch::text, a.branch_name, a.address,
+  a.website_province_id, a.website_district_id, a.website_sub_district_id, a.postcode, a.tel, a.email, a.credit_limit, a.credit_date, a.relationship, a.is_same_information,
+  COALESCE(
+    (SELECT spl.name FROM setting_prefix_language spl WHERE spl.setting_prefix_id = a.setting_prefix_id AND spl.locale = $2 LIMIT 1),
+    (SELECT spl.name FROM setting_prefix_language spl WHERE spl.setting_prefix_id = a.setting_prefix_id AND spl.locale = 'th' LIMIT 1)
+  ) AS setting_prefix_name,
+  COALESCE(
+    (SELECT pl.name FROM system_province_language pl WHERE pl.system_province_id = a.website_province_id AND pl.locale = $2 LIMIT 1),
+    (SELECT pl.name FROM system_province_language pl WHERE pl.system_province_id = a.website_province_id AND pl.locale = 'th' LIMIT 1)
+  ) AS website_province_name,
+  COALESCE(
+    (SELECT dl.name FROM system_district_language dl WHERE dl.system_district_id = a.website_district_id AND dl.locale = $2 LIMIT 1),
+    (SELECT dl.name FROM system_district_language dl WHERE dl.system_district_id = a.website_district_id AND dl.locale = 'th' LIMIT 1)
+  ) AS website_district_name,
+  COALESCE(
+    (SELECT sdl.name FROM system_sub_district_language sdl WHERE sdl.system_sub_district_id = a.website_sub_district_id AND sdl.locale = $2 LIMIT 1),
+    (SELECT sdl.name FROM system_sub_district_language sdl WHERE sdl.system_sub_district_id = a.website_sub_district_id AND sdl.locale = 'th' LIMIT 1)
+  ) AS website_sub_district_name
+FROM member_user_address a WHERE a.member_user_id = $1 AND a.deleted_at IS NULL`, userID, locale)
 	if err != nil {
 		return nil, err
 	}
@@ -601,10 +650,28 @@ FROM member_user_address WHERE member_user_id = $1 AND deleted_at IS NULL`, user
 	var out []AddressInput
 	for rows.Next() {
 		var a AddressInput
+		var prefixName, provName, distName, subName sql.NullString
 		if err := rows.Scan(&a.Type, &a.MemberType, &a.SettingPrefixID, &a.Name, &a.StoreName, &a.TaxNumber, &a.Branch, &a.BranchName,
 			&a.Address, &a.WebsiteProvinceID, &a.WebsiteDistrictID, &a.WebsiteSubDistrictID, &a.Postcode, &a.Tel, &a.Email,
-			&a.CreditLimit, &a.CreditDate, &a.Relationship, &a.IsSameInformation); err != nil {
+			&a.CreditLimit, &a.CreditDate, &a.Relationship, &a.IsSameInformation,
+			&prefixName, &provName, &distName, &subName); err != nil {
 			return nil, err
+		}
+		if prefixName.Valid {
+			s := prefixName.String
+			a.SettingPrefixName = &s
+		}
+		if provName.Valid {
+			s := provName.String
+			a.WebsiteProvinceName = &s
+		}
+		if distName.Valid {
+			s := distName.String
+			a.WebsiteDistrictName = &s
+		}
+		if subName.Valid {
+			s := subName.String
+			a.WebsiteSubDistrictName = &s
 		}
 		out = append(out, a)
 	}

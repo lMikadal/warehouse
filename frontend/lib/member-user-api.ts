@@ -24,6 +24,10 @@ export type MemberAddressInput = {
   website_province_id?: number | null;
   website_district_id?: number | null;
   website_sub_district_id?: number | null;
+  setting_prefix_name?: string | null;
+  website_province_name?: string | null;
+  website_district_name?: string | null;
+  website_sub_district_name?: string | null;
   postcode?: string | null;
   tel?: string | null;
   email?: string | null;
@@ -100,6 +104,10 @@ export type MemberUserDetail = {
   website_province_id?: number | null;
   website_district_id?: number | null;
   website_sub_district_id?: number | null;
+  setting_prefix_name?: string | null;
+  website_province_name?: string | null;
+  website_district_name?: string | null;
+  website_sub_district_name?: string | null;
   postcode?: string | null;
   system_file_id?: number | null;
   note?: string | null;
@@ -137,6 +145,10 @@ export type MemberUserCreateBody = {
   website_province_id?: number | null;
   website_district_id?: number | null;
   website_sub_district_id?: number | null;
+  setting_prefix_name?: string | null;
+  website_province_name?: string | null;
+  website_district_name?: string | null;
+  website_sub_district_name?: string | null;
   postcode?: string | null;
   system_file_id?: number | null;
   note?: string | null;

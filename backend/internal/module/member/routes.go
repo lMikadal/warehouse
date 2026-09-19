@@ -16,13 +16,14 @@ func RegisterRoutes(g *echo.Group, db *sql.DB, cfg config.Config) {
 	codePrefix := system.NewCodePrefixRepository(db)
 	userRepo := NewUserRepository(db, codePrefix, cfg)
 	langRepo := setting.NewLangRepository(db)
+	geoRepo := system.NewAddressGeoRepository(db)
 
 	credit := NewSettingHandler(SettingCredit, setRepo, relRepo)
 	group := NewSettingHandler(SettingGroup, setRepo, relRepo)
 	business := NewSettingHandler(SettingBusiness, setRepo, relRepo)
 	rel := NewRelationHandler(relRepo)
 	tier := NewTierHandler(tierRepo, relRepo)
-	user := NewUserHandler(userRepo, relRepo, setRepo, langRepo)
+	user := NewUserHandler(userRepo, relRepo, setRepo, langRepo, geoRepo)
 
 	s := g.Group("/settings")
 	s.GET("/credits", credit.list)

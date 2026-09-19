@@ -1471,6 +1471,33 @@
               }
             },
             {
+              "name": "Member user filters (provinces)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=provinces&page=1&limit=50",
+                "description": "member.member_user.view — address geo picker for member user form (no admin.system_province.view required)."
+              }
+            },
+            {
+              "name": "Member user filters (districts)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=districts&page=1&limit=50&system_province_id=1",
+                "description": "member.member_user.view — cascade districts under system_province_id."
+              }
+            },
+            {
+              "name": "Member user filters (sub districts)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/member/users/filters?facet=sub_districts&page=1&limit=50&system_district_id=1",
+                "description": "member.member_user.view — cascade sub-districts under system_district_id."
+              }
+            },
+            {
               "name": "Member user filters (product items)",
               "request": {
                 "method": "GET",
@@ -1501,7 +1528,7 @@
               "request": {
                 "method": "GET",
                 "url": "{{baseUrl}}/member/users/1",
-                "description": "Aggregate includes `files[]` (junction + embedded `system_file`) and `histories[]` with locale `title` (+ optional `names` th/en). History rows append on member create, file create, and discount create."
+                "description": "Aggregate includes read-only `setting_prefix_name` and `website_*_name` on the root and each `addresses[]` row (locale labels for view-only UI), `files[]` (junction + embedded `system_file`), and `histories[]` with locale `title` (+ optional `names` th/en). History rows append on member create, file create, and discount create."
               }
             },
             {

@@ -60,3 +60,22 @@ export const MultiSelect: Story = {
     );
   },
 };
+
+export const Disabled: Story = {
+  args: {
+    label: "Related brands",
+    placeholder: "Select brands...",
+    emptyLabel: "No results",
+    values: ["1", "2"],
+    disabled: true,
+    onValuesChange: () => {},
+    onLoadOptions: async () => ALL,
+    resolveSelectedLabels: async (ids) =>
+      ALL.filter((o) => ids.includes(o.value)),
+  },
+  render: (args) => (
+    <div className="w-72">
+      <RemoteMultiComboboxField {...args} inputClassName="w-full" />
+    </div>
+  ),
+};

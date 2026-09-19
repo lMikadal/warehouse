@@ -37,7 +37,7 @@ type userStatsResponse struct {
 
 func userFilterFacet(facet string) (string, bool) {
 	switch strings.TrimSpace(strings.ToLower(facet)) {
-	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "product_brands", "product_brand_categories", "member_credits":
+	case "businesses", "business_relations", "setting_relations", "tiers", "prefixes", "admin_users", "product_items", "product_brands", "product_brand_categories", "member_credits", "provinces", "districts", "sub_districts":
 		return strings.TrimSpace(strings.ToLower(facet)), true
 	default:
 		return "", false
@@ -125,6 +125,8 @@ func (h *UserHandler) listFilters(c *echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
 		}
 		return c.JSON(http.StatusOK, userProductBrandCategoriesToResponse(rows, total, q))
+	case "provinces", "districts", "sub_districts":
+		return h.userGeoFilters(c, facet)
 	default:
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid facet"})
 	}
