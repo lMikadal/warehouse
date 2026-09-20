@@ -1547,13 +1547,13 @@
         renderPriceSummary(sum, lineCount);
 
     var actionsHtml = "";
-    if (!collapsed && !empty) {
+    if (!collapsed && (actions !== "create" ? !empty : true)) {
       if (actions === "view") {
         actionsHtml =
           '<div class="order-store-form__doc-actions' +
           (showReset ? " order-store-form__doc-actions--view-reset" : "") +
           '">' +
-          '<button type="button" class="btn btn--outline" data-action-cancel data-doc-panel="' +
+          '<button type="button" class="btn btn--danger" data-action-cancel data-doc-panel="' +
           panel +
           '" data-i18n="orderForm.cancel"></button>' +
           (showReset
@@ -1565,7 +1565,7 @@
       } else {
         actionsHtml =
           '<div class="order-store-form__doc-actions">' +
-          '<button type="button" class="btn btn--outline" data-action-cancel data-doc-panel="' +
+          '<button type="button" class="btn btn--danger" data-action-cancel data-doc-panel="' +
           panel +
           '" data-i18n="orderForm.cancel"></button>' +
           '<button type="button" class="btn btn--outline" data-save="draft" data-doc-panel="' +

@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  ChevronDown,
+  ClipboardList,
   FileText,
   Filter,
   MapPin,
@@ -13,8 +15,10 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { toast } from "sonner";
 
 import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
@@ -22,7 +26,13 @@ import { CrudSearchField } from "@/components/molecules/crud-search-field";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +45,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+
+import { StoreSalesFormDesktopSplitSkeleton } from "./store-sales-form-desktop-split-skeleton";
+
+const StoreSalesFormDesktopSplit = dynamic(
+  () =>
+    import("./store-sales-form-desktop-split").then(
+      (m) => m.StoreSalesFormDesktopSplit,
+    ),
+  { ssr: false, loading: () => <StoreSalesFormDesktopSplitSkeleton /> },
+);
 import type { RemoteComboboxOption } from "@/hooks/use-remote-combobox-options";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +63,7 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
+  formatDate,
   formatDateTime,
   type DisplayLocale,
 } from "@/lib/format-datetime";
@@ -119,13 +140,52 @@ function defaultReceiveAt(): Date {
   return new Date(Date.now() + 30 * 60 * 1000);
 }
 
-function toIsoReceived(draft: ShippingDraft): string | null {
-  if (draft.type !== "delivery") {
-    return defaultReceiveAt().toISOString();
+function emptyShippingDraft(): ShippingDraft {
+  return { type: "store", date: "", time: "" };
+}
+
+function localDateTimeParts(d: Date): Pick<ShippingDraft, "date" | "time"> {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return { date: `${y}-${m}-${day}`, time: `${h}:${min}` };
+}
+
+/** Design `touchCartSchedule`: set receive +30 min on first line; clear on empty create. */
+function scheduleShippingForCart(
+  lines: CartLine[],
+  orderId: number | undefined,
+  prev: ShippingDraft
+): ShippingDraft {
+  if (lines.length === 0) {
+    if (!orderId) return emptyShippingDraft();
+    return prev;
   }
-  if (!draft.date) return null;
-  const time = draft.time || "00:00";
-  return new Date(`${draft.date}T${time}:00`).toISOString();
+  if (prev.date.trim() && prev.time.trim()) return prev;
+  const parts = localDateTimeParts(defaultReceiveAt());
+  return { ...prev, type: prev.type || "store", ...parts };
+}
+
+function toIsoReceived(draft: ShippingDraft): string | null {
+  if (draft.type === "delivery") {
+    if (!draft.date) return null;
+    const time = draft.time || "00:00";
+    return new Date(`${draft.date}T${time}:00`).toISOString();
+  }
+  if (draft.date.trim() && draft.time.trim()) {
+    return new Date(`${draft.date}T${draft.time}:00`).toISOString();
+  }
+  return defaultReceiveAt().toISOString();
+}
+
+function shippingTypeLabelKey(
+  type: DeliveryType
+): "shippingStore" | "shippingParking" | "shippingDelivery" {
+  if (type === "parking") return "shippingParking";
+  if (type === "delivery") return "shippingDelivery";
+  return "shippingStore";
 }
 
 /** Stable ISO for display (SSR-safe — uses shipping draft, not wall clock). */
@@ -215,14 +275,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const [status, setStatus] = useState<StoreSalesStatus>("draft");
   const [sku, setSku] = useState("");
   const [shippingOpen, setShippingOpen] = useState(false);
-  const [shipping, setShipping] = useState<ShippingDraft>(() => {
-    const d = defaultReceiveAt();
-    return {
-      type: "store",
-      date: d.toISOString().slice(0, 10),
-      time: d.toTimeString().slice(0, 5),
-    };
-  });
+  const [shipping, setShipping] = useState<ShippingDraft>(emptyShippingDraft);
+  const [orderedAtIso, setOrderedAtIso] = useState<string | null>(null);
+  const [documentCollapsed, setDocumentCollapsed] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareDetail, setCompareDetail] = useState("");
   const [compareQty, setCompareQty] = useState("1");
@@ -264,6 +319,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
       const d = await fetchStoreSalesDetail(locale, orderId);
       setStatus(d.status);
       setSku(d.sku ?? "");
+      setOrderedAtIso(d.ordered_at ?? null);
       if (d.member_user_id) {
         setMemberId(String(d.member_user_id));
         try {
@@ -293,8 +349,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
           : defaultReceiveAt();
         setShipping({
           type: d.shipping.type as DeliveryType,
-          date: ra.toISOString().slice(0, 10),
-          time: ra.toTimeString().slice(0, 5),
+          ...localDateTimeParts(ra),
         });
       }
       if (d.status === "draft" || d.status === "pending") {
@@ -398,6 +453,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
         creditId
       );
       setCart(repriced);
+      setShipping((s) => scheduleShippingForCart(repriced, orderId, s));
       setCustomerPhase("locked");
       goToProductStep();
     } catch {
@@ -463,8 +519,19 @@ export function StoreSalesFormPage({ orderId }: Props) {
     void loadBrowse();
   }, [loadBrowse]);
 
+  const updateCart = useCallback(
+    (updater: (prev: CartLine[]) => CartLine[]) => {
+      setCart((prev) => {
+        const next = updater(prev);
+        setShipping((s) => scheduleShippingForCart(next, orderId, s));
+        return next;
+      });
+    },
+    [orderId]
+  );
+
   const addProduct = (row: ProductItemBrowseRow) => {
-    setCart((c) => [
+    updateCart((c) => [
       ...c,
       {
         key: `p-${row.id}-${Date.now()}`,
@@ -570,16 +637,28 @@ export function StoreSalesFormPage({ orderId }: Props) {
     return iso ? formatDateTime(iso, displayLocale) : "—";
   }, [shipping, displayLocale]);
 
+  const orderDateDisplay = useMemo(() => {
+    const iso = orderedAtIso ?? new Date().toISOString();
+    return formatDate(iso, displayLocale);
+  }, [orderedAtIso, displayLocale]);
+
   if (!perms.view) {
     return <p className="text-muted-foreground">{tError("forbidden")}</p>;
   }
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-[6fr_4fr]">
-        <Skeleton className="h-96 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <>
+        <div className="flex flex-col gap-4 md:hidden">
+          <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+        <div className="hidden min-h-0 w-full gap-2 md:flex">
+          <Skeleton className="h-96 min-w-0 flex-[3]" />
+          <Skeleton className="w-px shrink-0 self-stretch" />
+          <Skeleton className="h-96 min-w-0 flex-[2] md:max-h-[calc(100svh-3.5rem-1rem-1.5rem)] md:h-[min(24rem,calc(100svh-3.5rem-1rem-1.5rem))]" />
+        </div>
+      </>
     );
   }
 
@@ -589,6 +668,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const customerFieldsDisabled = readOnly || customerPhase === "locked";
   const productActionsDisabled =
     readOnly || customerPhase !== "locked";
+  const cartEmpty = cart.length === 0;
 
   const openCompareAdd = () => {
     if (productActionsDisabled) return;
@@ -597,9 +677,188 @@ export function StoreSalesFormPage({ orderId }: Props) {
     setCompareOpen(true);
   };
 
-  return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
-      <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,6fr)_minmax(0,4fr)]">
+  const documentPanel = (
+        <Card className="flex min-h-0 flex-col">
+          <CardHeader className="shrink-0 space-y-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-1 items-start gap-3">
+                <span
+                  className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
+                  aria-hidden
+                >
+                  <ClipboardList className="size-5" />
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-base leading-snug">
+                    {tForm("documentTitle")}
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm">
+                    {tForm("documentSubtitle")}
+                  </p>
+                  {sku ? <p className="font-medium">{sku}</p> : null}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-start gap-1">
+                {!cartEmpty ? (
+                  <div className="text-right text-sm">
+                    <p className="text-muted-foreground">{tForm("orderDate")}</p>
+                    <p className="font-medium tabular-nums">{orderDateDisplay}</p>
+                  </div>
+                ) : null}
+                <ButtonIcon
+                  type="button"
+                  variant="ghost"
+                  size="lg"
+                  className="shrink-0"
+                  aria-expanded={!documentCollapsed}
+                  aria-label={
+                    documentCollapsed ? tForm("expandCard") : tForm("collapseCard")
+                  }
+                  onClick={() => setDocumentCollapsed((c) => !c)}
+                >
+                  <ChevronDown
+                    className={cn(
+                      "text-current transition-transform",
+                      documentCollapsed && "-rotate-90"
+                    )}
+                    aria-hidden
+                  />
+                </ButtonIcon>
+              </div>
+            </div>
+          </CardHeader>
+          {!documentCollapsed ? (
+            <>
+              <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+                {!cartEmpty ? (
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="text-muted-foreground shrink-0">
+                      {tForm("receiveLabel")}
+                    </span>
+                    <span className="text-primary font-medium">
+                      {tForm(shippingTypeLabelKey(shipping.type))}
+                    </span>
+                    <span className="tabular-nums">{receiveAtDisplay}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="size-10 p-0"
+                      onClick={() => setShippingOpen(true)}
+                      disabled={productActionsDisabled}
+                    >
+                      <Pencil className="text-current" aria-hidden />
+                    </Button>
+                  </div>
+                ) : null}
+                {cartEmpty ? (
+                  <p className="text-muted-foreground flex min-h-32 flex-1 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm">
+                    {tForm("emptyCart")}
+                  </p>
+                ) : (
+                  <Tabs
+                    value={cartTab}
+                    onValueChange={(v) => setCartTab(v as typeof cartTab)}
+                  >
+                    <TabsList>
+                      <TabsTrigger value="items">
+                        {tForm("tabCartItems")} ({itemLines.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="compare">
+                        {tForm("tabCartCompare")} ({compareLines.length})
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="items" className="space-y-2">
+                      {itemLines.map((line) => (
+                        <CartRow
+                          key={line.key}
+                          line={line}
+                          locale={locale}
+                          readOnly={productActionsDisabled}
+                          onChange={(next) =>
+                            updateCart((c) =>
+                              c.map((x) => (x.key === line.key ? next : x))
+                            )
+                          }
+                          onRemove={() =>
+                            updateCart((c) =>
+                              c.filter((x) => x.key !== line.key)
+                            )
+                          }
+                        />
+                      ))}
+                    </TabsContent>
+                    <TabsContent value="compare" className="space-y-2">
+                      {compareLines.map((line) => (
+                        <div
+                          key={line.key}
+                          className="rounded-md border p-2 text-sm"
+                        >
+                          {line.detail}
+                        </div>
+                      ))}
+                    </TabsContent>
+                  </Tabs>
+                )}
+              </CardContent>
+              <CardFooter className="shrink-0 flex-col gap-3 border-t bg-card">
+                <div className="w-full space-y-1 text-sm">
+                  <div className="flex justify-between tabular-nums">
+                    <span>{tPage("colTotal")}</span>
+                    <span>{money(totals.grand, locale)}</span>
+                  </div>
+                </div>
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="lg"
+                    onClick={() => router.push("/admin/sales/store")}
+                  >
+                    <Trash2 className="text-current" aria-hidden />
+                    {tCrud("btn.cancel")}
+                  </Button>
+                  {perms.create || perms.update ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      onClick={() => void save("draft")}
+                      disabled={productActionsDisabled || cartEmpty}
+                    >
+                      <Save className="text-current" aria-hidden />
+                      {tForm("saveDraft")}
+                    </Button>
+                  ) : null}
+                  {perms.create || perms.update ? (
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={() => void save("pending")}
+                      disabled={productActionsDisabled || cartEmpty}
+                    >
+                      {tForm("submitPending")}
+                    </Button>
+                  ) : null}
+                  {orderId ? (
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="sm:col-span-3"
+                      variant="secondary"
+                      onClick={() => void printSlip()}
+                    >
+                      <Printer className="text-current" aria-hidden />
+                      {tForm("printPicking")}
+                    </Button>
+                  ) : null}
+                </div>
+              </CardFooter>
+            </>
+          ) : null}
+        </Card>
+  );
+
+  const browseColumn = (
         <div className="flex flex-col gap-4">
           <Card className="overflow-visible">
             <CardHeader>
@@ -1027,109 +1286,19 @@ export function StoreSalesFormPage({ orderId }: Props) {
             </CardContent>
           </Card>
         </div>
+  );
 
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle>{tForm("documentTitle")}</CardTitle>
-            <p className="text-muted-foreground text-sm">{tForm("documentSubtitle")}</p>
-            {sku ? (
-              <p className="font-medium">{sku}</p>
-            ) : null}
-            <div className="flex items-center gap-2 text-sm">
-              <span>{receiveAtDisplay}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                className="size-10 p-0"
-                onClick={() => setShippingOpen(true)}
-                disabled={productActionsDisabled}
-              >
-                <Pencil className="text-current" aria-hidden />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-3">
-            {cart.length === 0 ? (
-              <p className="text-muted-foreground flex flex-1 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm">
-                {tForm("emptyCart")}
-              </p>
-            ) : (
-              <Tabs value={cartTab} onValueChange={(v) => setCartTab(v as typeof cartTab)}>
-                <TabsList>
-                  <TabsTrigger value="items">
-                    {tForm("tabCartItems")} ({itemLines.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="compare">
-                    {tForm("tabCartCompare")} ({compareLines.length})
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="items" className="space-y-2">
-                  {itemLines.map((line) => (
-                    <CartRow
-                      key={line.key}
-                      line={line}
-                      locale={locale}
-                      readOnly={productActionsDisabled}
-                      onChange={(next) =>
-                        setCart((c) =>
-                          c.map((x) => (x.key === line.key ? next : x))
-                        )
-                      }
-                      onRemove={() =>
-                        setCart((c) => c.filter((x) => x.key !== line.key))
-                      }
-                    />
-                  ))}
-                </TabsContent>
-                <TabsContent value="compare" className="space-y-2">
-                  {compareLines.map((line) => (
-                    <div key={line.key} className="rounded-md border p-2 text-sm">
-                      {line.detail}
-                    </div>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            )}
-            <div className="mt-auto space-y-1 border-t pt-3 text-sm">
-              <div className="flex justify-between tabular-nums">
-                <span>{tPage("colTotal")}</span>
-                <span>{money(totals.grand, locale)}</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <Button type="button" variant="outline" onClick={() => router.push("/admin/sales/store")}>
-                <Trash2 className="text-current" aria-hidden />
-                {tCrud("btn.cancel")}
-              </Button>
-              {perms.create || perms.update ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void save("draft")}
-                  disabled={productActionsDisabled}
-                >
-                  <Save className="text-current" aria-hidden />
-                  {tForm("saveDraft")}
-                </Button>
-              ) : null}
-              {perms.create || perms.update ? (
-                <Button
-                  type="button"
-                  onClick={() => void save("pending")}
-                  disabled={productActionsDisabled}
-                >
-                  {tForm("submitPending")}
-                </Button>
-              ) : null}
-              {orderId ? (
-                <Button type="button" className="sm:col-span-3" variant="secondary" onClick={() => void printSlip()}>
-                  <Printer className="text-current" aria-hidden />
-                  {tForm("printPicking")}
-                </Button>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      <div className="flex flex-col gap-4 md:hidden">
+        {browseColumn}
+        {documentPanel}
+      </div>
+      <div className="hidden min-w-0 w-full md:block">
+        <StoreSalesFormDesktopSplit
+          browse={browseColumn}
+          documentPanel={documentPanel}
+        />
       </div>
 
       <StoreShippingDialog
@@ -1212,7 +1381,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
               disabled={productActionsDisabled}
               onClick={() => {
                 const qty = Math.max(1, Number.parseInt(compareQty, 10) || 1);
-                setCart((c) => [
+                updateCart((c) => [
                   ...c,
                   {
                     key: `cmp-${Date.now()}`,

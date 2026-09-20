@@ -50,7 +50,7 @@
         "tabCartItems": "จัดสินค้า",
         "tabCartCompare": "เทียบสินค้า",
         "saveDraft": "บันทึกร่าง",
-        "submitPending": "สร้างใบสั่งซื้อ",
+        "submitPending": "พิมพ์ใบจัดสินต้า",
         "printPicking": "พิมพ์ใบจัดสินค้า",
         "shippingEdit": "เลือกรูปแบบจัดส่ง",
         "shippingStore": "รับหน้าสาขา",
@@ -74,7 +74,11 @@
         "filterOem": "รหัส OEM",
         "productSearchPlaceholder": "ค้นหาชื่อสินค้า / รหัสสินค้า",
         "productSearchHint": "ค้นหาสินค้าที่ต้องการและเพิ่มลงในรายการ",
-        "wholesaleMinQty": "ซื้อ {count} ชิ้นไป"
+        "wholesaleMinQty": "ซื้อ {count} ชิ้นไป",
+        "orderDate": "วันที่สั่งซื้อ",
+        "receiveLabel": "รับสินค้า :",
+        "collapseCard": "ย่อการ์ด",
+        "expandCard": "ขยายการ์ด"
       }
     }
   }

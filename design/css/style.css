@@ -8100,6 +8100,41 @@ body[data-perm-module="order"] .order-payment {
   margin-bottom: 1rem;
 }
 
+@media (min-width: 960px) {
+  .order-store-form__doc-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .order-store-form__doc-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    flex-shrink: 0;
+    background: var(--color-background);
+  }
+
+  .order-store-form__doc-body:not(.is-collapsed) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .order-store-form__doc-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 0.75rem;
+    background: var(--color-background);
+    border-top: 1px solid var(--color-muted);
+  }
+}
+
 .order-store-form__doc-header-main {
   display: flex;
   align-items: flex-start;
@@ -8162,6 +8197,16 @@ body[data-perm-module="order"] .order-payment {
 
 .order-store-form__doc-actions .btn--outline {
   background: var(--color-background);
+}
+
+.order-store-form__doc-actions .btn--danger {
+  background: color-mix(in srgb, #dc2626 12%, var(--color-background));
+  border-color: color-mix(in srgb, #dc2626 35%, transparent);
+  color: #dc2626;
+}
+
+.order-store-form__doc-actions .btn--danger:hover {
+  background: color-mix(in srgb, #dc2626 18%, var(--color-background));
 }
 
 .order-store-form__doc-card {

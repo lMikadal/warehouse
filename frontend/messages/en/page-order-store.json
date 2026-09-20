@@ -74,7 +74,11 @@
         "filterOem": "OEM code",
         "productSearchPlaceholder": "Search product name / SKU",
         "productSearchHint": "Search for products and add them to the order",
-        "wholesaleMinQty": "Buy {count}+ units"
+        "wholesaleMinQty": "Buy {count}+ units",
+        "orderDate": "Order date",
+        "receiveLabel": "Receive:",
+        "collapseCard": "Collapse card",
+        "expandCard": "Expand card"
       }
     }
   }

@@ -437,7 +437,6 @@ export function StoreSalesProductBrowseEmpty() {
   const tForm = useTranslations("page.orderStore.form");
   return (
     <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 py-12 text-center text-sm">
-      <Package className="size-12 opacity-40" aria-hidden />
       <p>{tForm("productSearchHint")}</p>
     </div>
   );
