@@ -404,7 +404,6 @@ export function StoreSalesProductBrowseTable({
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
                           disabled={disabled}
                           onClick={() => onOpenWarehouse(row.id)}
                         >

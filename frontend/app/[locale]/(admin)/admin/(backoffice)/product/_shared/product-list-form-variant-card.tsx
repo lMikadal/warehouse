@@ -152,7 +152,6 @@ export function ProductListFormVariantCard({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setWhOpen(true)}
               >
                 {tList("viewMore")}

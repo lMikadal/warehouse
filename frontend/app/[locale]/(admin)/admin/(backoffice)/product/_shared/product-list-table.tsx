@@ -452,7 +452,6 @@ export function ProductListTable({
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         onClick={() => onOpenWarehouse(row.id)}
                       >
                         {tList("viewMore")}
