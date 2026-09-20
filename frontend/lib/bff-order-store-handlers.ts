@@ -28,6 +28,25 @@ export async function handleStoreSalesFiltersGet(
   return proxyListGet(request, `${BASE}/filters`);
 }
 
+export async function handleStoreSalesVatGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, `${BASE}/vat`);
+}
+
+export async function handleStoreSalesItemsGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, `${BASE}/items`);
+}
+
+export async function handleStoreSalesMemberGet(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  return proxyListGet(request, `${BASE}/members/${id}`);
+}
+
 export async function handleStoreSalesStatusPatch(
   request: Request,
   id: string

@@ -58,6 +58,7 @@ export type QuotationCountResponse = {
 };
 
 export type QuotationItemInput = {
+  id?: number;
   product_item_id?: number | null;
   amount: number;
   price_per_unit: number;
@@ -77,6 +78,14 @@ export type QuotationFileDetail = {
   system_file_id: number;
   sort_order: number;
   file_name?: string;
+};
+
+export type QuotationLatestReject = {
+  note: string;
+  status: QuotationStatus;
+  next_status: QuotationStatus;
+  created_at: string;
+  created_by_name?: string | null;
 };
 
 export type QuotationDetail = {
@@ -110,6 +119,7 @@ export type QuotationDetail = {
   created_at: string;
   updated_at: string;
   created_by_name?: string | null;
+  latest_reject?: QuotationLatestReject | null;
 };
 
 export type QuotationCreateBody = {

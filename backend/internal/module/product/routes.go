@@ -27,7 +27,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 
 	items := g.Group("/items")
 	items.GET("/filters", filters.ItemBrowseFilters)
-	items.GET("", itemH.listBrowse)
+	items.GET("", itemH.ListBrowse)
 	items.PATCH("/:id", itemH.patch)
 	items.DELETE("/:id", itemH.delete)
 	items.GET("/:id/warehouse-placements", itemH.warehousePlacements)

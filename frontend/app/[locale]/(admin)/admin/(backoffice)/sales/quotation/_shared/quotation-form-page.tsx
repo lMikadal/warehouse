@@ -37,7 +37,17 @@ import type { RemoteComboboxOption } from "@/hooks/use-remote-combobox-options";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
-import { loadMemberUserCreditOptions } from "@/lib/member-user-filters-combobox";
+import {
+  fetchOrderSalesFormItems,
+  fetchOrderSalesFormVat,
+  loadOrderSalesCarBrandComboboxOptions,
+  loadOrderSalesCarModelComboboxOptions,
+  loadOrderSalesCategoryComboboxOptions,
+  loadOrderSalesCreditOptions,
+  resolveOrderSalesCarBrandLabel,
+  resolveOrderSalesCarModelLabel,
+  resolveOrderSalesCategoryLabel,
+} from "@/lib/order-sales-form-api";
 import {
   createQuotation,
   fetchQuotationDetail,
@@ -45,24 +55,10 @@ import {
   patchQuotation,
   postQuotationAction,
   type QuotationItemInput,
+  type QuotationLatestReject,
   type QuotationStatus,
 } from "@/lib/order-quotation-api";
-import {
-  loadProductItemBrowseCategoryComboboxOptions,
-  resolveProductItemBrowseCategoryLabel,
-} from "@/lib/product-category-combobox";
-import {
-  loadProductCarBrandComboboxOptions,
-  loadProductCarModelComboboxOptions,
-  resolveProductCarBrandLabel,
-  resolveProductCarModelLabel,
-} from "@/lib/product-filters-api";
-import {
-  fetchProductItems,
-  ProductListApiError,
-  type ProductItemBrowseRow,
-} from "@/lib/product-list-api";
-import { fetchSettingVat } from "@/lib/setting-api";
+import { type ProductItemBrowseRow } from "@/lib/product-list-api";
 import {
   canAddProductFromBrowse,
   cartLineMaxQty,
@@ -79,6 +75,8 @@ import {
 } from "@/lib/store-sales-member-combobox";
 import { cn } from "@/lib/utils";
 import type { DisplayLocale } from "@/lib/format-datetime";
+
+const QUOTATION_FORM_RESOURCE = "quotations" as const;
 
 import {
   ProductListCarModal,
@@ -135,11 +133,16 @@ type CartLine = {
   unitPrice: number;
   discount: number;
   detail?: string;
+  quotationItemId?: number;
 };
 
-type Props = { editId?: number };
+type Props = {
+  editId?: number;
+  /** When form is embedded on `/quotation/:id`, refetch branch after submit (same-URL router.push is a no-op). */
+  onSubmitted?: () => void | Promise<void>;
+};
 
-export function QuotationFormPage({ editId }: Props) {
+export function QuotationFormPage({ editId, onSubmitted }: Props) {
   const locale = useLocale();
   const displayLocale = locale as DisplayLocale;
   const router = useRouter();
@@ -156,6 +159,9 @@ export function QuotationFormPage({ editId }: Props) {
   const [loading, setLoading] = useState(!!editId);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<QuotationStatus>("draft");
+  const [latestReject, setLatestReject] = useState<QuotationLatestReject | null>(
+    null
+  );
   const [sku, setSku] = useState("");
   const [memberId, setMemberId] = useState("");
   const [memberComboboxLabel, setMemberComboboxLabel] = useState("");
@@ -246,6 +252,7 @@ export function QuotationFormPage({ editId }: Props) {
     try {
       const d = await fetchQuotationDetail(locale, editId);
       setStatus(d.status);
+      setLatestReject(d.latest_reject ?? null);
       setSku(d.sku ?? "");
       setIssueDate(d.issue_date ?? todayIsoDate());
       setValidUntil(d.valid_until ?? todayIsoDate());
@@ -256,7 +263,8 @@ export function QuotationFormPage({ editId }: Props) {
         try {
           const snap = await fetchStoreSalesMemberSnapshot(
             locale,
-            d.member_user_id
+            d.member_user_id,
+            QUOTATION_FORM_RESOURCE
           );
           applyMemberSnapshot(snap);
         } catch {
@@ -278,6 +286,7 @@ export function QuotationFormPage({ editId }: Props) {
 
       const loadedCart: CartLine[] = (d.items ?? []).map((it, i) => ({
         key: `loaded-${it.id ?? i}`,
+        quotationItemId: it.id,
         type: "item" as const,
         qty: it.amount,
         unitPrice: it.price_per_unit,
@@ -286,14 +295,22 @@ export function QuotationFormPage({ editId }: Props) {
           ? ({ id: it.product_item_id, sku: "", name: "" } as ProductItemBrowseRow)
           : undefined,
       }));
-      const hydrated = await hydrateStoreSalesCartProducts(locale, loadedCart);
+      let hydrated: CartLine[] = loadedCart;
+      try {
+        hydrated = (await hydrateStoreSalesCartProducts(locale, loadedCart, {
+          itemsResource: QUOTATION_FORM_RESOURCE,
+        })) as CartLine[];
+      } catch {
+        /* ponytail: show lines without product browse fields if hydrate fails */
+      }
       const repriced = await repriceStoreSalesCartLines(
         locale,
         hydrated,
         d.member_user_id ?? null,
         d.member_setting_credit_id
           ? String(d.member_setting_credit_id)
-          : ""
+          : "",
+        { itemsResource: QUOTATION_FORM_RESOURCE }
       );
       setCart(repriced);
       if (repriced.length > 0 || d.status === "draft") {
@@ -317,10 +334,16 @@ export function QuotationFormPage({ editId }: Props) {
   }, [loadDetail]);
 
   useEffect(() => {
+    if (!perms.create && !perms.update) return;
     let cancelled = false;
     void (async () => {
       try {
-        const { options } = await loadMemberUserCreditOptions(locale, "", 1);
+        const { options } = await loadOrderSalesCreditOptions(
+          locale,
+          QUOTATION_FORM_RESOURCE,
+          "",
+          1
+        );
         if (!cancelled) setCreditOptions(options);
       } catch {
         if (!cancelled) setCreditOptions([]);
@@ -329,7 +352,7 @@ export function QuotationFormPage({ editId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, perms.create, perms.update]);
 
   useEffect(() => {
     if (creditOptions.length === 0) return;
@@ -342,7 +365,7 @@ export function QuotationFormPage({ editId }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchSettingVat(locale)
+    void fetchOrderSalesFormVat(locale, QUOTATION_FORM_RESOURCE)
       .then((vat) => {
         if (!cancelled && vat.is_active !== false && Number.isFinite(vat.rate)) {
           setVatRate(vat.rate);
@@ -363,7 +386,11 @@ export function QuotationFormPage({ editId }: Props) {
       return;
     }
     try {
-      const snap = await fetchStoreSalesMemberSnapshot(locale, Number(nextId));
+      const snap = await fetchStoreSalesMemberSnapshot(
+        locale,
+        Number(nextId),
+        QUOTATION_FORM_RESOURCE
+      );
       applyMemberSnapshot(snap);
     } catch {
       toast.error(tError("loadFailed"));
@@ -399,7 +426,8 @@ export function QuotationFormPage({ editId }: Props) {
         locale,
         cart,
         memberId ? Number(memberId) : null,
-        creditId
+        creditId,
+        { itemsResource: QUOTATION_FORM_RESOURCE }
       );
       setCart(repriced);
       setCustomerPhase("locked");
@@ -421,28 +449,32 @@ export function QuotationFormPage({ editId }: Props) {
     if (!browseRequested) return;
     setBrowseLoading(true);
     try {
-      const res = await fetchProductItems(locale, {
-        page: browsePage,
-        limit: browsePageSize,
-        search: productSearchApplied || undefined,
-        isActive: true,
-        productCategoryId: browseCategoryId
-          ? Number(browseCategoryId)
-          : undefined,
-        carBrandId: browseBrandId ? Number(browseBrandId) : undefined,
-        productAttributeModelId: browseModelId
-          ? Number(browseModelId)
-          : undefined,
-        carYear: browseCarYear ? Number(browseCarYear) : undefined,
-        oem: browseOem.trim() || undefined,
-        sort: browseSortKey ?? undefined,
-        order: browseSortDir ?? undefined,
-      });
+      const res = await fetchOrderSalesFormItems(
+        locale,
+        QUOTATION_FORM_RESOURCE,
+        {
+          page: browsePage,
+          limit: browsePageSize,
+          search: productSearchApplied || undefined,
+          isActive: true,
+          productCategoryId: browseCategoryId
+            ? Number(browseCategoryId)
+            : undefined,
+          carBrandId: browseBrandId ? Number(browseBrandId) : undefined,
+          productAttributeModelId: browseModelId
+            ? Number(browseModelId)
+            : undefined,
+          carYear: browseCarYear ? Number(browseCarYear) : undefined,
+          oem: browseOem.trim() || undefined,
+          sort: browseSortKey ?? undefined,
+          order: browseSortDir ?? undefined,
+        }
+      );
       setBrowseRows(res.items);
       setBrowseTotal(res.meta.total);
     } catch (e) {
       toast.error(
-        e instanceof ProductListApiError ? e.message : tError("loadFailed")
+        e instanceof Error && e.message ? e.message : tError("loadFailed")
       );
     } finally {
       setBrowseLoading(false);
@@ -474,7 +506,8 @@ export function QuotationFormPage({ editId }: Props) {
           locale,
           lines,
           memberId ? Number(memberId) : null,
-          creditId
+          creditId,
+          { itemsResource: QUOTATION_FORM_RESOURCE }
         );
         setCart(repriced);
       } catch {
@@ -594,6 +627,7 @@ export function QuotationFormPage({ editId }: Props) {
 
   const bodyItems = (): QuotationItemInput[] =>
     itemLines.map((line) => ({
+      ...(line.quotationItemId != null ? { id: line.quotationItemId } : {}),
       product_item_id: line.product?.id ?? null,
       amount: line.qty,
       price_per_unit: line.unitPrice,
@@ -632,7 +666,12 @@ export function QuotationFormPage({ editId }: Props) {
       if (submitAfter && id) {
         await postQuotationAction(locale, id, "submit", {});
       }
-      router.push(`/admin/sales/quotation/${id}`);
+      const target = `/admin/sales/quotation/${id}`;
+      if (submitAfter && onSubmitted) {
+        await onSubmitted();
+        return;
+      }
+      router.push(target);
     } catch (e) {
       toast.error(
         e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
@@ -679,6 +718,10 @@ export function QuotationFormPage({ editId }: Props) {
     onSubmitPending: () => void save(true),
     saving,
     isEdit: !!editId,
+    latestReject:
+      status === "draft" && latestReject?.note?.trim()
+        ? latestReject
+        : null,
   };
 
   const documentPanel = (
@@ -751,10 +794,15 @@ export function QuotationFormPage({ editId }: Props) {
                         loadStoreSalesMemberComboboxOptions(locale, {
                           search,
                           signal,
+                          resource: QUOTATION_FORM_RESOURCE,
                         })
                       }
                       resolveSelectedLabel={(v) =>
-                        resolveStoreSalesMemberLabel(locale, v)
+                        resolveStoreSalesMemberLabel(
+                          locale,
+                          v,
+                          QUOTATION_FORM_RESOURCE
+                        )
                       }
                     />
                   </div>
@@ -944,14 +992,16 @@ export function QuotationFormPage({ editId }: Props) {
                     showClear
                     disabled={productActionsDisabled}
                     onLoadOptions={(ctx) =>
-                      loadProductItemBrowseCategoryComboboxOptions(
+                      loadOrderSalesCategoryComboboxOptions(
                         displayLocale,
+                        QUOTATION_FORM_RESOURCE,
                         { search: ctx.search, signal: ctx.signal }
                       )
                     }
                     resolveSelectedLabel={(value) =>
-                      resolveProductItemBrowseCategoryLabel(
+                      resolveOrderSalesCategoryLabel(
                         displayLocale,
+                        QUOTATION_FORM_RESOURCE,
                         value
                       )
                     }
@@ -991,15 +1041,23 @@ export function QuotationFormPage({ editId }: Props) {
                     showClear
                     disabled={productActionsDisabled}
                     onLoadOptions={(ctx) =>
-                      loadProductCarBrandComboboxOptions(displayLocale, {
-                        search: ctx.search,
-                        signal: ctx.signal,
-                      })
+                      loadOrderSalesCarBrandComboboxOptions(
+                        displayLocale,
+                        QUOTATION_FORM_RESOURCE,
+                        {
+                          search: ctx.search,
+                          signal: ctx.signal,
+                        }
+                      )
                     }
                     resolveSelectedLabel={async (value) => {
                       const id = Number(value);
                       if (!Number.isFinite(id)) return null;
-                      return resolveProductCarBrandLabel(displayLocale, id);
+                      return resolveOrderSalesCarBrandLabel(
+                        displayLocale,
+                        QUOTATION_FORM_RESOURCE,
+                        id
+                      );
                     }}
                   />
                   <RemoteComboboxField
@@ -1017,18 +1075,26 @@ export function QuotationFormPage({ editId }: Props) {
                     showClear
                     disabled={productActionsDisabled || !browseBrandId}
                     onLoadOptions={(ctx) =>
-                      loadProductCarModelComboboxOptions(displayLocale, {
-                        search: ctx.search,
-                        signal: ctx.signal,
-                        parentId: browseBrandId
-                          ? Number(browseBrandId)
-                          : undefined,
-                      })
+                      loadOrderSalesCarModelComboboxOptions(
+                        displayLocale,
+                        QUOTATION_FORM_RESOURCE,
+                        {
+                          search: ctx.search,
+                          signal: ctx.signal,
+                          parentId: browseBrandId
+                            ? Number(browseBrandId)
+                            : undefined,
+                        }
+                      )
                     }
                     resolveSelectedLabel={async (value) => {
                       const id = Number(value);
                       if (!Number.isFinite(id)) return null;
-                      return resolveProductCarModelLabel(displayLocale, id);
+                      return resolveOrderSalesCarModelLabel(
+                        displayLocale,
+                        QUOTATION_FORM_RESOURCE,
+                        id
+                      );
                     }}
                   />
                   <RemoteComboboxField

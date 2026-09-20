@@ -15,11 +15,12 @@ import (
 )
 
 type StoreSalesHandler struct {
-	repo *StoreSalesRepository
+	repo     *StoreSalesRepository
+	formRead *SalesFormReadHandlers
 }
 
-func NewStoreSalesHandler(repo *StoreSalesRepository) *StoreSalesHandler {
-	return &StoreSalesHandler{repo: repo}
+func NewStoreSalesHandler(repo *StoreSalesRepository, formRead *SalesFormReadHandlers) *StoreSalesHandler {
+	return &StoreSalesHandler{repo: repo, formRead: formRead}
 }
 
 func parseStoreSalesListQuery(c *echo.Context) StoreSalesListQuery {
@@ -83,6 +84,10 @@ func (h *StoreSalesHandler) count(c *echo.Context) error {
 }
 
 func (h *StoreSalesHandler) filters(c *echo.Context) error {
+	facet := strings.TrimSpace(strings.ToLower(c.QueryParam("facet")))
+	if facet != "" && facet != "sellers" && h.formRead != nil {
+		return h.formRead.FormFilters(c)
+	}
 	q := api.ParsePageQuery(c)
 	search := strings.TrimSpace(c.QueryParam("search"))
 	var id int64

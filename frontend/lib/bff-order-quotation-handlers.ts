@@ -28,21 +28,40 @@ export async function handleQuotationFiltersGet(
   return proxyListGet(request, `${BASE}/filters`);
 }
 
+export async function handleQuotationVatGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, `${BASE}/vat`);
+}
+
+export async function handleQuotationItemsGet(
+  request: Request
+): Promise<NextResponse> {
+  return proxyListGet(request, `${BASE}/items`);
+}
+
+export async function handleQuotationMemberGet(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  return proxyListGet(request, `${BASE}/members/${id}`);
+}
+
 async function postAction(
   request: Request,
   id: string,
   action: string
 ): Promise<NextResponse> {
-  let body = "{}";
+  let bodyPayload: unknown = {};
   const len = request.headers.get("content-length");
   if (len !== null && len !== "0") {
     const parsed = await readJsonBody(request);
     if (!parsed.ok) return parsed.response;
-    body = JSON.stringify(parsed.body);
+    bodyPayload = parsed.body;
   }
   return proxyAuthedBackendJson(request, `${BASE}/${id}/${action}`, {
     method: "POST",
-    body,
+    body: bodyPayload,
   });
 }
 

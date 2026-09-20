@@ -753,12 +753,11 @@ WHERE id = $1 AND deleted_at IS NULL AND status = 'draft'`, id, actorID)
 }
 
 func (r *StoreSalesRepository) replaceItemsTx(ctx context.Context, tx *sql.Tx, orderID int64, items []StoreSalesItemInput, actorID int64, headerVat vatSnapshot) error {
-	if _, err := tx.ExecContext(ctx, `
-UPDATE order_list_item SET deleted_at = NOW(), updated_at = NOW()
-WHERE order_list_id = $1 AND deleted_at IS NULL`, orderID); err != nil {
-		return err
-	}
+	keepIDs := make([]int64, 0, len(items))
 	for _, it := range items {
+		if it.Amount <= 0 {
+			continue
+		}
 		itemType := it.Type
 		if itemType == "" {
 			itemType = "item"
@@ -768,15 +767,67 @@ WHERE order_list_id = $1 AND deleted_at IS NULL`, orderID); err != nil {
 			return err
 		}
 		total := lineTotal(it.Amount, it.PricePerUnit, it.Discount)
-		if _, err := tx.ExecContext(ctx, `
+		detail := detailJSON(it.Detail)
+		if it.ID != nil && *it.ID > 0 {
+			res, err := tx.ExecContext(ctx, `
+UPDATE order_list_item SET
+  product_item_id = $2, type = $3::order_list_item_type, amount = $4, price_per_unit = $5, discount = $6,
+  vat_type = $7::setting_vat_type, vat_rate = $8, total_price = $9, detail = $10::jsonb,
+  updated_by = $11, updated_at = NOW()
+WHERE id = $1 AND order_list_id = $12 AND deleted_at IS NULL`,
+				*it.ID, it.ProductItemID, itemType, it.Amount, it.PricePerUnit, it.Discount,
+				lineVat.VatType, lineVat.VatRate, total, detail, actorID, orderID)
+			if err != nil {
+				return err
+			}
+			n, _ := res.RowsAffected()
+			if n > 0 {
+				keepIDs = append(keepIDs, *it.ID)
+				continue
+			}
+		}
+		var newID int64
+		err = tx.QueryRowContext(ctx, `
 INSERT INTO order_list_item (
   order_list_id, product_item_id, type, amount, price_per_unit, discount,
   vat_type, vat_rate, total_price, detail, created_by, updated_by
-) VALUES ($1, $2, $3::order_list_item_type, $4, $5, $6, $7::setting_vat_type, $8, $9, $10::jsonb, $11, $11)`,
+) VALUES ($1, $2, $3::order_list_item_type, $4, $5, $6, $7::setting_vat_type, $8, $9, $10::jsonb, $11, $11)
+RETURNING id`,
 			orderID, it.ProductItemID, itemType, it.Amount, it.PricePerUnit, it.Discount,
-			lineVat.VatType, lineVat.VatRate, total,
-			detailJSON(it.Detail), actorID,
-		); err != nil {
+			lineVat.VatType, lineVat.VatRate, total, detail, actorID).Scan(&newID)
+		if err != nil {
+			return err
+		}
+		keepIDs = append(keepIDs, newID)
+	}
+	keepSet := make(map[int64]struct{}, len(keepIDs))
+	for _, id := range keepIDs {
+		keepSet[id] = struct{}{}
+	}
+	rows, err := tx.QueryContext(ctx, `
+SELECT id FROM order_list_item WHERE order_list_id = $1 AND deleted_at IS NULL`, orderID)
+	if err != nil {
+		return err
+	}
+	var orphanIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return err
+		}
+		if _, ok := keepSet[id]; !ok {
+			orphanIDs = append(orphanIDs, id)
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, oid := range orphanIDs {
+		if _, err := tx.ExecContext(ctx, `
+UPDATE order_list_item SET deleted_at = NOW(), updated_at = NOW()
+WHERE id = $1 AND order_list_id = $2 AND deleted_at IS NULL`, oid, orderID); err != nil {
 			return err
 		}
 	}

@@ -8,6 +8,11 @@ import {
   type MemberUserDetail,
   type MemberUserListItem,
 } from "@/lib/member-user-api";
+import {
+  fetchOrderSalesFormMember,
+  loadOrderSalesMemberComboboxOptions,
+  type OrderSalesFormResource,
+} from "@/lib/order-sales-form-api";
 
 export type StoreSalesMemberFormSnapshot = {
   /** Combobox display: `{sku} — {name}` (matches list options). */
@@ -67,8 +72,15 @@ export function storeSalesMemberSnapshotFromDetail(
 
 export async function loadStoreSalesMemberComboboxOptions(
   locale: string,
-  params: { search: string; signal?: AbortSignal }
+  params: {
+    search: string;
+    signal?: AbortSignal;
+    resource?: OrderSalesFormResource;
+  }
 ): Promise<RemoteComboboxOption[]> {
+  if (params.resource) {
+    return loadOrderSalesMemberComboboxOptions(locale, params.resource, params);
+  }
   if (params.signal?.aborted) return [];
   const res = await fetchMemberUsers(locale, {
     page: 1,
@@ -84,12 +96,15 @@ export async function loadStoreSalesMemberComboboxOptions(
 
 export async function resolveStoreSalesMemberLabel(
   locale: string,
-  value: string
+  value: string,
+  resource?: OrderSalesFormResource
 ): Promise<string | null> {
   const id = Number(value);
   if (!Number.isFinite(id) || id <= 0) return null;
   try {
-    const d = await fetchMemberUser(locale, id);
+    const d = resource
+      ? await fetchOrderSalesFormMember(locale, resource, id)
+      : await fetchMemberUser(locale, id);
     return memberListLabel({
       id: d.id,
       sku: d.sku,
@@ -105,8 +120,11 @@ export async function resolveStoreSalesMemberLabel(
 
 export async function fetchStoreSalesMemberSnapshot(
   locale: string,
-  memberId: number
+  memberId: number,
+  resource?: OrderSalesFormResource
 ): Promise<StoreSalesMemberFormSnapshot> {
-  const d = await fetchMemberUser(locale, memberId);
+  const d = resource
+    ? await fetchOrderSalesFormMember(locale, resource, memberId)
+    : await fetchMemberUser(locale, memberId);
   return storeSalesMemberSnapshotFromDetail(d);
 }

@@ -41,6 +41,7 @@ type QuotationCountResponse struct {
 }
 
 type QuotationItemInput struct {
+	ID            *int64  `json:"id,omitempty"`
 	ProductItemID *int64  `json:"product_item_id,omitempty"`
 	Amount        float64 `json:"amount"`
 	PricePerUnit  float64 `json:"price_per_unit"`
@@ -113,6 +114,10 @@ type QuotationDuplicateInput struct {
 	ItemIDs []int64 `json:"item_ids,omitempty"`
 }
 
+type QuotationReturnInput struct {
+	Note string `json:"note"`
+}
+
 type QuotationItemDetail struct {
 	ID            int64   `json:"id"`
 	ProductItemID *int64  `json:"product_item_id,omitempty"`
@@ -130,6 +135,14 @@ type QuotationFileDetail struct {
 	SystemFileID int64  `json:"system_file_id"`
 	SortOrder    int    `json:"sort_order"`
 	FileName     string `json:"file_name,omitempty"`
+}
+
+type QuotationLatestReject struct {
+	Note          string    `json:"note"`
+	Status        string    `json:"status"`
+	NextStatus    string    `json:"next_status"`
+	CreatedAt     time.Time `json:"created_at"`
+	CreatedByName *string   `json:"created_by_name,omitempty"`
 }
 
 type QuotationDetail struct {
@@ -163,6 +176,7 @@ type QuotationDetail struct {
 	CreatedAt             time.Time               `json:"created_at"`
 	UpdatedAt             time.Time               `json:"updated_at"`
 	CreatedByName         *string                 `json:"created_by_name,omitempty"`
+	LatestReject          *QuotationLatestReject  `json:"latest_reject,omitempty"`
 }
 
 type QuotationFilterItem struct {

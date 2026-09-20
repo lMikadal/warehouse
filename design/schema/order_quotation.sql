@@ -1,5 +1,5 @@
 -- Quotation header (ใบเสนอราคา). No compare lines; separate from store order_list.
---   - status: document lifecycle (approved = superadmin signed off; success = paid/closed flow)
+--   - status: draft → pending → success (superadmin approve) or cancelled (reject) or draft (return + order_quotation_reject); legacy approved; payment may set success
 --   - issue_date / valid_until: document dates; overdue is query-only
 --   - accept_mode: payment | credit when sales accepts
 --   - credit_date: due date when accept_mode = credit

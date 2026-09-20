@@ -1772,6 +1772,38 @@
               }
             },
             {
+              "name": "Filters (form — member credits)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/filters?facet=member_credits&page=1&limit=50",
+                "description": "order.order_store.view — credit type combobox on store sales form (no member.member_user.view)"
+              }
+            },
+            {
+              "name": "VAT snapshot",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/vat",
+                "description": "order.order_store.view — active setting_vat for form default rate (no setting.setting_vat.view)"
+              }
+            },
+            {
+              "name": "Items browse",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/items?page=1&limit=10&is_active=true",
+                "description": "order.order_store.view — product browse/hydrate on store sales form (no product.product_list.view)"
+              }
+            },
+            {
+              "name": "Member snapshot",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/members/1",
+                "description": "order.order_store.view — customer fields for store sales form"
+              }
+            },
+            {
               "name": "Create",
               "request": {
                 "method": "POST",
@@ -1835,6 +1867,38 @@
               }
             },
             {
+              "name": "Filters (form — members)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/filters?facet=members&page=1&limit=50&search=",
+                "description": "order.order_quotation.view — member combobox on quotation form"
+              }
+            },
+            {
+              "name": "VAT snapshot",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/vat",
+                "description": "order.order_quotation.view"
+              }
+            },
+            {
+              "name": "Items browse",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/items?page=1&limit=10&is_active=true",
+                "description": "order.order_quotation.view"
+              }
+            },
+            {
+              "name": "Member snapshot",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/members/1",
+                "description": "order.order_quotation.view"
+              }
+            },
+            {
               "name": "Create",
               "request": {
                 "method": "POST",
@@ -1852,7 +1916,7 @@
               "request": {
                 "method": "GET",
                 "url": "{{baseUrl}}/order/quotations/1",
-                "description": "order.order_quotation.view"
+                "description": "order.order_quotation.view — detail includes optional latest_reject { note, status, next_status, created_at, created_by_name } from order_quotation_reject (newest id)"
               }
             },
             {
@@ -1868,7 +1932,28 @@
               "request": {
                 "method": "POST",
                 "url": "{{baseUrl}}/order/quotations/1/approve",
-                "description": "order.order_quotation.create — superadmin only"
+                "description": "order.order_quotation.create — superadmin only; pending → success"
+              }
+            },
+            {
+              "name": "Reject",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/order/quotations/1/reject",
+                "description": "order.order_quotation.create — superadmin only; pending → cancelled"
+              }
+            },
+            {
+              "name": "Return for edit",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"note\": \"Please revise line prices.\"\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations/1/return",
+                "description": "order.order_quotation.create — superadmin only; pending → draft + order_quotation_reject row"
               }
             },
             {
@@ -1881,7 +1966,7 @@
                   "raw": "{\n  \"mode\": \"payment\"\n}"
                 },
                 "url": "{{baseUrl}}/order/quotations/1/accept",
-                "description": "order.order_quotation.update"
+                "description": "order.order_quotation.update — mode payment|credit; status pending|approved|success"
               }
             },
             {

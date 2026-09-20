@@ -129,6 +129,18 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "order.order_store.view" {
 		t.Fatalf("store-sales filters: got %q ok=%v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/store-sales/vat")
+	if !ok || code != "order.order_store.view" {
+		t.Fatalf("store-sales vat: got %q ok=%v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/store-sales/items")
+	if !ok || code != "order.order_store.view" {
+		t.Fatalf("store-sales items: got %q ok=%v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/store-sales/members/1")
+	if !ok || code != "order.order_store.view" {
+		t.Fatalf("store-sales member get: got %q ok=%v", code, ok)
+	}
 	code, ok = CodeForRoute("PATCH", "/api/v1/order/store-sales/1/shipping")
 	if !ok || code != "order.order_store.update" {
 		t.Fatalf("order store shipping patch: got %q %v", code, ok)
@@ -140,6 +152,14 @@ func TestCodeForRoute(t *testing.T) {
 	code, ok = CodeForRoute("GET", "/api/v1/order/quotations/count")
 	if !ok || code != "order.order_quotation.view" {
 		t.Fatalf("quotation count: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/quotations/items")
+	if !ok || code != "order.order_quotation.view" {
+		t.Fatalf("quotation items: got %q ok=%v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/quotations/filters")
+	if !ok || code != "order.order_quotation.view" {
+		t.Fatalf("quotation filters: got %q ok=%v", code, ok)
 	}
 	code, ok = CodeForRoute("POST", "/api/v1/order/quotations/1/approve")
 	if !ok || code != "order.order_quotation.create" {

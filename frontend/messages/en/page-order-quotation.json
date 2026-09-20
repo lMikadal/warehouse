@@ -33,6 +33,7 @@
         "confirm": "Confirm",
         "reserveStock": "Reserve stock",
         "notes": "Notes",
+        "latestReturnNote": "Return for edit",
         "submitCreate": "Create quotation",
         "submitPending": "Create quotation"
       },
@@ -43,8 +44,16 @@
         "reject": "Reject",
         "returnEdit": "Return for edit",
         "edit": "Edit quotation",
+        "editQuotation": "Revise quotation",
+        "metaTitle": "Transaction details",
+        "seller": "Seller",
         "picking": "Order picking",
-        "pay": "Pay now"
+        "pay": "Pay now",
+        "pendingSellerHint": "Print and accept are available after an administrator approves this quotation"
+      },
+      "returnModal": {
+        "title": "Return for edit",
+        "note": "Reason"
       },
       "acceptModal": {
         "title": "Choose payment format",

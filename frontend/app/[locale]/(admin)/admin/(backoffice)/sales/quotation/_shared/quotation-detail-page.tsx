@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
@@ -15,25 +16,66 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useRouter } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import {
   useAdminBackofficeActor,
   useResourcePermissions,
 } from "@/lib/admin-backoffice-actor-context";
-import { formatDateTime, type DisplayLocale } from "@/lib/format-datetime";
+import { type DisplayLocale } from "@/lib/format-datetime";
+import { loadOrderSalesCreditOptions } from "@/lib/order-sales-form-api";
 import {
-  duplicateQuotation,
   fetchQuotationDetail,
   OrderQuotationApiError,
-  pickingQuotation,
+  patchQuotation,
   postQuotationAction,
   type QuotationDetail,
+  type QuotationItemInput,
 } from "@/lib/order-quotation-api";
+import type { ProductItemBrowseRow } from "@/lib/product-list-api";
+import {
+  computeStoreSalesPriceSummary,
+  hydrateStoreSalesCartProducts,
+  summaryLinesFromCartItems,
+} from "@/lib/store-sales-cart-pricing";
+import {
+  fetchStoreSalesMemberSnapshot,
+} from "@/lib/store-sales-member-combobox";
+import type { StoreSalesDocumentCartLine } from "../../store/_shared/store-sales-document-panel";
+import { StoreSalesFormDesktopSplitSkeleton } from "../../store/_shared/store-sales-form-desktop-split-skeleton";
 
+import { QuotationFormPage } from "./quotation-form-page";
+import { QuotationCustomerReadonlyCard } from "./quotation-customer-readonly-card";
+import { QuotationDetailItemsPanel } from "./quotation-detail-items-panel";
+import { QuotationDetailMetaCard } from "./quotation-detail-meta-card";
 import { quotationStatusPillClass } from "./quotation-status-styles";
 
+const StoreSalesFormDesktopSplit = dynamic(
+  () =>
+    import("../../store/_shared/store-sales-form-desktop-split").then(
+      (m) => m.StoreSalesFormDesktopSplit
+    ),
+  { ssr: false, loading: () => <StoreSalesFormDesktopSplitSkeleton /> }
+);
+
+const QUOTATION_FORM_RESOURCE = "quotations" as const;
+
 type Props = { id: number };
+
+type CustomerView = {
+  memberId: string;
+  memberComboboxLabel: string;
+  creditId: string;
+  creditOptions: { value: string; label: string }[];
+  memberName: string;
+  memberTel: string;
+  memberEmail: string;
+  memberAddressDisplay: string;
+  memberTaxNumber: string;
+};
 
 export function QuotationDetailPage({ id }: Props) {
   const locale = useLocale() as DisplayLocale;
@@ -41,18 +83,29 @@ export function QuotationDetailPage({ id }: Props) {
   const actor = useAdminBackofficeActor();
   const perms = useResourcePermissions("order", "order_quotation");
   const tPage = useTranslations("page.orderQuotation");
+  const tCrud = useTranslations("crud");
+  const tForm = useTranslations("form");
   const tError = useTranslations("error");
+  const { open: sidebarOpen, isMobile } = useSidebar();
+  const footerInsetLeft = !isMobile && sidebarOpen;
 
   const [detail, setDetail] = useState<QuotationDetail | null>(null);
+  const [customerView, setCustomerView] = useState<CustomerView | null>(null);
+  const [itemLines, setItemLines] = useState<StoreSalesDocumentCartLine[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [acceptOpen, setAcceptOpen] = useState(false);
   const [creditDate, setCreditDate] = useState("");
-  const [stockOpen, setStockOpen] = useState(false);
-  const [pickingResult, setPickingResult] = useState<{
-    partial?: boolean;
-    out_of_stock_count?: number;
-  } | null>(null);
+  const [superadminEditMode, setSuperadminEditMode] = useState(false);
+  const [baselineItemLines, setBaselineItemLines] = useState<
+    StoreSalesDocumentCartLine[]
+  >([]);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnNote, setReturnNote] = useState("");
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     if (!perms.view) {
@@ -62,7 +115,82 @@ export function QuotationDetailPage({ id }: Props) {
     setLoading(true);
     setLoadError(false);
     try {
-      setDetail(await fetchQuotationDetail(locale, id));
+      const d = await fetchQuotationDetail(locale, id);
+      setDetail(d);
+
+      const { options: creditOptions } = await loadOrderSalesCreditOptions(
+        locale,
+        QUOTATION_FORM_RESOURCE,
+        "",
+        1
+      );
+
+      let memberComboboxLabel = "";
+      let memberAddressDisplay = "";
+      let memberTaxNumber = "";
+      const memberId = d.member_user_id ? String(d.member_user_id) : "";
+      const creditId = d.member_setting_credit_id
+        ? String(d.member_setting_credit_id)
+        : "";
+
+      if (d.member_user_id) {
+        try {
+          const snap = await fetchStoreSalesMemberSnapshot(
+            locale,
+            d.member_user_id,
+            QUOTATION_FORM_RESOURCE
+          );
+          memberComboboxLabel = snap.memberComboboxLabel;
+          memberAddressDisplay = snap.memberAddressDisplay;
+          memberTaxNumber = snap.memberTaxNumber;
+        } catch {
+          memberComboboxLabel = d.member_name?.trim() ?? "";
+        }
+      }
+
+      setCustomerView({
+        memberId,
+        memberComboboxLabel,
+        creditId,
+        creditOptions,
+        memberName: d.member_name ?? "",
+        memberTel: d.member_tel ?? "",
+        memberEmail: d.member_email ?? "",
+        memberAddressDisplay,
+        memberTaxNumber,
+      });
+
+      const loadedCart = (d.items ?? []).map((it, i) => ({
+        key: `loaded-${it.id ?? i}`,
+        quotationItemId: it.id,
+        type: "item" as const,
+        qty: it.amount,
+        unitPrice: it.price_per_unit,
+        discount: it.discount,
+        product: it.product_item_id
+          ? ({
+              id: it.product_item_id,
+              sku: "",
+              name: "",
+            } as ProductItemBrowseRow)
+          : undefined,
+      }));
+      let hydrated: StoreSalesDocumentCartLine[] = loadedCart;
+      try {
+        hydrated = (await hydrateStoreSalesCartProducts(locale, loadedCart, {
+          itemsResource: QUOTATION_FORM_RESOURCE,
+        })) as StoreSalesDocumentCartLine[];
+      } catch {
+        /* ponytail: show lines without product browse fields if hydrate fails */
+      }
+      setItemLines(hydrated);
+      setBaselineItemLines(
+        hydrated.map((line) => ({
+          ...line,
+          product: line.product ? { ...line.product } : undefined,
+        }))
+      );
+      setSuperadminEditMode(false);
     } catch {
       setLoadError(true);
       toast.error(tError("loadFailed"));
@@ -76,6 +204,20 @@ export function QuotationDetailPage({ id }: Props) {
   }, [load]);
 
   const superadmin = actor.type === "superadmin";
+  /** Seller workflow (print / accept / pay) — not view-only roles. */
+  const canSellerQuotationActions = perms.update || perms.create;
+
+  const priceSummary = useMemo(() => {
+    if (!detail) {
+      return computeStoreSalesPriceSummary([], 7, 0);
+    }
+    const vat = Number.isFinite(detail.vat_rate) ? detail.vat_rate : 7;
+    return computeStoreSalesPriceSummary(
+      summaryLinesFromCartItems(itemLines),
+      vat,
+      0
+    );
+  }, [detail, itemLines]);
 
   const accept = async (mode: "payment" | "credit") => {
     try {
@@ -102,16 +244,99 @@ export function QuotationDetailPage({ id }: Props) {
     }
   };
 
-  const runPicking = async (onlyInStock: boolean) => {
+  const lineEditFingerprint = (lines: StoreSalesDocumentCartLine[]) =>
+    lines
+      .map((l) => `${l.key}:${l.qty}:${l.unitPrice}:${l.discount}`)
+      .join("|");
+
+  const editDirty =
+    superadminEditMode &&
+    lineEditFingerprint(itemLines) !== lineEditFingerprint(baselineItemLines);
+
+  const bodyItems = (): QuotationItemInput[] =>
+    itemLines.map((line) => ({
+      ...(line.quotationItemId != null ? { id: line.quotationItemId } : {}),
+      product_item_id: line.product?.id ?? null,
+      amount: line.qty,
+      price_per_unit: line.unitPrice,
+      discount: line.discount,
+    }));
+
+  const onLineChange = (
+    key: string,
+    patch: Partial<
+      Pick<StoreSalesDocumentCartLine, "qty" | "unitPrice" | "discount">
+    >
+  ) => {
+    setItemLines((prev) =>
+      prev.map((line) => (line.key === key ? { ...line, ...patch } : line))
+    );
+  };
+
+  const cancelSuperadminEdit = () => {
+    setItemLines(
+      baselineItemLines.map((line) => ({
+        ...line,
+        product: line.product ? { ...line.product } : undefined,
+      }))
+    );
+    setSuperadminEditMode(false);
+  };
+
+  const saveSuperadminEdit = async () => {
+    setSavingEdit(true);
     try {
-      const res = await pickingQuotation(locale, id, onlyInStock);
-      setStockOpen(false);
-      if (res.partial && res.out_of_stock_count) {
-        setPickingResult(res);
-      } else {
-        toast.success(tPage("detail.picking"));
-        void load();
-      }
+      await patchQuotation(locale, id, { items: bodyItems() });
+      toast.success(tCrud("toast.saved"));
+      void load();
+    } catch (e) {
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const submitReturn = async () => {
+    const note = returnNote.trim();
+    if (!note) {
+      toast.error(tError("required"));
+      return;
+    }
+    setReturnSubmitting(true);
+    try {
+      await postQuotationAction(locale, id, "return", { note });
+      setReturnOpen(false);
+      setReturnNote("");
+      toast.success(tCrud("toast.saved"));
+      void load();
+    } catch (e) {
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+    } finally {
+      setReturnSubmitting(false);
+    }
+  };
+
+  const runReject = async () => {
+    try {
+      await postQuotationAction(locale, id, "reject", {});
+      toast.success(tCrud("toast.saved"));
+      void load();
+    } catch (e) {
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+    }
+  };
+
+  const runApprove = async () => {
+    try {
+      await postQuotationAction(locale, id, "approve", {});
+      toast.success(tCrud("toast.saved"));
+      void load();
     } catch (e) {
       toast.error(
         e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
@@ -128,11 +353,12 @@ export function QuotationDetailPage({ id }: Props) {
       <div className="flex flex-col gap-4">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-48 w-full" />
+        <StoreSalesFormDesktopSplitSkeleton />
       </div>
     );
   }
 
-  if (!detail) {
+  if (!detail || !customerView) {
     return (
       <p className="text-muted-foreground">
         {loadError ? tError("loadFailed") : tError("noData")}
@@ -140,126 +366,302 @@ export function QuotationDetailPage({ id }: Props) {
     );
   }
 
+  if (detail.status === "draft") {
+    return (
+      <QuotationFormPage
+        editId={id}
+        onSubmitted={async () => {
+          await load();
+        }}
+      />
+    );
+  }
+
+  const lineCount = itemLines.length;
+
+  const showSellerAccept =
+    !superadmin && !detail.accept_mode && detail.status === "approved";
+
+  const itemsPanel = (
+    <QuotationDetailItemsPanel
+      locale={locale}
+      itemLines={itemLines}
+      lineCount={lineCount}
+      priceSummary={priceSummary}
+      editable={superadminEditMode && superadmin && detail.status === "pending"}
+      onLineChange={onLineChange}
+    />
+  );
+
+  const metaPanelStacked = (
+    <QuotationDetailMetaCard
+      locale={locale}
+      issueDate={detail.issue_date}
+      validUntil={detail.valid_until}
+      sellerName={detail.created_by_name}
+      reserveStock={detail.reserve_stock}
+      notes={detail.notes}
+      layout="stacked"
+    />
+  );
+
+  const metaPanelSplit = (
+    <QuotationDetailMetaCard
+      locale={locale}
+      issueDate={detail.issue_date}
+      validUntil={detail.valid_until}
+      sellerName={detail.created_by_name}
+      reserveStock={detail.reserve_stock}
+      notes={detail.notes}
+      layout="split"
+    />
+  );
+
+  const leftColumnSplit = (
+    <div className="flex min-h-0 flex-col gap-4">
+      <QuotationCustomerReadonlyCard locale={locale} {...customerView} />
+      {itemsPanel}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-4 pb-24">
+    <div className="flex flex-col gap-4 pb-20">
       <CrudPageHeader
-        title={detail.sku?.trim() || "—"}
-        description={
-          <span className={quotationStatusPillClass(detail.status)}>
-            {tPage(`saleStatus.${detail.status}`)}
+        className="mb-0"
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            <span>{detail.sku?.trim() || "—"}</span>
+            <span className={quotationStatusPillClass(detail.status)}>
+              {tPage(`saleStatus.${detail.status}`)}
+            </span>
           </span>
-        }
-        actions={
-          detail.status === "draft" && perms.update && !detail.receipt_locked ? (
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/admin/sales/quotation/${id}/edit`)}
-            >
-              {tPage("detail.edit")}
-            </Button>
-          ) : null
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-md border p-4">
-          <p className="font-medium">{detail.member_name || "—"}</p>
-          <p className="text-muted-foreground text-sm">{detail.member_tel}</p>
-          <p className="text-muted-foreground text-sm">{detail.member_email}</p>
-        </div>
-        <div className="rounded-md border p-4 text-sm">
-          <p>
-            {tPage("form.issueDate")}: {detail.issue_date || "—"}
-          </p>
-          <p>
-            {tPage("form.validUntil")}: {detail.valid_until || "—"}
-          </p>
-          <p>
-            {tPage("form.reserveStock")}: {detail.reserve_stock ? "✓" : "—"}
-          </p>
-          <p className="mt-2 tabular-nums font-semibold">
-            {detail.grand_total.toFixed(2)}
-          </p>
-        </div>
+      <div className="flex flex-col gap-4 md:hidden">
+        <QuotationCustomerReadonlyCard locale={locale} {...customerView} />
+        {itemsPanel}
+        {metaPanelStacked}
+      </div>
+      <div className="hidden min-w-0 w-full md:block">
+        <StoreSalesFormDesktopSplit
+          browse={leftColumnSplit}
+          documentPanel={metaPanelSplit}
+        />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="p-2 text-left">SKU</th>
-              <th className="p-2 text-right">Qty</th>
-              <th className="p-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.items.map((it) => (
-              <tr key={it.id} className="border-b">
-                <td className="p-2">{it.product_item_id}</td>
-                <td className="p-2 text-right tabular-nums">{it.amount}</td>
-                <td className="p-2 text-right tabular-nums">
-                  {it.total_price.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <div
+        className={cn(
+          "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+          footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0"
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-crud-page flex-wrap items-center justify-end gap-2 px-admin-content py-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => router.push("/admin/sales/quotation")}
+          >
+            {tCrud("btn.back")}
+          </Button>
 
-      <p className="text-muted-foreground text-xs">
-        {formatDateTime(detail.created_at, locale)}
-      </p>
+          {detail.status === "pending" && !superadmin ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled
+                title={tPage("detail.pendingSellerHint")}
+              >
+                {tPage("detail.print")}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                disabled
+                title={tPage("detail.pendingSellerHint")}
+              >
+                {tPage("detail.accept")}
+              </Button>
+            </>
+          ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex flex-wrap justify-end gap-2 border-t bg-background p-4">
-        {detail.status === "pending" && superadmin ? (
-          <>
+          {detail.status === "pending" && superadmin ? (
+            <>
+              {superadminEditMode && editDirty ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    disabled={savingEdit}
+                    onClick={cancelSuperadminEdit}
+                  >
+                    {tCrud("btn.cancel")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    disabled={savingEdit}
+                    onClick={() => void saveSuperadminEdit()}
+                  >
+                    {tCrud("btn.save")}
+                  </Button>
+                </>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="text-destructive hover:text-destructive"
+                onClick={() => void runReject()}
+              >
+                {tPage("detail.reject")}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                onClick={() => setReturnOpen(true)}
+              >
+                {tPage("detail.returnEdit")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                aria-pressed={superadminEditMode}
+                onClick={() => {
+                  if (superadminEditMode) {
+                    cancelSuperadminEdit();
+                  } else {
+                    setSuperadminEditMode(true);
+                  }
+                }}
+              >
+                {tPage("detail.edit")}
+              </Button>
+              <Button type="button" size="lg" onClick={() => void runApprove()}>
+                {tPage("detail.approve")}
+              </Button>
+            </>
+          ) : null}
+
+          {showSellerAccept ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={!canSellerQuotationActions}
+                onClick={() => window.print()}
+              >
+                {tPage("detail.print")}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                disabled={!canSellerQuotationActions}
+                onClick={() => setAcceptOpen(true)}
+              >
+                {tPage("detail.accept")}
+              </Button>
+            </>
+          ) : null}
+
+          {detail.status === "approved" && !showSellerAccept ? (
             <Button
+              type="button"
               variant="outline"
-              onClick={() => void postQuotationAction(locale, id, "reject", {}).then(load)}
+              size="lg"
+              disabled={!canSellerQuotationActions}
+              onClick={() => window.print()}
             >
-              {tPage("detail.reject")}
+              {tPage("detail.print")}
+            </Button>
+          ) : null}
+
+          {detail.status === "approved" && detail.accept_mode === "payment" ? (
+            <Button
+              type="button"
+              size="lg"
+              disabled={!canSellerQuotationActions}
+              onClick={() => router.push(`/admin/sales/quotation/${id}/payment`)}
+            >
+              {tPage("detail.pay")}
+            </Button>
+          ) : null}
+
+          {detail.status === "success" ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={!canSellerQuotationActions}
+                onClick={() => window.print()}
+              >
+                {tPage("detail.print")}
+              </Button>
+              {!detail.accept_mode ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={!canSellerQuotationActions}
+                  onClick={() => setAcceptOpen(true)}
+                >
+                  {tPage("detail.accept")}
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <Dialog
+        open={returnOpen}
+        onOpenChange={(open) => {
+          setReturnOpen(open);
+          if (!open) setReturnNote("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tPage("returnModal.title")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="return-note">{tPage("returnModal.note")}</Label>
+            <Textarea
+              id="return-note"
+              rows={4}
+              value={returnNote}
+              onChange={(e) => setReturnNote(e.target.value)}
+              placeholder={tForm("placeholder.input", {
+                label: tPage("returnModal.note"),
+              })}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={returnSubmitting}
+              onClick={() => setReturnOpen(false)}
+            >
+              {tCrud("btn.cancel")}
             </Button>
             <Button
-              variant="secondary"
-              onClick={() => void postQuotationAction(locale, id, "return", {}).then(load)}
+              type="button"
+              disabled={returnSubmitting}
+              onClick={() => void submitReturn()}
             >
               {tPage("detail.returnEdit")}
             </Button>
-            <Button
-              onClick={() => void postQuotationAction(locale, id, "approve", {}).then(load)}
-            >
-              {tPage("detail.approve")}
-            </Button>
-          </>
-        ) : null}
-        {detail.status === "approved" && !detail.receipt_locked ? (
-          <>
-            <Button variant="outline" onClick={() => window.print()}>
-              {tPage("detail.print")}
-            </Button>
-            <Button onClick={() => setAcceptOpen(true)}>
-              {tPage("detail.accept")}
-            </Button>
-          </>
-        ) : null}
-        {detail.status === "approved" && detail.accept_mode === "payment" ? (
-          <Button
-            onClick={() => router.push(`/admin/sales/quotation/${id}/payment`)}
-          >
-            {tPage("detail.pay")}
-          </Button>
-        ) : null}
-        {detail.status === "success" ? (
-          <>
-            <Button variant="outline" onClick={() => window.print()}>
-              {tPage("detail.print")}
-            </Button>
-            <Button onClick={() => setStockOpen(true)}>
-              {tPage("detail.picking")}
-            </Button>
-          </>
-        ) : null}
-      </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={acceptOpen} onOpenChange={setAcceptOpen}>
         <DialogContent>
@@ -283,46 +685,6 @@ export function QuotationDetailPage({ id }: Props) {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={stockOpen} onOpenChange={setStockOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{tPage("detail.picking")}</DialogTitle>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setStockOpen(false)}>
-              {tPage("pickingModal.cancel")}
-            </Button>
-            <Button onClick={() => void runPicking(true)}>
-              {tPage("pickingModal.onlyInStock")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={pickingResult != null} onOpenChange={() => setPickingResult(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{tPage("duplicateModal.title")}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm">
-            {tPage("duplicateModal.body", {
-              count: pickingResult?.out_of_stock_count ?? 0,
-            })}
-          </p>
-          <DialogFooter>
-            <Button
-              onClick={() => {
-                void duplicateQuotation(locale, id).then((j) =>
-                  router.push(`/admin/sales/quotation/${j.id}/edit`)
-                );
-              }}
-            >
-              {tPage("duplicateModal.confirm")}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

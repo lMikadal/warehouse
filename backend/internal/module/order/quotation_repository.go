@@ -323,7 +323,33 @@ WHERE q.id = $1 AND q.deleted_at IS NULL`, id).Scan(
 		return d, err
 	}
 	d.Files, err = r.loadFiles(ctx, id)
+	if err != nil {
+		return d, err
+	}
+	d.LatestReject, err = r.loadLatestReject(ctx, id)
 	return d, err
+}
+
+func (r *QuotationRepository) loadLatestReject(ctx context.Context, qid int64) (*QuotationLatestReject, error) {
+	var lr QuotationLatestReject
+	var createdByName sql.NullString
+	err := r.db.QueryRowContext(ctx, `
+SELECT r.note, r.status::text, r.next_status::text, r.created_at,
+  (SELECT u.username FROM admin_user u WHERE u.id = r.created_by)
+FROM order_quotation_reject r
+WHERE r.order_quotation_id = $1
+ORDER BY r.id DESC
+LIMIT 1`, qid).Scan(&lr.Note, &lr.Status, &lr.NextStatus, &lr.CreatedAt, &createdByName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if createdByName.Valid {
+		lr.CreatedByName = &createdByName.String
+	}
+	return &lr, nil
 }
 
 func (r *QuotationRepository) loadItems(ctx context.Context, qid int64) ([]QuotationItemDetail, error) {
@@ -409,15 +435,11 @@ WHERE id = $1`, qid, snap.VatType, snap.VatRate, net, discountTotal, vatAmt, gra
 }
 
 func (r *QuotationRepository) replaceItems(ctx context.Context, tx *sql.Tx, qid int64, items []QuotationItemInput, actor int64) error {
-	if _, err := tx.ExecContext(ctx, `
-UPDATE order_quotation_item SET deleted_at = NOW(), updated_at = NOW()
-WHERE order_quotation_id = $1 AND deleted_at IS NULL`, qid); err != nil {
-		return err
-	}
 	snap, err := r.activeVat(ctx, tx)
 	if err != nil {
 		return err
 	}
+	keepIDs := make([]int64, 0, len(items))
 	for i, it := range items {
 		if it.Amount <= 0 {
 			continue
@@ -430,14 +452,66 @@ WHERE order_quotation_id = $1 AND deleted_at IS NULL`, qid); err != nil {
 			}
 		}
 		total := quotationLineTotal(it.Amount, it.PricePerUnit, it.Discount)
-		_, err = tx.ExecContext(ctx, `
+		if it.ID != nil && *it.ID > 0 {
+			res, err := tx.ExecContext(ctx, `
+UPDATE order_quotation_item SET
+  product_item_id = $2, sort_order = $3, amount = $4, price_per_unit = $5, discount = $6,
+  vat_type = $7::setting_vat_type, vat_rate = $8, total_price = $9,
+  updated_by = $10, updated_at = NOW()
+WHERE id = $1 AND order_quotation_id = $11 AND deleted_at IS NULL`,
+				*it.ID, it.ProductItemID, i, it.Amount, it.PricePerUnit, it.Discount,
+				lineSnap.VatType, lineSnap.VatRate, total, actor, qid)
+			if err != nil {
+				return err
+			}
+			n, _ := res.RowsAffected()
+			if n > 0 {
+				keepIDs = append(keepIDs, *it.ID)
+				continue
+			}
+		}
+		var newID int64
+		err = tx.QueryRowContext(ctx, `
 INSERT INTO order_quotation_item (
   order_quotation_id, product_item_id, sort_order, amount, price_per_unit, discount,
   vat_type, vat_rate, total_price, created_by, updated_by
-) VALUES ($1, $2, $3, $4, $5, $6, $7::setting_vat_type, $8, $9, $10, $10)`,
+) VALUES ($1, $2, $3, $4, $5, $6, $7::setting_vat_type, $8, $9, $10, $10)
+RETURNING id`,
 			qid, it.ProductItemID, i, it.Amount, it.PricePerUnit, it.Discount,
-			lineSnap.VatType, lineSnap.VatRate, total, actor)
+			lineSnap.VatType, lineSnap.VatRate, total, actor).Scan(&newID)
 		if err != nil {
+			return err
+		}
+		keepIDs = append(keepIDs, newID)
+	}
+	keepSet := make(map[int64]struct{}, len(keepIDs))
+	for _, id := range keepIDs {
+		keepSet[id] = struct{}{}
+	}
+	rows, err := tx.QueryContext(ctx, `
+SELECT id FROM order_quotation_item WHERE order_quotation_id = $1 AND deleted_at IS NULL`, qid)
+	if err != nil {
+		return err
+	}
+	var orphanIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return err
+		}
+		if _, ok := keepSet[id]; !ok {
+			orphanIDs = append(orphanIDs, id)
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, oid := range orphanIDs {
+		if _, err := tx.ExecContext(ctx, `
+UPDATE order_quotation_item SET deleted_at = NOW(), updated_at = NOW()
+WHERE id = $1 AND order_quotation_id = $2 AND deleted_at IS NULL`, oid, qid); err != nil {
 			return err
 		}
 	}
@@ -678,15 +752,47 @@ UPDATE order_quotation SET status = 'pending', updated_by = $2, updated_at = NOW
 }
 
 func (r *QuotationRepository) Approve(ctx context.Context, id int64, actor int64) error {
-	return r.transition(ctx, id, "pending", "approved", actor)
+	return r.transition(ctx, id, "pending", "success", actor)
 }
 
 func (r *QuotationRepository) Reject(ctx context.Context, id int64, actor int64) error {
-	return r.transition(ctx, id, "pending", "rejected", actor)
+	return r.transition(ctx, id, "pending", "cancelled", actor)
 }
 
-func (r *QuotationRepository) ReturnForEdit(ctx context.Context, id int64, actor int64) error {
-	return r.transition(ctx, id, "pending", "draft", actor)
+func (r *QuotationRepository) ReturnForEdit(ctx context.Context, id int64, note string, actor int64) error {
+	note = strings.TrimSpace(note)
+	if note == "" {
+		return ErrValidation
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var cur string
+	if err := tx.QueryRowContext(ctx, `
+SELECT status::text FROM order_quotation WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, id).Scan(&cur); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if cur != "pending" {
+		return ErrValidation
+	}
+	const next = "draft"
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO order_quotation_reject (order_quotation_id, note, status, next_status, created_by)
+VALUES ($1, $2, $3::order_quotation_status, $4::order_quotation_status, $5)`,
+		id, note, cur, next, actor); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+UPDATE order_quotation SET status = $2::order_quotation_status, updated_by = $3, updated_at = NOW() WHERE id = $1`,
+		id, next, actor); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *QuotationRepository) transition(ctx context.Context, id int64, from, to string, actor int64) error {
@@ -711,7 +817,7 @@ UPDATE order_quotation SET status = $2::order_quotation_status, updated_by = $3,
 		id, to, actor); err != nil {
 		return err
 	}
-	if to == "approved" || to == "pending" {
+	if to == "approved" || to == "pending" || to == "success" {
 		if err := r.ensureSKU(ctx, tx, id, to); err != nil {
 			return err
 		}
@@ -732,7 +838,7 @@ SELECT status::text FROM order_quotation WHERE id = $1 AND deleted_at IS NULL`, 
 		}
 		return err
 	}
-	if cur != "approved" {
+	if cur != "pending" && cur != "approved" && cur != "success" {
 		return ErrValidation
 	}
 	var creditDate *time.Time

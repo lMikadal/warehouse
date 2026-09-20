@@ -21,6 +21,11 @@ import {
   type ProductAttributeRow,
 } from "@/lib/product-category-cascade";
 import {
+  fetchOrderSalesFormItems,
+  fetchOrderSalesFormItemsByIds,
+  type OrderSalesFormResource,
+} from "@/lib/order-sales-form-api";
+import {
   fetchProductItems,
   fetchProductItemsByIds,
   type ProductItemBrowseRow,
@@ -36,6 +41,8 @@ export type StoreSalesCartLineForPricing = {
   discount: number;
   detail?: string;
   product?: ProductItemBrowseRow;
+  quotationItemId?: number;
+  orderListItemId?: number;
 };
 
 type PricingRow = {
@@ -277,9 +284,14 @@ function lineTotalDiscount(row: PricingRow, qty: number) {
   );
 }
 
+export type RepriceStoreSalesCartOptions = {
+  itemsResource?: OrderSalesFormResource;
+};
+
 async function refreshLineProduct(
   locale: string,
-  line: StoreSalesCartLineForPricing
+  line: StoreSalesCartLineForPricing,
+  opts?: RepriceStoreSalesCartOptions
 ): Promise<ProductItemBrowseRow | undefined> {
   const base = line.product;
   const itemId = base?.id;
@@ -290,18 +302,29 @@ async function refreshLineProduct(
     return { ...base, ...hit, id: itemId };
   }
 
+  const resource = opts?.itemsResource;
   const sku = base.sku?.trim();
   if (sku) {
-    const res = await fetchProductItems(locale, {
-      page: 1,
-      limit: 10,
-      search: sku,
-      isActive: true,
-    });
+    const res = resource
+      ? await fetchOrderSalesFormItems(locale, resource, {
+          page: 1,
+          limit: 10,
+          search: sku,
+          isActive: true,
+        })
+      : await fetchProductItems(locale, {
+          page: 1,
+          limit: 10,
+          search: sku,
+          isActive: true,
+        });
     const hit = res.items.find((r) => r.id === itemId);
     if (hit) return mergeHit(hit);
   }
-  const [hit] = await fetchProductItemsByIds(locale, [itemId]);
+  const hits = resource
+    ? await fetchOrderSalesFormItemsByIds(locale, resource, [itemId])
+    : await fetchProductItemsByIds(locale, [itemId]);
+  const hit = hits[0];
   return mergeHit(hit);
 }
 
@@ -319,15 +342,22 @@ export function normalizeCompareLineDetail(detail: string | undefined | null): s
 }
 
 /** Merge browse fields (name, sku, thumb, …) onto cart lines after loading an order. */
+export type HydrateStoreSalesCartOptions = {
+  itemsResource?: OrderSalesFormResource;
+};
+
 export async function hydrateStoreSalesCartProducts(
   locale: string,
-  lines: StoreSalesCartLineForPricing[]
+  lines: StoreSalesCartLineForPricing[],
+  opts?: HydrateStoreSalesCartOptions
 ): Promise<StoreSalesCartLineForPricing[]> {
   const ids = lines
     .filter((l) => l.type === "item" && l.product?.id)
     .map((l) => l.product!.id);
   if (ids.length === 0) return lines;
-  const rows = await fetchProductItemsByIds(locale, ids);
+  const rows = opts?.itemsResource
+    ? await fetchOrderSalesFormItemsByIds(locale, opts.itemsResource, ids)
+    : await fetchProductItemsByIds(locale, ids);
   const byId = new Map(rows.map((r) => [r.id, r]));
   return lines.map((line) => {
     if (line.type !== "item" || !line.product?.id) return line;
@@ -468,7 +498,8 @@ export async function repriceStoreSalesCartLines(
   locale: string,
   lines: StoreSalesCartLineForPricing[],
   memberUserId: number | null,
-  creditId: string
+  creditId: string,
+  opts?: RepriceStoreSalesCartOptions
 ): Promise<StoreSalesCartLineForPricing[]> {
   const ctx = await loadRepriceContext(locale, memberUserId, creditId);
 
@@ -481,7 +512,8 @@ export async function repriceStoreSalesCartLines(
 
   for (const line of lines) {
     if (line.type !== "item" || !line.product?.id) continue;
-    const product = (await refreshLineProduct(locale, line)) ?? line.product;
+    const product =
+      (await refreshLineProduct(locale, line, opts)) ?? line.product;
     const listPrice = Number(product.price) || line.unitPrice;
     prepared.push({ line, listPrice, product });
   }
@@ -624,7 +656,8 @@ export function summaryLinesFromCartItems(
     .filter((l) => l.type === "item")
     .map((l) => ({
       qty: l.qty,
-      listPrice: l.product?.price ?? l.unitPrice,
+      // ponytail: persisted line unit (quotation/store PATCH) — not catalog list alone
+      listPrice: Number(l.unitPrice) || 0,
       discount: l.discount,
     }));
 }

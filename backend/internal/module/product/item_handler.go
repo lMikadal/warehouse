@@ -71,7 +71,7 @@ func toItemBrowseJSON(r ItemBrowseRow) itemBrowseJSON {
 	}
 }
 
-func (h *ItemHandler) listBrowse(c *echo.Context) error {
+func (h *ItemHandler) ListBrowse(c *echo.Context) error {
 	q := api.ParsePageQuery(c)
 	f := ItemListFilter{
 		Page: q.Page, Limit: q.Limit,

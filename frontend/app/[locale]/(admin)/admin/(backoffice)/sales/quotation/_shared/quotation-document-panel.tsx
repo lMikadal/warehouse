@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   ChevronDown,
   ClipboardList,
   Image as ImageIcon,
@@ -40,10 +41,13 @@ import {
   clampCartItemQty,
   type StoreSalesPriceSummary,
 } from "@/lib/store-sales-cart-pricing";
+import { formatDateTime } from "@/lib/format-datetime";
+import type { QuotationLatestReject } from "@/lib/order-quotation-api";
 import { fetchSystemFile } from "@/lib/system-file-api";
 import { cn } from "@/lib/utils";
 
 import type { StoreSalesDocumentCartLine } from "../../store/_shared/store-sales-document-panel";
+import { quotationRejectNoticeClass } from "./quotation-status-styles";
 
 export type QuotationCartLine = StoreSalesDocumentCartLine;
 
@@ -164,15 +168,25 @@ function CartUnitPriceCell({
   locale: string;
 }) {
   const product = line.product;
+  const storedUnit = Number(line.unitPrice) || 0;
   const list = cartLineListPrice(line);
   const wholesaleActive = isWholesaleQty(product, line.qty);
   const lineDiscount = Number(line.discount) || 0;
   const effectiveUnit = cartLineEffectiveUnit(line);
+  const priceOverride = Math.abs(storedUnit - list) > 0.000_1;
+  if (priceOverride) {
+    return (
+      <div className="text-right tabular-nums">
+        {formatMoney(storedUnit, locale)}
+      </div>
+    );
+  }
   const showPromoPrice =
-    wholesaleActive || (lineDiscount > 0 && effectiveUnit < list - 0.000_1);
+    wholesaleActive ||
+    (lineDiscount > 0 && effectiveUnit < list - 0.000_1);
 
   if (showPromoPrice) {
-    const promoUnit = wholesaleActive ? line.unitPrice : effectiveUnit;
+    const promoUnit = wholesaleActive ? storedUnit : effectiveUnit;
     return (
       <div className="space-y-0.5 text-right">
         <div className="text-muted-foreground tabular-nums line-through">
@@ -186,7 +200,9 @@ function CartUnitPriceCell({
   }
 
   return (
-    <div className="text-right tabular-nums">{formatMoney(list, locale)}</div>
+    <div className="text-right tabular-nums">
+      {formatMoney(storedUnit, locale)}
+    </div>
   );
 }
 
@@ -216,6 +232,7 @@ type Props = {
   saving?: boolean;
   isEdit?: boolean;
   layout?: "stacked" | "split";
+  latestReject?: QuotationLatestReject | null;
 };
 
 export function QuotationDocumentPanel({
@@ -244,6 +261,7 @@ export function QuotationDocumentPanel({
   onSubmitPending,
   saving,
   isEdit,
+  latestReject,
 }: Props) {
   const tForm = useTranslations("page.orderQuotation.form");
   const tStore = useTranslations("page.orderStore.form");
@@ -530,6 +548,30 @@ export function QuotationDocumentPanel({
                 </div>
               </>
             )}
+            {latestReject?.note?.trim() ? (
+              <div
+                className={quotationRejectNoticeClass(latestReject.next_status)}
+                role="status"
+              >
+                <div className="flex gap-2">
+                  <AlertTriangle
+                    className="mt-0.5 size-4 shrink-0 text-current"
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="font-medium leading-snug">
+                      {tForm("latestReturnNote")}
+                    </p>
+                    <p className="whitespace-pre-wrap leading-snug">
+                      {latestReject.note.trim()}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      {formatDateTime(latestReject.created_at, locale)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
           <CardFooter className="shrink-0 flex-col gap-3 border-t bg-card">
             <div className="flex w-full flex-col gap-2 @md/quotation-doc:flex-row">

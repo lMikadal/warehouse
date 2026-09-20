@@ -48,6 +48,11 @@ func (h *FiltersHandler) ItemBrowseFilters(c *echo.Context) error {
 	return h.respondListFacet(c, facet)
 }
 
+// CarFilters serves GET .../filters?facet=cars (type_car, parent_id query params).
+func (h *FiltersHandler) CarFilters(c *echo.Context) error {
+	return h.respondCarFilters(c)
+}
+
 func (h *FiltersHandler) respondListFacet(c *echo.Context, facet string) error {
 	switch facet {
 	case "categories":

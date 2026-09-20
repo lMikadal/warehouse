@@ -64,6 +64,7 @@ export type StoreSalesShippingInput = {
 };
 
 export type StoreSalesItemInput = {
+  id?: number;
   product_item_id?: number | null;
   type: "item" | "compare";
   amount: number;

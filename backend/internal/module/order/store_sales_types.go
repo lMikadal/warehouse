@@ -44,6 +44,7 @@ type StoreSalesShippingInput struct {
 }
 
 type StoreSalesItemInput struct {
+	ID            *int64  `json:"id,omitempty"`
 	ProductItemID *int64  `json:"product_item_id,omitempty"`
 	Type          string  `json:"type"`
 	Amount        float64 `json:"amount"`

@@ -16,11 +16,12 @@ import (
 )
 
 type QuotationHandler struct {
-	repo *QuotationRepository
+	repo     *QuotationRepository
+	formRead *SalesFormReadHandlers
 }
 
-func NewQuotationHandler(repo *QuotationRepository) *QuotationHandler {
-	return &QuotationHandler{repo: repo}
+func NewQuotationHandler(repo *QuotationRepository, formRead *SalesFormReadHandlers) *QuotationHandler {
+	return &QuotationHandler{repo: repo, formRead: formRead}
 }
 
 func parseQuotationListQuery(c *echo.Context) QuotationListQuery {
@@ -90,6 +91,10 @@ func (h *QuotationHandler) count(c *echo.Context) error {
 }
 
 func (h *QuotationHandler) filters(c *echo.Context) error {
+	facet := strings.TrimSpace(strings.ToLower(c.QueryParam("facet")))
+	if facet != "" && facet != "sellers" && h.formRead != nil {
+		return h.formRead.FormFilters(c)
+	}
 	q := api.ParsePageQuery(c)
 	search := strings.TrimSpace(c.QueryParam("search"))
 	var id int64
@@ -212,9 +217,25 @@ func (h *QuotationHandler) returnForEdit(c *echo.Context) error {
 	if !isSuperadmin(c) {
 		return c.JSON(http.StatusForbidden, api.ErrorBody{Code: "forbidden", Message: "superadmin required"})
 	}
-	return h.idAction(c, func(ctx context.Context, id int64, actor int64) error {
-		return h.repo.ReturnForEdit(ctx, id, actor)
-	})
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid id"})
+	}
+	var body QuotationReturnInput
+	if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid body"})
+	}
+	if err := h.repo.ReturnForEdit(c.Request().Context(), id, body.Note, httputil.ActorID(c)); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		if errors.Is(err, ErrValidation) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid return"})
+		}
+		applog.HTTPError(c, "quotation return", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed"})
+	}
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *QuotationHandler) accept(c *echo.Context) error {

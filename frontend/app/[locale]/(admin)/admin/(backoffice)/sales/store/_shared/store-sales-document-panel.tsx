@@ -61,6 +61,10 @@ export type StoreSalesDocumentCartLine = {
   unitPrice: number;
   discount: number;
   detail?: string;
+  /** Set on quotation flows — persisted `order_quotation_item.id` for PATCH upsert. */
+  quotationItemId?: number;
+  /** Set on store sales flows — persisted `order_list_item.id` for PATCH upsert. */
+  orderListItemId?: number;
 };
 
 function formatMoney(n: number, locale: string) {

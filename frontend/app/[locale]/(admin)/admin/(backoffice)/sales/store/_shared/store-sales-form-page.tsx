@@ -54,7 +54,17 @@ import {
   formatDateTime,
   type DisplayLocale,
 } from "@/lib/format-datetime";
-import { fetchSettingVat } from "@/lib/setting-api";
+import {
+  fetchOrderSalesFormItems,
+  fetchOrderSalesFormVat,
+  loadOrderSalesCarBrandComboboxOptions,
+  loadOrderSalesCarModelComboboxOptions,
+  loadOrderSalesCategoryComboboxOptions,
+  loadOrderSalesCreditOptions,
+  resolveOrderSalesCarBrandLabel,
+  resolveOrderSalesCarModelLabel,
+  resolveOrderSalesCategoryLabel,
+} from "@/lib/order-sales-form-api";
 import {
   canAddProductFromBrowse,
   cartLineMaxQty,
@@ -66,7 +76,6 @@ import {
   summaryLinesFromCartItems,
   type StoreSalesPriceSummary,
 } from "@/lib/store-sales-cart-pricing";
-import { loadMemberUserCreditOptions } from "@/lib/member-user-filters-combobox";
 import {
   canStartAnotherStoreSalesSlip,
   familySlipSelectOptions,
@@ -92,21 +101,9 @@ import {
   type StoreSalesListItem,
   type StoreSalesStatus,
 } from "@/lib/order-store-api";
-import {
-  loadProductItemBrowseCategoryComboboxOptions,
-  resolveProductItemBrowseCategoryLabel,
-} from "@/lib/product-category-combobox";
-import {
-  loadProductCarBrandComboboxOptions,
-  loadProductCarModelComboboxOptions,
-  resolveProductCarBrandLabel,
-  resolveProductCarModelLabel,
-} from "@/lib/product-filters-api";
-import {
-  fetchProductItems,
-  ProductListApiError,
-  type ProductItemBrowseRow,
-} from "@/lib/product-list-api";
+import { type ProductItemBrowseRow } from "@/lib/product-list-api";
+
+const STORE_SALES_FORM_RESOURCE = "store-sales" as const;
 import {
   ProductListCarModal,
   ProductListWarehouseModal,
@@ -143,6 +140,7 @@ type CartLine = {
   unitPrice: number;
   discount: number;
   detail?: string;
+  orderListItemId?: number;
 };
 
 type ViewSlipSnapshot = {
@@ -349,7 +347,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
         try {
           const snap = await fetchStoreSalesMemberSnapshot(
             locale,
-            d.member_user_id
+            d.member_user_id,
+            STORE_SALES_FORM_RESOURCE
           );
           applyMemberSnapshot(snap);
         } catch {
@@ -381,7 +380,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
         setCustomerPhase("locked");
       }
       const loadedCart = (d.items ?? []).map((it, i) => ({
-        key: `loaded-${i}`,
+        key: `loaded-${it.id ?? i}`,
+        orderListItemId: it.id,
         type: it.type as "item" | "compare",
         qty: it.amount,
         unitPrice: it.price_per_unit,
@@ -398,7 +398,15 @@ export function StoreSalesFormPage({ orderId }: Props) {
             } as ProductItemBrowseRow)
           : undefined,
       }));
-      setCart(await hydrateStoreSalesCartProducts(locale, loadedCart));
+      try {
+        setCart(
+          await hydrateStoreSalesCartProducts(locale, loadedCart, {
+            itemsResource: STORE_SALES_FORM_RESOURCE,
+          })
+        );
+      } catch {
+        setCart(loadedCart);
+      }
       const fam = storeSalesFamilyContext(d);
       setFamilyRootId(fam.rootId);
       setFamilyMembers(fam.members);
@@ -428,10 +436,16 @@ export function StoreSalesFormPage({ orderId }: Props) {
   }, [loadDetail]);
 
   useEffect(() => {
+    if (!perms.create && !perms.update) return;
     let cancelled = false;
     void (async () => {
       try {
-        const { options } = await loadMemberUserCreditOptions(locale, "", 1);
+        const { options } = await loadOrderSalesCreditOptions(
+          locale,
+          STORE_SALES_FORM_RESOURCE,
+          "",
+          1
+        );
         if (!cancelled) setCreditOptions(options);
       } catch {
         if (!cancelled) setCreditOptions([]);
@@ -440,7 +454,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [locale]);
+  }, [locale, perms.create, perms.update]);
 
   useEffect(() => {
     if (creditOptions.length === 0) return;
@@ -453,7 +467,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchSettingVat(locale)
+    void fetchOrderSalesFormVat(locale, STORE_SALES_FORM_RESOURCE)
       .then((vat) => {
         if (!cancelled && vat.is_active !== false && Number.isFinite(vat.rate)) {
           setVatRate(vat.rate);
@@ -474,7 +488,11 @@ export function StoreSalesFormPage({ orderId }: Props) {
       return;
     }
     try {
-      const snap = await fetchStoreSalesMemberSnapshot(locale, Number(nextId));
+      const snap = await fetchStoreSalesMemberSnapshot(
+        locale,
+        Number(nextId),
+        STORE_SALES_FORM_RESOURCE
+      );
       applyMemberSnapshot(snap);
     } catch {
       toast.error(tError("loadFailed"));
@@ -510,7 +528,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
         locale,
         cart,
         memberId ? Number(memberId) : null,
-        creditId
+        creditId,
+        { itemsResource: STORE_SALES_FORM_RESOURCE }
       );
       setCart(repriced);
       setShipping((s) => scheduleShippingForCart(repriced, orderId, s));
@@ -533,28 +552,32 @@ export function StoreSalesFormPage({ orderId }: Props) {
     if (!browseRequested) return;
     setBrowseLoading(true);
     try {
-      const res = await fetchProductItems(locale, {
-        page: browsePage,
-        limit: browsePageSize,
-        search: productSearchApplied || undefined,
-        isActive: true,
-        productCategoryId: browseCategoryId
-          ? Number(browseCategoryId)
-          : undefined,
-        carBrandId: browseBrandId ? Number(browseBrandId) : undefined,
-        productAttributeModelId: browseModelId
-          ? Number(browseModelId)
-          : undefined,
-        carYear: browseCarYear ? Number(browseCarYear) : undefined,
-        oem: browseOem.trim() || undefined,
-        sort: browseSortKey ?? undefined,
-        order: browseSortDir ?? undefined,
-      });
+      const res = await fetchOrderSalesFormItems(
+        locale,
+        STORE_SALES_FORM_RESOURCE,
+        {
+          page: browsePage,
+          limit: browsePageSize,
+          search: productSearchApplied || undefined,
+          isActive: true,
+          productCategoryId: browseCategoryId
+            ? Number(browseCategoryId)
+            : undefined,
+          carBrandId: browseBrandId ? Number(browseBrandId) : undefined,
+          productAttributeModelId: browseModelId
+            ? Number(browseModelId)
+            : undefined,
+          carYear: browseCarYear ? Number(browseCarYear) : undefined,
+          oem: browseOem.trim() || undefined,
+          sort: browseSortKey ?? undefined,
+          order: browseSortDir ?? undefined,
+        }
+      );
       setBrowseRows(res.items);
       setBrowseTotal(res.meta.total);
     } catch (e) {
       toast.error(
-        e instanceof ProductListApiError ? e.message : tError("loadFailed")
+        e instanceof Error && e.message ? e.message : tError("loadFailed")
       );
     } finally {
       setBrowseLoading(false);
@@ -613,6 +636,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const bodyFromCart = (nextStatus: StoreSalesStatus): StoreSalesCreateBody => {
     const items: StoreSalesItemInput[] = cart.map((line) => ({
+      ...(line.orderListItemId != null ? { id: line.orderListItemId } : {}),
       product_item_id: line.product?.id ?? null,
       type: line.type,
       amount: line.qty,
@@ -725,7 +749,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
           locale,
           lines,
           memberId ? Number(memberId) : null,
-          creditId
+          creditId,
+          { itemsResource: STORE_SALES_FORM_RESOURCE }
         );
         setCart(repriced);
         setShipping((s) => scheduleShippingForCart(repriced, orderId, s));
@@ -1065,10 +1090,15 @@ export function StoreSalesFormPage({ orderId }: Props) {
                             loadStoreSalesMemberComboboxOptions(locale, {
                               search,
                               signal,
+                              resource: STORE_SALES_FORM_RESOURCE,
                             })
                           }
                           resolveSelectedLabel={(v) =>
-                            resolveStoreSalesMemberLabel(locale, v)
+                            resolveStoreSalesMemberLabel(
+                              locale,
+                              v,
+                              STORE_SALES_FORM_RESOURCE
+                            )
                           }
                         />
                       </div>
@@ -1260,8 +1290,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
                         showClear
                         disabled={productActionsDisabled}
                         onLoadOptions={(ctx) =>
-                          loadProductItemBrowseCategoryComboboxOptions(
+                          loadOrderSalesCategoryComboboxOptions(
                             displayLocale,
+                            STORE_SALES_FORM_RESOURCE,
                             {
                               search: ctx.search,
                               signal: ctx.signal,
@@ -1269,8 +1300,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
                           )
                         }
                         resolveSelectedLabel={(value) =>
-                          resolveProductItemBrowseCategoryLabel(
+                          resolveOrderSalesCategoryLabel(
                             displayLocale,
+                            STORE_SALES_FORM_RESOURCE,
                             value
                           )
                         }
@@ -1310,15 +1342,23 @@ export function StoreSalesFormPage({ orderId }: Props) {
                         showClear
                         disabled={productActionsDisabled}
                         onLoadOptions={(ctx) =>
-                          loadProductCarBrandComboboxOptions(displayLocale, {
-                            search: ctx.search,
-                            signal: ctx.signal,
-                          })
+                          loadOrderSalesCarBrandComboboxOptions(
+                            displayLocale,
+                            STORE_SALES_FORM_RESOURCE,
+                            {
+                              search: ctx.search,
+                              signal: ctx.signal,
+                            }
+                          )
                         }
                         resolveSelectedLabel={async (value) => {
                           const id = Number(value);
                           if (!Number.isFinite(id)) return null;
-                          return resolveProductCarBrandLabel(displayLocale, id);
+                          return resolveOrderSalesCarBrandLabel(
+                            displayLocale,
+                            STORE_SALES_FORM_RESOURCE,
+                            id
+                          );
                         }}
                       />
                       <RemoteComboboxField
@@ -1336,18 +1376,26 @@ export function StoreSalesFormPage({ orderId }: Props) {
                         showClear
                         disabled={productActionsDisabled || !browseBrandId}
                         onLoadOptions={(ctx) =>
-                          loadProductCarModelComboboxOptions(displayLocale, {
-                            search: ctx.search,
-                            signal: ctx.signal,
-                            parentId: browseBrandId
-                              ? Number(browseBrandId)
-                              : undefined,
-                          })
+                          loadOrderSalesCarModelComboboxOptions(
+                            displayLocale,
+                            STORE_SALES_FORM_RESOURCE,
+                            {
+                              search: ctx.search,
+                              signal: ctx.signal,
+                              parentId: browseBrandId
+                                ? Number(browseBrandId)
+                                : undefined,
+                            }
+                          )
                         }
                         resolveSelectedLabel={async (value) => {
                           const id = Number(value);
                           if (!Number.isFinite(id)) return null;
-                          return resolveProductCarModelLabel(displayLocale, id);
+                          return resolveOrderSalesCarModelLabel(
+                            displayLocale,
+                            STORE_SALES_FORM_RESOURCE,
+                            id
+                          );
                         }}
                       />
                       <RemoteComboboxField

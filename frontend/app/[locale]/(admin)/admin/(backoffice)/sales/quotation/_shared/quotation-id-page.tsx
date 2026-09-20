@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchQuotationDetail } from "@/lib/order-quotation-api";
@@ -18,14 +18,18 @@ export function QuotationIdPage({ id }: Props) {
   const locale = useLocale();
   const [branch, setBranch] = useState<Branch>("loading");
 
+  const resolveBranchFromApi = useCallback(async () => {
+    const d = await fetchQuotationDetail(locale, id);
+    const next = d.status === "draft" ? "form" : "detail";
+    setBranch(next);
+    return d.status;
+  }, [id, locale]);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const d = await fetchQuotationDetail(locale, id);
-        if (!cancelled) {
-          setBranch(d.status === "draft" ? "form" : "detail");
-        }
+        if (!cancelled) await resolveBranchFromApi();
       } catch {
         if (!cancelled) setBranch("detail");
       }
@@ -33,7 +37,7 @@ export function QuotationIdPage({ id }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [id, locale]);
+  }, [id, locale, resolveBranchFromApi]);
 
   if (branch === "loading") {
     return (
@@ -50,7 +54,12 @@ export function QuotationIdPage({ id }: Props) {
   }
 
   if (branch === "form") {
-    return <QuotationFormPage editId={id} />;
+    return (
+      <QuotationFormPage
+        editId={id}
+        onSubmitted={() => resolveBranchFromApi()}
+      />
+    );
   }
 
   return <QuotationDetailPage id={id} />;
