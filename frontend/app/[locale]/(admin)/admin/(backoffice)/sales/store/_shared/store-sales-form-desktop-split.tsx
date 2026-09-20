@@ -21,7 +21,9 @@ const STORE_SALES_RESIZE_DEFAULT_LAYOUT: Record<string, number> = {
 
 /** Persisted layout shares (percent); reject extreme ratios from older bad minSize px config. */
 const MIN_BROWSE_LAYOUT_PCT = 35;
-const MIN_DOCUMENT_LAYOUT_PCT = 28;
+/** ~400px document column at 1440px viewport; keeps header + cart table usable. */
+const MIN_DOCUMENT_LAYOUT_PCT = 30;
+const DOCUMENT_PANEL_MIN_PX = 400;
 
 function sanitizeStoreSalesResizeLayout(
   parsed: Record<string, number>,
@@ -92,11 +94,11 @@ export function StoreSalesFormDesktopSplit({ browse, documentPanel }: Props) {
       <ResizableHandle withHandle />
       <ResizablePanel
         id={STORE_SALES_RESIZE_PANEL.document}
-        minSize={260}
+        minSize={DOCUMENT_PANEL_MIN_PX}
         maxSize="55%"
         className="min-w-0 h-full overflow-visible! max-h-none!"
       >
-        <div className="flex h-full min-h-0 min-w-0 w-full flex-col items-start overflow-x-hidden pl-3 pr-1 py-2">
+        <div className="flex h-full min-h-0 w-full min-w-[400px] flex-col items-start overflow-x-hidden pl-3 pr-1 py-2">
           {documentPanel}
         </div>
       </ResizablePanel>

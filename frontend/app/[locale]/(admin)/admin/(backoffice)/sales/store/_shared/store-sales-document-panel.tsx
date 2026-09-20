@@ -273,15 +273,15 @@ export function StoreSalesDocumentPanel({
       className={cn(
         "@container/store-sales-doc flex w-full min-w-0 flex-col",
         isSplit
-          ? "sticky top-4 z-10 max-h-[calc(100svh-3.5rem-1rem-1.5rem)] self-start overflow-hidden"
+          ? "sticky top-4 z-10 max-h-[calc(100svh-3.5rem-1rem-1.5rem)] w-full min-w-[400px] self-start overflow-hidden"
           : "shrink-0",
       )}
     >
       <CardHeader className="shrink-0 space-y-0">
         <div
           className={cn(
-            "flex justify-between gap-2",
-            documentCollapsed ? "items-center" : "items-start",
+            "flex items-start justify-between gap-2",
+            documentCollapsed && "items-center",
           )}
         >
           <div
@@ -296,22 +296,21 @@ export function StoreSalesDocumentPanel({
             >
               <ClipboardList className="size-5" aria-hidden />
             </span>
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
               <CardTitle className="text-base leading-snug">
                 {tForm("documentTitle")}
               </CardTitle>
-              <p className="text-muted-foreground text-sm">
-                {tForm("documentSubtitle")}
-              </p>
-              {sku ? <p className="font-medium">{sku}</p> : null}
+              {!documentCollapsed ? (
+                <p className="text-muted-foreground line-clamp-2 text-sm leading-snug wrap-break-word">
+                  {tForm("documentSubtitle")}
+                </p>
+              ) : null}
+              {sku ? (
+                <p className="truncate font-medium">{sku}</p>
+              ) : null}
             </div>
           </div>
-          <div
-            className={cn(
-              "flex shrink-0 gap-1",
-              documentCollapsed ? "items-center" : "items-start",
-            )}
-          >
+          <div className="flex shrink-0 items-start gap-1">
             {!cartEmpty ? (
               <div className="text-right text-sm">
                 <p className="font-semibold">{tForm("orderDate")}</p>
@@ -449,8 +448,8 @@ export function StoreSalesDocumentPanel({
                                     ) : (
                                       <CartThumbPlaceholder />
                                     )}
-                                    <div className="min-w-0 space-y-1">
-                                      <div className="font-medium">
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <div className="font-medium wrap-break-word">
                                         {line.product?.name ||
                                           line.product?.sku ||
                                           "—"}
