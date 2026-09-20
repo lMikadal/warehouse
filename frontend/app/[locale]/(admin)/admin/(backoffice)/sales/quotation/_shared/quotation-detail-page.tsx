@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -102,6 +102,7 @@ export function QuotationDetailPage({ id }: Props) {
   const [acceptOpen, setAcceptOpen] = useState(false);
   const [acceptPanel, setAcceptPanel] =
     useState<QuotationAcceptPanelMode | null>(null);
+  const [acceptPhase, setAcceptPhase] = useState<"form" | "result">("form");
   const [superadminEditMode, setSuperadminEditMode] = useState(false);
   const [baselineItemLines, setBaselineItemLines] = useState<
     StoreSalesDocumentCartLine[]
@@ -376,6 +377,7 @@ export function QuotationDetailPage({ id }: Props) {
     acceptPanel != null ? (
       <QuotationAcceptSidePanel
         mode={acceptPanel}
+        phase={acceptPhase}
         detail={detail}
         locale={locale}
         itemCount={itemLines.length}
@@ -387,6 +389,7 @@ export function QuotationDetailPage({ id }: Props) {
     acceptPanel != null ? (
       <QuotationAcceptSidePanel
         mode={acceptPanel}
+        phase={acceptPhase}
         detail={detail}
         locale={locale}
         itemCount={itemLines.length}
@@ -463,34 +466,55 @@ export function QuotationDetailPage({ id }: Props) {
         <div
           className={cn(
             "mx-auto flex w-full max-w-crud-page flex-wrap items-center gap-2 px-admin-content py-3",
-            acceptPanel ? "justify-between" : "justify-end"
+            acceptPanel && acceptPhase === "form"
+              ? "justify-between"
+              : "justify-end"
           )}
         >
           {acceptPanel ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={() => {
-                  setAcceptPanel(null);
-                  setAcceptOpen(true);
-                }}
-              >
-                <ArrowLeft className="text-current" aria-hidden />
-                {tCrud("btn.back")}
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                onClick={() => setAcceptPanel(null)}
-              >
-                <Check className="text-current" aria-hidden />
-                {acceptPanel === "payment"
-                  ? tPage("acceptModal.confirmPayment")
-                  : tPage("confirm")}
-              </Button>
-            </>
+            acceptPhase === "result" ? (
+              <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => window.print()}
+                >
+                  <Printer className="text-current" aria-hidden />
+                  {tPage("detail.printMiniReceipt")}
+                </Button>
+                <Button type="button" size="lg">
+                  <Check className="text-current" aria-hidden />
+                  {tPage("detail.picking")}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    setAcceptPanel(null);
+                    setAcceptPhase("form");
+                    setAcceptOpen(true);
+                  }}
+                >
+                  <ArrowLeft className="text-current" aria-hidden />
+                  {tCrud("btn.back")}
+                </Button>
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={() => setAcceptPhase("result")}
+                >
+                  <Check className="text-current" aria-hidden />
+                  {acceptPanel === "payment"
+                    ? tPage("acceptModal.confirmPayment")
+                    : tPage("acceptModal.credit")}
+                </Button>
+              </>
+            )
           ) : (
             <>
           <Button
@@ -708,6 +732,7 @@ export function QuotationDetailPage({ id }: Props) {
         onOpenChange={setAcceptOpen}
         onSelect={(mode) => {
           setAcceptOpen(false);
+          setAcceptPhase("form");
           setAcceptPanel(mode);
         }}
       />

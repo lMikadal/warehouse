@@ -49,6 +49,7 @@
         "seller": "Seller",
         "picking": "Order picking",
         "pay": "Pay now",
+        "printMiniReceipt": "Print mini receipt",
         "pendingSellerHint": "Print and accept are available after an administrator approves this quotation"
       },
       "returnModal": {
@@ -72,14 +73,7 @@
         "change": "Change",
         "outstanding": "Outstanding",
         "baht": "THB",
-        "confirmPayment": "Confirm payment",
-        "methods": {
-          "cash": "Cash",
-          "transfer": "Bank transfer",
-          "qr": "QR Payment",
-          "card": "Credit / debit card",
-          "cod": "Cash on delivery (COD)"
-        }
+        "confirmPayment": "Confirm payment"
       },
       "payment": {
         "title": "Payment",

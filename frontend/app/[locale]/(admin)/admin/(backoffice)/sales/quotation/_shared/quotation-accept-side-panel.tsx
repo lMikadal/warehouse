@@ -14,24 +14,21 @@ import {
   type DisplayLocale,
 } from "@/lib/format-datetime";
 import type { QuotationDetail } from "@/lib/order-quotation-api";
+import {
+  fetchSettingLangList,
+  type SettingLangItem,
+} from "@/lib/setting-api";
 import { cn } from "@/lib/utils";
 
 import type { QuotationAcceptPanelMode } from "./quotation-accept-dialog";
 
 type PayMode = "full" | "partial";
 
-type MethodKey = "cash" | "transfer" | "qr" | "card" | "cod";
-
-const METHOD_KEYS: MethodKey[] = [
-  "cash",
-  "transfer",
-  "qr",
-  "card",
-  "cod",
-];
+export type QuotationAcceptPhase = "form" | "result";
 
 type Props = {
   mode: QuotationAcceptPanelMode;
+  phase?: QuotationAcceptPhase;
   detail: QuotationDetail;
   locale: DisplayLocale;
   itemCount: number;
@@ -58,22 +55,16 @@ function displayDate(iso: string | null | undefined, locale: DisplayLocale) {
   return formatDate(iso.includes("T") ? iso : `${iso}T12:00:00`, locale);
 }
 
-function methodLabel(
-  key: MethodKey,
-  tAccept: ReturnType<typeof useTranslations>
-) {
-  switch (key) {
-    case "cash":
-      return tAccept("methods.cash");
-    case "transfer":
-      return tAccept("methods.transfer");
-    case "qr":
-      return tAccept("methods.qr");
-    case "card":
-      return tAccept("methods.card");
-    default:
-      return tAccept("methods.cod");
+function fullPayDefaults(methods: SettingLangItem[], grand: number) {
+  const selected: Record<number, boolean> = {};
+  const amounts: Record<number, string> = {};
+  const firstId = methods[0]?.id;
+  for (const m of methods) {
+    const on = m.id === firstId;
+    selected[m.id] = on;
+    amounts[m.id] = on ? String(grand || "") : "";
   }
+  return { selected, amounts };
 }
 
 function MetaBlock({
@@ -81,12 +72,14 @@ function MetaBlock({
   locale,
   dueDate,
   onDueDateChange,
+  showCreditDate,
   showDueEditor,
 }: {
   detail: QuotationDetail;
   locale: DisplayLocale;
   dueDate?: string;
   onDueDateChange?: (v: string) => void;
+  showCreditDate?: boolean;
   showDueEditor?: boolean;
 }) {
   const tPage = useTranslations("page.orderQuotation");
@@ -104,7 +97,7 @@ function MetaBlock({
         </div>
         <div className="grid gap-1">
           <p className="text-muted-foreground text-xs">
-            {showDueEditor
+            {showCreditDate
               ? tPage("acceptModal.creditDate")
               : tForm("validUntil")}
           </p>
@@ -121,7 +114,10 @@ function MetaBlock({
             />
           ) : (
             <p className="text-sm tabular-nums">
-              {displayDate(detail.valid_until, locale)}
+              {displayDate(
+                showCreditDate ? dueDate : detail.valid_until,
+                locale
+              )}
             </p>
           )}
         </div>
@@ -138,8 +134,55 @@ function MetaBlock({
   );
 }
 
+function ResultPaymentSummary({
+  methods,
+  amounts,
+  outstanding,
+  locale,
+}: {
+  methods: SettingLangItem[];
+  amounts: Record<number, string>;
+  outstanding: number;
+  locale: DisplayLocale;
+}) {
+  const tAccept = useTranslations("page.orderQuotation.acceptModal");
+
+  return (
+    <div className="bg-primary/10 border-primary/20 space-y-2 rounded-md border p-3">
+      <h4 className="text-primary text-sm font-semibold">
+        {tAccept("paymentSummary")}
+      </h4>
+      {methods.map((m) => (
+        <div
+          key={m.id}
+          className="text-muted-foreground flex justify-between gap-2 text-sm"
+        >
+          <span>{m.name?.trim() || `#${m.id}`}</span>
+          <span className="tabular-nums">
+            {formatMoney(Number.parseFloat(amounts[m.id] ?? "") || 0, locale)}
+          </span>
+        </div>
+      ))}
+      <div className="flex justify-between gap-2 border-t border-dashed pt-2 text-sm font-medium">
+        <span>{tAccept("outstanding")}</span>
+        <span
+          className={cn(
+            "tabular-nums",
+            outstanding <= 0
+              ? "text-green-600 dark:text-green-400"
+              : "text-destructive"
+          )}
+        >
+          {formatMoney(outstanding, locale)} {tAccept("baht")}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function QuotationAcceptSidePanel({
   mode,
+  phase = "form",
   detail,
   locale,
   itemCount,
@@ -149,82 +192,83 @@ export function QuotationAcceptSidePanel({
   const tAccept = useTranslations("page.orderQuotation.acceptModal");
   const tStore = useTranslations("page.orderStore.form");
   const isSplit = layout === "split";
+  const isResult = phase === "result";
 
   const grand = Number(detail.grand_total) || 0;
 
+  const [methods, setMethods] = useState<SettingLangItem[]>([]);
   const [payMode, setPayMode] = useState<PayMode>("full");
-  const [selected, setSelected] = useState<Record<MethodKey, boolean>>({
-    cash: true,
-    transfer: false,
-    qr: false,
-    card: false,
-    cod: false,
-  });
-  const [amounts, setAmounts] = useState<Record<MethodKey, string>>({
-    cash: String(grand || ""),
-    transfer: "",
-    qr: "",
-    card: "",
-    cod: "",
-  });
+  const [selected, setSelected] = useState<Record<number, boolean>>({});
+  const [amounts, setAmounts] = useState<Record<number, string>>({});
   const [dueDate, setDueDate] = useState(
     () => detail.valid_until?.trim() || todayIsoDate()
   );
 
+  const defaultMethodId = methods[0]?.id;
+
   useEffect(() => {
+    if (phase === "result") return;
     setPayMode("full");
-    setSelected({
-      cash: true,
-      transfer: false,
-      qr: false,
-      card: false,
-      cod: false,
-    });
-    setAmounts({
-      cash: String(grand || ""),
-      transfer: "",
-      qr: "",
-      card: "",
-      cod: "",
-    });
     setDueDate(detail.valid_until?.trim() || todayIsoDate());
-  }, [mode, detail.id, detail.valid_until, grand]);
+    let cancelled = false;
+    void fetchSettingLangList(locale, "payment-methods", {
+      page: 1,
+      limit: 100,
+      isActive: true,
+      isSale: true,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        setMethods(res.items);
+        if (mode === "payment") {
+          const next = fullPayDefaults(res.items, grand);
+          setSelected(next.selected);
+          setAmounts(next.amounts);
+        } else {
+          setSelected({});
+          setAmounts({});
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMethods([]);
+        setSelected({});
+        setAmounts({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, locale, detail.id, detail.valid_until, grand, phase]);
 
   const paidTotal = useMemo(() => {
-    return METHOD_KEYS.reduce((sum, key) => {
-      if (!selected[key]) return sum;
-      const n = Number.parseFloat(amounts[key]);
+    return methods.reduce((sum, m) => {
+      if (!selected[m.id]) return sum;
+      const n = Number.parseFloat(amounts[m.id] ?? "");
       return sum + (Number.isFinite(n) ? n : 0);
     }, 0);
-  }, [selected, amounts]);
+  }, [methods, selected, amounts]);
 
   const outstanding = Math.max(0, Math.round((grand - paidTotal) * 100) / 100);
   const change = Math.max(0, Math.round((paidTotal - grand) * 100) / 100);
 
-  const toggleMethod = (key: MethodKey, on: boolean) => {
-    setSelected((prev) => ({ ...prev, [key]: on }));
-    if (on && payMode === "full" && key === "cash" && !amounts.cash) {
-      setAmounts((prev) => ({ ...prev, cash: String(grand) }));
+  const toggleMethod = (id: number, on: boolean) => {
+    setSelected((prev) => ({ ...prev, [id]: on }));
+    if (
+      on &&
+      payMode === "full" &&
+      id === defaultMethodId &&
+      !amounts[id]
+    ) {
+      setAmounts((prev) => ({ ...prev, [id]: String(grand) }));
     }
   };
 
   const setPayModeAndSync = (next: PayMode) => {
     setPayMode(next);
     if (next === "full") {
-      setSelected({
-        cash: true,
-        transfer: false,
-        qr: false,
-        card: false,
-        cod: false,
-      });
-      setAmounts({
-        cash: String(grand),
-        transfer: "",
-        qr: "",
-        card: "",
-        cod: "",
-      });
+      const defaults = fullPayDefaults(methods, grand);
+      setSelected(defaults.selected);
+      setAmounts(defaults.amounts);
     }
   };
 
@@ -258,10 +302,18 @@ export function QuotationAcceptSidePanel({
           locale={locale}
           dueDate={dueDate}
           onDueDateChange={setDueDate}
-          showDueEditor={mode === "credit"}
+          showCreditDate={mode === "credit"}
+          showDueEditor={mode === "credit" && !isResult}
         />
 
-        {mode === "payment" ? (
+        {isResult ? (
+          <ResultPaymentSummary
+            methods={methods}
+            amounts={amounts}
+            outstanding={outstanding}
+            locale={locale}
+          />
+        ) : mode === "payment" ? (
           <>
             <div className="space-y-3">
               <h4 className="text-sm font-semibold">
@@ -286,28 +338,30 @@ export function QuotationAcceptSidePanel({
                 </Button>
               </div>
               <ul className="divide-y rounded-md border">
-                {METHOD_KEYS.map((key) => (
-                  <li key={key} className="flex items-center gap-3 px-3 py-2">
+                {methods.map((m) => (
+                  <li key={m.id} className="flex items-center gap-3 px-3 py-2">
                     <Checkbox
-                      checked={selected[key]}
-                      onCheckedChange={(c) => toggleMethod(key, c === true)}
-                      disabled={payMode === "full" && key !== "cash"}
+                      checked={selected[m.id] === true}
+                      onCheckedChange={(c) => toggleMethod(m.id, c === true)}
+                      disabled={
+                        payMode === "full" && m.id !== defaultMethodId
+                      }
                     />
                     <span className="min-w-0 flex-1 text-sm">
-                      {methodLabel(key, tAccept)}
+                      {m.name?.trim() || `#${m.id}`}
                     </span>
                     <Input
                       type="number"
                       min={0}
                       step="0.01"
                       className="w-28 tabular-nums"
-                      value={amounts[key]}
-                      disabled={!selected[key]}
+                      value={amounts[m.id] ?? ""}
+                      disabled={!selected[m.id]}
                       placeholder="0.00"
                       onChange={(e) =>
                         setAmounts((prev) => ({
                           ...prev,
-                          [key]: e.target.value,
+                          [m.id]: e.target.value,
                         }))
                       }
                     />
@@ -326,17 +380,22 @@ export function QuotationAcceptSidePanel({
                   {formatMoney(grand, locale)} {tAccept("baht")}
                 </span>
               </div>
-              {METHOD_KEYS.filter((k) => selected[k]).map((key) => (
-                <div
-                  key={key}
-                  className="text-muted-foreground flex justify-between gap-2 text-sm"
-                >
-                  <span>{methodLabel(key, tAccept)}</span>
-                  <span className="tabular-nums">
-                    {formatMoney(Number.parseFloat(amounts[key]) || 0, locale)}
-                  </span>
-                </div>
-              ))}
+              {methods
+                .filter((m) => selected[m.id])
+                .map((m) => (
+                  <div
+                    key={m.id}
+                    className="text-muted-foreground flex justify-between gap-2 text-sm"
+                  >
+                    <span>{m.name?.trim() || `#${m.id}`}</span>
+                    <span className="tabular-nums">
+                      {formatMoney(
+                        Number.parseFloat(amounts[m.id] ?? "") || 0,
+                        locale
+                      )}
+                    </span>
+                  </div>
+                ))}
               <div className="text-muted-foreground flex justify-between gap-2 text-sm">
                 <span>{tAccept("change")}</span>
                 <span className="tabular-nums">

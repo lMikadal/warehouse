@@ -49,6 +49,7 @@
         "seller": "ผู้ขาย",
         "picking": "สั่งจัดสินค้า",
         "pay": "ชำระเลย",
+        "printMiniReceipt": "พิมพ์ใบเสร็จอย่างย่อ",
         "pendingSellerHint": "รอผู้ดูแลอนุมัติก่อนจึงจะปริ้นหรือตอบรับได้"
       },
       "returnModal": {
@@ -72,14 +73,7 @@
         "change": "เงินทอน",
         "outstanding": "ยอดคงค้าง",
         "baht": "บาท",
-        "confirmPayment": "ยืนยันชำระเงิน",
-        "methods": {
-          "cash": "เงินสด",
-          "transfer": "โอนเงิน",
-          "qr": "QR Payment",
-          "card": "บัตรเครดิต/บัตรเดบิต",
-          "cod": "เก็บเงินปลายทาง (COD)"
-        }
+        "confirmPayment": "ยืนยันชำระเงิน"
       },
       "payment": {
         "title": "ชำระเงิน",
