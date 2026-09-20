@@ -33,6 +33,7 @@ Notes:
 - **Frontend component reuse** → follow [`.cursor/rules/storybook.mdc`](storybook.mdc) (Storybook as baseline)
 - **Frontend route pages** (`frontend/app/**`) → follow [storybook.mdc](storybook.mdc) **Warehouse pages** workflow (match UI/Molecules stories; forms/tables rules stay authoritative)
 - **Admin `(admin)` routes / loading UI** → follow [`.cursor/rules/skeleton.mdc`](skeleton.mdc) (`loading.tsx` + skeleton layout parity on page changes)
+- **Resizable column layouts** (`react-resizable-panels`) → follow [`.cursor/rules/resizable-panels.mdc`](resizable-panels.mdc) (minSize px vs %, SSR, scroll, persistence)
 - **Frontend layer stack** → follow [`.cursor/rules/design-system.mdc`](design-system.mdc) (tokens → shadcn → atomic → pages)
 - **New `@utility` / custom classes in `globals.css`** → follow [`.cursor/rules/globals-css.mdc`](globals-css.mdc) (ask user first; compose existing utilities)
 - **Frontend `components/` changes** → atomic reuse gate + user approval for new shared UI ([design-system.mdc](design-system.mdc)); add or update co-located `*.stories.tsx` in the **same change** + run `make frontend-storybook-build` before done ([storybook.mdc](storybook.mdc))

@@ -53,6 +53,7 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | [`storybook.mdc`](rules/storybook.mdc) | Frontend | no | `frontend/**` | components, `app/` | Co-located Storybook stories required in the same change as component work; Storybook is the reuse baseline. |
 | [`design-system.mdc`](rules/design-system.mdc) | Frontend | no | `frontend/**` | `frontend/components/` | Frontend UI layer stack — design tokens through warehouse pages (atomic composition). |
 | [`skeleton.mdc`](rules/skeleton.mdc) | Frontend | no | `frontend/app/**/(admin)/**`, skeleton molecules | admin routes | Co-located `loading.tsx` on every `(admin)` page; table/form skeletons; keep skeleton layout in sync with page layout. |
+| [`resizable-panels.mdc`](rules/resizable-panels.mdc) | Frontend | no | `resizable.tsx`, store-sales split | column resize | `react-resizable-panels` v4 — min/max px vs %, SSR via `dynamic`, page scroll overrides, layout persistence; store-sales reference. |
 
 ## Task → read this
 
@@ -64,6 +65,7 @@ Always-applied routing: [`rules/subprojects.mdc`](rules/subprojects.mdc).
 | Design → Next.js handoff | `skills/frontend/SKILL.md` + [`design-system.mdc`](rules/design-system.mdc) |
 | Route page under `frontend/app/` | `skills/frontend/SKILL.md` + [`storybook.mdc`](rules/storybook.mdc) Warehouse pages |
 | Admin route / loading UI | [`skeleton.mdc`](rules/skeleton.mdc) + `skills/frontend/SKILL.md` |
+| Resizable two-column form (e.g. store sales) | [`resizable-panels.mdc`](rules/resizable-panels.mdc) + `skills/frontend/SKILL.md` |
 | New shared component | `skills/frontend/SKILL.md` + [`design-system.mdc`](rules/design-system.mdc) (user approval) |
 | Goose migration from schema | `skills/backend/SKILL.md` + `skills/design/reference.md` + [`migrations-seed.mdc`](rules/migrations-seed.mdc) |
 | Postgres init / test seed | [`migrations-seed.mdc`](rules/migrations-seed.mdc) + `skills/backend/SKILL.md` |

@@ -1,0 +1,82 @@
+---
+description: react-resizable-panels v4 — min/max size units, SSR, scroll vs sticky, layout persistence; reference store-sales desktop split.
+globs: frontend/components/ui/resizable.tsx,frontend/app/**/*split*.tsx,frontend/app/**/store-sales/**
+alwaysApply: false
+---
+
+# Resizable panels (`react-resizable-panels` v4)
+
+Applies when using [`ResizablePanelGroup`](../../frontend/components/ui/resizable.tsx) / [`ResizablePanel`](../../frontend/components/ui/resizable.tsx) in production UI (not Storybook-only demos).
+
+## Size props (critical)
+
+Numeric props are **pixels**; strings without units are **percent** (see library `PanelProps` in `node_modules/react-resizable-panels`).
+
+| Intent | Correct | Wrong (common bug) |
+|--------|---------|---------------------|
+| Min ~35% of group | `minSize="35%"` | `minSize={35}` → 35 **px** |
+| Min 260px document column | `minSize={260}` | `minSize={26}` → 26 **px** (crushed column) |
+| Max 55% | `maxSize="55%"` | — |
+
+Always document px vs `%` in code comments when both appear on one screen.
+
+## SSR / hydration
+
+The library sets **non-SSR-safe inline styles** on `Panel` (flex, min/max height). Do **not** render `ResizablePanelGroup` on the server.
+
+**Pattern (reference):** [`store-sales-form-desktop-split.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-form-desktop-split.tsx) loaded from the page via `next/dynamic(..., { ssr: false, loading: () => <Skeleton…> })`. Keep a small skeleton ([`store-sales-form-desktop-split-skeleton.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-form-desktop-split-skeleton.tsx)) aligned with route `loading.tsx`.
+
+Do not rely on `useMounted()` alone if the resizable tree was ever in SSR HTML — prefer `ssr: false` for the split module.
+
+## Group and panel layout (page scroll)
+
+Library defaults fight full-page scroll and card ring clipping:
+
+| Layer | Library default | Warehouse override |
+|-------|-----------------|-------------------|
+| Group | `height: 100%`, `overflow: hidden` (not overridable) | `style={{ height: "auto" }}` on `ResizablePanelGroup` |
+| Panel inner wrapper | `overflow: auto`, `maxHeight: 100%` | Panel `className`: `overflow-visible! max-h-none!` |
+| Inner content | — | `min-w-0`, `overflow-x-hidden` on wrappers; `h-full min-h-0` when columns should stretch |
+
+Use `className="… items-stretch"` on the group so both columns share row height.
+
+**Sticky sidebar:** `position: sticky` on content **inside** the group does **not** work like member edit grid — the group’s `overflow: hidden` creates a containing block. Do not promise viewport sticky while using this library unless the sticky node lives **outside** the group (different layout).
+
+## Persisted layout
+
+- Group `id` + `defaultLayout` + `onLayoutChanged` → `localStorage` (v4; not `autoSaveId`).
+- **Sanitize** saved percent shares on load/save (reject extreme ratios from old bugs or corrupt JSON).
+- Reference constants: `store-sales-form-split` group id; panels `store-sales-browse` / `store-sales-document`; default 60/40.
+
+## Column height parity (split forms)
+
+When the right column is a tall card (header + flex body + footer):
+
+- Browse column root: `md:h-full md:min-h-0`
+- Growing card (e.g. product step): `md:flex-1 md:flex md:flex-col md:min-h-0`
+- Document card: `md:h-full`
+- Panel inner wrappers: `h-full min-h-0`
+
+Mobile stacked layout (`md:hidden`) must not depend on `h-full` on the same nodes.
+
+## Toolbar rows beside narrow columns
+
+When a toolbar sits in a resizable column, **do not** `flex-wrap` inside the search input + submit button group. Match design [`order-store-form__search-group`](../../design/css/style.css): one flex row for input + button; category/filter are **sibling** flex items that wrap as whole groups (`flex-[0_1_10rem]` for category, not `flex-1` on the same row as search).
+
+## Reference implementation
+
+| Piece | Path |
+|-------|------|
+| Split UI | [`store-sales-form-desktop-split.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-form-desktop-split.tsx) |
+| Page wiring | [`store-sales-form-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-form-page.tsx) |
+| Product knowledge | [`document/knowledge/frontend.md`](../../document/knowledge/frontend.md) (order store Form UI row) |
+| Design mock toolbar | [`design/js/pages/order-store-form.js`](../../design/js/pages/order-store-form.js), [`design/css/style.css`](../../design/css/style.css) (`.order-store-form__search-group`) |
+
+## New split screens checklist
+
+1. Extract client-only split component; `dynamic` + skeleton.
+2. Set `minSize` / `maxSize` with correct **px vs `%`** types.
+3. Group `height: auto`; panel `overflow-visible! max-h-none!` if page must scroll.
+4. Sanitize persisted layout; sensible default percent layout.
+5. Update `document/knowledge/frontend.md` when shipping production behavior.
+6. Segment `loading.tsx` skeleton matches split chrome ([`skeleton.mdc`](skeleton.mdc)).

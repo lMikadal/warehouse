@@ -678,7 +678,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
   };
 
   const documentPanel = (
-        <Card className="flex min-h-0 flex-col">
+        <Card className="@container/store-sales-doc flex min-h-0 min-w-0 flex-col md:h-full">
           <CardHeader className="shrink-0 space-y-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -807,7 +807,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                     <span>{money(totals.grand, locale)}</span>
                   </div>
                 </div>
-                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="grid w-full grid-cols-1 gap-2 @md/store-sales-doc:grid-cols-3">
                   <Button
                     type="button"
                     variant="destructive"
@@ -843,7 +843,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                     <Button
                       type="button"
                       size="lg"
-                      className="sm:col-span-3"
+                      className="@md/store-sales-doc:col-span-3"
                       variant="secondary"
                       onClick={() => void printSlip()}
                     >
@@ -859,7 +859,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
   );
 
   const browseColumn = (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:h-full md:min-h-0">
           <Card className="overflow-visible">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -1040,7 +1040,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
           <Card
             id="store-sales-product-step"
             ref={productStepRef}
-            className="min-h-[20rem] scroll-mt-4"
+            className="min-h-[20rem] scroll-mt-4 md:flex md:min-h-0 md:flex-1 md:flex-col"
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -1048,14 +1048,14 @@ export function StoreSalesFormPage({ orderId }: Props) {
                 {tForm("productStep")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            <CardContent className="flex flex-col gap-3 md:flex md:min-h-0 md:flex-1 md:flex-col">
               {!readOnly ? (
                 <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+                  <div className="flex flex-wrap items-stretch gap-2">
+                    <div className="flex min-w-0 flex-1 basis-48 items-end gap-1.5">
                       <CrudSearchField
                         id="store-sales-product-search"
-                        className="min-w-[12rem] flex-1"
+                        className="min-w-0 flex-1"
                         value={productSearch}
                         onChange={setProductSearch}
                         placeholder={tForm("productSearchPlaceholder")}
@@ -1073,7 +1073,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                         <Search className="text-primary" aria-hidden />
                       </ButtonIcon>
                     </div>
-                    <div className="min-w-[10rem] flex-1">
+                    <div className="min-w-[7rem] flex-[0_1_10rem]">
                       <RemoteComboboxField
                         label={tForm("filterCategory")}
                         value={browseCategoryId}
@@ -1247,7 +1247,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                   </Button>
                 </div>
               </div>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 flex min-h-0 flex-1 flex-col space-y-3">
                 {!browseRequested ? (
                   <StoreSalesProductBrowseEmpty />
                 ) : (
