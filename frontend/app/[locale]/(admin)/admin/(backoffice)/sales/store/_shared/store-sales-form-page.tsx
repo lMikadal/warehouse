@@ -1,15 +1,29 @@
 "use client";
 
-import { Minus, Pencil, Plus, Printer, Save, Search, Trash2 } from "lucide-react";
+import {
+  FileText,
+  MapPin,
+  Minus,
+  Pencil,
+  Plus,
+  Printer,
+  RotateCcw,
+  Save,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { Button } from "@/components/ui/button";
+import { ButtonIcon } from "@/components/ui/button-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -21,9 +35,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
-import { formatDateTime } from "@/lib/format-datetime";
-import { fetchMemberUsers } from "@/lib/member-user-api";
+import {
+  formatDateTime,
+  type DisplayLocale,
+} from "@/lib/format-datetime";
+import { loadMemberUserCreditOptions } from "@/lib/member-user-filters-combobox";
+import { repriceStoreSalesCartLines } from "@/lib/store-sales-cart-pricing";
+import {
+  fetchStoreSalesMemberSnapshot,
+  loadStoreSalesMemberComboboxOptions,
+  resolveStoreSalesMemberLabel,
+} from "@/lib/store-sales-member-combobox";
 import {
   createStoreSales,
   fetchStoreSalesDetail,
@@ -67,6 +91,14 @@ function toIsoReceived(draft: ShippingDraft): string | null {
   return new Date(`${draft.date}T${time}:00`).toISOString();
 }
 
+/** Stable ISO for display (SSR-safe — uses shipping draft, not wall clock). */
+function shippingDraftDisplayIso(draft: ShippingDraft): string | null {
+  const date = draft.date?.trim();
+  if (!date) return null;
+  const time = draft.time?.trim() || "00:00";
+  return new Date(`${date}T${time}:00`).toISOString();
+}
+
 function lineTotal(line: CartLine) {
   return Math.max(0, line.qty * line.unitPrice - line.discount);
 }
@@ -78,6 +110,12 @@ function money(n: number, locale: string) {
   }).format(n);
 }
 
+/** Matches product list variant `Section` step badge (product-list-form-variant-sections). */
+const storeSalesStepBadgeClass =
+  "bg-primary/10 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold";
+
+type CustomerPhase = "editing" | "locked" | "changing";
+
 type Props = {
   orderId?: number;
 };
@@ -88,16 +126,23 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const tPage = useTranslations("page.orderStore");
   const tForm = useTranslations("page.orderStore.form");
   const tCrud = useTranslations("crud");
+  const tSearch = useTranslations("search");
   const tFormRoot = useTranslations("form");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("order", "order_store");
+  const productStepRef = useRef<HTMLDivElement>(null);
+  const productSearchRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(!!orderId);
-  const [memberQuery, setMemberQuery] = useState("");
   const [memberId, setMemberId] = useState("");
   const [memberName, setMemberName] = useState("");
   const [memberTel, setMemberTel] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
+  const [memberAddressDisplay, setMemberAddressDisplay] = useState("");
+  const [memberTaxNumber, setMemberTaxNumber] = useState("");
+  const [creditOptions, setCreditOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
   const [creditId, setCreditId] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [productPage, setProductPage] = useState(1);
@@ -125,6 +170,36 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareDetail, setCompareDetail] = useState("");
   const [compareQty, setCompareQty] = useState("1");
+  const [customerPhase, setCustomerPhase] = useState<CustomerPhase>("editing");
+  const [changeCustomerDialogOpen, setChangeCustomerDialogOpen] =
+    useState(false);
+  const [confirmingCustomer, setConfirmingCustomer] = useState(false);
+
+  const clearMemberSnapshot = useCallback(() => {
+    setMemberId("");
+    setMemberName("");
+    setMemberTel("");
+    setMemberEmail("");
+    setMemberAddressDisplay("");
+    setMemberTaxNumber("");
+  }, []);
+
+  const applyMemberSnapshot = useCallback(
+    (snap: {
+      memberName: string;
+      memberTel: string;
+      memberEmail: string;
+      memberAddressDisplay: string;
+      memberTaxNumber: string;
+    }) => {
+      setMemberName(snap.memberName);
+      setMemberTel(snap.memberTel);
+      setMemberEmail(snap.memberEmail);
+      setMemberAddressDisplay(snap.memberAddressDisplay);
+      setMemberTaxNumber(snap.memberTaxNumber);
+    },
+    []
+  );
 
   const loadDetail = useCallback(async () => {
     if (!orderId) return;
@@ -133,12 +208,29 @@ export function StoreSalesFormPage({ orderId }: Props) {
       const d = await fetchStoreSalesDetail(locale, orderId);
       setStatus(d.status);
       setSku(d.sku ?? "");
-      if (d.member_user_id) setMemberId(String(d.member_user_id));
+      if (d.member_user_id) {
+        setMemberId(String(d.member_user_id));
+        try {
+          const snap = await fetchStoreSalesMemberSnapshot(
+            locale,
+            d.member_user_id
+          );
+          applyMemberSnapshot(snap);
+        } catch {
+          setMemberName(d.member_name ?? "");
+          setMemberTel(d.member_tel ?? "");
+          setMemberEmail(d.member_email ?? "");
+          setMemberAddressDisplay("");
+          setMemberTaxNumber("");
+        }
+      } else {
+        clearMemberSnapshot();
+        setMemberName(d.member_name ?? "");
+        setMemberTel(d.member_tel ?? "");
+        setMemberEmail(d.member_email ?? "");
+      }
       if (d.member_setting_credit_id)
         setCreditId(String(d.member_setting_credit_id));
-      setMemberName(d.member_name ?? "");
-      setMemberTel(d.member_tel ?? "");
-      setMemberEmail(d.member_email ?? "");
       if (d.shipping) {
         const ra = d.shipping.received_at
           ? new Date(d.shipping.received_at)
@@ -171,11 +263,88 @@ export function StoreSalesFormPage({ orderId }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [orderId, locale, tError]);
+  }, [orderId, locale, tError, applyMemberSnapshot, clearMemberSnapshot]);
 
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { options } = await loadMemberUserCreditOptions(locale, "", 1);
+        if (!cancelled) setCreditOptions(options);
+      } catch {
+        if (!cancelled) setCreditOptions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
+
+  useEffect(() => {
+    if (creditOptions.length === 0) return;
+    setCreditId((cur) =>
+      cur && creditOptions.some((c) => c.value === cur)
+        ? cur
+        : creditOptions[0]!.value
+    );
+  }, [creditOptions]);
+
+  const onMemberIdChange = async (nextId: string) => {
+    setMemberId(nextId);
+    if (!nextId) {
+      clearMemberSnapshot();
+      return;
+    }
+    try {
+      const snap = await fetchStoreSalesMemberSnapshot(locale, Number(nextId));
+      applyMemberSnapshot(snap);
+    } catch {
+      toast.error(tError("loadFailed"));
+    }
+  };
+
+  const resetCustomer = () => {
+    clearMemberSnapshot();
+    if (creditOptions[0]) setCreditId(creditOptions[0].value);
+  };
+
+  const goToProductStep = () => {
+    productStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => productSearchRef.current?.focus(), 400);
+  };
+
+  const handleNextStep = () => {
+    setCustomerPhase("locked");
+    goToProductStep();
+  };
+
+  const handleChangeCustomerConfirm = () => {
+    setChangeCustomerDialogOpen(false);
+    setCustomerPhase("changing");
+  };
+
+  const handleConfirmCustomer = async () => {
+    setConfirmingCustomer(true);
+    try {
+      const repriced = await repriceStoreSalesCartLines(
+        locale,
+        cart,
+        memberId ? Number(memberId) : null,
+        creditId
+      );
+      setCart(repriced);
+      setCustomerPhase("locked");
+      goToProductStep();
+    } catch {
+      toast.error(tError("loadFailed"));
+    } finally {
+      setConfirmingCustomer(false);
+    }
+  };
 
   const searchProducts = async () => {
     try {
@@ -187,28 +356,6 @@ export function StoreSalesFormPage({ orderId }: Props) {
       });
       setBrowseRows(res.items);
       setBrowseTotal(res.meta.total);
-    } catch {
-      toast.error(tError("loadFailed"));
-    }
-  };
-
-  const resolveMember = async () => {
-    const q = memberQuery.trim();
-    if (!q) return;
-    try {
-      const res = await fetchMemberUsers(locale, {
-        page: 1,
-        limit: 5,
-        search: q,
-      });
-      const hit = res.rows[0];
-      if (!hit) {
-        toast.error(tError("noData"));
-        return;
-      }
-      setMemberId(String(hit.id));
-      setMemberName(hit.name);
-      setMemberTel(hit.tel ?? "");
     } catch {
       toast.error(tError("loadFailed"));
     }
@@ -294,6 +441,12 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const itemLines = cart.filter((c) => c.type === "item");
   const compareLines = cart.filter((c) => c.type === "compare");
 
+  const displayLocale = locale as DisplayLocale;
+  const receiveAtDisplay = useMemo(() => {
+    const iso = shippingDraftDisplayIso(shipping);
+    return iso ? formatDateTime(iso, displayLocale) : "—";
+  }, [shipping, displayLocale]);
+
   if (!perms.view) {
     return <p className="text-muted-foreground">{tError("forbidden")}</p>;
   }
@@ -310,6 +463,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const readOnly =
     !!orderId && status !== "draft" && status !== "pending";
 
+  const customerFieldsDisabled = readOnly || customerPhase === "locked";
+  const productActionsDisabled = readOnly || customerPhase === "changing";
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       <h1 className="text-2xl font-semibold">
@@ -317,74 +473,211 @@ export function StoreSalesFormPage({ orderId }: Props) {
       </h1>
       <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,6fr)_minmax(0,4fr)]">
         <div className="flex flex-col gap-4">
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader>
-              <CardTitle>{tForm("customerStep")}</CardTitle>
-              <p className="text-destructive text-sm">{tForm("walkInHint")}</p>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className={storeSalesStepBadgeClass}>1</span>
+                {tForm("customerStep")}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3">
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="min-w-0 flex-1 grid gap-1">
-                  <Label htmlFor="member-query">{tForm("memberCode")}</Label>
-                  <Input
-                    id="member-query"
-                    value={memberQuery}
-                    onChange={(e) => setMemberQuery(e.target.value)}
-                    placeholder={tFormRoot("search.placeholder")}
-                    disabled={readOnly}
-                  />
-                </div>
-                <Button type="button" variant="outline" onClick={() => void resolveMember()} disabled={readOnly}>
-                  <Search className="text-current" aria-hidden />
-                  {tFormRoot("search.placeholder")}
-                </Button>
-              </div>
-              <RadioGroup
-                value={creditId}
-                onValueChange={setCreditId}
-                className="flex flex-wrap gap-4"
+            <CardContent className="grid gap-4 overflow-visible">
+              <div
+                className={cn(
+                  "grid gap-4",
+                  customerFieldsDisabled &&
+                    "pointer-events-none opacity-60"
+                )}
               >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="1" id="credit-1" disabled={readOnly} />
-                  <Label htmlFor="credit-1">{tForm("creditType")} 1</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="2" id="credit-2" disabled={readOnly} />
-                  <Label htmlFor="credit-2">{tForm("creditType")} 2</Label>
-                </div>
-              </RadioGroup>
-              <div className="grid gap-3 md:grid-cols-3">
                 <div className="grid gap-1">
-                  <Label>{tPage("colMember")}</Label>
-                  <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} disabled={readOnly} />
+                  <Label htmlFor="store-sales-member">{tForm("memberCode")}</Label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex min-h-10 min-w-[min(100%,18rem)] flex-1 items-center gap-1 overflow-visible sm:min-w-48">
+                      <div className="min-w-0 flex-1 overflow-visible">
+                        <RemoteComboboxField
+                          id="store-sales-member"
+                          label={tForm("memberCode")}
+                          value={memberId}
+                          onValueChange={(v) => void onMemberIdChange(v)}
+                          placeholder={tFormRoot("placeholder.select", {
+                            label: tForm("memberCode"),
+                          })}
+                          emptyLabel={tFormRoot("combobox.noResults")}
+                          inputClassName="w-full min-w-min"
+                          disabled={customerFieldsDisabled}
+                          showClear={!customerFieldsDisabled}
+                          onLoadOptions={({ search, signal }) =>
+                            loadStoreSalesMemberComboboxOptions(locale, {
+                              search,
+                              signal,
+                            })
+                          }
+                          resolveSelectedLabel={(v) =>
+                            resolveStoreSalesMemberLabel(locale, v)
+                          }
+                        />
+                      </div>
+                      {!customerFieldsDisabled ? (
+                        <ButtonIcon
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          tone="delete"
+                          className="mr-0.5 shrink-0"
+                          aria-label={tForm("resetCustomer")}
+                          title={tForm("resetCustomer")}
+                          onClick={resetCustomer}
+                        >
+                          <RotateCcw className="text-current" />
+                        </ButtonIcon>
+                      ) : null}
+                    </div>
+                    {creditOptions.length > 0 ? (
+                      <RadioGroup
+                        value={creditId}
+                        onValueChange={setCreditId}
+                        className="flex shrink-0 flex-wrap items-center gap-4"
+                        aria-label={tForm("creditType")}
+                      >
+                        {creditOptions.map((c) => (
+                          <div key={c.value} className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value={c.value}
+                              id={`store-credit-${c.value}`}
+                              disabled={customerFieldsDisabled}
+                            />
+                            <Label htmlFor={`store-credit-${c.value}`}>
+                              {c.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="grid gap-1">
-                  <Label>{tPage("colMember")}</Label>
-                  <Input value={memberTel} onChange={(e) => setMemberTel(e.target.value)} disabled={readOnly} inputMode="tel" />
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="grid gap-1">
+                    <Label htmlFor="store-member-name">{tForm("memberName")}</Label>
+                    <Input
+                      id="store-member-name"
+                      value={memberName}
+                      onChange={(e) => setMemberName(e.target.value)}
+                      disabled={customerFieldsDisabled}
+                      placeholder={tFormRoot("placeholder.input", {
+                        label: tForm("memberName"),
+                      })}
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="store-member-tel">{tForm("memberTel")}</Label>
+                    <Input
+                      id="store-member-tel"
+                      value={memberTel}
+                      onChange={(e) => setMemberTel(e.target.value)}
+                      disabled={customerFieldsDisabled}
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder={tFormRoot("placeholder.input", {
+                        label: tForm("memberTel"),
+                      })}
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor="store-member-email">{tForm("memberEmail")}</Label>
+                    <Input
+                      id="store-member-email"
+                      value={memberEmail}
+                      onChange={(e) => setMemberEmail(e.target.value)}
+                      disabled={customerFieldsDisabled}
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder={tFormRoot("placeholder.input", {
+                        label: tForm("memberEmail"),
+                      })}
+                    />
+                  </div>
                 </div>
-                <div className="grid gap-1">
-                  <Label>Email</Label>
-                  <Input value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} disabled={readOnly} type="email" />
+
+                <div className="text-muted-foreground min-w-0 space-y-2 text-sm">
+                  {memberAddressDisplay ? (
+                    <p className="flex gap-2">
+                      <MapPin className="text-primary mt-0.5 size-4 shrink-0" aria-hidden />
+                      <span>
+                        {tForm("memberAddress")} : {memberAddressDisplay}
+                      </span>
+                    </p>
+                  ) : null}
+                  {memberTaxNumber ? (
+                    <p className="flex gap-2">
+                      <FileText className="text-primary mt-0.5 size-4 shrink-0" aria-hidden />
+                      <span>
+                        {tForm("memberTaxId")} : {memberTaxNumber}
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
               </div>
+
+              {!readOnly ? (
+                <div className="flex justify-end">
+                  {customerPhase === "editing" ? (
+                    <Button type="button" onClick={handleNextStep}>
+                      {tForm("nextStep")}
+                    </Button>
+                  ) : null}
+                  {customerPhase === "locked" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setChangeCustomerDialogOpen(true)}
+                    >
+                      {tForm("changeCustomer")}
+                    </Button>
+                  ) : null}
+                  {customerPhase === "changing" ? (
+                    <Button
+                      type="button"
+                      disabled={confirmingCustomer}
+                      onClick={() => void handleConfirmCustomer()}
+                    >
+                      {tForm("confirmCustomer")}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
-          <Card className="min-h-[20rem]">
+          <Card
+            id="store-sales-product-step"
+            ref={productStepRef}
+            className="min-h-[20rem] scroll-mt-4"
+          >
             <CardHeader>
-              <CardTitle>{tForm("productStep")}</CardTitle>
-              <p className="text-muted-foreground text-sm">{tForm("priceHint")}</p>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <span className={storeSalesStepBadgeClass}>2</span>
+                {tForm("productStep")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <div className="flex flex-wrap gap-2">
                 <Input
+                  ref={productSearchRef}
+                  id="store-sales-product-search"
                   className="min-w-0 flex-1"
+                  type="search"
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder={tFormRoot("search.placeholder")}
-                  disabled={readOnly}
+                  placeholder={tSearch("placeholder")}
+                  disabled={productActionsDisabled}
                 />
-                <Button type="button" onClick={() => void searchProducts()} disabled={readOnly}>
+                <Button
+                  type="button"
+                  onClick={() => void searchProducts()}
+                  disabled={productActionsDisabled}
+                >
                   <Search className="text-current" aria-hidden />
                 </Button>
               </div>
@@ -414,7 +707,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                                 [row.id]: e.target.checked,
                               }))
                             }
-                            disabled={readOnly}
+                            disabled={productActionsDisabled}
                           />
                           <span>{row.name || row.sku}</span>
                         </div>
@@ -422,7 +715,12 @@ export function StoreSalesFormPage({ orderId }: Props) {
                           <span className="tabular-nums">
                             {money(row.price ?? 0, locale)}
                           </span>
-                          <Button type="button" variant="outline" onClick={() => addProduct(row)} disabled={readOnly}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => addProduct(row)}
+                            disabled={productActionsDisabled}
+                          >
                             <Plus className="text-current" aria-hidden />
                           </Button>
                         </div>
@@ -430,13 +728,19 @@ export function StoreSalesFormPage({ orderId }: Props) {
                     ))
                   )}
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" onClick={addSelected} disabled={readOnly}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addSelected}
+                      disabled={productActionsDisabled}
+                    >
                       {tForm("bulkAdd")}
                     </Button>
                     {productPage * 10 < browseTotal ? (
                       <Button
                         type="button"
                         variant="ghost"
+                        disabled={productActionsDisabled}
                         onClick={() => {
                           setProductPage((p) => p + 1);
                           void searchProducts();
@@ -448,7 +752,11 @@ export function StoreSalesFormPage({ orderId }: Props) {
                   </div>
                 </TabsContent>
                 <TabsContent value="compare">
-                  <Button type="button" onClick={() => setCompareOpen(true)} disabled={readOnly}>
+                  <Button
+                    type="button"
+                    onClick={() => setCompareOpen(true)}
+                    disabled={productActionsDisabled}
+                  >
                     <Plus className="text-current" aria-hidden />
                     {tForm("tabCompare")}
                   </Button>
@@ -466,10 +774,14 @@ export function StoreSalesFormPage({ orderId }: Props) {
               <p className="font-medium">{sku}</p>
             ) : null}
             <div className="flex items-center gap-2 text-sm">
-              <span>
-                {formatDateTime(new Date().toISOString(), locale as "th" | "en")}
-              </span>
-              <Button type="button" variant="ghost" className="size-10 p-0" onClick={() => setShippingOpen(true)} disabled={readOnly}>
+              <span>{receiveAtDisplay}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                className="size-10 p-0"
+                onClick={() => setShippingOpen(true)}
+                disabled={productActionsDisabled}
+              >
                 <Pencil className="text-current" aria-hidden />
               </Button>
             </div>
@@ -495,7 +807,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                       key={line.key}
                       line={line}
                       locale={locale}
-                      readOnly={readOnly}
+                      readOnly={productActionsDisabled}
                       onChange={(next) =>
                         setCart((c) =>
                           c.map((x) => (x.key === line.key ? next : x))
@@ -528,13 +840,22 @@ export function StoreSalesFormPage({ orderId }: Props) {
                 {tCrud("btn.cancel")}
               </Button>
               {perms.create || perms.update ? (
-                <Button type="button" variant="outline" onClick={() => void save("draft")} disabled={readOnly}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void save("draft")}
+                  disabled={productActionsDisabled}
+                >
                   <Save className="text-current" aria-hidden />
                   {tForm("saveDraft")}
                 </Button>
               ) : null}
               {perms.create || perms.update ? (
-                <Button type="button" onClick={() => void save("pending")} disabled={readOnly}>
+                <Button
+                  type="button"
+                  onClick={() => void save("pending")}
+                  disabled={productActionsDisabled}
+                >
                   {tForm("submitPending")}
                 </Button>
               ) : null}
@@ -557,6 +878,32 @@ export function StoreSalesFormPage({ orderId }: Props) {
         onConfirm={() => setShippingOpen(false)}
       />
 
+      <Dialog
+        open={changeCustomerDialogOpen}
+        onOpenChange={setChangeCustomerDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tForm("changeCustomerDialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {tForm("changeCustomerDialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setChangeCustomerDialogOpen(false)}
+            >
+              {tCrud("btn.cancel")}
+            </Button>
+            <Button type="button" onClick={handleChangeCustomerConfirm}>
+              {tPage("confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
         <DialogContent>
           <DialogHeader>
@@ -576,6 +923,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
             </Button>
             <Button
               type="button"
+              disabled={productActionsDisabled}
               onClick={() => {
                 const qty = Math.max(1, Number.parseInt(compareQty, 10) || 1);
                 setCart((c) => [
