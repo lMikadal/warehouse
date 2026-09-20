@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "@/i18n/navigation";
 import {
   useAdminBackofficeActor,
@@ -44,6 +45,7 @@ export function QuotationDetailPage({ id }: Props) {
 
   const [detail, setDetail] = useState<QuotationDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [acceptOpen, setAcceptOpen] = useState(false);
   const [creditDate, setCreditDate] = useState("");
   const [stockOpen, setStockOpen] = useState(false);
@@ -58,9 +60,11 @@ export function QuotationDetailPage({ id }: Props) {
       return;
     }
     setLoading(true);
+    setLoadError(false);
     try {
       setDetail(await fetchQuotationDetail(locale, id));
     } catch {
+      setLoadError(true);
       toast.error(tError("loadFailed"));
     } finally {
       setLoading(false);
@@ -119,14 +123,27 @@ export function QuotationDetailPage({ id }: Props) {
     return <p className="text-muted-foreground">{tError("forbidden")}</p>;
   }
 
-  if (loading || !detail) {
-    return <p className="text-muted-foreground">{tError("loadFailed")}</p>;
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <p className="text-muted-foreground">
+        {loadError ? tError("loadFailed") : tError("noData")}
+      </p>
+    );
   }
 
   return (
     <div className="flex flex-col gap-4 pb-24">
       <CrudPageHeader
-        title={detail.sku || `#${detail.id}`}
+        title={detail.sku?.trim() || "—"}
         description={
           <span className={quotationStatusPillClass(detail.status)}>
             {tPage(`saleStatus.${detail.status}`)}

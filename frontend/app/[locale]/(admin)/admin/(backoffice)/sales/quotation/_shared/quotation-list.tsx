@@ -216,13 +216,13 @@ export function QuotationList() {
         }
       />
 
-      <div className="flex w-full min-w-0 flex-col gap-3">
-        <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(14rem,20rem)] md:items-end">
-          <CrudSearchField
-            value={query}
-            onChange={onSearchChange}
-            className="min-w-0 w-full max-md:min-w-0"
-          />
+      <div className="flex w-full min-w-0 flex-wrap items-end gap-3">
+        <CrudSearchField
+          value={query}
+          onChange={onSearchChange}
+          className="min-w-0 flex-1"
+        />
+        <div className="w-full min-w-[14rem] max-w-[20rem] shrink-0 sm:w-auto">
           <DatePicker
             id="quotation-date-range"
             mode="range"
@@ -238,24 +238,26 @@ export function QuotationList() {
             className="w-full"
           />
         </div>
-        <RemoteComboboxField
-          label={tPage("colSeller")}
-          value={sellerId}
-          onValueChange={(v) => {
-            setSellerId(v);
-            setPage(1);
-          }}
-          placeholder={tCrud("filter.select", { label: tPage("colSeller") })}
-          emptyLabel={tError("noData")}
-          showClear
-          inputClassName="w-full min-w-0"
-          onLoadOptions={({ search, signal }) =>
-            loadQuotationSellerComboboxOptions(locale, { search, signal })
-          }
-          resolveSelectedLabel={(value) =>
-            resolveQuotationSellerLabel(locale, value)
-          }
-        />
+        <div className="min-w-48 w-full flex-1 sm:w-auto">
+          <RemoteComboboxField
+            label={tPage("colSeller")}
+            value={sellerId}
+            onValueChange={(v) => {
+              setSellerId(v);
+              setPage(1);
+            }}
+            placeholder={tCrud("filter.select", { label: tPage("colSeller") })}
+            emptyLabel={tError("noData")}
+            showClear
+            inputClassName="w-full min-w-0"
+            onLoadOptions={({ search, signal }) =>
+              loadQuotationSellerComboboxOptions(locale, { search, signal })
+            }
+            resolveSelectedLabel={(value) =>
+              resolveQuotationSellerLabel(locale, value)
+            }
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -334,7 +336,7 @@ export function QuotationList() {
                         href={`/admin/sales/quotation/${row.id}`}
                         className="text-primary hover:underline"
                       >
-                        {row.sku || `#${row.id}`}
+                        {row.sku?.trim() || "—"}
                       </Link>
                     </TableCell>
                     <TableCell>{row.member_name?.trim() || "—"}</TableCell>
@@ -366,11 +368,7 @@ export function QuotationList() {
                               setCancelId(row.id);
                               return;
                             }
-                            router.push(
-                              action === "edit"
-                                ? `/admin/sales/quotation/${row.id}/edit`
-                                : `/admin/sales/quotation/${row.id}`
-                            );
+                            router.push(`/admin/sales/quotation/${row.id}`);
                           }}
                         />
                       ) : null}

@@ -28,12 +28,13 @@
       "form": {
         "titleCreate": "สร้างใบเสนอราคา",
         "titleEdit": "แก้ไขใบเสนอราคา",
-        "issueDate": "วันที่ออก",
+        "issueDate": "วันที่ออกเอกสาร",
         "validUntil": "วันที่ใช้ได้ถึง",
+        "confirm": "ยืนยัน",
         "reserveStock": "ต้องการจองสินค้า",
         "notes": "หมายเหตุ",
         "submitCreate": "สร้างใบเสนอราคา",
-        "submitPending": "ส่งอนุมัติ"
+        "submitPending": "สร้างใบเสนอราคา"
       },
       "detail": {
         "print": "ปริ้นใบเสนอราคา",

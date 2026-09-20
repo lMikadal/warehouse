@@ -240,8 +240,6 @@
       '" data-role="search" />' +
       lib.toolbarDateFilterHtml("date-from", "orderQuotation.dateRangePlaceholder", state.dateFrom) +
       lib.toolbarDateFilterHtml("date-to", "orderQuotation.dateRangePlaceholder", state.dateTo) +
-      "</div>" +
-      '<div class="crud-toolbar__row crud-toolbar__row--filters">' +
       lib.toolbarSelectOpenHtml("seller", "orderQuotation.colSeller", state.sellerId, sellerOpts) +
       "</div>" +
       '<div class="order-store-status-filters">' +

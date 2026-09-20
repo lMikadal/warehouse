@@ -28,12 +28,13 @@
       "form": {
         "titleCreate": "Create quotation",
         "titleEdit": "Edit quotation",
-        "issueDate": "Issue date",
+        "issueDate": "Document issue date",
         "validUntil": "Valid until",
+        "confirm": "Confirm",
         "reserveStock": "Reserve stock",
         "notes": "Notes",
         "submitCreate": "Create quotation",
-        "submitPending": "Submit for approval"
+        "submitPending": "Create quotation"
       },
       "detail": {
         "print": "Print quotation",
