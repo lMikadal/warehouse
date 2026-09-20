@@ -7,8 +7,8 @@ import {
   Filter,
   MapPin,
   Minus,
-  Pencil,
   Plus,
+  SquarePen,
   Printer,
   RotateCcw,
   Save,
@@ -63,7 +63,6 @@ import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
-  formatDate,
   formatDateTime,
   type DisplayLocale,
 } from "@/lib/format-datetime";
@@ -78,6 +77,7 @@ import {
   createStoreSales,
   fetchStoreSalesDetail,
   OrderStoreApiError,
+  patchStoreSalesShipping,
   updateStoreSales,
   type StoreSalesCreateBody,
   type StoreSalesItemInput,
@@ -169,13 +169,9 @@ function scheduleShippingForCart(
 }
 
 function toIsoReceived(draft: ShippingDraft): string | null {
-  if (draft.type === "delivery") {
-    if (!draft.date) return null;
-    const time = draft.time || "00:00";
+  if (draft.date.trim()) {
+    const time = draft.time.trim() || "00:00";
     return new Date(`${draft.date}T${time}:00`).toISOString();
-  }
-  if (draft.date.trim() && draft.time.trim()) {
-    return new Date(`${draft.date}T${draft.time}:00`).toISOString();
   }
   return defaultReceiveAt().toISOString();
 }
@@ -596,6 +592,23 @@ export function StoreSalesFormPage({ orderId }: Props) {
     };
   };
 
+  const confirmShipping = async () => {
+    if (orderId) {
+      try {
+        await patchStoreSalesShipping(locale, orderId, {
+          type: shipping.type,
+          received_at: toIsoReceived(shipping),
+        });
+      } catch (e) {
+        toast.error(
+          e instanceof OrderStoreApiError ? e.message : tError("saveFailed")
+        );
+        return;
+      }
+    }
+    setShippingOpen(false);
+  };
+
   const save = async (nextStatus: StoreSalesStatus) => {
     if (cart.length === 0) {
       toast.error(tForm("emptyCart"));
@@ -639,7 +652,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const orderDateDisplay = useMemo(() => {
     const iso = orderedAtIso ?? new Date().toISOString();
-    return formatDate(iso, displayLocale);
+    return formatDateTime(iso, displayLocale);
   }, [orderedAtIso, displayLocale]);
 
   if (!perms.view) {
@@ -678,10 +691,24 @@ export function StoreSalesFormPage({ orderId }: Props) {
   };
 
   const documentPanel = (
-        <Card className="@container/store-sales-doc flex min-h-0 min-w-0 flex-col md:h-full">
+        <Card
+          className={cn(
+            "@container/store-sales-doc flex w-full min-w-0 shrink-0 flex-col",
+          )}
+        >
           <CardHeader className="shrink-0 space-y-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 flex-1 items-start gap-3">
+            <div
+              className={cn(
+                "flex justify-between gap-2",
+                documentCollapsed ? "items-center" : "items-start",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex min-w-0 flex-1 gap-3",
+                  documentCollapsed ? "items-center" : "items-start",
+                )}
+              >
                 <span
                   className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
                   aria-hidden
@@ -698,7 +725,12 @@ export function StoreSalesFormPage({ orderId }: Props) {
                   {sku ? <p className="font-medium">{sku}</p> : null}
                 </div>
               </div>
-              <div className="flex shrink-0 items-start gap-1">
+              <div
+                className={cn(
+                  "flex shrink-0 gap-1",
+                  documentCollapsed ? "items-center" : "items-start",
+                )}
+              >
                 {!cartEmpty ? (
                   <div className="text-right text-sm">
                     <p className="text-muted-foreground">{tForm("orderDate")}</p>
@@ -729,29 +761,38 @@ export function StoreSalesFormPage({ orderId }: Props) {
           </CardHeader>
           {!documentCollapsed ? (
             <>
-              <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+              <CardContent
+                className={cn(
+                  "flex flex-col gap-3",
+                  !cartEmpty &&
+                    "max-h-[min(28rem,calc(100svh-14rem))] overflow-y-auto",
+                )}
+              >
                 {!cartEmpty ? (
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-x-2 text-sm">
+                    <span className="text-foreground shrink-0 font-semibold">
                       {tForm("receiveLabel")}
                     </span>
-                    <span className="text-primary font-medium">
-                      {tForm(shippingTypeLabelKey(shipping.type))}
+                    <span className="text-primary min-w-0 flex-1 font-medium">
+                      {tForm(shippingTypeLabelKey(shipping.type))}{" "}
+                      <span className="tabular-nums">{receiveAtDisplay}</span>
                     </span>
-                    <span className="tabular-nums">{receiveAtDisplay}</span>
-                    <Button
+                    <ButtonIcon
                       type="button"
-                      variant="ghost"
-                      className="size-10 p-0"
+                      variant="outline"
+                      size="lg"
+                      tone="edit"
+                      className="shrink-0"
+                      aria-label={tCrud("btn.edit")}
                       onClick={() => setShippingOpen(true)}
                       disabled={productActionsDisabled}
                     >
-                      <Pencil className="text-current" aria-hidden />
-                    </Button>
+                      <SquarePen className="text-current" aria-hidden />
+                    </ButtonIcon>
                   </div>
                 ) : null}
                 {cartEmpty ? (
-                  <p className="text-muted-foreground flex min-h-32 flex-1 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm">
+                  <p className="text-muted-foreground flex min-h-32 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm">
                     {tForm("emptyCart")}
                   </p>
                 ) : (
@@ -1306,7 +1347,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
         onOpenChange={setShippingOpen}
         draft={shipping}
         onDraftChange={setShipping}
-        onConfirm={() => setShippingOpen(false)}
+        onConfirm={() => void confirmShipping()}
       />
 
       <ProductListCarModal
@@ -1360,9 +1401,11 @@ export function StoreSalesFormPage({ orderId }: Props) {
             <Textarea value={compareDetail} onChange={(e) => setCompareDetail(e.target.value)} />
           </div>
           <div className="grid gap-1">
-            <Label>{tForm("compareQty")}</Label>
+            <Label htmlFor="store-sales-compare-qty">{tForm("compareQty")}</Label>
             <Input
+              id="store-sales-compare-qty"
               type="number"
+              inputMode="numeric"
               min={1}
               step={1}
               value={compareQty}
@@ -1419,11 +1462,11 @@ function CartRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border p-2">
-      <span className="min-w-0 flex-1 text-sm">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border p-2 text-sm">
+      <span className="min-w-0">
         {line.product?.name || line.product?.sku || "—"}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         <Button
           type="button"
           variant="outline"

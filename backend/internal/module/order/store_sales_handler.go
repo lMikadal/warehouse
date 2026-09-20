@@ -153,6 +153,31 @@ func (h *StoreSalesHandler) update(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+func (h *StoreSalesHandler) patchShipping(c *echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid id"})
+	}
+	var body StoreSalesShippingInput
+	if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid body"})
+	}
+	if body.Type != "" && body.Type != "store" && body.Type != "parking" && body.Type != "delivery" {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid shipping type"})
+	}
+	if err := h.repo.PatchShipping(c.Request().Context(), id, body); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		if errors.Is(err, ErrValidation) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "not editable"})
+		}
+		applog.HTTPError(c, "store sales shipping", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to update shipping"})
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
 func (h *StoreSalesHandler) patchStatus(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {

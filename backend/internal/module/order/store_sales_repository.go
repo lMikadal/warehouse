@@ -352,7 +352,7 @@ func (r *StoreSalesRepository) loadShipping(ctx context.Context, orderID int64) 
 	var sh StoreSalesShippingDetail
 	var receivedAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, `
-SELECT type::text, received_at FROM order_shipping WHERE order_list_id = $1`, orderID).Scan(&sh.Type, &receivedAt)
+SELECT type::text, received_at FROM order_list_shipping WHERE order_list_id = $1`, orderID).Scan(&sh.Type, &receivedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -740,9 +740,33 @@ func (r *StoreSalesRepository) upsertShippingTx(ctx context.Context, tx *sql.Tx,
 		shType = "store"
 	}
 	_, err := tx.ExecContext(ctx, `
-INSERT INTO order_shipping (order_list_id, type, received_at)
+INSERT INTO order_list_shipping (order_list_id, type, received_at)
 VALUES ($1, $2::order_shipping_type, $3)
 ON CONFLICT (order_list_id) DO UPDATE SET type = EXCLUDED.type, received_at = EXCLUDED.received_at`,
 		orderID, shType, sh.ReceivedAt)
 	return err
+}
+
+func (r *StoreSalesRepository) PatchShipping(ctx context.Context, orderID int64, in StoreSalesShippingInput) error {
+	var status string
+	err := r.db.QueryRowContext(ctx, `
+SELECT status::text FROM order_list WHERE id = $1 AND deleted_at IS NULL`, orderID).Scan(&status)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if status != "draft" && status != "pending" {
+		return ErrValidation
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint:errcheck
+	if err := r.upsertShippingTx(ctx, tx, orderID, &in); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

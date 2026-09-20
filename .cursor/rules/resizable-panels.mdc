@@ -54,7 +54,7 @@ When the right column is a tall card (header + flex body + footer):
 
 - Browse column root: `md:h-full md:min-h-0`
 - Growing card (e.g. product step): `md:flex-1 md:flex md:flex-col md:min-h-0`
-- Document card: `md:h-full`
+- Document card: height from content (no `md:h-full`); panel inner wrapper `items-start`; scroll long cart in `CardContent` with `max-h`
 - Panel inner wrappers: `h-full min-h-0`
 
 Mobile stacked layout (`md:hidden`) must not depend on `h-full` on the same nodes.

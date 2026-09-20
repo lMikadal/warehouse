@@ -1785,6 +1785,19 @@
               }
             },
             {
+              "name": "Patch shipping",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"store\",\n  \"received_at\": \"2026-09-20T08:30:00.000Z\"\n}"
+                },
+                "url": "{{baseUrl}}/order/store-sales/1/shipping",
+                "description": "order.order_store.update — upsert order_list_shipping (type + received_at); draft/pending only"
+              }
+            },
+            {
               "name": "Get by id",
               "request": {
                 "method": "GET",

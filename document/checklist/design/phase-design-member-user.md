@@ -10,7 +10,7 @@ CRUD mockup for sidebar **สมาชิก → รายชื่อ** (`membe
 - [x] Add member-user seed script tags on pages that load member tier seeds
 - [x] List page: filters, stat cards, paginated table, copy SKU, status switch, delete confirm
 - [x] Full-page form: create 75/25 cards; edit header + tabs (info / orders / discounts / files) + right panel
-- [x] Edit tab **ประวัติการสั่งซื้อ**: KPI + charts + carousel + filters + paginated order table from `order_payment` (+ joins); seeds `order_payment`, `order_payment_item`, `order_shipping`
+- [x] Edit tab **ประวัติการสั่งซื้อ**: KPI + charts + carousel + filters + paginated order table from `order_payment` (+ joins); seeds `order_payment`, `order_payment_item`, `order_list_shipping`
 - [x] Persist to design schema (`member_user` identity + `member_user_address` tax/doc/financial + junctions)
 - [x] th/en i18n for page titles, filters, form, discounts, files, history
 - [x] Lucide icons: `copy`, `user-plus`, `user-check`, `phone`, `mail`, `calendar-days`, `file-text`

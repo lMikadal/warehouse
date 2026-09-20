@@ -633,13 +633,13 @@
       updated_at: ts,
     };
     if (ship) {
-      var sidx = global.store.getAll("order_shipping").findIndex(function (s) {
+      var sidx = global.store.getAll("order_list_shipping").findIndex(function (s) {
         return Number(s.order_list_id) === Number(oid);
       });
-      if (sidx >= 0) global.store.updateAt("order_shipping", sidx, shipBody);
+      if (sidx >= 0) global.store.updateAt("order_list_shipping", sidx, shipBody);
     } else {
       global.store.create(
-        "order_shipping",
+        "order_list_shipping",
         Object.assign({ order_list_id: oid, created_at: ts }, shipBody)
       );
     }

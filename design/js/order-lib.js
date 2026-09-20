@@ -121,7 +121,7 @@
   }
 
   function orderShipping(orderId) {
-    return activeRows("order_shipping").find(function (s) {
+    return activeRows("order_list_shipping").find(function (s) {
       return Number(s.order_list_id) === Number(orderId);
     });
   }

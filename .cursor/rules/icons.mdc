@@ -20,6 +20,18 @@ All UI icons come from [Lucide](https://lucide.dev/icons/). Do not use emoji as 
 - Do not add one-off `filter` rules per button — extend the shared `.btn` icon rules instead.
 - **Frontend:** Lucide React + `className="text-current"` (or inherit color from the button).
 
+## Edit action icon
+
+Use **square pen**, not plain pencil, for **edit** affordances (inline field edit, open edit dialog, table row edit).
+
+| Area | Icon |
+|------|------|
+| **Frontend** | Lucide `SquarePen` from `lucide-react` — same as [`TableIconActions`](../../frontend/components/molecules/table-icon-actions.tsx) `edit` |
+| **Design** | `square-pen.svg` in `design/assets/icons/` (kebab-case Lucide name) |
+| **Color** | Blue primary (`ButtonIcon` `tone="edit"` → `text-primary` / `#2563eb`) on icon and inherited stroke via `text-current` |
+
+Do not use `Pencil` / `pencil.svg` for new edit buttons; legacy mockups may still reference `pencil.svg` until ported.
+
 ## Table action icon colors (design)
 
 Row action buttons use `btn btn--icon` plus semantic tint classes on the **button** (filter applies to `<img>` inside):
@@ -30,6 +42,7 @@ Row action buttons use `btn btn--icon` plus semantic tint classes on the **butto
 | Delete | `crud-delete` | `trash-2.svg` | red `#dc2626` |
 
 - View, edit, move, and other neutral actions stay default `.btn--icon` (no tint class).
+- **Edit** row action: `square-pen.svg` (see **Edit action icon** above).
 - Dark theme: `.crud-add` and `.crud-delete` are excluded from the generic white invert on `.btn img` (see `style.css`).
 - Every list/table add/delete action in `design/` must use these classes — no per-page filter hacks.
 

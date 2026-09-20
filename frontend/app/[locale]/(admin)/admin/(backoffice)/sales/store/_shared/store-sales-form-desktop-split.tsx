@@ -96,7 +96,7 @@ export function StoreSalesFormDesktopSplit({ browse, documentPanel }: Props) {
         maxSize="55%"
         className="min-w-0 h-full overflow-visible! max-h-none!"
       >
-        <div className="flex h-full min-h-0 min-w-0 w-full flex-col overflow-x-hidden pl-3 pr-1 py-2">
+        <div className="flex h-full min-h-0 min-w-0 w-full flex-col items-start overflow-x-hidden pl-3 pr-1 py-2">
           {documentPanel}
         </div>
       </ResizablePanel>

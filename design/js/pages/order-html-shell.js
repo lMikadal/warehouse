@@ -45,7 +45,7 @@
     "../js/seed/order_list.js",
     "../js/seed/order_list_item.js",
     "../js/seed/order_list_item_warehouse.js",
-    "../js/seed/order_shipping.js",
+    "../js/seed/order_list_shipping.js",
     "../js/seed/order_payment.js",
     "../js/seed/order_payment_item.js",
     "../js/seed/order_payment_method.js",

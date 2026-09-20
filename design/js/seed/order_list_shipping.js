@@ -1,6 +1,6 @@
 (function (global) {
   /** store | parking | delivery for each seeded order that has a document */
-  global.SEED_ORDER_SHIPPING = [
+  global.SEED_ORDER_LIST_SHIPPING = [
     { order_list_id: 1, type: "store", received_at: "2026-01-05T14:00:00.000Z" },
     { order_list_id: 2, type: "delivery", received_at: "2026-01-07T09:00:00.000Z" },
     { order_list_id: 3, type: "store", received_at: "2026-02-20T16:00:00.000Z" },

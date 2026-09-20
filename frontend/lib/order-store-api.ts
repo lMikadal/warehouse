@@ -236,6 +236,19 @@ export async function patchStoreSalesStatus(
   if (!res.ok) throw await parseError(res);
 }
 
+export async function patchStoreSalesShipping(
+  locale: string,
+  id: number,
+  shipping: StoreSalesShippingInput
+): Promise<void> {
+  const res = await authFetch(`${PROXY_BASE}/${id}/shipping`, {
+    method: "PATCH",
+    headers: bffJsonHeaders(locale),
+    body: JSON.stringify(shipping),
+  });
+  if (!res.ok) throw await parseError(res);
+}
+
 export async function deleteStoreSales(
   locale: string,
   id: number

@@ -156,7 +156,7 @@
     "order_payment",
     "order_payment_item",
     "order_payment_method",
-    "order_shipping",
+    "order_list_shipping",
     "order_claim",
     "order_claim_item",
   ];

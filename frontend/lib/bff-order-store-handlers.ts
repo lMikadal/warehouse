@@ -39,3 +39,15 @@ export async function handleStoreSalesStatusPatch(
     body: parsed.body,
   });
 }
+
+export async function handleStoreSalesShippingPatch(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  return proxyAuthedBackendJson(request, `${BASE}/${id}/shipping`, {
+    method: "PATCH",
+    body: parsed.body,
+  });
+}

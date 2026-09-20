@@ -1043,7 +1043,7 @@
   }
 
   function orderShippingType(orderId) {
-    var row = lib.activeRows("order_shipping").find(function (r) {
+    var row = lib.activeRows("order_list_shipping").find(function (r) {
       return Number(r.order_list_id) === Number(orderId);
     });
     return row ? row.type : "store";

@@ -26,6 +26,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	s.POST("", storeH.create)
 	s.GET("/:id", storeH.getByID)
 	s.PATCH("/:id", storeH.update)
+	s.PATCH("/:id/shipping", storeH.patchShipping)
 	s.PATCH("/:id/status", storeH.patchStatus)
 	s.DELETE("/:id", storeH.delete)
 }

@@ -39,7 +39,7 @@ window.SCHEMA_TABLES = [
   "order_payment",
   "order_payment_item",
   "order_payment_method",
-  "order_shipping",
+  "order_list_shipping",
   "product_attribute",
   "product_attribute_language",
   "product_attribute_relation",
