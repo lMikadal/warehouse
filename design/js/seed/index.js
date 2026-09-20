@@ -150,6 +150,9 @@
   });
 
   var orderTables = [
+    "order_quotation",
+    "order_quotation_item",
+    "order_quotation_file",
     "order_list",
     "order_list_item",
     "order_list_item_warehouse",

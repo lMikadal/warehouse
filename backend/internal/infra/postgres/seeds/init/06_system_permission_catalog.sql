@@ -197,7 +197,13 @@ VALUES
   (225, 'order.order_sales_claim.update', 'order', 'order_sales_claim', 'update', '/api/v1/order/sales-claims', 'PATCH', TRUE),
   (226, 'order.order_sales_claim.delete', 'order', 'order_sales_claim', 'delete', '/api/v1/order/sales-claims', 'DELETE', TRUE),
   (227, 'order.order_sales_claim.import', 'order', 'order_sales_claim', 'import', '/api/v1/order/sales-claims', 'POST', FALSE),
-  (228, 'order.order_sales_claim.export', 'order', 'order_sales_claim', 'export', '/api/v1/order/sales-claims', 'GET', FALSE)
+  (228, 'order.order_sales_claim.export', 'order', 'order_sales_claim', 'export', '/api/v1/order/sales-claims', 'GET', FALSE),
+  (229, 'order.order_quotation.view', 'order', 'order_quotation', 'view', '/api/v1/order/quotations', 'GET', TRUE),
+  (230, 'order.order_quotation.create', 'order', 'order_quotation', 'create', '/api/v1/order/quotations', 'POST', TRUE),
+  (231, 'order.order_quotation.update', 'order', 'order_quotation', 'update', '/api/v1/order/quotations', 'PATCH', TRUE),
+  (232, 'order.order_quotation.delete', 'order', 'order_quotation', 'delete', '/api/v1/order/quotations', 'DELETE', TRUE),
+  (233, 'order.order_quotation.import', 'order', 'order_quotation', 'import', '/api/v1/order/quotations', 'POST', FALSE),
+  (234, 'order.order_quotation.export', 'order', 'order_quotation', 'export', '/api/v1/order/quotations', 'GET', FALSE)
 ON CONFLICT (code) DO UPDATE SET
   module = EXCLUDED.module,
   type = EXCLUDED.type,

@@ -326,6 +326,20 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | RBAC | `order.order_store` |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-order-store.md`](../checklist/frontend/phase-frontend-order-store.md) |
 
+### Sales quotation (order quotation)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/sales/quotation`, `/new`, `/[id]`, `/[id]/edit`, `/[id]/payment` + co-located `loading.tsx` |
+| BFF / API | [`lib/bff-order-quotation-handlers.ts`](../../frontend/lib/bff-order-quotation-handlers.ts) → `app/api/v1/auth/proxy/order/quotations/`; client [`lib/order-quotation-api.ts`](../../frontend/lib/order-quotation-api.ts); seller filter [`lib/order-quotation-sellers-combobox.ts`](../../frontend/lib/order-quotation-sellers-combobox.ts) |
+| List UI | [`sales/quotation/_shared/quotation-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/quotation/_shared/quotation-list.tsx) — status/overdue pills, fulfill check, receipt lock on cancel/edit |
+| Form UI | [`quotation-form-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/quotation/_shared/quotation-form-page.tsx) — reuses store product browse (no compare); [`quotation-document-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/quotation/_shared/quotation-document-panel.tsx) items-only cart |
+| Detail / payment | [`quotation-detail-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/quotation/_shared/quotation-detail-page.tsx) (superadmin approval, accept/picking/duplicate modals); [`quotation-payment-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/quotation/_shared/quotation-payment-page.tsx) (v1 simplified methods) |
+| i18n | [`messages/{th,en}/page-order-quotation.json`](../../frontend/messages/th/page-order-quotation.json) |
+| RBAC | `order.order_quotation` |
+| Design mockups | [`design/pages/order-quotation*.html`](../../design/pages/order-quotation.html) |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-order-quotation.md`](../checklist/frontend/phase-frontend-order-quotation.md) |
+
 ### Order compare (catalog special price)
 
 | Item | Detail |

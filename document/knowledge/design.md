@@ -305,6 +305,10 @@ Sidebar group **Sales / ฝ่ายขาย** (`admin_menu` id 37). List scree
 | Menu id | Path | Screen |
 |--------|------|--------|
 | 39 | `pages/order-store.html` | Store sales list |
+| 58 | `pages/order-quotation.html` | Sales quotations list |
+| — | `pages/order-quotation-form.html` | Create/edit quotation (no compare) |
+| — | `pages/order-quotation-detail.html` | Quotation detail |
+| — | `pages/order-quotation-payment.html` | Quotation payment |
 | — | `pages/order-store-form.html` | Create/edit store order (no menu row) |
 | 55 | `pages/order-order.html` | Picking slip list |
 | — | `pages/order-order-form.html` | Pick / verify lines |

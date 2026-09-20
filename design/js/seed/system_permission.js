@@ -37,6 +37,7 @@
     { permModule: "member", type: "member_user", resource: "/api/v1/member/users" },
     { permModule: "order", type: "order_ticket", resource: "/api/v1/order/tickets" },
     { permModule: "order", type: "order_store", resource: "/api/v1/order/store-sales" },
+    { permModule: "order", type: "order_quotation", resource: "/api/v1/order/quotations" },
     { permModule: "order", type: "order_order", resource: "/api/v1/order/orders" },
     { permModule: "order", type: "order_store_claim", resource: "/api/v1/order/store-claims" },
     { permModule: "order", type: "order_store_claim_list", resource: "/api/v1/order/store-claim-lists" },

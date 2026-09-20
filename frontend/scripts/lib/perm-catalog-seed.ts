@@ -148,6 +148,11 @@ export const PERM_PAGES: PermPage[] = [
     type: "order_store",
     resource: "/api/v1/order/store-sales",
   },
+  {
+    permModule: "order",
+    type: "order_quotation",
+    resource: "/api/v1/order/quotations",
+  },
   { permModule: "order", type: "order_order", resource: "/api/v1/order/orders" },
   {
     permModule: "order",

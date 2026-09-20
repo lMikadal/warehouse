@@ -47,6 +47,7 @@ var CatalogPermPages = []PermPage{
 	{Module: "member", Type: "member_user", Resource: "/api/v1/member/users"},
 	{Module: "order", Type: "order_ticket", Resource: "/api/v1/order/tickets"},
 	{Module: "order", Type: "order_store", Resource: "/api/v1/order/store-sales"},
+	{Module: "order", Type: "order_quotation", Resource: "/api/v1/order/quotations"},
 	{Module: "order", Type: "order_order", Resource: "/api/v1/order/orders"},
 	{Module: "order", Type: "order_store_claim", Resource: "/api/v1/order/store-claims"},
 	{Module: "order", Type: "order_store_claim_list", Resource: "/api/v1/order/store-claim-lists"},

@@ -351,6 +351,14 @@
       labels: { th: "งานขาย (หน้าร้าน)", en: "Store Sales" },
     },
     {
+      id: 58,
+      parent_id: 37,
+      module: "order_quotation",
+      path: "pages/order-quotation.html",
+      sort_order: 250,
+      labels: { th: "ใบเสนอราคา", en: "Quotations" },
+    },
+    {
       id: 55,
       parent_id: 37,
       module: "order_order",

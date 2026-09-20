@@ -1,0 +1,69 @@
+{
+  "page": {
+    "orderQuotation": {
+      "title": "ใบเสนอราคา",
+      "subtitle": "จัดการและติดตามใบเสนอราคา",
+      "create": "สร้างใบเสนอราคา",
+      "dateRange": "ช่วงวันที่",
+      "dateRangePlaceholder": "เลือกช่วงวันที่",
+      "confirm": "ยืนยัน",
+      "statusAll": "ทั้งหมด",
+      "statusOverdue": "เลยกำหนด",
+      "colSku": "เลขที่ใบเสนอราคา",
+      "colMember": "ลูกค้า",
+      "colCreatedAt": "วันที่สร้างรายการ",
+      "colTotal": "ยอดเงินสุทธิ",
+      "colStatus": "สถานะ",
+      "colFulfill": "จัดสินค้า",
+      "colSeller": "เซลล์",
+      "confirmCancel": "ยืนยันยกเลิกใบเสนอราคา?",
+      "saleStatus": {
+        "draft": "ร่าง",
+        "pending": "รออนุมัติ",
+        "approved": "อนุมัติแล้ว",
+        "success": "สำเร็จ",
+        "cancelled": "ยกเลิก",
+        "rejected": "ปฏิเสธ"
+      },
+      "form": {
+        "titleCreate": "สร้างใบเสนอราคา",
+        "titleEdit": "แก้ไขใบเสนอราคา",
+        "issueDate": "วันที่ออก",
+        "validUntil": "วันที่ใช้ได้ถึง",
+        "reserveStock": "ต้องการจองสินค้า",
+        "notes": "หมายเหตุ",
+        "submitCreate": "สร้างใบเสนอราคา",
+        "submitPending": "ส่งอนุมัติ"
+      },
+      "detail": {
+        "print": "ปริ้นใบเสนอราคา",
+        "accept": "ตอบรับใบเสนอราคา",
+        "approve": "อนุมัติใบเสนอราคา",
+        "reject": "ปฏิเสธ",
+        "returnEdit": "ส่งกลับแก้ไข",
+        "edit": "แก้ไขใบเสนอราคา",
+        "picking": "สั่งจัดสินค้า",
+        "pay": "ชำระเลย"
+      },
+      "acceptModal": {
+        "title": "เลือกรูปแบบการชำระเงิน",
+        "payment": "ชำระเลย",
+        "credit": "ออกใบยืม",
+        "creditDate": "วันครบกำหนดชำระ"
+      },
+      "payment": {
+        "title": "ชำระเงิน",
+        "confirm": "ยืนยันชำระเงิน"
+      },
+      "pickingModal": {
+        "cancel": "ยกเลิก",
+        "onlyInStock": "จัดเฉพาะสินค้ที่มีสต็อก"
+      },
+      "duplicateModal": {
+        "title": "สร้างใบเสนอราคาใหม่?",
+        "body": "มี {count} รายการสินค้าไม่พอสต็อก ต้องการสร้างใบเสนอราคาใหม่สำหรับส่วนที่เหลือหรือไม่?",
+        "confirm": "สร้างใบเสนอราคา"
+      }
+    }
+  }
+}

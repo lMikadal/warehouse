@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warehouse — order-quotation</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script>
+      (function () {
+        var key = "warehouse-design-theme";
+        var saved = localStorage.getItem(key);
+        var theme =
+          saved === "light" || saved === "dark"
+            ? saved
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body data-perm-module="order" data-perm-type="order_quotation">
+    <div id="app-shell"></div>
+    <script src="../js/pages/order-html-shell.js"></script>
+    <script>
+      orderPageWriteScripts(["../js/pages/order-quotation.js"]);
+    </script>
+    <script>orderQuotationPage.boot();</script>
+  </body>
+</html>

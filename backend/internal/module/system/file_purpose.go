@@ -16,6 +16,7 @@ var AllowedFilePurposes = map[string]struct{}{
 	"purchase_order_item_reject_image":    {},
 	"member_document":                     {},
 	"purchase_order_attachment":           {},
+	"order_quotation_attachment":          {},
 }
 
 func ValidPurpose(purpose string) bool {

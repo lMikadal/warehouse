@@ -133,4 +133,20 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "order.order_store.update" {
 		t.Fatalf("order store shipping patch: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/quotations")
+	if !ok || code != "order.order_quotation.view" {
+		t.Fatalf("quotation list: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/quotations/count")
+	if !ok || code != "order.order_quotation.view" {
+		t.Fatalf("quotation count: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("POST", "/api/v1/order/quotations/1/approve")
+	if !ok || code != "order.order_quotation.create" {
+		t.Fatalf("quotation approve: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("PATCH", "/api/v1/order/quotations/1")
+	if !ok || code != "order.order_quotation.update" {
+		t.Fatalf("quotation patch: got %q %v", code, ok)
+	}
 }

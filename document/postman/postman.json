@@ -1806,6 +1806,124 @@
               }
             }
           ]
+        },
+        {
+          "name": "Quotations",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations?page=1&limit=10",
+                "description": "order.order_quotation.view"
+              }
+            },
+            {
+              "name": "Count",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/count",
+                "description": "order.order_quotation.view — by_status + overdue"
+              }
+            },
+            {
+              "name": "Filters (sellers)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/filters?facet=sellers&page=1&limit=50&search=",
+                "description": "order.order_quotation.view"
+              }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"draft\",\n  \"member_user_id\": 1,\n  \"member_name\": \"Test\",\n  \"issue_date\": \"2026-09-20\",\n  \"valid_until\": \"2026-10-20\",\n  \"reserve_stock\": false,\n  \"items\": [\n    {\n      \"product_item_id\": 1,\n      \"amount\": 1,\n      \"price_per_unit\": 100,\n      \"discount\": 0\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations",
+                "description": "order.order_quotation.create"
+              }
+            },
+            {
+              "name": "Get by id",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/quotations/1",
+                "description": "order.order_quotation.view"
+              }
+            },
+            {
+              "name": "Submit",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/order/quotations/1/submit",
+                "description": "order.order_quotation.update — draft → pending"
+              }
+            },
+            {
+              "name": "Approve",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/order/quotations/1/approve",
+                "description": "order.order_quotation.create — superadmin only"
+              }
+            },
+            {
+              "name": "Accept (payment)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mode\": \"payment\"\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations/1/accept",
+                "description": "order.order_quotation.update"
+              }
+            },
+            {
+              "name": "Payment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"methods\": [\n    {\n      \"setting_payment_method_id\": 1,\n      \"amount\": 1070\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations/1/payment",
+                "description": "order.order_quotation.update — sets order_payment.order_quotation_id"
+              }
+            },
+            {
+              "name": "Picking",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"only_in_stock\": true\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations/1/picking",
+                "description": "order.order_quotation.update — spawn order_list with order_quotation_id"
+              }
+            },
+            {
+              "name": "Duplicate",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"item_ids\": []\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations/1/duplicate",
+                "description": "order.order_quotation.create — child draft with parent_id"
+              }
+            }
+          ]
         }
       ]
     }

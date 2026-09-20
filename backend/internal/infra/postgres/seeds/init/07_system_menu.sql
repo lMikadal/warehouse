@@ -51,7 +51,8 @@ VALUES
   (54, NULL, 'member_setting_business', '/admin/member/settings/business', 34, 'n33.n34.n54'::ltree, 300, TRUE, FALSE, FALSE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
   (55, NULL, 'order_order', '/admin/sales/order', 37, 'n37.n55'::ltree, 300, TRUE, FALSE, FALSE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
   (56, NULL, 'order_store_claim', '/admin/sales/store-claim', 37, 'n37.n56'::ltree, 400, TRUE, FALSE, FALSE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (57, NULL, 'order_store_claim_list', '/admin/sales/store-claim-list', 37, 'n37.n57'::ltree, 500, TRUE, FALSE, FALSE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+  (57, NULL, 'order_store_claim_list', '/admin/sales/store-claim-list', 37, 'n37.n57'::ltree, 500, TRUE, FALSE, FALSE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (58, NULL, 'order_quotation', '/admin/sales/quotation', 37, 'n37.n58'::ltree, 250, TRUE, FALSE, FALSE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
 ON CONFLICT (id) DO UPDATE SET
   icon = EXCLUDED.icon,
   module = EXCLUDED.module,
@@ -166,7 +167,9 @@ VALUES
   (56, 'th', 'ทำรายการเคลม / คืน', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
   (56, 'en', 'Process Claim / Return', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
   (57, 'th', 'รายการเคลม / คืน', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (57, 'en', 'Claim / Return List', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+  (57, 'en', 'Claim / Return List', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (58, 'th', 'ใบเสนอราคา', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (58, 'en', 'Quotation', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
 ON CONFLICT (system_menu_id, locale) DO UPDATE SET
   name = EXCLUDED.name,
   updated_at = EXCLUDED.updated_at;

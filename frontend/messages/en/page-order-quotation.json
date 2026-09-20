@@ -1,0 +1,69 @@
+{
+  "page": {
+    "orderQuotation": {
+      "title": "Quotations",
+      "subtitle": "Manage sales quotations",
+      "create": "Create quotation",
+      "dateRange": "Date range",
+      "dateRangePlaceholder": "Select date range",
+      "confirm": "Confirm",
+      "statusAll": "All",
+      "statusOverdue": "Overdue",
+      "colSku": "Quotation no.",
+      "colMember": "Customer",
+      "colCreatedAt": "Created",
+      "colTotal": "Net amount",
+      "colStatus": "Status",
+      "colFulfill": "Picking",
+      "colSeller": "Sales",
+      "confirmCancel": "Cancel this quotation?",
+      "saleStatus": {
+        "draft": "Draft",
+        "pending": "Pending approval",
+        "approved": "Approved",
+        "success": "Success",
+        "cancelled": "Cancelled",
+        "rejected": "Rejected"
+      },
+      "form": {
+        "titleCreate": "Create quotation",
+        "titleEdit": "Edit quotation",
+        "issueDate": "Issue date",
+        "validUntil": "Valid until",
+        "reserveStock": "Reserve stock",
+        "notes": "Notes",
+        "submitCreate": "Create quotation",
+        "submitPending": "Submit for approval"
+      },
+      "detail": {
+        "print": "Print quotation",
+        "accept": "Accept quotation",
+        "approve": "Approve quotation",
+        "reject": "Reject",
+        "returnEdit": "Return for edit",
+        "edit": "Edit quotation",
+        "picking": "Order picking",
+        "pay": "Pay now"
+      },
+      "acceptModal": {
+        "title": "Choose payment format",
+        "payment": "Pay now",
+        "credit": "Credit / borrow",
+        "creditDate": "Payment due date"
+      },
+      "payment": {
+        "title": "Payment",
+        "confirm": "Confirm payment"
+      },
+      "pickingModal": {
+        "cancel": "Cancel",
+        "onlyInStock": "Pick in-stock items only"
+      },
+      "duplicateModal": {
+        "title": "Create new quotation?",
+        "body": "{count} line(s) are out of stock. Create a new quotation for the remainder?",
+        "confirm": "Create quotation"
+      }
+    }
+  }
+}
