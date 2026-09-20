@@ -76,6 +76,8 @@ export type ProductItemListParams = {
   oem?: string;
   sort?: string;
   order?: "asc" | "desc";
+  /** Comma-separated on wire; max 100 (backend). Omits is_active so inactive lines still resolve. */
+  ids?: number[];
 };
 
 export async function fetchProductItems(
@@ -108,11 +110,28 @@ export async function fetchProductItems(
   if (params.oem?.trim()) q.set("oem", params.oem.trim());
   if (params.sort) q.set("sort", params.sort);
   if (params.order) q.set("order", params.order);
+  if (params.ids?.length) {
+    q.set("ids", [...new Set(params.ids)].slice(0, 100).join(","));
+    q.set("limit", String(Math.min(params.ids.length, 100)));
+  }
   const res = await authFetch(`${BFF}/items?${q}`, {
     headers: { Accept: "application/json", "Accept-Language": locale },
   });
   if (!res.ok) throw await parseError(res);
   return (await res.json()) as ListResponse<ProductItemBrowseRow>;
+}
+
+export async function fetchProductItemsByIds(
+  locale: string,
+  ids: number[]
+): Promise<ProductItemBrowseRow[]> {
+  const unique = [...new Set(ids.filter((id) => id > 0))];
+  if (unique.length === 0) return [];
+  const res = await fetchProductItems(locale, {
+    page: 1,
+    ids: unique,
+  });
+  return res.items;
 }
 
 export async function patchProductItemActive(

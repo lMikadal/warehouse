@@ -22,6 +22,7 @@ import {
 } from "@/lib/product-category-cascade";
 import {
   fetchProductItems,
+  fetchProductItemsByIds,
   type ProductItemBrowseRow,
 } from "@/lib/product-list-api";
 import type { DisplayLocale } from "@/lib/format-datetime";
@@ -298,15 +299,45 @@ async function refreshLineProduct(
       isActive: true,
     });
     const hit = res.items.find((r) => r.id === itemId);
-    return mergeHit(hit);
+    if (hit) return mergeHit(hit);
   }
-  const res = await fetchProductItems(locale, {
-    page: 1,
-    limit: 100,
-    isActive: true,
-  });
-  const hit = res.items.find((r) => r.id === itemId);
+  const [hit] = await fetchProductItemsByIds(locale, [itemId]);
   return mergeHit(hit);
+}
+
+/** Compare lines store detail as jsonb JSON string; API may still return quoted text. */
+export function normalizeCompareLineDetail(detail: string | undefined | null): string {
+  const raw = detail?.trim() ?? "";
+  if (!raw) return "";
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === "string") return parsed;
+  } catch {
+    /* plain text */
+  }
+  return raw;
+}
+
+/** Merge browse fields (name, sku, thumb, …) onto cart lines after loading an order. */
+export async function hydrateStoreSalesCartProducts(
+  locale: string,
+  lines: StoreSalesCartLineForPricing[]
+): Promise<StoreSalesCartLineForPricing[]> {
+  const ids = lines
+    .filter((l) => l.type === "item" && l.product?.id)
+    .map((l) => l.product!.id);
+  if (ids.length === 0) return lines;
+  const rows = await fetchProductItemsByIds(locale, ids);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return lines.map((line) => {
+    if (line.type !== "item" || !line.product?.id) return line;
+    const hit = byId.get(line.product.id);
+    if (!hit) return line;
+    return {
+      ...line,
+      product: { ...line.product, ...hit, id: line.product.id },
+    };
+  });
 }
 
 function buildPricingRow(

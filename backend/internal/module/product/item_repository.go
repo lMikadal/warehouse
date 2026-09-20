@@ -215,6 +215,15 @@ func itemBrowseWhere(f ItemListFilter, startArg int) (string, []any) {
 		args = append(args, *f.BrandID)
 		n++
 	}
+	if len(f.IDs) > 0 {
+		parts := make([]string, len(f.IDs))
+		for i, id := range f.IDs {
+			parts[i] = fmt.Sprintf("$%d", n)
+			args = append(args, id)
+			n++
+		}
+		clauses = append(clauses, fmt.Sprintf("i.id IN (%s)", strings.Join(parts, ",")))
+	}
 	if q := strings.TrimSpace(f.Search); q != "" {
 		pat := "%" + strings.ToLower(q) + "%"
 		clauses = append(clauses, fmt.Sprintf(`(

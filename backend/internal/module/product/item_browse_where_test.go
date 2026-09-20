@@ -50,6 +50,16 @@ func TestItemBrowseWhereCarFitmentUnified(t *testing.T) {
 	}
 }
 
+func TestItemBrowseWhereProductItemIDs(t *testing.T) {
+	where, args := itemBrowseWhere(ItemListFilter{IDs: []int64{4, 9}}, 3)
+	if !strings.Contains(where, "i.id IN") {
+		t.Fatalf("expected id IN filter: %s", where)
+	}
+	if len(args) != 2 || args[0] != int64(4) || args[1] != int64(9) {
+		t.Fatalf("unexpected args: %v", args)
+	}
+}
+
 func TestItemBrowseWhereProductBrandUnchanged(t *testing.T) {
 	brandID := int64(1)
 	where, args := itemBrowseWhere(ItemListFilter{BrandID: &brandID}, 3)

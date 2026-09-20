@@ -58,6 +58,8 @@ import {
   cartLineMaxQty,
   clampCartItemQty,
   computeStoreSalesPriceSummary,
+  hydrateStoreSalesCartProducts,
+  normalizeCompareLineDetail,
   repriceStoreSalesCartLines,
   summaryLinesFromCartItems,
 } from "@/lib/store-sales-cart-pricing";
@@ -342,23 +344,25 @@ export function StoreSalesFormPage({ orderId }: Props) {
       if (d.status === "draft" || d.status === "pending") {
         setCustomerPhase("locked");
       }
-      setCart(
-        (d.items ?? []).map((it, i) => ({
-          key: `loaded-${i}`,
-          type: it.type as "item" | "compare",
-          qty: it.amount,
-          unitPrice: it.price_per_unit,
-          discount: it.discount,
-          detail: it.detail ?? undefined,
-          product: it.product_item_id
-            ? ({
-                id: it.product_item_id,
-                sku: "",
-                name: "",
-              } as ProductItemBrowseRow)
-            : undefined,
-        }))
-      );
+      const loadedCart = (d.items ?? []).map((it, i) => ({
+        key: `loaded-${i}`,
+        type: it.type as "item" | "compare",
+        qty: it.amount,
+        unitPrice: it.price_per_unit,
+        discount: it.discount,
+        detail:
+          it.type === "compare" && it.detail != null
+            ? normalizeCompareLineDetail(it.detail)
+            : it.detail ?? undefined,
+        product: it.product_item_id
+          ? ({
+              id: it.product_item_id,
+              sku: "",
+              name: "",
+            } as ProductItemBrowseRow)
+          : undefined,
+      }));
+      setCart(await hydrateStoreSalesCartProducts(locale, loadedCart));
     } catch {
       toast.error(tError("loadFailed"));
     } finally {
@@ -777,7 +781,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
     const line = cart.find((c) => c.key === key);
     if (!line) return;
     setCompareEditKey(key);
-    setCompareDetail(line.detail ?? "");
+    setCompareDetail(normalizeCompareLineDetail(line.detail));
     setCompareQty(String(line.qty));
     setCompareOpen(true);
   };
@@ -824,6 +828,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
     onSaveDraft: () => void save("draft"),
     onSubmitPending: () => void save("pending"),
     onPrintSlip: () => void printSlip(),
+    showPrintSlip: !!orderId && status !== "draft",
   };
 
   const documentPanel = (

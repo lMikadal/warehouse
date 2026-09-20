@@ -385,8 +385,10 @@ ORDER BY id`, orderID)
 			it.ProductItemID = &productID.Int64
 		}
 		if detail.Valid && detail.String != "" && detail.String != "null" {
-			s := detail.String
-			it.Detail = &s
+			s := compareDetailFromJSON(detail.String)
+			if s != "" {
+				it.Detail = &s
+			}
 		}
 		out = append(out, it)
 	}
@@ -732,6 +734,19 @@ func detailJSON(d *string) any {
 		return nil
 	}
 	return string(b)
+}
+
+// compareDetailFromJSON decodes jsonb compare lines stored as a JSON string.
+func compareDetailFromJSON(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "null" {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal([]byte(raw), &s); err == nil {
+		return s
+	}
+	return raw
 }
 
 func (r *StoreSalesRepository) upsertShippingTx(ctx context.Context, tx *sql.Tx, orderID int64, sh *StoreSalesShippingInput) error {

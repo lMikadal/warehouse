@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -113,6 +114,24 @@ func (h *ItemHandler) listBrowse(c *echo.Context) error {
 		f.CarYear = &year
 	}
 	f.OEM = strings.TrimSpace(c.QueryParam("oem"))
+	if raw := strings.TrimSpace(c.QueryParam("ids")); raw != "" {
+		// ponytail: max 100 ids per request; split batch if cart grows beyond.
+		const maxIDs = 100
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			id, err := strconv.ParseInt(part, 10, 64)
+			if err != nil || id <= 0 {
+				return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid ids"})
+			}
+			f.IDs = append(f.IDs, id)
+			if len(f.IDs) > maxIDs {
+				return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "too many ids"})
+			}
+		}
+	}
 	sortCol := strings.TrimSpace(c.QueryParam("sort"))
 	order := strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
 	if sortCol != "" && (order == "asc" || order == "desc") {

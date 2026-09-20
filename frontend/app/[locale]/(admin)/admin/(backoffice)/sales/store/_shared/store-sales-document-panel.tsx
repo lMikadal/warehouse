@@ -38,6 +38,7 @@ import type { ProductItemBrowseRow } from "@/lib/product-list-api";
 import {
   cartLineMaxQty,
   clampCartItemQty,
+  normalizeCompareLineDetail,
   type StoreSalesPriceSummary,
 } from "@/lib/store-sales-cart-pricing";
 import { fetchSystemFile } from "@/lib/system-file-api";
@@ -227,6 +228,8 @@ type Props = {
   onSaveDraft: () => void;
   onSubmitPending: () => void;
   onPrintSlip: () => void;
+  /** Secondary print row — hidden while order is still draft. */
+  showPrintSlip?: boolean;
   layout?: "stacked" | "split";
 };
 
@@ -259,6 +262,7 @@ export function StoreSalesDocumentPanel({
   onSaveDraft,
   onSubmitPending,
   onPrintSlip,
+  showPrintSlip = false,
 }: Props) {
   const tForm = useTranslations("page.orderStore.form");
   const tCrud = useTranslations("crud");
@@ -533,7 +537,7 @@ export function StoreSalesDocumentPanel({
                           {compareLines.map((line) => (
                             <TableRow key={line.key}>
                               <TableCell className="whitespace-pre-wrap text-sm">
-                                {line.detail || "—"}
+                                {normalizeCompareLineDetail(line.detail) || "—"}
                               </TableCell>
                               <TableCell className="text-right">
                                 <CartQtyInput
@@ -676,7 +680,7 @@ export function StoreSalesDocumentPanel({
                   {tForm("submitPending")}
                 </Button>
               ) : null}
-              {orderId ? (
+              {showPrintSlip ? (
                 <Button
                   type="button"
                   size="lg"

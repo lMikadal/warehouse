@@ -14,6 +14,7 @@ type ItemListFilter struct {
 	ModelID        *int64
 	CarYear        *int
 	OEM            string
+	IDs            []int64 // optional; product_item.id IN (…)
 }
 
 type ItemBrowseRow struct {
