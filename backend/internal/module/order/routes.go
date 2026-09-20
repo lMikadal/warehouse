@@ -56,6 +56,8 @@ func RegisterRoutes(g *echo.Group, db *sql.DB, cfg config.Config) {
 	q.POST("/:id/accept", qH.accept)
 	q.POST("/:id/payment", qH.payment)
 	q.POST("/:id/picking", qH.picking)
+	q.POST("/:id/fulfill-check", qH.fulfillCheck)
+	q.POST("/:id/fulfill", qH.fulfill)
 	q.POST("/:id/duplicate", qH.duplicate)
 	q.DELETE("/:id", qH.delete)
 }

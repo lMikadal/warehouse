@@ -91,5 +91,9 @@ export const handleQuotationPayment = (r: Request, id: string) =>
   postAction(r, id, "payment");
 export const handleQuotationPicking = (r: Request, id: string) =>
   postAction(r, id, "picking");
+export const handleQuotationFulfillCheck = (r: Request, id: string) =>
+  postAction(r, id, "fulfill-check");
+export const handleQuotationFulfill = (r: Request, id: string) =>
+  postAction(r, id, "fulfill");
 export const handleQuotationDuplicate = (r: Request, id: string) =>
   postAction(r, id, "duplicate");

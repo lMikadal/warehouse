@@ -111,7 +111,29 @@ type QuotationPickingResponse struct {
 }
 
 type QuotationDuplicateInput struct {
-	ItemIDs []int64 `json:"item_ids,omitempty"`
+	ItemIDs           []int64 `json:"item_ids,omitempty"`
+	UseCurrentPrices  bool    `json:"use_current_prices,omitempty"`
+}
+
+type QuotationFulfillCheckResponse struct {
+	OutOfStockCount   int      `json:"out_of_stock_count"`
+	PriceChangedCount int      `json:"price_changed_count"`
+	ItemCount         int      `json:"item_count"`
+	CreditOK          bool     `json:"credit_ok"`
+	CreditLimit       *float64 `json:"credit_limit,omitempty"`
+	AcceptMode        string   `json:"accept_mode,omitempty"`
+	GrandTotal        float64  `json:"grand_total"`
+}
+
+type QuotationFulfillInput struct {
+	OnlyInStock        bool                          `json:"only_in_stock"`
+	Methods            []QuotationPaymentMethodInput `json:"methods,omitempty"`
+	CreditApprovalCode *string                       `json:"credit_approval_code,omitempty"`
+}
+
+type QuotationFulfillResponse struct {
+	OrderListID  int64  `json:"order_list_id"`
+	QuotationID  *int64 `json:"quotation_id,omitempty"`
 }
 
 type QuotationReturnInput struct {

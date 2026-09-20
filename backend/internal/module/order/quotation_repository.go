@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
+	"github.com/lMikadal/warehouse/backend/internal/module/product"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 )
 
@@ -76,8 +78,9 @@ func (r *QuotationRepository) fulfilled(ctx context.Context, qid int64) (bool, e
 	var ok bool
 	err := r.db.QueryRowContext(ctx, `
 SELECT EXISTS (
-  SELECT 1 FROM order_list
-  WHERE order_quotation_id = $1 AND deleted_at IS NULL AND fulfill_status = 'success'
+  SELECT 1 FROM order_list ol
+  INNER JOIN order_list_shipping s ON s.order_list_id = ol.id
+  WHERE ol.order_quotation_id = $1 AND ol.deleted_at IS NULL
 )`, qid).Scan(&ok)
 	return ok, err
 }
@@ -132,7 +135,11 @@ SELECT q.id, COALESCE(q.sku, ''), q.status::text, q.member_name,
   (SELECT COALESCE(SUM(i.amount), 0) FROM order_quotation_item i WHERE i.order_quotation_id = q.id AND i.deleted_at IS NULL),
   q.valid_until, q.created_at,
   (SELECT u.username FROM admin_user u WHERE u.id = q.created_by),
-  EXISTS (SELECT 1 FROM order_list ol WHERE ol.order_quotation_id = q.id AND ol.deleted_at IS NULL AND ol.fulfill_status = 'success'),
+  EXISTS (
+    SELECT 1 FROM order_list ol
+    INNER JOIN order_list_shipping s ON s.order_list_id = ol.id
+    WHERE ol.order_quotation_id = q.id AND ol.deleted_at IS NULL
+  ),
   EXISTS (SELECT 1 FROM order_payment op WHERE op.order_quotation_id = q.id AND op.deleted_at IS NULL AND op.is_paid = TRUE)
 FROM order_quotation q`
 
@@ -715,7 +722,7 @@ func (r *QuotationRepository) PatchStatus(ctx context.Context, id int64, status 
 	if status != "cancelled" {
 		return ErrValidation
 	}
-	if cur != "draft" && cur != "pending" && cur != "approved" {
+	if cur != "draft" && cur != "pending" && cur != "approved" && cur != "success" {
 		return ErrValidation
 	}
 	_, err = r.db.ExecContext(ctx, `
@@ -905,24 +912,33 @@ FROM order_quotation_item WHERE order_quotation_id = $1 AND deleted_at IS NULL O
 		if err != nil {
 			return err
 		}
+		type quoteLine struct {
+			pid                    sql.NullInt64
+			amt, price, disc, vrate, total float64
+			vtype                  string
+		}
+		var lines []quoteLine
 		for rows.Next() {
-			var pid sql.NullInt64
-			var amt, price, disc, vrate, total float64
-			var vtype string
-			if err := rows.Scan(&pid, &amt, &price, &disc, &vtype, &vrate, &total); err != nil {
+			var line quoteLine
+			if err := rows.Scan(&line.pid, &line.amt, &line.price, &line.disc, &line.vtype, &line.vrate, &line.total); err != nil {
 				rows.Close()
 				return err
 			}
+			lines = append(lines, line)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, line := range lines {
 			_, err = tx.ExecContext(ctx, `
 INSERT INTO order_list_item (order_list_id, product_item_id, type, amount, price_per_unit, discount, vat_type, vat_rate, total_price, created_by, updated_by)
 VALUES ($1, $2, 'item', $3, $4, $5, $6::setting_vat_type, $7, $8, $9, $9)`,
-				orderListID, pid, amt, price, disc, vtype, vrate, total, actor)
+				orderListID, line.pid, line.amt, line.price, line.disc, line.vtype, line.vrate, line.total, actor)
 			if err != nil {
-				rows.Close()
 				return err
 			}
 		}
-		rows.Close()
 		_ = snap
 	} else if err != nil {
 		return err
@@ -940,6 +956,10 @@ VALUES ($1, $2, 'payment', $3, 0, FALSE, $4, $5, $5) RETURNING id`,
 			return err
 		}
 	} else if err != nil {
+		return err
+	}
+
+	if err := r.syncPaymentItems(ctx, tx, payID, orderListID, actor); err != nil {
 		return err
 	}
 
@@ -1025,21 +1045,32 @@ FROM order_quotation_item WHERE order_quotation_id = $1 AND deleted_at IS NULL O
 		if err != nil {
 			return resp, err
 		}
+		type quoteLine struct {
+			pid                          sql.NullInt64
+			amt, price, disc, vrate, total float64
+			vtype                        string
+		}
+		var lines []quoteLine
 		for rows.Next() {
-			var pid sql.NullInt64
-			var amt, price, disc, vrate, total float64
-			var vtype string
-			if err := rows.Scan(&pid, &amt, &price, &disc, &vtype, &vrate, &total); err != nil {
+			var line quoteLine
+			if err := rows.Scan(&line.pid, &line.amt, &line.price, &line.disc, &line.vtype, &line.vrate, &line.total); err != nil {
 				rows.Close()
 				return resp, err
 			}
-			if in.OnlyInStock && pid.Valid {
+			lines = append(lines, line)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return resp, err
+		}
+		for _, line := range lines {
+			if in.OnlyInStock && line.pid.Valid {
 				var stock float64
 				_ = tx.QueryRowContext(ctx, `
 SELECT COALESCE(SUM(s.remain_quantity), 0) FROM product_item_stock s
 JOIN product_item_warehouse w ON w.id = s.product_item_warehouse_id AND w.deleted_at IS NULL
-WHERE w.product_item_id = $1 AND s.deleted_at IS NULL`, pid.Int64).Scan(&stock)
-				if stock < amt {
+WHERE w.product_item_id = $1 AND s.deleted_at IS NULL`, line.pid.Int64).Scan(&stock)
+				if stock < line.amt {
 					resp.OutOfStockCount++
 					resp.Partial = true
 					continue
@@ -1048,13 +1079,11 @@ WHERE w.product_item_id = $1 AND s.deleted_at IS NULL`, pid.Int64).Scan(&stock)
 			_, err = tx.ExecContext(ctx, `
 INSERT INTO order_list_item (order_list_id, product_item_id, type, amount, price_per_unit, discount, vat_type, vat_rate, total_price, created_by, updated_by)
 VALUES ($1, $2, 'item', $3, $4, $5, $6::setting_vat_type, $7, $8, $9, $9)`,
-				orderListID, pid, amt, price, disc, vtype, vrate, total, actor)
+				orderListID, line.pid, line.amt, line.price, line.disc, line.vtype, line.vrate, line.total, actor)
 			if err != nil {
-				rows.Close()
 				return resp, err
 			}
 		}
-		rows.Close()
 	} else if err != nil {
 		return resp, err
 	}
@@ -1066,6 +1095,520 @@ VALUES ($1, $2, 'item', $3, $4, $5, $6::setting_vat_type, $7, $8, $9, $9)`,
 		return resp, err
 	}
 	return resp, nil
+}
+
+func (r *QuotationRepository) syncPaymentItems(ctx context.Context, tx *sql.Tx, payID, orderListID, actor int64) error {
+	if _, err := tx.ExecContext(ctx, `
+UPDATE order_payment_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2
+WHERE order_payment_id = $1 AND deleted_at IS NULL`, payID, actor); err != nil {
+		return err
+	}
+	rows, err := tx.QueryContext(ctx, `
+SELECT id, amount::float8, vat_rate::float8, price_per_unit::float8, discount::float8, total_price::float8
+FROM order_list_item
+WHERE order_list_id = $1 AND deleted_at IS NULL
+ORDER BY id`, orderListID)
+	if err != nil {
+		return err
+	}
+	type payLine struct {
+		id                             int64
+		amt, vrate, price, disc, total float64
+	}
+	var lines []payLine
+	for rows.Next() {
+		var line payLine
+		if err := rows.Scan(&line.id, &line.amt, &line.vrate, &line.price, &line.disc, &line.total); err != nil {
+			rows.Close()
+			return err
+		}
+		lines = append(lines, line)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, line := range lines {
+		_, err = tx.ExecContext(ctx, `
+INSERT INTO order_payment_item (
+  order_payment_id, order_list_item_id, amount, vat_rate, price_per_unit, discount, total_price, created_by, updated_by
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+ON CONFLICT (order_payment_id, order_list_item_id) DO UPDATE SET
+  amount = EXCLUDED.amount,
+  vat_rate = EXCLUDED.vat_rate,
+  price_per_unit = EXCLUDED.price_per_unit,
+  discount = EXCLUDED.discount,
+  total_price = EXCLUDED.total_price,
+  deleted_at = NULL,
+  updated_at = NOW(),
+  updated_by = EXCLUDED.updated_by`,
+			payID, line.id, line.amt, line.vrate, line.price, line.disc, line.total, actor)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *QuotationRepository) lineStock(ctx context.Context, q Querier, productItemID int64) (float64, error) {
+	var stock float64
+	err := q.QueryRowContext(ctx, `
+SELECT COALESCE(SUM(s.remain_quantity), 0) FROM product_item_stock s
+JOIN product_item_warehouse w ON w.id = s.product_item_warehouse_id AND w.deleted_at IS NULL
+WHERE w.product_item_id = $1 AND s.deleted_at IS NULL`, productItemID).Scan(&stock)
+	return stock, err
+}
+
+func (r *QuotationRepository) memberCreditLimit(ctx context.Context, memberUserID int64) (*float64, error) {
+	var lim sql.NullFloat64
+	err := r.db.QueryRowContext(ctx, `
+SELECT credit_limit::float8 FROM member_user_address
+WHERE member_user_id = $1 AND type = 'financial' AND deleted_at IS NULL
+ORDER BY id ASC LIMIT 1`, memberUserID).Scan(&lim)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !lim.Valid {
+		return nil, nil
+	}
+	v := lim.Float64
+	return &v, nil
+}
+
+func (r *QuotationRepository) verifyCreditApprovalCode(ctx context.Context, code string) (int64, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return 0, ErrUnauthorized
+	}
+	rows, err := r.db.QueryContext(ctx, `
+SELECT id, password_credit_hash FROM admin_user
+WHERE deleted_at IS NULL AND status = 'active' AND type = 'superadmin'
+  AND password_credit_hash IS NOT NULL AND password_credit_hash <> ''`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var hash string
+		if err := rows.Scan(&id, &hash); err != nil {
+			return 0, err
+		}
+		if pkgauth.CheckPassword(hash, code) {
+			return id, nil
+		}
+	}
+	return 0, ErrUnauthorized
+}
+
+func (r *QuotationRepository) productSellPrice(ctx context.Context, q Querier, productItemID int64) (float64, error) {
+	var price float64
+	err := q.QueryRowContext(ctx, fmt.Sprintf(`
+SELECT COALESCE(%s, 0)::float8
+FROM product_item i
+%s
+%s
+WHERE i.id = $1 AND i.deleted_at IS NULL`,
+		product.DisplayPriceSellSQL, product.DisplayPriceVatJoin, product.DisplayPriceStockLotJoin),
+		productItemID).Scan(&price)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	return price, err
+}
+
+func (r *QuotationRepository) FulfillCheck(ctx context.Context, id int64) (QuotationFulfillCheckResponse, error) {
+	var resp QuotationFulfillCheckResponse
+	var cur string
+	var acceptMode sql.NullString
+	var memberUserID sql.NullInt64
+	var grand float64
+	if err := r.db.QueryRowContext(ctx, `
+SELECT status::text, accept_mode::text, member_user_id, grand_total::float8
+FROM order_quotation WHERE id = $1 AND deleted_at IS NULL`, id).Scan(&cur, &acceptMode, &memberUserID, &grand); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return resp, ErrNotFound
+		}
+		return resp, err
+	}
+	if cur != "success" && cur != "approved" {
+		return resp, ErrValidation
+	}
+	if !acceptMode.Valid || (acceptMode.String != "payment" && acceptMode.String != "credit") {
+		return resp, ErrValidation
+	}
+	resp.AcceptMode = acceptMode.String
+	resp.GrandTotal = grand
+
+	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
+SELECT qi.product_item_id, qi.amount::float8, qi.price_per_unit::float8, COALESCE(%s, 0)::float8
+FROM order_quotation_item qi
+LEFT JOIN product_item i ON i.id = qi.product_item_id AND i.deleted_at IS NULL
+%s
+%s
+WHERE qi.order_quotation_id = $1 AND qi.deleted_at IS NULL`,
+		product.DisplayPriceSellSQL, product.DisplayPriceVatJoin, product.DisplayPriceStockLotJoin), id)
+	if err != nil {
+		return resp, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var pid sql.NullInt64
+		var amt, quotePrice, curPrice float64
+		if err := rows.Scan(&pid, &amt, &quotePrice, &curPrice); err != nil {
+			return resp, err
+		}
+		resp.ItemCount++
+		if pid.Valid {
+			stock, err := r.lineStock(ctx, r.db, pid.Int64)
+			if err != nil {
+				return resp, err
+			}
+			if stock < amt {
+				resp.OutOfStockCount++
+			}
+			if math.Abs(quotePrice-curPrice) > 0.0001 {
+				resp.PriceChangedCount++
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return resp, err
+	}
+
+	resp.CreditOK = true
+	if acceptMode.String == "credit" {
+		resp.CreditOK = false
+		if memberUserID.Valid {
+			lim, err := r.memberCreditLimit(ctx, memberUserID.Int64)
+			if err != nil {
+				return resp, err
+			}
+			resp.CreditLimit = lim
+			if lim != nil && *lim+0.0001 >= grand {
+				resp.CreditOK = true
+			}
+		}
+	}
+	return resp, nil
+}
+
+type Querier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func (r *QuotationRepository) Fulfill(ctx context.Context, id int64, in QuotationFulfillInput, actor int64) (QuotationFulfillResponse, error) {
+	var resp QuotationFulfillResponse
+	check, err := r.FulfillCheck(ctx, id)
+	if err != nil {
+		return resp, err
+	}
+	if in.OnlyInStock {
+		if check.ItemCount == 0 || check.OutOfStockCount >= check.ItemCount {
+			return resp, ErrValidation
+		}
+	} else if check.OutOfStockCount > 0 {
+		return resp, ErrValidation
+	}
+
+	var creditApprovedBy *int64
+	if check.AcceptMode == "credit" && !check.CreditOK {
+		code := ""
+		if in.CreditApprovalCode != nil {
+			code = *in.CreditApprovalCode
+		}
+		uid, err := r.verifyCreditApprovalCode(ctx, code)
+		if err != nil {
+			return resp, err
+		}
+		creditApprovedBy = &uid
+	}
+	if check.AcceptMode == "payment" && len(in.Methods) == 0 {
+		return resp, ErrValidation
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return resp, err
+	}
+	defer tx.Rollback()
+
+	fulfillID := id
+	if in.OnlyInStock {
+		newID, err := r.createPartialInStockQuotation(ctx, tx, id, actor)
+		if err != nil {
+			return resp, err
+		}
+		fulfillID = newID
+		resp.QuotationID = &newID
+	}
+
+	var grand float64
+	if err := tx.QueryRowContext(ctx, `
+SELECT grand_total::float8 FROM order_quotation WHERE id = $1`, fulfillID).Scan(&grand); err != nil {
+		return resp, err
+	}
+
+	methods := in.Methods
+	if in.OnlyInStock && check.AcceptMode == "payment" {
+		methods = normalizeFulfillMethods(in.Methods, grand)
+	}
+
+	orderListID, err := r.writeFulfillDocs(ctx, tx, fulfillID, check.AcceptMode, grand, methods, creditApprovedBy, actor, !in.OnlyInStock)
+	if err != nil {
+		return resp, err
+	}
+
+	if !in.OnlyInStock {
+		if _, err = tx.ExecContext(ctx, `
+UPDATE order_quotation SET status = 'success'::order_quotation_status, updated_by = $2, updated_at = NOW() WHERE id = $1`,
+			fulfillID, actor); err != nil {
+			return resp, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return resp, err
+	}
+	resp.OrderListID = orderListID
+	return resp, nil
+}
+
+func normalizeFulfillMethods(methods []QuotationPaymentMethodInput, grand float64) []QuotationPaymentMethodInput {
+	if grand <= 0 || len(methods) == 0 {
+		return methods
+	}
+	out := make([]QuotationPaymentMethodInput, 0, 1)
+	for _, m := range methods {
+		if m.Amount <= 0 || m.SettingPaymentMethodID <= 0 {
+			continue
+		}
+		out = append(out, QuotationPaymentMethodInput{
+			SettingPaymentMethodID: m.SettingPaymentMethodID,
+			Amount:                 grand,
+		})
+		break
+	}
+	return out
+}
+
+type quoteFulfillLine struct {
+	pid                            sql.NullInt64
+	amt, price, disc, vrate, total float64
+	vtype                          string
+}
+
+func (r *QuotationRepository) loadQuoteFulfillLines(ctx context.Context, q Querier, qid int64) ([]quoteFulfillLine, error) {
+	rows, err := q.QueryContext(ctx, `
+SELECT product_item_id, amount, price_per_unit, discount, vat_type, vat_rate, total_price
+FROM order_quotation_item WHERE order_quotation_id = $1 AND deleted_at IS NULL ORDER BY sort_order, id`, qid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var lines []quoteFulfillLine
+	for rows.Next() {
+		var line quoteFulfillLine
+		if err := rows.Scan(&line.pid, &line.amt, &line.price, &line.disc, &line.vtype, &line.vrate, &line.total); err != nil {
+			return nil, err
+		}
+		lines = append(lines, line)
+	}
+	return lines, rows.Err()
+}
+
+func (r *QuotationRepository) createPartialInStockQuotation(ctx context.Context, tx *sql.Tx, srcID int64, actor int64) (int64, error) {
+	lines, err := r.loadQuoteFulfillLines(ctx, tx, srcID)
+	if err != nil {
+		return 0, err
+	}
+	var keep []quoteFulfillLine
+	for _, line := range lines {
+		if !line.pid.Valid {
+			continue
+		}
+		stock, err := r.lineStock(ctx, tx, line.pid.Int64)
+		if err != nil {
+			return 0, err
+		}
+		if stock < line.amt {
+			continue
+		}
+		keep = append(keep, line)
+	}
+	if len(keep) == 0 {
+		return 0, ErrValidation
+	}
+
+	var newID int64
+	err = tx.QueryRowContext(ctx, `
+INSERT INTO order_quotation (
+  status, parent_id, member_user_id, member_setting_credit_id,
+  member_name, member_tel, member_email, issue_date, valid_until,
+  reserve_stock, notes, vat_type, vat_rate,
+  accept_mode, accepted_at, credit_date,
+  created_by, updated_by
+)
+SELECT
+  'success'::order_quotation_status, id, member_user_id, member_setting_credit_id,
+  member_name, member_tel, member_email, issue_date, valid_until,
+  reserve_stock, notes, vat_type, vat_rate,
+  accept_mode, COALESCE(accepted_at, NOW()), credit_date,
+  $2, $2
+FROM order_quotation WHERE id = $1 AND deleted_at IS NULL
+RETURNING id`, srcID, actor).Scan(&newID)
+	if err != nil {
+		return 0, err
+	}
+	if err := r.ensureSKU(ctx, tx, newID, "success"); err != nil {
+		return 0, err
+	}
+	for i, line := range keep {
+		_, err = tx.ExecContext(ctx, `
+INSERT INTO order_quotation_item (
+  order_quotation_id, product_item_id, amount, price_per_unit, discount,
+  vat_type, vat_rate, total_price, sort_order, created_by, updated_by
+) VALUES ($1, $2, $3, $4, $5, $6::setting_vat_type, $7, $8, $9, $10, $10)`,
+			newID, line.pid, line.amt, line.price, line.disc, line.vtype, line.vrate, line.total, i, actor)
+		if err != nil {
+			return 0, err
+		}
+	}
+	if err := r.recalcHeader(ctx, tx, newID); err != nil {
+		return 0, err
+	}
+	return newID, nil
+}
+
+// writeFulfillDocs creates/reuses order_list + shipping + payment for a quotation.
+// When allowReuse is false (new child QT), always inserts fresh docs.
+func (r *QuotationRepository) writeFulfillDocs(
+	ctx context.Context,
+	tx *sql.Tx,
+	qid int64,
+	acceptMode string,
+	grand float64,
+	methods []QuotationPaymentMethodInput,
+	creditApprovedBy *int64,
+	actor int64,
+	allowReuse bool,
+) (int64, error) {
+	var orderListID int64
+	err := sql.ErrNoRows
+	if allowReuse {
+		err = tx.QueryRowContext(ctx, `
+SELECT id FROM order_list WHERE order_quotation_id = $1 AND deleted_at IS NULL ORDER BY id ASC LIMIT 1`, qid).Scan(&orderListID)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		err = tx.QueryRowContext(ctx, `
+INSERT INTO order_list (status, fulfill_status, member_user_id, member_setting_credit_id, member_name, member_tel, member_email,
+  vat_type, vat_rate, order_quotation_id, ordered_at, created_by, updated_by)
+SELECT 'pending', 'pending', member_user_id, member_setting_credit_id, member_name, member_tel, member_email,
+  vat_type, vat_rate, id, NOW(), $2, $2
+FROM order_quotation WHERE id = $1
+RETURNING id`, qid, actor).Scan(&orderListID)
+		if err != nil {
+			return 0, err
+		}
+		sku, err := r.code.NextCode(ctx, tx, "order_list", time.Now())
+		if err != nil {
+			return 0, err
+		}
+		if _, err = tx.ExecContext(ctx, `UPDATE order_list SET sku = $2 WHERE id = $1`, orderListID, sku); err != nil {
+			return 0, err
+		}
+		lines, err := r.loadQuoteFulfillLines(ctx, tx, qid)
+		if err != nil {
+			return 0, err
+		}
+		for _, line := range lines {
+			_, err = tx.ExecContext(ctx, `
+INSERT INTO order_list_item (order_list_id, product_item_id, type, amount, price_per_unit, discount, vat_type, vat_rate, total_price, created_by, updated_by)
+VALUES ($1, $2, 'item', $3, $4, $5, $6::setting_vat_type, $7, $8, $9, $9)`,
+				orderListID, line.pid, line.amt, line.price, line.disc, line.vtype, line.vrate, line.total, actor)
+			if err != nil {
+				return 0, err
+			}
+		}
+	} else if err != nil {
+		return 0, err
+	}
+
+	now := time.Now()
+	if _, err = tx.ExecContext(ctx, `
+INSERT INTO order_list_shipping (order_list_id, type, received_at)
+VALUES ($1, 'store'::order_shipping_type, $2)
+ON CONFLICT (order_list_id) DO UPDATE SET type = EXCLUDED.type, received_at = EXCLUDED.received_at`,
+		orderListID, now); err != nil {
+		return 0, err
+	}
+
+	payCat := "payment"
+	if acceptMode == "credit" {
+		payCat = "credit"
+	}
+	var payID int64
+	err = sql.ErrNoRows
+	if allowReuse {
+		err = tx.QueryRowContext(ctx, `
+SELECT id FROM order_payment WHERE order_quotation_id = $1 AND deleted_at IS NULL ORDER BY id DESC LIMIT 1`, qid).Scan(&payID)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		err = tx.QueryRowContext(ctx, `
+INSERT INTO order_payment (order_list_id, order_quotation_id, payment_category, total_price, amount_paid, is_paid, credit_approved_by, created_by, updated_by)
+VALUES ($1, $2, $3::order_payment_category, $4, 0, FALSE, $5, $6, $6) RETURNING id`,
+			orderListID, qid, payCat, grand, creditApprovedBy, actor).Scan(&payID)
+		if err != nil {
+			return 0, err
+		}
+	} else if err != nil {
+		return 0, err
+	}
+
+	if err := r.syncPaymentItems(ctx, tx, payID, orderListID, actor); err != nil {
+		return 0, err
+	}
+
+	if _, err = tx.ExecContext(ctx, `
+UPDATE order_payment_method SET deleted_at = NOW() WHERE order_payment_id = $1 AND deleted_at IS NULL`, payID); err != nil {
+		return 0, err
+	}
+	var paid float64
+	for _, m := range methods {
+		if m.Amount <= 0 {
+			continue
+		}
+		_, err = tx.ExecContext(ctx, `
+INSERT INTO order_payment_method (order_payment_id, setting_payment_method_id, amount, created_by, updated_by)
+VALUES ($1, $2, $3, $4, $4)`, payID, m.SettingPaymentMethodID, m.Amount, actor)
+		if err != nil {
+			return 0, err
+		}
+		paid += m.Amount
+	}
+	isPaid := paid >= grand-0.0001
+	if acceptMode == "credit" {
+		isPaid = false
+		paid = 0
+	}
+	_, err = tx.ExecContext(ctx, `
+UPDATE order_payment SET
+  payment_category = $2::order_payment_category,
+  total_price = $3,
+  amount_paid = $4,
+  is_paid = $5,
+  credit_approved_by = COALESCE($6, credit_approved_by),
+  updated_at = NOW()
+WHERE id = $1`, payID, payCat, grand, paid, isPaid, creditApprovedBy)
+	if err != nil {
+		return 0, err
+	}
+	return orderListID, nil
 }
 
 func (r *QuotationRepository) Duplicate(ctx context.Context, id int64, in QuotationDuplicateInput, actor int64) (int64, error) {
@@ -1084,10 +1627,18 @@ func (r *QuotationRepository) Duplicate(ctx context.Context, id int64, in Quotat
 				continue
 			}
 		}
+		price := it.PricePerUnit
+		if in.UseCurrentPrices && it.ProductItemID != nil {
+			cur, err := r.productSellPrice(ctx, r.db, *it.ProductItemID)
+			if err != nil {
+				return 0, err
+			}
+			price = cur
+		}
 		items = append(items, QuotationItemInput{
 			ProductItemID: it.ProductItemID,
 			Amount:        it.Amount,
-			PricePerUnit:  it.PricePerUnit,
+			PricePerUnit:  price,
 			Discount:      it.Discount,
 		})
 	}

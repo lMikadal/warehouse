@@ -18,6 +18,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (mode: QuotationAcceptPanelMode) => void;
+  /** Credit (ใบยืม) requires a linked customer. */
+  creditDisabled?: boolean;
 };
 
 /** Centered choose-format dialog only; payment/credit continue in the right panel. */
@@ -25,6 +27,7 @@ export function QuotationAcceptDialog({
   open,
   onOpenChange,
   onSelect,
+  creditDisabled = false,
 }: Props) {
   const tAccept = useTranslations("page.orderQuotation.acceptModal");
 
@@ -51,6 +54,10 @@ export function QuotationAcceptDialog({
             type="button"
             variant="outline"
             size="lg"
+            disabled={creditDisabled}
+            title={
+              creditDisabled ? tAccept("creditNeedsCustomer") : undefined
+            }
             onClick={() => onSelect("credit")}
           >
             {tAccept("credit")}

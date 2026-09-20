@@ -291,12 +291,62 @@ export async function postQuotationAction(
 export async function duplicateQuotation(
   locale: string,
   id: number,
-  itemIds?: number[]
+  opts?: { itemIds?: number[]; useCurrentPrices?: boolean }
 ): Promise<{ id: number }> {
   const res = await postQuotationAction(locale, id, "duplicate", {
-    item_ids: itemIds ?? [],
+    item_ids: opts?.itemIds ?? [],
+    use_current_prices: opts?.useCurrentPrices === true,
   });
   return res.json() as Promise<{ id: number }>;
+}
+
+export type QuotationFulfillCheckResponse = {
+  out_of_stock_count: number;
+  price_changed_count: number;
+  item_count: number;
+  credit_ok: boolean;
+  credit_limit?: number | null;
+  accept_mode?: QuotationAcceptMode | null;
+  grand_total: number;
+};
+
+export type QuotationFulfillMethodInput = {
+  setting_payment_method_id: number;
+  amount: number;
+};
+
+export type QuotationFulfillInput = {
+  only_in_stock?: boolean;
+  methods?: QuotationFulfillMethodInput[];
+  credit_approval_code?: string;
+};
+
+export type QuotationFulfillResponse = {
+  order_list_id: number;
+  quotation_id?: number;
+};
+
+export async function fulfillCheckQuotation(
+  locale: string,
+  id: number
+): Promise<QuotationFulfillCheckResponse> {
+  const res = await postQuotationAction(locale, id, "fulfill-check", {});
+  return res.json() as Promise<QuotationFulfillCheckResponse>;
+}
+
+export async function fulfillQuotation(
+  locale: string,
+  id: number,
+  body: QuotationFulfillInput
+): Promise<QuotationFulfillResponse> {
+  const res = await postQuotationAction(locale, id, "fulfill", {
+    only_in_stock: body.only_in_stock === true,
+    methods: body.methods ?? [],
+    ...(body.credit_approval_code
+      ? { credit_approval_code: body.credit_approval_code }
+      : {}),
+  });
+  return res.json() as Promise<QuotationFulfillResponse>;
 }
 
 export async function pickingQuotation(

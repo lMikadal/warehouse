@@ -61,6 +61,7 @@
         "hint": "Do you want to continue?",
         "payment": "Pay now",
         "credit": "Issue loan note",
+        "creditNeedsCustomer": "Select a customer before issuing a loan note",
         "creditDate": "Payment due date",
         "channelsTitle": "Select payment channel",
         "payFull": "Pay in full",
@@ -80,8 +81,27 @@
         "confirm": "Confirm payment"
       },
       "pickingModal": {
+        "stockTitle": "Out of stock",
+        "itemCount": "{count} item(s)",
+        "continueHint": "Do you want to continue?",
         "cancel": "Cancel",
-        "onlyInStock": "Pick in-stock items only"
+        "onlyInStock": "In-stock only"
+      },
+      "priceModal": {
+        "title": "Product prices have changed",
+        "reject": "Reject",
+        "approve": "Approve"
+      },
+      "newQuotationModal": {
+        "title": "Create a new quotation",
+        "decline": "No need",
+        "proceed": "Proceed"
+      },
+      "creditPinModal": {
+        "title": "Enter approver code — credit limit exceeded",
+        "hint": "To confirm this transaction",
+        "placeholder": "Enter approver code",
+        "invalid": "Invalid code"
       },
       "duplicateModal": {
         "title": "Create new quotation?",

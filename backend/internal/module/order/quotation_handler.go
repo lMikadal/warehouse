@@ -307,6 +307,53 @@ func (h *QuotationHandler) picking(c *echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (h *QuotationHandler) fulfillCheck(c *echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid id"})
+	}
+	resp, err := h.repo.FulfillCheck(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		if errors.Is(err, ErrValidation) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid fulfill check"})
+		}
+		applog.HTTPError(c, "quotation fulfill-check", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to check"})
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *QuotationHandler) fulfill(c *echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid id"})
+	}
+	var body QuotationFulfillInput
+	if c.Request().ContentLength > 0 {
+		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid body"})
+		}
+	}
+	resp, err := h.repo.Fulfill(c.Request().Context(), id, body, httputil.ActorID(c))
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
+		}
+		if errors.Is(err, ErrUnauthorized) {
+			return c.JSON(http.StatusUnauthorized, api.ErrorBody{Code: "unauthorized", Message: "invalid credit approval code"})
+		}
+		if errors.Is(err, ErrValidation) {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid fulfill"})
+		}
+		applog.HTTPError(c, "quotation fulfill", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to fulfill"})
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
 func (h *QuotationHandler) duplicate(c *echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {

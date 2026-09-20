@@ -1996,16 +1996,37 @@
               }
             },
             {
+              "name": "Fulfill check",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/order/quotations/1/fulfill-check",
+                "description": "order.order_quotation.update — returns item_count, out_of_stock_count, price_changed_count (vs storefront sell price), credit_ok; requires accept_mode"
+              }
+            },
+            {
+              "name": "Fulfill",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"only_in_stock\": false,\n  \"methods\": [\n    {\n      \"setting_payment_method_id\": 1,\n      \"amount\": 1070\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/quotations/1/fulfill",
+                "description": "order.order_quotation.update — order_list + shipping store + order_payment (+ payment_item). only_in_stock=true creates child QT (success, in-stock lines) + docs; response may include quotation_id. Credit may send credit_approval_code."
+              }
+            },
+            {
               "name": "Duplicate",
               "request": {
                 "method": "POST",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"item_ids\": []\n}"
+                  "raw": "{\n  \"item_ids\": [],\n  \"use_current_prices\": true\n}"
                 },
                 "url": "{{baseUrl}}/order/quotations/1/duplicate",
-                "description": "order.order_quotation.create — child draft with parent_id"
+                "description": "order.order_quotation.create — child draft with parent_id; use_current_prices uses storefront sell price"
               }
             }
           ]

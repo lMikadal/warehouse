@@ -1,9 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ArrowLeft, Check, Printer } from "lucide-react";
+import { ArrowLeft, Check, ClipboardList, Lock, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
@@ -15,10 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -28,11 +30,16 @@ import {
 import { type DisplayLocale } from "@/lib/format-datetime";
 import { loadOrderSalesCreditOptions } from "@/lib/order-sales-form-api";
 import {
+  duplicateQuotation,
   fetchQuotationDetail,
+  fulfillCheckQuotation,
+  fulfillQuotation,
   OrderQuotationApiError,
   patchQuotation,
+  patchQuotationStatus,
   postQuotationAction,
   type QuotationDetail,
+  type QuotationFulfillCheckResponse,
   type QuotationItemInput,
 } from "@/lib/order-quotation-api";
 import type { ProductItemBrowseRow } from "@/lib/product-list-api";
@@ -50,7 +57,10 @@ import { StoreSalesFormDesktopSplitSkeleton } from "../../store/_shared/store-sa
 import { QuotationFormPage } from "./quotation-form-page";
 import { QuotationAcceptDialog } from "./quotation-accept-dialog";
 import type { QuotationAcceptPanelMode } from "./quotation-accept-dialog";
-import { QuotationAcceptSidePanel } from "./quotation-accept-side-panel";
+import {
+  QuotationAcceptSidePanel,
+  type QuotationAcceptDraft,
+} from "./quotation-accept-side-panel";
 import { QuotationCustomerReadonlyCard } from "./quotation-customer-readonly-card";
 import { QuotationDetailItemsPanel } from "./quotation-detail-items-panel";
 import { QuotationDetailMetaCard } from "./quotation-detail-meta-card";
@@ -89,8 +99,9 @@ export function QuotationDetailPage({ id }: Props) {
   const tCrud = useTranslations("crud");
   const tForm = useTranslations("form");
   const tError = useTranslations("error");
-  const { open: sidebarOpen, isMobile } = useSidebar();
-  const footerInsetLeft = !isMobile && sidebarOpen;
+  const { open: sidebarOpen, isMobile: sidebarMobile } = useSidebar();
+  const isMobileLayout = useIsMobile();
+  const footerInsetLeft = !sidebarMobile && sidebarOpen;
 
   const [detail, setDetail] = useState<QuotationDetail | null>(null);
   const [customerView, setCustomerView] = useState<CustomerView | null>(null);
@@ -103,6 +114,23 @@ export function QuotationDetailPage({ id }: Props) {
   const [acceptPanel, setAcceptPanel] =
     useState<QuotationAcceptPanelMode | null>(null);
   const [acceptPhase, setAcceptPhase] = useState<"form" | "result">("form");
+  const [acceptDraft, setAcceptDraft] = useState<QuotationAcceptDraft>({
+    dueDate: "",
+    methods: [],
+  });
+  /** Survives dual-layout remount / empty sibling panel draft sync. */
+  const paymentMethodsRef = useRef<QuotationAcceptDraft["methods"]>([]);
+  const [acceptBusy, setAcceptBusy] = useState(false);
+  const [pickingBusy, setPickingBusy] = useState(false);
+  const [fulfillCheck, setFulfillCheck] =
+    useState<QuotationFulfillCheckResponse | null>(null);
+  const [onlyInStock, setOnlyInStock] = useState(false);
+  const [stockOpen, setStockOpen] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [newQtOpen, setNewQtOpen] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pinCode, setPinCode] = useState("");
+  const [pinError, setPinError] = useState(false);
   const [superadminEditMode, setSuperadminEditMode] = useState(false);
   const [baselineItemLines, setBaselineItemLines] = useState<
     StoreSalesDocumentCartLine[]
@@ -233,6 +261,19 @@ export function QuotationDetailPage({ id }: Props) {
     superadminEditMode &&
     lineEditFingerprint(itemLines) !== lineEditFingerprint(baselineItemLines);
 
+  const onAcceptDraftChange = useCallback((draft: QuotationAcceptDraft) => {
+    if (draft.methods.length > 0) {
+      paymentMethodsRef.current = draft.methods;
+    }
+    setAcceptDraft((prev) => {
+      // Ignore empty methods from a remounting panel once we have a paid draft.
+      if (draft.methods.length === 0 && prev.methods.length > 0) {
+        return { ...draft, methods: prev.methods };
+      }
+      return draft;
+    });
+  }, []);
+
   const bodyItems = (): QuotationItemInput[] =>
     itemLines.map((line) => ({
       ...(line.quotationItemId != null ? { id: line.quotationItemId } : {}),
@@ -359,6 +400,142 @@ export function QuotationDetailPage({ id }: Props) {
 
   const lineCount = itemLines.length;
 
+  const clearAcceptUi = () => {
+    setAcceptPanel(null);
+    setAcceptPhase("form");
+    setAcceptDraft({ dueDate: "", methods: [] });
+    paymentMethodsRef.current = [];
+    setFulfillCheck(null);
+    setOnlyInStock(false);
+    setStockOpen(false);
+    setPriceOpen(false);
+    setNewQtOpen(false);
+    setPinOpen(false);
+    setPinCode("");
+    setPinError(false);
+  };
+
+  const cancelQuotation = async () => {
+    try {
+      await patchQuotationStatus(locale, id, "cancelled");
+      clearAcceptUi();
+      toast.success(tPage("saleStatus.cancelled"));
+      router.push("/admin/sales/quotation");
+    } catch (e) {
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+    }
+  };
+
+  const doFulfill = async (opts?: {
+    onlyInStock?: boolean;
+    creditCode?: string;
+  }) => {
+    setPickingBusy(true);
+    const isPayment =
+      acceptPanel === "payment" || detail?.accept_mode === "payment";
+    const methods = isPayment
+      ? acceptDraft.methods.length > 0
+        ? acceptDraft.methods
+        : paymentMethodsRef.current
+      : [];
+    try {
+      await fulfillQuotation(locale, id, {
+        only_in_stock: opts?.onlyInStock === true,
+        methods,
+        ...(opts?.creditCode
+          ? { credit_approval_code: opts.creditCode }
+          : {}),
+      });
+      clearAcceptUi();
+      toast.success(tPage("detail.picking"));
+      router.push("/admin/sales/quotation");
+    } catch (e) {
+      if (
+        e instanceof OrderQuotationApiError &&
+        (e.status === 401 || e.code === "unauthorized")
+      ) {
+        setPinError(true);
+        throw e;
+      }
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+      throw e;
+    } finally {
+      setPickingBusy(false);
+    }
+  };
+
+  const continueCreditOrFulfill = async (
+    check: QuotationFulfillCheckResponse,
+    stockOnly: boolean
+  ) => {
+    if (check.accept_mode === "credit" && !check.credit_ok) {
+      setPinCode("");
+      setPinError(false);
+      setPinOpen(true);
+      return;
+    }
+    await doFulfill({ onlyInStock: stockOnly });
+  };
+
+  const continueAfterStock = async (
+    check: QuotationFulfillCheckResponse,
+    stockOnly: boolean
+  ) => {
+    if (check.price_changed_count > 0) {
+      setPriceOpen(true);
+      return;
+    }
+    await continueCreditOrFulfill(check, stockOnly);
+  };
+
+  const confirmAccept = async () => {
+    if (!acceptPanel) return;
+    setAcceptBusy(true);
+    try {
+      // Already accepted (resume after refresh) — skip re-POST.
+      if (detail.accept_mode !== acceptPanel) {
+        await postQuotationAction(locale, id, "accept", {
+          mode: acceptPanel,
+          ...(acceptPanel === "credit"
+            ? { credit_date: acceptDraft.dueDate || undefined }
+            : {}),
+        });
+        await load();
+      }
+      setAcceptPhase("result");
+    } catch (e) {
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+    } finally {
+      setAcceptBusy(false);
+    }
+  };
+
+  const startPicking = async () => {
+    setPickingBusy(true);
+    try {
+      const check = await fulfillCheckQuotation(locale, id);
+      setFulfillCheck(check);
+      setOnlyInStock(false);
+      if (check.out_of_stock_count > 0) {
+        setStockOpen(true);
+        return;
+      }
+      await continueAfterStock(check, false);
+    } catch (e) {
+      toast.error(
+        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
+      );
+    } finally {
+      setPickingBusy(false);
+    }
+  };
+
   const showSellerAccept =
     !superadmin && !detail.accept_mode && detail.status === "approved";
 
@@ -373,7 +550,7 @@ export function QuotationDetailPage({ id }: Props) {
     />
   );
 
-  const acceptSidePanel =
+  const rightPanel =
     acceptPanel != null ? (
       <QuotationAcceptSidePanel
         mode={acceptPanel}
@@ -381,19 +558,8 @@ export function QuotationDetailPage({ id }: Props) {
         detail={detail}
         locale={locale}
         itemCount={itemLines.length}
-        layout="split"
-      />
-    ) : null;
-
-  const acceptSidePanelStacked =
-    acceptPanel != null ? (
-      <QuotationAcceptSidePanel
-        mode={acceptPanel}
-        phase={acceptPhase}
-        detail={detail}
-        locale={locale}
-        itemCount={itemLines.length}
-        layout="stacked"
+        layout={isMobileLayout ? "stacked" : "split"}
+        onDraftChange={onAcceptDraftChange}
       />
     ) : null;
 
@@ -428,9 +594,6 @@ export function QuotationDetailPage({ id }: Props) {
     </div>
   );
 
-  const rightPanelSplit = acceptSidePanel ?? metaPanelSplit;
-  const rightPanelStacked = acceptSidePanelStacked ?? metaPanelStacked;
-
   return (
     <div className="flex flex-col gap-4 pb-20">
       <CrudPageHeader
@@ -445,17 +608,20 @@ export function QuotationDetailPage({ id }: Props) {
         }
       />
 
-      <div className="flex flex-col gap-4 md:hidden">
-        <QuotationCustomerReadonlyCard locale={locale} {...customerView} />
-        {itemsPanel}
-        {rightPanelStacked}
-      </div>
-      <div className="hidden min-w-0 w-full md:block">
-        <StoreSalesFormDesktopSplit
-          browse={leftColumnSplit}
-          documentPanel={rightPanelSplit}
-        />
-      </div>
+      {isMobileLayout ? (
+        <div className="flex flex-col gap-4">
+          <QuotationCustomerReadonlyCard locale={locale} {...customerView} />
+          {itemsPanel}
+          {rightPanel ?? metaPanelStacked}
+        </div>
+      ) : (
+        <div className="min-w-0 w-full">
+          <StoreSalesFormDesktopSplit
+            browse={leftColumnSplit}
+            documentPanel={rightPanel ?? metaPanelSplit}
+          />
+        </div>
+      )}
 
       <div
         className={cn(
@@ -483,7 +649,12 @@ export function QuotationDetailPage({ id }: Props) {
                   <Printer className="text-current" aria-hidden />
                   {tPage("detail.printMiniReceipt")}
                 </Button>
-                <Button type="button" size="lg">
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={pickingBusy}
+                  onClick={() => void startPicking()}
+                >
                   <Check className="text-current" aria-hidden />
                   {tPage("detail.picking")}
                 </Button>
@@ -506,7 +677,13 @@ export function QuotationDetailPage({ id }: Props) {
                 <Button
                   type="button"
                   size="lg"
-                  onClick={() => setAcceptPhase("result")}
+                  disabled={
+                    acceptBusy ||
+                    (acceptPanel === "payment" &&
+                      acceptDraft.methods.length === 0 &&
+                      paymentMethodsRef.current.length === 0)
+                  }
+                  onClick={() => void confirmAccept()}
                 >
                   <Check className="text-current" aria-hidden />
                   {acceptPanel === "payment"
@@ -667,7 +844,7 @@ export function QuotationDetailPage({ id }: Props) {
               >
                 {tPage("detail.print")}
               </Button>
-              {!detail.accept_mode ? (
+              {!detail.fulfilled ? (
                 <Button
                   type="button"
                   size="lg"
@@ -730,12 +907,244 @@ export function QuotationDetailPage({ id }: Props) {
       <QuotationAcceptDialog
         open={acceptOpen}
         onOpenChange={setAcceptOpen}
+        creditDisabled={!(detail.member_user_id && detail.member_user_id > 0)}
         onSelect={(mode) => {
           setAcceptOpen(false);
           setAcceptPhase("form");
           setAcceptPanel(mode);
         }}
       />
+
+      <Dialog open={stockOpen} onOpenChange={setStockOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="items-center text-center sm:text-center">
+            <span
+              className="bg-primary/15 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-full"
+              aria-hidden
+            >
+              <ClipboardList className="size-6" />
+            </span>
+            <DialogTitle className="text-primary">
+              {tPage("pickingModal.stockTitle")}
+            </DialogTitle>
+            <p className="text-foreground font-medium">
+              {tPage("pickingModal.itemCount", {
+                count: fulfillCheck?.out_of_stock_count ?? 0,
+              })}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {tPage("pickingModal.continueHint")}
+            </p>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pickingBusy}
+              onClick={() => void cancelQuotation()}
+            >
+              {tPage("pickingModal.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                pickingBusy ||
+                !fulfillCheck ||
+                fulfillCheck.out_of_stock_count >=
+                  (fulfillCheck.item_count || 0)
+              }
+              onClick={() => {
+                if (!fulfillCheck) return;
+                setOnlyInStock(true);
+                setStockOpen(false);
+                void continueAfterStock(fulfillCheck, true);
+              }}
+            >
+              {tPage("pickingModal.onlyInStock")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={priceOpen} onOpenChange={setPriceOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="items-center text-center sm:text-center">
+            <span
+              className="bg-primary/15 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-full"
+              aria-hidden
+            >
+              <ClipboardList className="size-6" />
+            </span>
+            <DialogTitle className="text-primary">
+              {tPage("priceModal.title")}
+            </DialogTitle>
+            <p className="text-foreground font-medium">
+              {tPage("pickingModal.itemCount", {
+                count: fulfillCheck?.price_changed_count ?? 0,
+              })}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {tPage("pickingModal.continueHint")}
+            </p>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pickingBusy}
+              onClick={() => {
+                setPriceOpen(false);
+                setNewQtOpen(true);
+              }}
+            >
+              {tPage("priceModal.reject")}
+            </Button>
+            <Button
+              type="button"
+              disabled={pickingBusy || !fulfillCheck}
+              onClick={() => {
+                if (!fulfillCheck) return;
+                setPriceOpen(false);
+                void continueCreditOrFulfill(fulfillCheck, onlyInStock);
+              }}
+            >
+              {tPage("priceModal.approve")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newQtOpen} onOpenChange={setNewQtOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="items-center text-center sm:text-center">
+            <span
+              className="bg-primary/15 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-full"
+              aria-hidden
+            >
+              <ClipboardList className="size-6" />
+            </span>
+            <DialogTitle className="text-primary">
+              {tPage("newQuotationModal.title")}
+            </DialogTitle>
+            <p className="text-muted-foreground text-sm">
+              {tPage("pickingModal.continueHint")}
+            </p>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pickingBusy}
+              onClick={() => void cancelQuotation()}
+            >
+              {tPage("newQuotationModal.decline")}
+            </Button>
+            <Button
+              type="button"
+              disabled={pickingBusy}
+              onClick={() => {
+                void (async () => {
+                  setPickingBusy(true);
+                  try {
+                    const { id: newId } = await duplicateQuotation(locale, id, {
+                      useCurrentPrices: true,
+                    });
+                    clearAcceptUi();
+                    router.push(`/admin/sales/quotation/${newId}`);
+                  } catch (e) {
+                    toast.error(
+                      e instanceof OrderQuotationApiError
+                        ? e.message
+                        : tError("saveFailed")
+                    );
+                  } finally {
+                    setPickingBusy(false);
+                  }
+                })();
+              }}
+            >
+              {tPage("newQuotationModal.proceed")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={pinOpen}
+        onOpenChange={(open) => {
+          setPinOpen(open);
+          if (!open) {
+            setPinCode("");
+            setPinError(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="items-center text-center sm:text-center">
+            <span
+              className="bg-primary/15 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-full"
+              aria-hidden
+            >
+              <Lock className="size-6" />
+            </span>
+            <DialogTitle className="text-primary">
+              {tPage("creditPinModal.title")}
+            </DialogTitle>
+            <p className="text-muted-foreground text-sm">
+              {tPage("creditPinModal.hint")}
+            </p>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="credit-pin" className="sr-only">
+              {tPage("creditPinModal.placeholder")}
+            </Label>
+            <div className="relative">
+              <Lock
+                className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+                aria-hidden
+              />
+              <Input
+                id="credit-pin"
+                type="password"
+                className="pl-9"
+                value={pinCode}
+                placeholder={tPage("creditPinModal.placeholder")}
+                onChange={(e) => {
+                  setPinCode(e.target.value);
+                  setPinError(false);
+                }}
+              />
+            </div>
+            {pinError ? (
+              <p className="text-destructive text-sm" role="alert">
+                {tPage("creditPinModal.invalid")}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter className="sm:justify-stretch">
+            <Button
+              type="button"
+              className="w-full"
+              disabled={pickingBusy || !pinCode.trim()}
+              onClick={() => {
+                void (async () => {
+                  try {
+                    await doFulfill({
+                      onlyInStock,
+                      creditCode: pinCode.trim(),
+                    });
+                    setPinOpen(false);
+                  } catch {
+                    /* pinError set in doFulfill */
+                  }
+                })();
+              }}
+            >
+              {tPage("confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

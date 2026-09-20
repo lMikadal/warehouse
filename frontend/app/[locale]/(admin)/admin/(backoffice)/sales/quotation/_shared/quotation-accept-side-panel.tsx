@@ -26,6 +26,11 @@ type PayMode = "full" | "partial";
 
 export type QuotationAcceptPhase = "form" | "result";
 
+export type QuotationAcceptDraft = {
+  dueDate: string;
+  methods: { setting_payment_method_id: number; amount: number }[];
+};
+
 type Props = {
   mode: QuotationAcceptPanelMode;
   phase?: QuotationAcceptPhase;
@@ -33,6 +38,7 @@ type Props = {
   locale: DisplayLocale;
   itemCount: number;
   layout?: "stacked" | "split";
+  onDraftChange?: (draft: QuotationAcceptDraft) => void;
 };
 
 function todayIsoDate(): string {
@@ -187,6 +193,7 @@ export function QuotationAcceptSidePanel({
   locale,
   itemCount,
   layout = "split",
+  onDraftChange,
 }: Props) {
   const tPage = useTranslations("page.orderQuotation");
   const tAccept = useTranslations("page.orderQuotation.acceptModal");
@@ -250,6 +257,18 @@ export function QuotationAcceptSidePanel({
 
   const outstanding = Math.max(0, Math.round((grand - paidTotal) * 100) / 100);
   const change = Math.max(0, Math.round((paidTotal - grand) * 100) / 100);
+
+  useEffect(() => {
+    if (!onDraftChange) return;
+    const methodsDraft = methods
+      .filter((m) => selected[m.id])
+      .map((m) => ({
+        setting_payment_method_id: m.id,
+        amount: Number.parseFloat(amounts[m.id] ?? "") || 0,
+      }))
+      .filter((m) => m.amount > 0);
+    onDraftChange({ dueDate, methods: methodsDraft });
+  }, [onDraftChange, methods, selected, amounts, dueDate]);
 
   const toggleMethod = (id: number, on: boolean) => {
     setSelected((prev) => ({ ...prev, [id]: on }));
