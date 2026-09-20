@@ -957,7 +957,9 @@ export function ProductListFormVariantSections({
                     onValueChange={(v) => v && patch({ unit: v })}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue>
+                        {tList(packUnitKey(item.unit))}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {PRODUCT_ITEM_UNITS.map((u) => (

@@ -707,6 +707,7 @@ UPDATE product_item SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 
 		}
 		norm := it
 		normalizeStorefrontPrices(snap, &norm)
+		norm.IsNew = false
 		var itemID int64
 		err := tx.QueryRowContext(ctx, `
 INSERT INTO product_item (product_list_id, sku, barcode, qrcode, price, price_wholesale, price_vat, price_wholesale_vat,
@@ -745,6 +746,7 @@ func upsertOneItem(ctx context.Context, tx *sql.Tx, listID, itemID int64, it lis
 	}
 	norm := it
 	normalizeStorefrontPrices(snap, &norm)
+	norm.IsNew = false
 	res, err := tx.ExecContext(ctx, `
 UPDATE product_item SET sku = $2, barcode = $3, qrcode = $4, price = $5, price_wholesale = $6, price_vat = $7,
   price_wholesale_vat = $8, amount_price_wholesale = $9, vat_type = $10::setting_vat_type, vat_rate = $11, promotion = $12,

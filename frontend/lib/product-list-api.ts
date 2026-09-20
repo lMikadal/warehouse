@@ -21,6 +21,11 @@ export type ProductItemBrowseRow = {
   brand_name: string;
   category_name: string;
   total_stock: number;
+  reserved_stock?: number;
+  available_stock?: number;
+  type_price?: string;
+  price_wholesale?: number;
+  amount_price_wholesale?: number;
   low_stock: boolean;
   warehouse_root_count: number;
   car_count: number;
@@ -65,6 +70,10 @@ export type ProductItemListParams = {
   isNew?: boolean;
   productCategoryId?: number;
   productBrandId?: number;
+  carBrandId?: number;
+  productAttributeModelId?: number;
+  carYear?: number;
+  oem?: string;
   sort?: string;
   order?: "asc" | "desc";
 };
@@ -87,6 +96,16 @@ export async function fetchProductItems(
   if (params.productBrandId != null) {
     q.set("product_brand_id", String(params.productBrandId));
   }
+  if (params.carBrandId != null) {
+    q.set("car_brand_id", String(params.carBrandId));
+  }
+  if (params.productAttributeModelId != null) {
+    q.set("product_attribute_model_id", String(params.productAttributeModelId));
+  }
+  if (params.carYear != null) {
+    q.set("car_year", String(params.carYear));
+  }
+  if (params.oem?.trim()) q.set("oem", params.oem.trim());
   if (params.sort) q.set("sort", params.sort);
   if (params.order) q.set("order", params.order);
   const res = await authFetch(`${BFF}/items?${q}`, {

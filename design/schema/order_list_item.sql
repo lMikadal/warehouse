@@ -3,10 +3,10 @@
 --   - amount_picked: picked qty (may differ from amount — over/short)
 --   - amount_checked: verified qty before billing (SUM from order_list_item_warehouse; maintained by app)
 --   - pick locations: order_list_item_warehouse (per location amount_checked)
---   - status: fulfillment status per line (pending/in_progress/success)
+--   - status: fulfillment status per line (pending/in_progress/success/cancelled/rejected)
 --   - price/discount/total_price: pricing snapshot at order time (VAT at order_payment_item)
 --   - detail JSONB: only for compare-type lines (type='compare')
-CREATE TYPE order_list_item_status AS ENUM ('pending', 'in_progress', 'success');
+CREATE TYPE order_list_item_status AS ENUM ('pending', 'in_progress', 'success', 'cancelled', 'rejected');
 CREATE TYPE order_list_item_type   AS ENUM ('item', 'compare');
 
 CREATE TABLE order_list_item (

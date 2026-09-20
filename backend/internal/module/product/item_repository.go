@@ -34,7 +34,9 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) vat ON TRUE`
 
-const itemBrowseSellPriceSQL = `(CASE WHEN vat.vat_type = 'include' THEN i.price_vat ELSE i.price END)`
+const itemBrowseManualSellPriceSQL = `(CASE WHEN vat.vat_type = 'include' THEN i.price_vat ELSE i.price END)`
+const itemBrowseWholesalePriceSQL = `(CASE WHEN vat.vat_type = 'include' THEN i.price_wholesale_vat ELSE i.price_wholesale END)`
+const itemBrowseDisplayPriceSQL = `(CASE WHEN i.type_price = 'stock'::product_item_type_price THEN COALESCE(stock_px.sell_price, ` + itemBrowseManualSellPriceSQL + `) ELSE ` + itemBrowseManualSellPriceSQL + ` END)`
 
 func itemListOrderBy(sort, order string) string {
 	col := "i.created_at ASC, i.id ASC"
@@ -43,8 +45,10 @@ func itemListOrderBy(sort, order string) string {
 		col = "display_name"
 	case "stock", "_totalStock":
 		col = "total_stock"
+	case "available_stock":
+		col = "available_stock"
 	case "price":
-		col = itemBrowseSellPriceSQL
+		col = "display_price"
 	case "category", "_categoryName":
 		col = "category_name"
 	case "brand", "_brandName":
@@ -95,12 +99,17 @@ func (r *ItemRepository) ListBrowse(ctx context.Context, f ItemListFilter) ([]It
 	q := fmt.Sprintf(`
 SELECT
   i.id, i.product_list_id, COALESCE(NULLIF(TRIM(i.sku), ''), pl.sku) AS sku,
-  %s::float8 AS price, i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
+  %s::float8 AS display_price, i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
   pl.tag, i.is_new, pl.product_brand_id, pl.product_category_id,
   COALESCE(NULLIF(TRIM(COALESCE(il.name, il2.name, ll.name, ll2.name)), ''), '') AS display_name,
   COALESCE(NULLIF(TRIM(bl.name), ''), '—') AS brand_name,
   COALESCE(NULLIF(TRIM(cl.name), ''), '—') AS category_name,
   COALESCE(st.total_stock, 0)::float8 AS total_stock,
+  COALESCE(rs.reserved_stock, 0)::float8 AS reserved_stock,
+  GREATEST(0, COALESCE(st.total_stock, 0) - COALESCE(rs.reserved_stock, 0))::float8 AS available_stock,
+  i.type_price::text,
+  %s::float8 AS price_wholesale,
+  i.amount_price_wholesale,
   COALESCE(wh.cnt, 0)::int AS warehouse_root_count,
   COALESCE(car.cnt, 0)::int AS car_count,
   car.summary AS car_summary,
@@ -118,6 +127,21 @@ LEFT JOIN LATERAL (
   FROM product_item_stock s
   WHERE s.product_item_id = i.id AND s.deleted_at IS NULL
 ) st ON TRUE
+LEFT JOIN LATERAL (
+  SELECT COALESCE(SUM(oli.amount), 0)::float8 AS reserved_stock
+  FROM order_list_item oli
+  INNER JOIN order_list ol ON ol.id = oli.order_list_id AND ol.deleted_at IS NULL
+  WHERE oli.product_item_id = i.id AND oli.deleted_at IS NULL
+    AND oli.type = 'item'::order_list_item_type
+    AND oli.status IN ('pending'::order_list_item_status, 'in_progress'::order_list_item_status)
+) rs ON TRUE
+LEFT JOIN LATERAL (
+  SELECT s.sell_price::float8 AS sell_price
+  FROM product_item_stock s
+  WHERE s.product_item_id = i.id AND s.deleted_at IS NULL AND s.is_used = TRUE
+  ORDER BY s.received_at ASC NULLS LAST, s.id ASC
+  LIMIT 1
+) stock_px ON TRUE
 LEFT JOIN LATERAL (
   SELECT COUNT(DISTINCT zone.parent_id) AS cnt
   FROM product_item_warehouse piw
@@ -142,7 +166,7 @@ LEFT JOIN LATERAL (
 ) car ON TRUE
 WHERE %s
 ORDER BY %s
-LIMIT $%d OFFSET $%d`, itemBrowseSellPriceSQL, itemBrowseFrom+itemBrowseVatJoin, where, itemListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
+LIMIT $%d OFFSET $%d`, itemBrowseDisplayPriceSQL, itemBrowseWholesalePriceSQL, itemBrowseFrom+itemBrowseVatJoin, where, itemListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
 
 	rows, err := r.db.QueryContext(ctx, q, listArgs...)
 	if err != nil {
@@ -160,7 +184,9 @@ LIMIT $%d OFFSET $%d`, itemBrowseSellPriceSQL, itemBrowseFrom+itemBrowseVatJoin,
 			&row.MinimumStock, &row.IsActive, &row.IsStopped, &row.UpdatedAt,
 			&row.Tag, &row.IsNew, &brandID, &catID,
 			&row.Name, &row.BrandName, &row.CategoryName,
-			&row.TotalStock, &row.WarehouseRootCount, &row.CarCount, &carSummary,
+			&row.TotalStock, &row.ReservedStock, &row.AvailableStock,
+			&row.TypePrice, &row.PriceWholesale, &row.AmountPriceWholesale,
+			&row.WarehouseRootCount, &row.CarCount, &carSummary,
 			&coverFileID,
 		); err != nil {
 			return nil, 0, err
@@ -216,7 +242,59 @@ func itemBrowseWhere(f ItemListFilter, startArg int) (string, []any) {
 )`, n, n, n, n, n))
 		args = append(args, pat)
 	}
+	if carClause, carArgs, nextN := itemBrowseCarFitmentClause(f, n); carClause != "" {
+		clauses = append(clauses, carClause)
+		args = append(args, carArgs...)
+		n = nextN
+	}
+	if oem := strings.TrimSpace(f.OEM); oem != "" {
+		pat := "%" + strings.ToLower(oem) + "%"
+		clauses = append(clauses, fmt.Sprintf(`(
+  LOWER(COALESCE(pl.supplier_sku, '')) LIKE $%d OR
+  EXISTS (
+    SELECT 1 FROM product_list_code plc
+    WHERE plc.product_list_id = pl.id AND plc.deleted_at IS NULL
+      AND LOWER(COALESCE(plc.sku, '')) LIKE $%d
+  )
+)`, n, n))
+		args = append(args, pat)
+	}
 	return strings.Join(clauses, " AND "), args
+}
+
+func itemBrowseCarFitmentClause(f ItemListFilter, startArg int) (string, []any, int) {
+	if f.CarBrandID == nil && f.ModelID == nil && f.CarYear == nil {
+		return "", nil, startArg
+	}
+	parts := []string{
+		"c.product_list_id = pl.id",
+		"c.deleted_at IS NULL",
+	}
+	args := []any{}
+	n := startArg
+	if f.CarBrandID != nil {
+		parts = append(parts, fmt.Sprintf("c.product_attribute_brand_id = $%d", n))
+		args = append(args, *f.CarBrandID)
+		n++
+	}
+	if f.ModelID != nil {
+		parts = append(parts, fmt.Sprintf("c.product_attribute_model_id = $%d", n))
+		args = append(args, *f.ModelID)
+		n++
+	}
+	if f.CarYear != nil {
+		parts = append(parts, fmt.Sprintf(
+			"c.year_start IS NOT NULL AND $%d >= c.year_start AND $%d <= COALESCE(c.year_end, c.year_start)",
+			n, n,
+		))
+		args = append(args, *f.CarYear)
+		n++
+	}
+	clause := fmt.Sprintf(`EXISTS (
+  SELECT 1 FROM product_list_car c
+  WHERE %s
+)`, strings.Join(parts, " AND "))
+	return clause, args, n
 }
 
 func (r *ItemRepository) PatchItemActive(ctx context.Context, id int64, active bool, actorID int64) error {

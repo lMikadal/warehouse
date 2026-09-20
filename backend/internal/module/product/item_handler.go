@@ -3,6 +3,7 @@ package product
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -41,8 +42,13 @@ type itemBrowseJSON struct {
 	Name               string    `json:"name"`
 	BrandName          string    `json:"brand_name"`
 	CategoryName       string    `json:"category_name"`
-	TotalStock         float64   `json:"total_stock"`
-	LowStock           bool      `json:"low_stock"`
+	TotalStock           float64 `json:"total_stock"`
+	ReservedStock        float64 `json:"reserved_stock"`
+	AvailableStock       float64 `json:"available_stock"`
+	TypePrice            string  `json:"type_price"`
+	PriceWholesale       float64 `json:"price_wholesale"`
+	AmountPriceWholesale int     `json:"amount_price_wholesale"`
+	LowStock             bool    `json:"low_stock"`
 	WarehouseRootCount int       `json:"warehouse_root_count"`
 	CarCount           int       `json:"car_count"`
 	CarSummary         string    `json:"car_summary,omitempty"`
@@ -56,7 +62,9 @@ func toItemBrowseJSON(r ItemBrowseRow) itemBrowseJSON {
 		IsActive: r.IsActive, IsStopped: r.IsStopped, UpdatedAt: r.UpdatedAt, Tag: r.Tag, IsNew: r.IsNew,
 		ProductBrandID: r.ProductBrandID, ProductCategoryID: r.ProductCategoryID,
 		Name: r.Name, BrandName: r.BrandName, CategoryName: r.CategoryName,
-		TotalStock: r.TotalStock, LowStock: r.LowStock,
+		TotalStock: r.TotalStock, ReservedStock: r.ReservedStock, AvailableStock: r.AvailableStock,
+		TypePrice: r.TypePrice, PriceWholesale: r.PriceWholesale, AmountPriceWholesale: r.AmountPriceWholesale,
+		LowStock: r.LowStock,
 		WarehouseRootCount: r.WarehouseRootCount, CarCount: r.CarCount, CarSummary: r.CarSummary,
 		CoverSystemFileID: r.CoverSystemFileID,
 	}
@@ -87,6 +95,24 @@ func (h *ItemHandler) listBrowse(c *echo.Context) error {
 	} else if id != nil {
 		f.BrandID = id
 	}
+	if id, err := parseOptionalIDParam(c.QueryParam("car_brand_id")); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid car_brand_id"})
+	} else if id != nil {
+		f.CarBrandID = id
+	}
+	if id, err := parseOptionalIDParam(c.QueryParam("product_attribute_model_id")); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid product_attribute_model_id"})
+	} else if id != nil {
+		f.ModelID = id
+	}
+	if y := strings.TrimSpace(c.QueryParam("car_year")); y != "" {
+		var year int
+		if _, err := fmt.Sscan(y, &year); err != nil || year < 1900 || year > 2100 {
+			return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "invalid_request", Message: "invalid car_year"})
+		}
+		f.CarYear = &year
+	}
+	f.OEM = strings.TrimSpace(c.QueryParam("oem"))
 	sortCol := strings.TrimSpace(c.QueryParam("sort"))
 	order := strings.ToLower(strings.TrimSpace(c.QueryParam("order")))
 	if sortCol != "" && (order == "asc" || order == "desc") {

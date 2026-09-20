@@ -65,7 +65,16 @@
         "selectAll": "Select all",
         "loadMore": "Load more",
         "priceHint": "Prices shown for the selected customer",
-        "emptyBrowse": "Search or filter to show products"
+        "emptyBrowse": "Search or filter to show products",
+        "filter": "Filters",
+        "filterCategory": "Category",
+        "filterBrand": "Brand",
+        "filterModel": "Model",
+        "filterYear": "Year",
+        "filterOem": "OEM code",
+        "productSearchPlaceholder": "Search product name / SKU",
+        "productSearchHint": "Search for products and add them to the order",
+        "wholesaleMinQty": "Buy {count}+ units"
       }
     }
   }

@@ -1192,8 +1192,8 @@
               "request": {
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
-                "url": "{{baseUrl}}/product/items?page=1&limit=10",
-                "description": "Browse rows include aggregates: total_stock, low_stock, warehouse_root_count, car_count, car_summary, and optional cover_system_file_id (first product_item_file for the item)."
+                "url": "{{baseUrl}}/product/items?page=1&limit=10&search=&product_category_id=&product_brand_id=&car_brand_id=&product_attribute_model_id=&car_year=&oem=",
+                "description": "Browse rows: total_stock, reserved_stock, available_stock (total minus order_list_item pending/in_progress), type_price, price_wholesale, amount_price_wholesale, low_stock, warehouse_root_count, car_count, car_summary, cover_system_file_id. Filters: search, product_category_id, product_brand_id (part brand on product_list), car_brand_id + product_attribute_model_id + car_year (one product_list_car row), oem (supplier_sku or product_list_code). price = manual VAT-aware sell or oldest is_used stock lot sell_price when type_price=stock."
               }
             },
             {

@@ -10,6 +10,10 @@ type ItemListFilter struct {
 	IsNew          *bool
 	CategoryID     *int64
 	BrandID        *int64
+	CarBrandID     *int64
+	ModelID        *int64
+	CarYear        *int
+	OEM            string
 }
 
 type ItemBrowseRow struct {
@@ -31,6 +35,11 @@ type ItemBrowseRow struct {
 	BrandName          string
 	CategoryName       string
 	TotalStock         float64
+	ReservedStock      float64
+	AvailableStock     float64
+	TypePrice          string
+	PriceWholesale     float64
+	AmountPriceWholesale int
 	LowStock           bool
 	WarehouseRootCount int
 	CarCount             int

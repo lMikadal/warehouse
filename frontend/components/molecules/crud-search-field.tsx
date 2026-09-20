@@ -16,6 +16,7 @@ export type CrudSearchFieldProps = {
   className?: string;
   id?: string;
   placeholder?: string;
+  disabled?: boolean;
 };
 
 export function CrudSearchField({
@@ -24,6 +25,7 @@ export function CrudSearchField({
   className,
   id = "crud-search",
   placeholder,
+  disabled = false,
 }: CrudSearchFieldProps) {
   const t = useTranslations("search");
 
@@ -38,6 +40,7 @@ export function CrudSearchField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? t("placeholder")}
+        disabled={disabled}
       />
     </InputGroup>
   );

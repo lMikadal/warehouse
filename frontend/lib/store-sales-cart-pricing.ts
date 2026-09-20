@@ -167,20 +167,25 @@ async function refreshBrowsePrice(
 }
 
 async function buildPricingRow(
-  locale: string,
   itemId: number,
   listPrice: number,
+  product: ProductItemBrowseRow | undefined,
   discounts: MemberUserDiscountRow[],
   memberCreditId: number | null,
   tierDiscount: { discount: number; discount_type: string } | null
 ): Promise<PricingRow> {
   const todayYmd = localDateYmd(new Date());
   const md = pickMemberDiscount(itemId, discounts, memberCreditId, todayYmd);
+  const wh = product?.price_wholesale;
+  const minWh = product?.amount_price_wholesale;
   const row: PricingRow = {
     price: listPrice,
-    // ponytail: browse API has no wholesale fields yet; upgrade when item browse adds them
-    wholesale_price: null,
-    amount_wholesale_price: null,
+    wholesale_price:
+      wh != null && Number.isFinite(wh) && wh > 0 ? wh : null,
+    amount_wholesale_price:
+      minWh != null && Number.isFinite(minWh) && minWh > 0
+        ? Math.trunc(minWh)
+        : null,
     member_discount: 0,
     member_discount_type: null,
     member_discount_minimum_order: null,
@@ -244,9 +249,9 @@ export async function repriceStoreSalesCartLines(
     }
     const listPrice = await refreshBrowsePrice(locale, line);
     const pricingRow = await buildPricingRow(
-      locale,
       line.product.id,
       listPrice,
+      line.product,
       discounts,
       memberCreditId,
       tierDiscount

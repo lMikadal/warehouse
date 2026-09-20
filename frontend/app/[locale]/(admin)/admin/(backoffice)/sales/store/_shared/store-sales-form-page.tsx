@@ -2,6 +2,7 @@
 
 import {
   FileText,
+  Filter,
   MapPin,
   Minus,
   Pencil,
@@ -16,6 +17,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { CrudPaginationBar } from "@/components/molecules/crud-pagination-bar";
+import { CrudSearchField } from "@/components/molecules/crud-search-field";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
@@ -32,6 +35,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { RemoteComboboxOption } from "@/hooks/use-remote-combobox-options";
+import { useCrudListQuery } from "@/hooks/use-crud-list-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
@@ -58,15 +63,47 @@ import {
   type StoreSalesStatus,
 } from "@/lib/order-store-api";
 import {
+  loadProductItemBrowseCategoryComboboxOptions,
+  resolveProductItemBrowseCategoryLabel,
+} from "@/lib/product-category-combobox";
+import {
+  loadProductCarBrandComboboxOptions,
+  loadProductCarModelComboboxOptions,
+  resolveProductCarBrandLabel,
+  resolveProductCarModelLabel,
+} from "@/lib/product-filters-api";
+import {
   fetchProductItems,
+  ProductListApiError,
   type ProductItemBrowseRow,
 } from "@/lib/product-list-api";
 import {
-
+  ProductListCarModal,
+  ProductListWarehouseModal,
+} from "../../../product/_shared/product-list-modals";
+import {
+  StoreSalesProductBrowseEmpty,
+  StoreSalesProductBrowseTable,
+} from "./store-sales-product-browse-table";
+import {
   StoreShippingDialog,
   type DeliveryType,
   type ShippingDraft,
 } from "./store-shipping-dialog";
+
+function carYearOptions(): number[] {
+  const end = new Date().getFullYear();
+  const years: number[] = [];
+  for (let y = end; y >= 1990; y -= 1) years.push(y);
+  return years;
+}
+
+function loadStoreSalesBrowseYearOptions(search: string): RemoteComboboxOption[] {
+  const q = search.trim();
+  return carYearOptions()
+    .filter((y) => !q || String(y).includes(q))
+    .map((y) => ({ value: String(y), label: String(y) }));
+}
 
 type CartLine = {
   key: string;
@@ -128,10 +165,10 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const tCrud = useTranslations("crud");
   const tSearch = useTranslations("search");
   const tFormRoot = useTranslations("form");
+  const tProductAttr = useTranslations("productAttr");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("order", "order_store");
   const productStepRef = useRef<HTMLDivElement>(null);
-  const productSearchRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(!!orderId);
   const [memberId, setMemberId] = useState("");
@@ -145,16 +182,35 @@ export function StoreSalesFormPage({ orderId }: Props) {
   >([]);
   const [creditId, setCreditId] = useState("");
   const [productSearch, setProductSearch] = useState("");
-  const [productPage, setProductPage] = useState(1);
+  const [productSearchApplied, setProductSearchApplied] = useState("");
+  const [browseRequested, setBrowseRequested] = useState(false);
+  const [browseCategoryId, setBrowseCategoryId] = useState("");
+  const [browseBrandId, setBrowseBrandId] = useState("");
+  const [browseModelId, setBrowseModelId] = useState("");
+  const [browseCarYear, setBrowseCarYear] = useState("");
+  const [browseOem, setBrowseOem] = useState("");
+  const [productFilterOpen, setProductFilterOpen] = useState(false);
   const [browseRows, setBrowseRows] = useState<ProductItemBrowseRow[]>([]);
   const [browseTotal, setBrowseTotal] = useState(0);
+  const [browseLoading, setBrowseLoading] = useState(false);
   const [selectedBrowse, setSelectedBrowse] = useState<Record<number, boolean>>(
     {}
   );
+  const [carListId, setCarListId] = useState<number | null>(null);
+  const [whItemId, setWhItemId] = useState<number | null>(null);
+  const browseListQuery = useCrudListQuery({});
+  const {
+    page: browsePage,
+    setPage: setBrowsePage,
+    pageSize: browsePageSize,
+    onPageSizeChange: onBrowsePageSizeChange,
+    sortKey: browseSortKey,
+    sortDir: browseSortDir,
+    handleSortChange: handleBrowseSortChange,
+    totalPages: browseTotalPages,
+    safePage: browseSafePage,
+  } = browseListQuery;
   const [cartTab, setCartTab] = useState<"items" | "compare">("items");
-  const [productTab, setProductTab] = useState<"products" | "compare">(
-    "products"
-  );
   const [cart, setCart] = useState<CartLine[]>([]);
   const [status, setStatus] = useState<StoreSalesStatus>("draft");
   const [sku, setSku] = useState("");
@@ -241,6 +297,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
           time: ra.toTimeString().slice(0, 5),
         });
       }
+      if (d.status === "draft" || d.status === "pending") {
+        setCustomerPhase("locked");
+      }
       setCart(
         (d.items ?? []).map((it, i) => ({
           key: `loaded-${i}`,
@@ -314,7 +373,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const goToProductStep = () => {
     productStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.setTimeout(() => productSearchRef.current?.focus(), 400);
+    window.setTimeout(() => {
+      document.getElementById("store-sales-product-search")?.focus();
+    }, 400);
   };
 
   const handleNextStep = () => {
@@ -346,20 +407,61 @@ export function StoreSalesFormPage({ orderId }: Props) {
     }
   };
 
-  const searchProducts = async () => {
+  const applyProductSearch = () => {
+    setProductSearchApplied(productSearch.trim());
+    setBrowseRequested(true);
+    setBrowsePage(1);
+  };
+
+  const loadBrowse = useCallback(async () => {
+    if (!browseRequested) return;
+    setBrowseLoading(true);
     try {
       const res = await fetchProductItems(locale, {
-        page: productPage,
-        limit: 10,
-        search: productSearch,
+        page: browsePage,
+        limit: browsePageSize,
+        search: productSearchApplied || undefined,
         isActive: true,
+        productCategoryId: browseCategoryId
+          ? Number(browseCategoryId)
+          : undefined,
+        carBrandId: browseBrandId ? Number(browseBrandId) : undefined,
+        productAttributeModelId: browseModelId
+          ? Number(browseModelId)
+          : undefined,
+        carYear: browseCarYear ? Number(browseCarYear) : undefined,
+        oem: browseOem.trim() || undefined,
+        sort: browseSortKey ?? undefined,
+        order: browseSortDir ?? undefined,
       });
       setBrowseRows(res.items);
       setBrowseTotal(res.meta.total);
-    } catch {
-      toast.error(tError("loadFailed"));
+    } catch (e) {
+      toast.error(
+        e instanceof ProductListApiError ? e.message : tError("loadFailed")
+      );
+    } finally {
+      setBrowseLoading(false);
     }
-  };
+  }, [
+    locale,
+    browseRequested,
+    productSearchApplied,
+    browsePage,
+    browsePageSize,
+    browseCategoryId,
+    browseBrandId,
+    browseModelId,
+    browseCarYear,
+    browseOem,
+    browseSortKey,
+    browseSortDir,
+    tError,
+  ]);
+
+  useEffect(() => {
+    void loadBrowse();
+  }, [loadBrowse]);
 
   const addProduct = (row: ProductItemBrowseRow) => {
     setCart((c) => [
@@ -381,6 +483,27 @@ export function StoreSalesFormPage({ orderId }: Props) {
     }
     setSelectedBrowse({});
   };
+
+  const toggleBrowseRow = (id: number, checked: boolean) => {
+    setSelectedBrowse((s) => ({ ...s, [id]: checked }));
+  };
+
+  const toggleBrowsePage = (checked: boolean) => {
+    setSelectedBrowse((s) => {
+      const next = { ...s };
+      for (const row of browseRows) {
+        if (checked) next[row.id] = true;
+        else delete next[row.id];
+      }
+      return next;
+    });
+  };
+
+  const browsePageSafe = browseSafePage(browseTotal);
+  const selectedBrowseCount = useMemo(
+    () => Object.values(selectedBrowse).filter(Boolean).length,
+    [selectedBrowse]
+  );
 
   const bodyFromCart = (nextStatus: StoreSalesStatus): StoreSalesCreateBody => {
     const items: StoreSalesItemInput[] = cart.map((line) => ({
@@ -464,13 +587,18 @@ export function StoreSalesFormPage({ orderId }: Props) {
     !!orderId && status !== "draft" && status !== "pending";
 
   const customerFieldsDisabled = readOnly || customerPhase === "locked";
-  const productActionsDisabled = readOnly || customerPhase === "changing";
+  const productActionsDisabled =
+    readOnly || customerPhase !== "locked";
+
+  const openCompareAdd = () => {
+    if (productActionsDisabled) return;
+    setCompareDetail("");
+    setCompareQty("1");
+    setCompareOpen(true);
+  };
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <h1 className="text-2xl font-semibold">
-        {orderId ? tForm("titleEdit") : tForm("titleCreate")}
-      </h1>
       <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,6fr)_minmax(0,4fr)]">
         <div className="flex flex-col gap-4">
           <Card className="overflow-visible">
@@ -662,106 +790,240 @@ export function StoreSalesFormPage({ orderId }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  ref={productSearchRef}
-                  id="store-sales-product-search"
-                  className="min-w-0 flex-1"
-                  type="search"
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder={tSearch("placeholder")}
-                  disabled={productActionsDisabled}
-                />
-                <Button
-                  type="button"
-                  onClick={() => void searchProducts()}
-                  disabled={productActionsDisabled}
-                >
-                  <Search className="text-current" aria-hidden />
-                </Button>
-              </div>
-              <Tabs value={productTab} onValueChange={(v) => setProductTab(v as typeof productTab)}>
-                <TabsList>
-                  <TabsTrigger value="products">{tForm("tabProducts")}</TabsTrigger>
-                  <TabsTrigger value="compare">{tForm("tabCompare")}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="products" className="space-y-3">
-                  {browseRows.length === 0 ? (
-                    <p className="text-muted-foreground text-center text-sm py-8">
-                      {tForm("emptyBrowse")}
-                    </p>
-                  ) : (
-                    browseRows.map((row) => (
-                      <div
-                        key={row.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
+              {!readOnly ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+                      <CrudSearchField
+                        id="store-sales-product-search"
+                        className="min-w-[12rem] flex-1"
+                        value={productSearch}
+                        onChange={setProductSearch}
+                        placeholder={tForm("productSearchPlaceholder")}
+                        disabled={productActionsDisabled}
+                      />
+                      <ButtonIcon
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="shrink-0"
+                        onClick={applyProductSearch}
+                        disabled={productActionsDisabled}
+                        aria-label={tSearch("placeholder")}
                       >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!selectedBrowse[row.id]}
-                            onChange={(e) =>
-                              setSelectedBrowse((s) => ({
-                                ...s,
-                                [row.id]: e.target.checked,
-                              }))
+                        <Search className="text-primary" aria-hidden />
+                      </ButtonIcon>
+                    </div>
+                    <div className="min-w-[10rem] flex-1">
+                      <RemoteComboboxField
+                        label={tForm("filterCategory")}
+                        value={browseCategoryId}
+                        onValueChange={(v) => {
+                          setBrowseCategoryId(v);
+                          setBrowsePage(1);
+                        }}
+                        placeholder={tCrud("filter.select", {
+                          label: tForm("filterCategory"),
+                        })}
+                        emptyLabel={tFormRoot("combobox.noResults")}
+                        inputClassName="w-full min-w-[10rem]"
+                        showClear
+                        disabled={productActionsDisabled}
+                        onLoadOptions={(ctx) =>
+                          loadProductItemBrowseCategoryComboboxOptions(
+                            displayLocale,
+                            {
+                              search: ctx.search,
+                              signal: ctx.signal,
                             }
-                            disabled={productActionsDisabled}
-                          />
-                          <span>{row.name || row.sku}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="tabular-nums">
-                            {money(row.price ?? 0, locale)}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => addProduct(row)}
-                            disabled={productActionsDisabled}
-                          >
-                            <Plus className="text-current" aria-hidden />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  <div className="flex flex-wrap gap-2">
+                          )
+                        }
+                        resolveSelectedLabel={(value) =>
+                          resolveProductItemBrowseCategoryLabel(
+                            displayLocale,
+                            value
+                          )
+                        }
+                      />
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
+                      className={cn(
+                        "shrink-0 gap-1.5 border-primary text-primary hover:bg-primary/10 hover:text-primary",
+                        "aria-expanded:border-primary aria-expanded:bg-primary/10 aria-expanded:text-primary",
+                        "active:border-primary active:bg-primary/10 active:text-primary"
+                      )}
+                      aria-expanded={productFilterOpen}
+                      onClick={() => setProductFilterOpen((o) => !o)}
+                      disabled={productActionsDisabled}
+                    >
+                      <Filter className="size-4 text-current" aria-hidden />
+                      {tForm("filter")}
+                    </Button>
+                  </div>
+                  {productFilterOpen ? (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <RemoteComboboxField
+                        label={tProductAttr("carBrand")}
+                        value={browseBrandId}
+                        onValueChange={(v) => {
+                          setBrowseBrandId(v);
+                          setBrowseModelId("");
+                          setBrowsePage(1);
+                        }}
+                        placeholder={tFormRoot("placeholder.select", {
+                          label: tProductAttr("carBrand"),
+                        })}
+                        emptyLabel={tFormRoot("combobox.noResults")}
+                        inputClassName="w-full"
+                        showClear
+                        disabled={productActionsDisabled}
+                        onLoadOptions={(ctx) =>
+                          loadProductCarBrandComboboxOptions(displayLocale, {
+                            search: ctx.search,
+                            signal: ctx.signal,
+                          })
+                        }
+                        resolveSelectedLabel={async (value) => {
+                          const id = Number(value);
+                          if (!Number.isFinite(id)) return null;
+                          return resolveProductCarBrandLabel(displayLocale, id);
+                        }}
+                      />
+                      <RemoteComboboxField
+                        label={tForm("filterModel")}
+                        value={browseModelId}
+                        onValueChange={(v) => {
+                          setBrowseModelId(v);
+                          setBrowsePage(1);
+                        }}
+                        placeholder={tFormRoot("placeholder.select", {
+                          label: tForm("filterModel"),
+                        })}
+                        emptyLabel={tFormRoot("combobox.noResults")}
+                        inputClassName="w-full"
+                        showClear
+                        disabled={productActionsDisabled || !browseBrandId}
+                        onLoadOptions={(ctx) =>
+                          loadProductCarModelComboboxOptions(displayLocale, {
+                            search: ctx.search,
+                            signal: ctx.signal,
+                            parentId: browseBrandId
+                              ? Number(browseBrandId)
+                              : undefined,
+                          })
+                        }
+                        resolveSelectedLabel={async (value) => {
+                          const id = Number(value);
+                          if (!Number.isFinite(id)) return null;
+                          return resolveProductCarModelLabel(displayLocale, id);
+                        }}
+                      />
+                      <RemoteComboboxField
+                        id="store-sales-browse-year"
+                        label={tForm("filterYear")}
+                        value={browseCarYear}
+                        onValueChange={(v) => {
+                          setBrowseCarYear(v);
+                          setBrowsePage(1);
+                        }}
+                        placeholder={tFormRoot("placeholder.select", {
+                          label: tForm("filterYear"),
+                        })}
+                        emptyLabel={tFormRoot("combobox.noResults")}
+                        inputClassName="w-full"
+                        showClear
+                        disabled={productActionsDisabled}
+                        onLoadOptions={({ search }) =>
+                          Promise.resolve(loadStoreSalesBrowseYearOptions(search))
+                        }
+                        resolveSelectedLabel={async (value) => value || null}
+                      />
+                      <Input
+                        id="store-sales-browse-oem"
+                        type="search"
+                        value={browseOem}
+                        onChange={(e) => {
+                          setBrowseOem(e.target.value);
+                          setBrowsePage(1);
+                        }}
+                        placeholder={tFormRoot("placeholder.input", {
+                          label: tForm("filterOem"),
+                        })}
+                        aria-label={tForm("filterOem")}
+                        disabled={productActionsDisabled}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="flex w-full items-center justify-between gap-2 border-b border-border">
+                <span
+                  className="-mb-px border-primary py-2.5 text-sm font-medium text-primary"
+                  aria-current="page"
+                >
+                  {tForm("tabProducts")}
+                </span>
+                <div className="mb-2 flex shrink-0 items-center gap-2">
+                  {selectedBrowseCount > 0 ? (
+                    <Button
+                      type="button"
+                      size="lg"
                       onClick={addSelected}
                       disabled={productActionsDisabled}
                     >
                       {tForm("bulkAdd")}
                     </Button>
-                    {productPage * 10 < browseTotal ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        disabled={productActionsDisabled}
-                        onClick={() => {
-                          setProductPage((p) => p + 1);
-                          void searchProducts();
-                        }}
-                      >
-                        {tForm("loadMore")}
-                      </Button>
-                    ) : null}
-                  </div>
-                </TabsContent>
-                <TabsContent value="compare">
+                  ) : null}
                   <Button
                     type="button"
-                    onClick={() => setCompareOpen(true)}
+                    variant="outline"
+                    size="lg"
+                    className=""
                     disabled={productActionsDisabled}
+                    onClick={openCompareAdd}
                   >
-                    <Plus className="text-current" aria-hidden />
                     {tForm("tabCompare")}
                   </Button>
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
+              <div className="mt-4 space-y-3">
+                {!browseRequested ? (
+                  <StoreSalesProductBrowseEmpty />
+                ) : (
+                  <>
+                    <StoreSalesProductBrowseTable
+                      rows={browseRows}
+                      loading={browseLoading}
+                      sortKey={browseSortKey}
+                      sortDir={browseSortDir}
+                      onSortChange={handleBrowseSortChange}
+                      selectedIds={selectedBrowse}
+                      onToggleRow={toggleBrowseRow}
+                      onTogglePage={toggleBrowsePage}
+                      onAdd={addProduct}
+                      onOpenCars={setCarListId}
+                      onOpenWarehouse={setWhItemId}
+                      disabled={productActionsDisabled}
+                    />
+                    <CrudPaginationBar
+                      page={browsePageSafe}
+                      pageSize={browsePageSize}
+                      meta={{
+                        total: browseTotal,
+                        totalPages: browseTotalPages(browseTotal),
+                      }}
+                      onPageChange={setBrowsePage}
+                      onPageSizeChange={(size) =>
+                        onBrowsePageSizeChange(
+                          size as (typeof browsePageSize)
+                        )
+                      }
+                    />
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -878,6 +1140,21 @@ export function StoreSalesFormPage({ orderId }: Props) {
         onConfirm={() => setShippingOpen(false)}
       />
 
+      <ProductListCarModal
+        listId={carListId}
+        open={carListId != null}
+        onOpenChange={(open: boolean) => {
+          if (!open) setCarListId(null);
+        }}
+      />
+      <ProductListWarehouseModal
+        itemId={whItemId}
+        open={whItemId != null}
+        onOpenChange={(open: boolean) => {
+          if (!open) setWhItemId(null);
+        }}
+      />
+
       <Dialog
         open={changeCustomerDialogOpen}
         onOpenChange={setChangeCustomerDialogOpen}
@@ -915,7 +1192,16 @@ export function StoreSalesFormPage({ orderId }: Props) {
           </div>
           <div className="grid gap-1">
             <Label>{tForm("compareQty")}</Label>
-            <Input value={compareQty} onChange={(e) => setCompareQty(e.target.value)} inputMode="numeric" />
+            <Input
+              type="number"
+              min={1}
+              step={1}
+              value={compareQty}
+              onChange={(e) => setCompareQty(e.target.value)}
+              placeholder={tFormRoot("placeholder.input", {
+                label: tForm("compareQty"),
+              })}
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setCompareOpen(false)}>

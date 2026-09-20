@@ -25,6 +25,20 @@ export const Default: Story = {
   },
 };
 
+export const Disabled: Story = {
+  args: {
+    value: "",
+    onChange: () => {},
+    disabled: true,
+  },
+  render: function Render() {
+    const [query, setQuery] = useState("");
+    return (
+      <CrudSearchField value={query} onChange={setQuery} disabled />
+    );
+  },
+};
+
 export const ToolbarRowPreview: Story = {
   name: "Toolbar row (with status filter)",
   args: {

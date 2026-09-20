@@ -117,3 +117,62 @@ export function filterItemsToComboboxOptions(
 ): RemoteComboboxOption[] {
   return items.map((row) => ({ value: String(row.id), label: row.name }));
 }
+
+export async function loadProductCarBrandComboboxOptions(
+  locale: string,
+  params: { search: string; signal?: AbortSignal }
+): Promise<RemoteComboboxOption[]> {
+  if (params.signal?.aborted) return [];
+  const res = await fetchProductListFilters(locale, "cars", {
+    page: 1,
+    limit: REMOTE_COMBOBOX_LIMIT,
+    search: params.search.trim() || undefined,
+    typeCar: "brand",
+    isActive: true,
+  });
+  if (params.signal?.aborted) return [];
+  return filterItemsToComboboxOptions(res.items);
+}
+
+export async function resolveProductCarBrandLabel(
+  locale: string,
+  id: number
+): Promise<string> {
+  const res = await fetchProductListFilters(locale, "cars", {
+    page: 1,
+    limit: 1,
+    id,
+    typeCar: "brand",
+  });
+  return res.items[0]?.name ?? String(id);
+}
+
+export async function loadProductCarModelComboboxOptions(
+  locale: string,
+  params: { search: string; signal?: AbortSignal; parentId?: number }
+): Promise<RemoteComboboxOption[]> {
+  if (params.signal?.aborted) return [];
+  const res = await fetchProductListFilters(locale, "cars", {
+    page: 1,
+    limit: REMOTE_COMBOBOX_LIMIT,
+    search: params.search.trim() || undefined,
+    typeCar: "model",
+    parentId: params.parentId,
+    isActive: true,
+  });
+  if (params.signal?.aborted) return [];
+  return filterItemsToComboboxOptions(res.items);
+}
+
+export async function resolveProductCarModelLabel(
+  locale: string,
+  id: number
+): Promise<string> {
+  const res = await fetchProductListFilters(locale, "cars", {
+    page: 1,
+    limit: 1,
+    id,
+    typeCar: "model",
+  });
+  return res.items[0]?.name ?? String(id);
+}
