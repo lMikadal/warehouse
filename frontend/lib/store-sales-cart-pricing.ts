@@ -1,12 +1,30 @@
-import { fetchTierById } from "@/lib/member-tier-api";
+import {
+  fetchTierById,
+  type MemberTierRelation,
+  type TierScopeType,
+} from "@/lib/member-tier-api";
+import {
+  loadMemberSettingRelationsForUser,
+  resolveMemberSettingRelationIdForCredit,
+} from "@/lib/member-user-relations";
 import {
   fetchMemberUser,
   type MemberUserDiscountRow,
 } from "@/lib/member-user-api";
 import {
+  exportOrderCompareRules,
+  type OrderCompareExportRow,
+} from "@/lib/order-compare-api";
+import {
+  fetchAllActiveCategories,
+  pathFromId,
+  type ProductAttributeRow,
+} from "@/lib/product-category-cascade";
+import {
   fetchProductItems,
   type ProductItemBrowseRow,
 } from "@/lib/product-list-api";
+import type { DisplayLocale } from "@/lib/format-datetime";
 
 /** Matches store sales form cart lines used for repricing. */
 export type StoreSalesCartLineForPricing = {
@@ -28,6 +46,18 @@ type PricingRow = {
   member_discount_minimum_order: number | null;
   member_discount_tier: number;
   member_discount_tier_type: string | null;
+};
+
+type DiscountVal = { discount: number; discount_type: string };
+
+type RepriceContext = {
+  discounts: MemberUserDiscountRow[];
+  memberCreditId: number | null;
+  settingRelationId: number | null;
+  tierRelations: MemberTierRelation[];
+  tierActive: boolean;
+  discountRuleIndex: Map<string, DiscountVal>;
+  categories: ProductAttributeRow[];
 };
 
 function roundMoney2(n: number) {
@@ -75,6 +105,112 @@ function pickMemberDiscount(
     return bc - ac || (b.id || 0) - (a.id || 0);
   });
   return pool[0] ?? null;
+}
+
+export function categoryIdsLeafFirst(
+  categories: ProductAttributeRow[],
+  categoryId: number | null | undefined
+): number[] {
+  const path = pathFromId(categories, categoryId ?? null);
+  return [...path].reverse();
+}
+
+function discountRuleKey(
+  brandId: number,
+  categoryId: number | null,
+  relationId: number
+): string {
+  return `${brandId}:${categoryId ?? "null"}:${relationId}`;
+}
+
+export function buildDiscountRuleIndex(
+  rules: OrderCompareExportRow[]
+): Map<string, DiscountVal> {
+  const map = new Map<string, DiscountVal>();
+  for (const r of rules) {
+    if (!Number.isFinite(r.discount) || r.discount <= 0) continue;
+    map.set(
+      discountRuleKey(r.brand_id, r.category_id ?? null, r.member_setting_relation_id),
+      {
+        discount: r.discount,
+        discount_type: r.discount_type || "percent",
+      }
+    );
+  }
+  return map;
+}
+
+function tierRelationMatchesProduct(
+  rel: MemberTierRelation,
+  product: ProductItemBrowseRow | undefined
+): boolean {
+  const brandId = product?.product_brand_id;
+  const categoryId = product?.product_category_id;
+  const attrs = new Set(rel.attribute_ids ?? []);
+  const type = rel.type as TierScopeType;
+  switch (type) {
+    case "all":
+      return true;
+    case "brand":
+      return brandId != null && brandId > 0 && attrs.has(brandId);
+    case "category":
+      return categoryId != null && categoryId > 0 && attrs.has(categoryId);
+    case "except_brand":
+      return brandId == null || brandId <= 0 || !attrs.has(brandId);
+    case "except_category":
+      return categoryId == null || categoryId <= 0 || !attrs.has(categoryId);
+    default:
+      return false;
+  }
+}
+
+export function pickTierRelationDiscount(
+  relations: MemberTierRelation[],
+  settingRelationId: number | null,
+  cartSubtotal: number,
+  product: ProductItemBrowseRow | undefined
+): DiscountVal | null {
+  if (settingRelationId == null || settingRelationId <= 0) return null;
+  const sub = Number.isFinite(cartSubtotal) ? cartSubtotal : 0;
+  const rel = relations.find(
+    (r) =>
+      r.member_setting_relation_id === settingRelationId &&
+      Number.isFinite(r.discount) &&
+      r.discount > 0 &&
+      sub >= r.purchase_start &&
+      sub <= r.purchase_end &&
+      tierRelationMatchesProduct(r, product)
+  );
+  if (!rel) return null;
+  return {
+    discount: rel.discount,
+    discount_type: rel.discount_type || "percent",
+  };
+}
+
+export function pickCatalogDiscountRule(
+  index: Map<string, DiscountVal>,
+  categories: ProductAttributeRow[],
+  product: ProductItemBrowseRow | undefined,
+  settingRelationId: number | null
+): DiscountVal | null {
+  const brandId = product?.product_brand_id;
+  if (
+    settingRelationId == null ||
+    settingRelationId <= 0 ||
+    brandId == null ||
+    brandId <= 0
+  ) {
+    return null;
+  }
+  for (const catId of categoryIdsLeafFirst(
+    categories,
+    product.product_category_id
+  )) {
+    const hit = index.get(discountRuleKey(brandId, catId, settingRelationId));
+    if (hit) return hit;
+  }
+  return index.get(discountRuleKey(brandId, null, settingRelationId)) ?? null;
 }
 
 function isWholesale(row: PricingRow, qty: number) {
@@ -140,13 +276,20 @@ function lineTotalDiscount(row: PricingRow, qty: number) {
   );
 }
 
-async function refreshBrowsePrice(
+async function refreshLineProduct(
   locale: string,
   line: StoreSalesCartLineForPricing
-): Promise<number> {
-  const itemId = line.product?.id;
-  if (!itemId) return line.unitPrice;
-  const sku = line.product?.sku?.trim();
+): Promise<ProductItemBrowseRow | undefined> {
+  const base = line.product;
+  const itemId = base?.id;
+  if (!itemId) return base;
+
+  async function mergeHit(hit: ProductItemBrowseRow | undefined) {
+    if (!hit) return base;
+    return { ...base, ...hit, id: itemId };
+  }
+
+  const sku = base.sku?.trim();
   if (sku) {
     const res = await fetchProductItems(locale, {
       page: 1,
@@ -155,7 +298,7 @@ async function refreshBrowsePrice(
       isActive: true,
     });
     const hit = res.items.find((r) => r.id === itemId);
-    if (hit) return hit.price ?? 0;
+    return mergeHit(hit);
   }
   const res = await fetchProductItems(locale, {
     page: 1,
@@ -163,19 +306,23 @@ async function refreshBrowsePrice(
     isActive: true,
   });
   const hit = res.items.find((r) => r.id === itemId);
-  return hit?.price ?? line.unitPrice;
+  return mergeHit(hit);
 }
 
-async function buildPricingRow(
+function buildPricingRow(
   itemId: number,
   listPrice: number,
   product: ProductItemBrowseRow | undefined,
-  discounts: MemberUserDiscountRow[],
-  memberCreditId: number | null,
-  tierDiscount: { discount: number; discount_type: string } | null
-): Promise<PricingRow> {
+  ctx: RepriceContext,
+  cartSubtotal: number
+): PricingRow {
   const todayYmd = localDateYmd(new Date());
-  const md = pickMemberDiscount(itemId, discounts, memberCreditId, todayYmd);
+  const md = pickMemberDiscount(
+    itemId,
+    ctx.discounts,
+    ctx.memberCreditId,
+    todayYmd
+  );
   const wh = product?.price_wholesale;
   const minWh = product?.amount_price_wholesale;
   const row: PricingRow = {
@@ -192,17 +339,95 @@ async function buildPricingRow(
     member_discount_tier: 0,
     member_discount_tier_type: null,
   };
+
+  let fallback: DiscountVal | null = null;
+  if (!md) {
+    if (ctx.tierActive) {
+      fallback = pickTierRelationDiscount(
+        ctx.tierRelations,
+        ctx.settingRelationId,
+        cartSubtotal,
+        product
+      );
+    }
+    if (!fallback) {
+      fallback = pickCatalogDiscountRule(
+        ctx.discountRuleIndex,
+        ctx.categories,
+        product,
+        ctx.settingRelationId
+      );
+    }
+  }
+
   if (md) {
     row.member_discount = Number(md.discount) || 0;
     row.member_discount_type = md.discount_type || null;
     const minQ = Number(md.minimum_qty);
     row.member_discount_minimum_order =
       Number.isFinite(minQ) && minQ > 0 ? minQ : null;
-  } else if (tierDiscount) {
-    row.member_discount_tier = tierDiscount.discount;
-    row.member_discount_tier_type = tierDiscount.discount_type || "percent";
+  } else if (fallback) {
+    row.member_discount_tier = fallback.discount;
+    row.member_discount_tier_type = fallback.discount_type || "percent";
   }
   return row;
+}
+
+async function loadRepriceContext(
+  locale: string,
+  memberUserId: number | null,
+  creditId: string
+): Promise<RepriceContext> {
+  const memberCreditId = creditId ? Number(creditId) : null;
+  const empty: RepriceContext = {
+    discounts: [],
+    memberCreditId,
+    settingRelationId: null,
+    tierRelations: [],
+    tierActive: false,
+    discountRuleIndex: new Map(),
+    categories: [],
+  };
+  if (!memberUserId || memberUserId <= 0) return empty;
+
+  const member = await fetchMemberUser(locale, memberUserId);
+  const relationRows = await loadMemberSettingRelationsForUser(
+    locale,
+    member.setting_relation_ids ?? []
+  );
+  const settingRelationId = resolveMemberSettingRelationIdForCredit(
+    member.setting_relation_ids ?? [],
+    relationRows,
+    creditId
+  );
+
+  let tierRelations: MemberTierRelation[] = [];
+  let tierActive = false;
+  if (member.member_tier_id) {
+    try {
+      const tier = await fetchTierById(locale, member.member_tier_id);
+      tierActive = tier.is_active !== false;
+      tierRelations = tier.relations ?? [];
+    } catch {
+      tierRelations = [];
+      tierActive = false;
+    }
+  }
+
+  const [rules, categories] = await Promise.all([
+    exportOrderCompareRules(locale),
+    fetchAllActiveCategories(locale as DisplayLocale),
+  ]);
+
+  return {
+    discounts: member.discounts ?? [],
+    memberCreditId,
+    settingRelationId,
+    tierRelations,
+    tierActive,
+    discountRuleIndex: buildDiscountRuleIndex(rules),
+    categories,
+  };
 }
 
 /**
@@ -214,32 +439,27 @@ export async function repriceStoreSalesCartLines(
   memberUserId: number | null,
   creditId: string
 ): Promise<StoreSalesCartLineForPricing[]> {
-  const memberCreditId = creditId ? Number(creditId) : null;
-  let discounts: MemberUserDiscountRow[] = [];
-  let tierDiscount: { discount: number; discount_type: string } | null = null;
+  const ctx = await loadRepriceContext(locale, memberUserId, creditId);
 
-  if (memberUserId && memberUserId > 0) {
-    const member = await fetchMemberUser(locale, memberUserId);
-    discounts = member.discounts ?? [];
-    if (member.member_tier_id) {
-      try {
-        const tier = await fetchTierById(locale, member.member_tier_id);
-        if (
-          tier.is_active !== false &&
-          tier.type === "all" &&
-          Number.isFinite(tier.discount) &&
-          tier.discount > 0
-        ) {
-          tierDiscount = {
-            discount: tier.discount,
-            discount_type: tier.discount_type || "percent",
-          };
-        }
-      } catch {
-        tierDiscount = null;
-      }
-    }
+  type Prepared = {
+    line: StoreSalesCartLineForPricing;
+    listPrice: number;
+    product: ProductItemBrowseRow;
+  };
+  const prepared: Prepared[] = [];
+
+  for (const line of lines) {
+    if (line.type !== "item" || !line.product?.id) continue;
+    const product = (await refreshLineProduct(locale, line)) ?? line.product;
+    const listPrice = Number(product.price) || line.unitPrice;
+    prepared.push({ line, listPrice, product });
   }
+
+  const cartSubtotal = roundMoney2(
+    prepared.reduce((sum, p) => sum + p.line.qty * p.listPrice, 0)
+  );
+
+  const preparedByKey = new Map(prepared.map((p) => [p.line.key, p]));
 
   const out: StoreSalesCartLineForPricing[] = [];
   for (const line of lines) {
@@ -247,14 +467,18 @@ export async function repriceStoreSalesCartLines(
       out.push(line);
       continue;
     }
-    const listPrice = await refreshBrowsePrice(locale, line);
-    const pricingRow = await buildPricingRow(
-      line.product.id,
+    const prep = preparedByKey.get(line.key);
+    if (!prep) {
+      out.push(line);
+      continue;
+    }
+    const { listPrice, product } = prep;
+    const pricingRow = buildPricingRow(
+      product.id,
       listPrice,
-      line.product,
-      discounts,
-      memberCreditId,
-      tierDiscount
+      product,
+      ctx,
+      cartSubtotal
     );
     const qty = line.qty;
     const unit = unitPrice(pricingRow, qty);
@@ -263,9 +487,7 @@ export async function repriceStoreSalesCartLines(
       ...line,
       unitPrice: unit,
       discount,
-      product: line.product
-        ? { ...line.product, price: listPrice }
-        : line.product,
+      product: { ...product, price: listPrice },
     });
   }
   return out;
@@ -376,7 +598,7 @@ export function summaryLinesFromCartItems(
     }));
 }
 
-// ponytail: self-check — run via `bun -e "import './frontend/lib/store-sales-cart-pricing.ts'"` if needed
+// ponytail: self-check — `STORE_SALES_PRICING_SELF_CHECK=1 bun --cwd frontend run …` on this module
 if (typeof process !== "undefined" && process.env.STORE_SALES_PRICING_SELF_CHECK) {
   const empty = computeStoreSalesPriceSummary([], 7, 0);
   if (empty.netTotal !== 0 || empty.itemsTotal !== 0) {
@@ -399,5 +621,132 @@ if (typeof process !== "undefined" && process.env.STORE_SALES_PRICING_SELF_CHECK
     /* ok */
   } else {
     throw new Error("canAddProductFromBrowse");
+  }
+
+  const relId = resolveMemberSettingRelationIdForCredit(
+    [3, 1, 2],
+    [
+      { id: 1, business_id: 1, credit_id: 2, group_id: 1 },
+      { id: 2, business_id: 1, credit_id: 1, group_id: 1 },
+      { id: 3, business_id: 1, credit_id: 1, group_id: 2 },
+    ],
+    "1"
+  );
+  if (relId !== 2) throw new Error("resolveMemberSettingRelationIdForCredit");
+
+  const categories: ProductAttributeRow[] = [
+    {
+      id: 1,
+      parent_id: null,
+      sort_order: 0,
+      name: "root",
+      is_active: true,
+      updated_at: "",
+    },
+    {
+      id: 2,
+      parent_id: 1,
+      sort_order: 0,
+      name: "child",
+      is_active: true,
+      updated_at: "",
+    },
+  ];
+  if (categoryIdsLeafFirst(categories, 2).join(",") !== "2,1") {
+    throw new Error("categoryIdsLeafFirst");
+  }
+
+  const ruleIndex = buildDiscountRuleIndex([
+    {
+      id: 1,
+      brand_id: 10,
+      brand_name: "B",
+      category_id: 1,
+      category_name: "root",
+      member_setting_relation_id: 5,
+      discount: 3,
+      discount_type: "percent",
+      updated_at: "",
+    },
+    {
+      id: 2,
+      brand_id: 10,
+      brand_name: "B",
+      category_id: 2,
+      category_name: "child",
+      member_setting_relation_id: 5,
+      discount: 7,
+      discount_type: "percent",
+      updated_at: "",
+    },
+  ]);
+  const leafRule = pickCatalogDiscountRule(
+    ruleIndex,
+    categories,
+    { id: 1, product_brand_id: 10, product_category_id: 2 } as ProductItemBrowseRow,
+    5
+  );
+  if (leafRule?.discount !== 7) throw new Error("discount_rule deepest first");
+
+  const tierRel: MemberTierRelation = {
+    id: 1,
+    member_setting_relation_id: 5,
+    purchase_start: 0,
+    purchase_end: 999999,
+    discount: 4,
+    discount_type: "percent",
+    type: "all",
+    is_promotion: false,
+    updated_at: "",
+  };
+  const tierDisc = pickTierRelationDiscount([tierRel], 5, 100, {
+    id: 1,
+  } as ProductItemBrowseRow);
+  if (tierDisc?.discount !== 4) throw new Error("tier relation pick");
+
+  const wholesaleRow: PricingRow = {
+    price: 10,
+    wholesale_price: 8,
+    amount_wholesale_price: 100,
+    member_discount: 5,
+    member_discount_type: "percent",
+    member_discount_minimum_order: null,
+    member_discount_tier: 0,
+    member_discount_tier_type: null,
+  };
+  if (lineMemberDiscount(wholesaleRow, 100) !== 0) {
+    throw new Error("wholesale zeroes member discount");
+  }
+
+  const memberCtx: RepriceContext = {
+    discounts: [
+      {
+        id: 1,
+        product_item_id: 1,
+        minimum_qty: 10,
+        discount: 5,
+        discount_type: "percent",
+        member_credit_id: null,
+      },
+    ],
+    memberCreditId: 1,
+    settingRelationId: null,
+    tierRelations: [],
+    tierActive: false,
+    discountRuleIndex: new Map(),
+    categories: [],
+  };
+  const memberRow = buildPricingRow(
+    1,
+    10,
+    { id: 1 } as ProductItemBrowseRow,
+    memberCtx,
+    120
+  );
+  if (lineMemberDiscount(memberRow, 12) !== 6) {
+    throw new Error("member user discount at qty 12");
+  }
+  if (lineMemberDiscount(memberRow, 9) !== 0) {
+    throw new Error("member user discount below min qty");
   }
 }

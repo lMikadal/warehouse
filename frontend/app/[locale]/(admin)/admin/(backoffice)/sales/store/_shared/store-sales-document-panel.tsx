@@ -102,6 +102,18 @@ function isWholesaleQty(product: ProductItemBrowseRow | undefined, qty: number) 
   return qty >= min;
 }
 
+function cartLineListPrice(line: StoreSalesDocumentCartLine) {
+  return Number(line.product?.price ?? line.unitPrice) || 0;
+}
+
+function cartLineEffectiveUnit(line: StoreSalesDocumentCartLine) {
+  const q = line.qty;
+  const list = cartLineListPrice(line);
+  if (q <= 0) return list;
+  const net = Math.max(0, q * list - (Number(line.discount) || 0));
+  return Math.round((net / q) * 100) / 100;
+}
+
 function CartThumbPlaceholder() {
   return (
     <div
@@ -156,49 +168,34 @@ function CartThumb({ fileId, locale }: { fileId: number; locale: string }) {
 function CartUnitPriceCell({
   line,
   locale,
-  tForm,
 }: {
   line: StoreSalesDocumentCartLine;
   locale: string;
-  tForm: (key: string, values?: { count: number }) => string;
 }) {
   const product = line.product;
-  const list = product?.price ?? line.unitPrice;
-  const wh = product?.price_wholesale;
-  const minWh = product?.amount_price_wholesale;
-  const hasWh =
-    wh != null && Number.isFinite(wh) && wh > 0 && wh < list;
-  const wholesaleActive = hasWh && isWholesaleQty(product, line.qty);
+  const list = cartLineListPrice(line);
+  const wholesaleActive = isWholesaleQty(product, line.qty);
+  const lineDiscount = Number(line.discount) || 0;
+  const effectiveUnit = cartLineEffectiveUnit(line);
+  const showPromoPrice =
+    wholesaleActive || (lineDiscount > 0 && effectiveUnit < list - 0.000_1);
 
-  if (wholesaleActive) {
+  if (showPromoPrice) {
+    const promoUnit = wholesaleActive ? line.unitPrice : effectiveUnit;
     return (
       <div className="space-y-0.5 text-right">
         <div className="text-muted-foreground tabular-nums line-through">
           {formatMoney(list, locale)}
         </div>
         <div className="text-destructive tabular-nums font-semibold">
-          {formatMoney(line.unitPrice, locale)}
+          {formatMoney(promoUnit, locale)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-0.5 text-right">
-      <div className="tabular-nums">{formatMoney(list, locale)}</div>
-      {hasWh && wh != null ? (
-        <>
-          <div className="text-destructive tabular-nums text-xs font-semibold">
-            {formatMoney(wh, locale)}
-          </div>
-          {minWh != null ? (
-            <div className="text-muted-foreground text-xs">
-              {tForm("wholesaleMinQty", { count: Math.trunc(minWh) })}
-            </div>
-          ) : null}
-        </>
-      ) : null}
-    </div>
+    <div className="text-right tabular-nums">{formatMoney(list, locale)}</div>
   );
 }
 
@@ -486,7 +483,6 @@ export function StoreSalesDocumentPanel({
                                   <CartUnitPriceCell
                                     line={line}
                                     locale={locale}
-                                    tForm={tForm}
                                   />
                                 </TableCell>
                                 <TableCell className="text-right tabular-nums">

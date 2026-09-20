@@ -1,3 +1,5 @@
+import { fetchMemberUserSettingRelationById } from "@/lib/member-user-filters-api";
+
 export type MemberBusinessRelationRow = {
   id: number;
   credit_id: number;
@@ -18,6 +20,34 @@ export type MemberSettingRelationFilterRow = {
 };
 
 export type RemoteOption = { value: string; label: string };
+
+/** Lowest relation id on the member that matches the selected credit type. */
+export function resolveMemberSettingRelationIdForCredit(
+  memberRelationIds: number[],
+  rows: MemberSettingRelationFilterRow[],
+  creditId: string
+): number | null {
+  const credit = Number(creditId);
+  if (!Number.isFinite(credit) || credit <= 0 || !memberRelationIds.length) {
+    return null;
+  }
+  const allowed = new Set(memberRelationIds);
+  const matches = rows
+    .filter((r) => allowed.has(r.id) && r.credit_id === credit)
+    .sort((a, b) => a.id - b.id);
+  return matches[0]?.id ?? null;
+}
+
+export async function loadMemberSettingRelationsForUser(
+  locale: string,
+  relationIds: number[]
+): Promise<MemberSettingRelationFilterRow[]> {
+  if (!relationIds.length) return [];
+  const rows = await Promise.all(
+    relationIds.map((id) => fetchMemberUserSettingRelationById(locale, id))
+  );
+  return rows.filter((r): r is MemberSettingRelationFilterRow => r != null);
+}
 
 export function creditOptionsFromRelations(
   relations: MemberBusinessRelationRow[]
