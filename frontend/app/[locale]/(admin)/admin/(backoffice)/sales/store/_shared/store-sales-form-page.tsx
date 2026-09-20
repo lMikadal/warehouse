@@ -4,6 +4,7 @@ import {
   FileText,
   Filter,
   MapPin,
+  Plus,
   RotateCcw,
   Search,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/components/ui/sidebar";
 
 import { StoreSalesFormDesktopSplitSkeleton } from "./store-sales-form-desktop-split-skeleton";
 
@@ -64,6 +66,10 @@ import {
   summaryLinesFromCartItems,
 } from "@/lib/store-sales-cart-pricing";
 import { loadMemberUserCreditOptions } from "@/lib/member-user-filters-combobox";
+import {
+  canStartAnotherStoreSalesSlip,
+  storeSalesFamilyContext,
+} from "./store-sales-list-rows";
 import { StoreSalesDocumentPanel } from "./store-sales-document-panel";
 import {
   fetchStoreSalesMemberSnapshot,
@@ -78,6 +84,7 @@ import {
   updateStoreSales,
   type StoreSalesCreateBody,
   type StoreSalesItemInput,
+  type StoreSalesListItem,
   type StoreSalesStatus,
 } from "@/lib/order-store-api";
 import {
@@ -210,6 +217,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const tProductAttr = useTranslations("productAttr");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("order", "order_store");
+  const { open: sidebarOpen, isMobile } = useSidebar();
+  const footerInsetLeft = !isMobile && sidebarOpen;
   const productStepRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(!!orderId);
@@ -270,6 +279,10 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const [changeCustomerDialogOpen, setChangeCustomerDialogOpen] =
     useState(false);
   const [confirmingCustomer, setConfirmingCustomer] = useState(false);
+  const [addonCreate, setAddonCreate] = useState(false);
+  const [familyRootId, setFamilyRootId] = useState<number | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<StoreSalesListItem[]>([]);
+  const [familyRootWaiting, setFamilyRootWaiting] = useState(false);
 
   const clearMemberSnapshot = useCallback(() => {
     setMemberId("");
@@ -363,6 +376,11 @@ export function StoreSalesFormPage({ orderId }: Props) {
           : undefined,
       }));
       setCart(await hydrateStoreSalesCartProducts(locale, loadedCart));
+      const fam = storeSalesFamilyContext(d);
+      setFamilyRootId(fam.rootId);
+      setFamilyMembers(fam.members);
+      setFamilyRootWaiting(fam.rootWaiting);
+      setAddonCreate(false);
     } catch {
       toast.error(tError("loadFailed"));
     } finally {
@@ -569,6 +587,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
     }));
     return {
       status: nextStatus,
+      parent_id:
+        addonCreate && familyRootId ? familyRootId : undefined,
       member_user_id: memberId ? Number(memberId) : null,
       member_setting_credit_id: creditId ? Number(creditId) : null,
       member_name: memberName || null,
@@ -599,21 +619,28 @@ export function StoreSalesFormPage({ orderId }: Props) {
     setShippingOpen(false);
   };
 
-  const save = async (nextStatus: StoreSalesStatus) => {
+  const save = async (
+    nextStatus: StoreSalesStatus,
+    options?: { printAfter?: boolean }
+  ) => {
     if (cart.length === 0) {
       toast.error(tForm("emptyCart"));
       return;
     }
     try {
       const body = bodyFromCart(nextStatus);
-      if (orderId) {
-        await updateStoreSales(locale, orderId, body);
-        toast.success(tCrud("toast.saved"));
-        void loadDetail();
-      } else {
+      const creating = addonCreate || !orderId;
+      if (creating) {
         const { id } = await createStoreSales(locale, body);
         toast.success(tCrud("toast.created"));
+        setAddonCreate(false);
+        if (options?.printAfter) printSlip();
         router.replace(`/admin/sales/store/${id}`);
+      } else if (orderId) {
+        await updateStoreSales(locale, orderId, body);
+        toast.success(tCrud("toast.saved"));
+        if (options?.printAfter) printSlip();
+        void loadDetail();
       }
     } catch (e) {
       toast.error(
@@ -684,7 +711,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const addProduct = useCallback(
     (row: ProductItemBrowseRow) => {
       const readOnlyOrder =
-        !!orderId && status !== "draft" && status !== "pending";
+        !!orderId && !addonCreate && status !== "draft";
       const actionsDisabled = readOnlyOrder || customerPhase !== "locked";
       if (actionsDisabled || !canAddProductFromBrowse(row)) return;
       const max = cartLineMaxQty(row);
@@ -731,7 +758,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
       }
       void repriceCartLines(next);
     },
-    [cart, orderId, status, customerPhase, repriceCartLines]
+    [cart, orderId, addonCreate, status, customerPhase, repriceCartLines]
   );
 
   const addSelected = useCallback(() => {
@@ -762,7 +789,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
   }
 
   const readOnly =
-    !!orderId && status !== "draft" && status !== "pending";
+    !!orderId && !addonCreate && status !== "draft";
 
   const customerFieldsDisabled = readOnly || customerPhase === "locked";
   const productActionsDisabled =
@@ -786,9 +813,29 @@ export function StoreSalesFormPage({ orderId }: Props) {
     setCompareOpen(true);
   };
 
+  const documentHeading =
+    addonCreate || !sku.trim() ? tForm("documentTitle") : sku;
+
+  const showAddAnotherSlip = canStartAnotherStoreSalesSlip(
+    !!perms.create,
+    addonCreate,
+    familyRootWaiting,
+    familyMembers
+  );
+
+  const startAnotherSlip = () => {
+    setAddonCreate(true);
+    setCart([]);
+    setCartTab("items");
+    setStatus("draft");
+    setSku("");
+    setDocumentCollapsed(false);
+    setShipping(scheduleShippingForCart([], orderId, emptyShippingDraft()));
+  };
+
   const documentPanelCommon = {
     locale,
-    sku: sku || undefined,
+    documentHeading,
     orderDateDisplay,
     receiveAtDisplay,
     receiveTypeLabel,
@@ -826,9 +873,13 @@ export function StoreSalesFormPage({ orderId }: Props) {
       updateCart((c) => c.filter((x) => x.key !== key)),
     onCancel: () => router.push("/admin/sales/store"),
     onSaveDraft: () => void save("draft"),
-    onSubmitPending: () => void save("pending"),
+    onSubmitPending: () => void save("pending", { printAfter: true }),
     onPrintSlip: () => void printSlip(),
-    showPrintSlip: !!orderId && status !== "draft",
+    showSaveDraft:
+      status === "draft" && !!(perms.create || perms.update),
+    showSubmitPending:
+      status === "draft" && !!(perms.create || perms.update),
+    showGreenPrint: !!orderId && status !== "draft" && !addonCreate,
   };
 
   const documentPanel = (
@@ -1003,7 +1054,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                       {tForm("nextStep")}
                     </Button>
                   ) : null}
-                  {customerPhase === "locked" ? (
+                  {customerPhase === "locked" && status === "draft" ? (
                     <Button
                       type="button"
                       variant="outline"
@@ -1279,7 +1330,12 @@ export function StoreSalesFormPage({ orderId }: Props) {
   );
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
+    <div
+      className={cn(
+        "flex w-full min-w-0 flex-col gap-4",
+        showAddAnotherSlip && "pb-20",
+      )}
+    >
       <div className="flex flex-col gap-4 md:hidden">
         {browseColumn}
         {documentPanel}
@@ -1410,6 +1466,22 @@ export function StoreSalesFormPage({ orderId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {showAddAnotherSlip ? (
+        <div
+          className={cn(
+            "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+            footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0",
+          )}
+        >
+          <div className="mx-auto flex w-full max-w-crud-page justify-end gap-2 px-admin-content py-3">
+            <Button type="button" size="lg" onClick={startAnotherSlip}>
+              <Plus className="text-current" aria-hidden />
+              {tForm("addAnotherSlip")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

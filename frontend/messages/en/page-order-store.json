@@ -53,6 +53,7 @@
         "saveDraft": "Save draft",
         "submitPending": "Create order",
         "printPicking": "Print picking slip",
+        "addAnotherSlip": "Add",
         "shippingEdit": "Select delivery format",
         "shippingEditHint": "Please select how the customer receives the order",
         "shippingStore": "Pick up at branch",

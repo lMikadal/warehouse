@@ -202,7 +202,7 @@ function CartUnitPriceCell({
 
 type Props = {
   locale: string;
-  sku?: string;
+  documentHeading: string;
   orderDateDisplay: string;
   receiveAtDisplay: string;
   receiveTypeLabel: string;
@@ -228,15 +228,17 @@ type Props = {
   onSaveDraft: () => void;
   onSubmitPending: () => void;
   onPrintSlip: () => void;
-  /** Secondary print row — hidden while order is still draft. */
-  showPrintSlip?: boolean;
+  showSaveDraft?: boolean;
+  showSubmitPending?: boolean;
+  /** Green print (after pending); draft uses submitPending instead. */
+  showGreenPrint?: boolean;
   layout?: "stacked" | "split";
 };
 
 export function StoreSalesDocumentPanel({
   layout = "stacked",
   locale,
-  sku,
+  documentHeading,
   orderDateDisplay,
   receiveAtDisplay,
   receiveTypeLabel,
@@ -262,7 +264,9 @@ export function StoreSalesDocumentPanel({
   onSaveDraft,
   onSubmitPending,
   onPrintSlip,
-  showPrintSlip = false,
+  showSaveDraft = false,
+  showSubmitPending = false,
+  showGreenPrint = false,
 }: Props) {
   const tForm = useTranslations("page.orderStore.form");
   const tCrud = useTranslations("crud");
@@ -297,16 +301,13 @@ export function StoreSalesDocumentPanel({
               <ClipboardList className="size-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1 space-y-1">
-              <CardTitle className="text-base leading-snug">
-                {tForm("documentTitle")}
+              <CardTitle className="text-base leading-snug wrap-break-word">
+                {documentHeading}
               </CardTitle>
               {!documentCollapsed ? (
                 <p className="text-muted-foreground line-clamp-2 text-sm leading-snug wrap-break-word">
                   {tForm("documentSubtitle")}
                 </p>
-              ) : null}
-              {sku ? (
-                <p className="truncate font-medium">{sku}</p>
               ) : null}
             </div>
           </div>
@@ -647,20 +648,22 @@ export function StoreSalesDocumentPanel({
             ) : null}
           </CardContent>
           <CardFooter className="shrink-0 flex-col gap-3 border-t bg-card">
-            <div className="grid w-full grid-cols-1 gap-2 @md/store-sales-doc:grid-cols-3">
+            <div className="flex w-full flex-col gap-2 @md/store-sales-doc:flex-row">
               <Button
                 type="button"
                 variant="destructive"
                 size="lg"
+                className="min-w-0 @md/store-sales-doc:flex-1"
                 onClick={onCancel}
               >
                 {tCrud("btn.cancel")}
               </Button>
-              {perms.create || perms.update ? (
+              {showSaveDraft ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="lg"
+                  className="min-w-0 @md/store-sales-doc:flex-1"
                   onClick={onSaveDraft}
                   disabled={productActionsDisabled || cartEmpty}
                 >
@@ -668,23 +671,22 @@ export function StoreSalesDocumentPanel({
                   {tForm("saveDraft")}
                 </Button>
               ) : null}
-              {perms.create || perms.update ? (
+              {showSubmitPending ? (
                 <Button
                   type="button"
                   size="lg"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="min-w-0 bg-green-600 hover:bg-green-700 @md/store-sales-doc:flex-1"
                   onClick={onSubmitPending}
                   disabled={productActionsDisabled || cartEmpty}
                 >
                   {tForm("submitPending")}
                 </Button>
               ) : null}
-              {showPrintSlip ? (
+              {showGreenPrint ? (
                 <Button
                   type="button"
                   size="lg"
-                  className="@md/store-sales-doc:col-span-3"
-                  variant="secondary"
+                  className="min-w-0 bg-green-600 hover:bg-green-700 @md/store-sales-doc:flex-1"
                   onClick={onPrintSlip}
                 >
                   <Printer className="text-current" aria-hidden />

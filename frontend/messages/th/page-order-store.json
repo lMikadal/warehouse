@@ -53,6 +53,7 @@
         "saveDraft": "บันทึกร่าง",
         "submitPending": "พิมพ์ใบจัดสินต้า",
         "printPicking": "พิมพ์ใบจัดสินค้า",
+        "addAnotherSlip": "เพิ่ม",
         "shippingEdit": "เลือกรูปแบบจัดส่ง",
         "shippingEditHint": "กรุณาเลือกรูปแบบการจัดส่งสินค้า",
         "shippingStore": "รับหน้าสาขา",
