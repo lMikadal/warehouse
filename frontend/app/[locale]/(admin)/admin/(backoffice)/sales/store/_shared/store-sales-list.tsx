@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 
 import {
   familySku,
+  familySlipsForExpand,
   flattenListRows,
   formatFamilySplitSku,
 } from "./store-sales-list-rows";
@@ -64,7 +65,7 @@ const STATUS_TABS: (StoreSalesStatus | "")[] = [
   "rejected",
 ];
 
-const COLUMN_COUNT = 9;
+const COLUMN_COUNT = 8;
 
 function money(n: number, locale: string) {
   return new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", {
@@ -191,8 +192,8 @@ export function StoreSalesList() {
     if (next && parent.child_count > 0 && !childrenByParent[parent.id]) {
       try {
         const detail = await fetchStoreSalesDetail(locale, parent.id);
-        const kids = (detail.family ?? []).filter((f) => f.id !== parent.id);
-        setChildrenByParent((m) => ({ ...m, [parent.id]: kids }));
+        const slips = familySlipsForExpand(parent.id, detail.family);
+        setChildrenByParent((m) => ({ ...m, [parent.id]: slips }));
       } catch {
         toast.error(tError("loadFailed"));
       }
@@ -332,7 +333,6 @@ export function StoreSalesList() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10" />
-              <TableHead className="w-12">#</TableHead>
               <TableHead>{tPage("colSku")}</TableHead>
               <TableHead>{tPage("colMember")}</TableHead>
               <TableHead>{tPage("colOrderedAt")}</TableHead>
@@ -365,10 +365,22 @@ export function StoreSalesList() {
                 if (!isChild && row.child_count > 0 && base) {
                   skuDisplay = base;
                 } else if (isChild && base) {
-                  const sibs = childrenByParent[parent?.id ?? 0] ?? [];
-                  const fi = sibs.findIndex((c) => c.id === row.id) + 1;
-                  skuDisplay = formatFamilySplitSku(base, fi + 1);
+                  const slips = childrenByParent[parent?.id ?? 0] ?? [];
+                  const slipIndex = slips.findIndex((c) => c.id === row.id);
+                  skuDisplay =
+                    slipIndex >= 0
+                      ? formatFamilySplitSku(base, slipIndex + 1)
+                      : row.sku || "—";
                 }
+                const memberDisplay =
+                  row.member_name?.trim() ||
+                  (isChild ? parent?.member_name : undefined) ||
+                  "—";
+                const dateIso = row.ordered_at ?? row.created_at;
+                const sellerDisplay =
+                  row.created_by_name?.trim() ||
+                  (isChild ? parent?.created_by_name : undefined) ||
+                  "—";
                 const hideActions = !isChild && row.child_count > 0;
                 const rowActions = hideActions
                   ? []
@@ -379,7 +391,7 @@ export function StoreSalesList() {
                     );
                 return (
                   <TableRow
-                    key={row.id}
+                    key={`${row.kind}-${row.id}-${row.parentIndex}`}
                     className={cn(isChild && "bg-muted/30")}
                   >
                     <TableCell>
@@ -399,18 +411,12 @@ export function StoreSalesList() {
                         </Button>
                       ) : null}
                     </TableCell>
-                    <TableCell>{isChild ? "" : row.parentIndex + 1}</TableCell>
                     <TableCell>{skuDisplay}</TableCell>
+                    <TableCell>{memberDisplay}</TableCell>
                     <TableCell>
-                      {isChild ? "—" : row.member_name ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      {isChild
-                        ? "—"
-                        : formatDateTime(
-                            row.ordered_at ?? row.created_at,
-                            locale
-                          )}
+                      {dateIso
+                        ? formatDateTime(dateIso, locale)
+                        : "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatItemCount(row.item_count)}
@@ -427,9 +433,7 @@ export function StoreSalesList() {
                         </span>
                       ) : null}
                     </TableCell>
-                    <TableCell>
-                      {isChild ? "—" : row.created_by_name ?? "—"}
-                    </TableCell>
+                    <TableCell>{sellerDisplay}</TableCell>
                     <TableCell className="text-center">
                       {rowActions.length > 0 ? (
                         <TableIconActions

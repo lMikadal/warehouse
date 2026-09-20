@@ -59,6 +59,37 @@ export type FlattenRow<T extends { id: number }> = T & {
   parentIndex: number;
 };
 
+/** Root + addon slips for expanded list rows (API `family` order: created_at, id). */
+export function familySlipsForExpand(
+  _parentId: number,
+  family?: StoreSalesListItem[]
+): StoreSalesListItem[] {
+  return family?.length ? [...family] : [];
+}
+
+export type FamilySlipSelectOption = { value: string; label: string };
+
+export function familySlipSelectOptions(
+  members: StoreSalesListItem[],
+  rootId: number
+): FamilySlipSelectOption[] {
+  if (members.length === 0) return [];
+  const sorted = [...members].sort((a, b) => {
+    const ta = a.created_at ?? "";
+    const tb = b.created_at ?? "";
+    if (ta !== tb) return ta.localeCompare(tb);
+    return a.id - b.id;
+  });
+  const root = sorted.find((m) => m.id === rootId) ?? sorted[0];
+  const base = root?.sku?.trim() ? familySku(root.sku) : "";
+  return sorted.map((m, index) => {
+    const label =
+      m.sku?.trim() ||
+      (base ? formatFamilySplitSku(base, index + 1) : String(m.id));
+    return { value: String(m.id), label };
+  });
+}
+
 export function flattenListRows<T extends { id: number }>(
   parents: T[],
   expandedIds: ReadonlySet<number>,

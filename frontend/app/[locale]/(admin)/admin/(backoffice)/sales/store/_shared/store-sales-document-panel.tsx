@@ -17,6 +17,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import {
   Card,
   CardContent,
   CardFooter,
@@ -43,6 +50,8 @@ import {
 } from "@/lib/store-sales-cart-pricing";
 import { fetchSystemFile } from "@/lib/system-file-api";
 import { cn } from "@/lib/utils";
+
+import type { FamilySlipSelectOption } from "./store-sales-list-rows";
 
 export type StoreSalesDocumentCartLine = {
   key: string;
@@ -225,6 +234,8 @@ type Props = {
   onCompareEdit: (key: string) => void;
   onCompareRemove: (key: string) => void;
   onCancel: () => void;
+  /** Red leave/cancel footer control; hidden for terminal statuses (e.g. success) like list row actions. */
+  showCancel?: boolean;
   onSaveDraft: () => void;
   onSubmitPending: () => void;
   onPrintSlip: () => void;
@@ -233,10 +244,17 @@ type Props = {
   /** Green print (after pending); draft uses submitPending instead. */
   showGreenPrint?: boolean;
   layout?: "stacked" | "split";
+  /** When `layout="split"`, stick card in viewport (default true). Prior slip in addon mode uses false. */
+  stickyOnSplit?: boolean;
+  familySlipOptions?: FamilySlipSelectOption[];
+  familySlipValue?: string;
+  onFamilySlipChange?: (orderId: number) => void;
+  familySlipDisabled?: boolean;
 };
 
 export function StoreSalesDocumentPanel({
   layout = "stacked",
+  stickyOnSplit = true,
   locale,
   documentHeading,
   orderDateDisplay,
@@ -261,24 +279,40 @@ export function StoreSalesDocumentPanel({
   onCompareEdit,
   onCompareRemove,
   onCancel,
+  showCancel = true,
   onSaveDraft,
   onSubmitPending,
   onPrintSlip,
   showSaveDraft = false,
   showSubmitPending = false,
   showGreenPrint = false,
+  familySlipOptions,
+  familySlipValue,
+  onFamilySlipChange,
+  familySlipDisabled = false,
 }: Props) {
   const tForm = useTranslations("page.orderStore.form");
+  const tPage = useTranslations("page.orderStore");
   const tCrud = useTranslations("crud");
+  const tRoot = useTranslations();
   const isSplit = layout === "split";
+  const isSplitSticky = isSplit && stickyOnSplit;
+  const showFamilySlipSelect =
+    (familySlipOptions?.length ?? 0) > 1 &&
+    familySlipValue != null &&
+    onFamilySlipChange != null;
+  const familySlipPlaceholder = tRoot("form.placeholder.select", {
+    label: tPage("colSku"),
+  });
 
   return (
     <Card
       className={cn(
         "@container/store-sales-doc flex w-full min-w-0 flex-col",
-        isSplit
+        isSplitSticky
           ? "sticky top-4 z-10 max-h-[calc(100svh-3.5rem-1rem-1.5rem)] w-full min-w-[400px] self-start overflow-hidden"
           : "shrink-0",
+        layout === "split" && !stickyOnSplit && "w-full min-w-[400px]",
       )}
     >
       <CardHeader className="shrink-0 space-y-0">
@@ -375,6 +409,38 @@ export function StoreSalesDocumentPanel({
                   <SquarePen className="text-current" aria-hidden />
                 </ButtonIcon>
               </div>
+            ) : null}
+            {showFamilySlipSelect ? (
+              <Combobox
+                items={familySlipOptions}
+                value={familySlipValue ?? null}
+                filter={null}
+                itemToStringLabel={(itemValue) =>
+                  familySlipOptions!.find((o) => o.value === itemValue)
+                    ?.label ?? ""
+                }
+                onValueChange={(v) => {
+                  if (!v || familySlipDisabled) return;
+                  const id = Number.parseInt(v, 10);
+                  if (Number.isFinite(id)) onFamilySlipChange(id);
+                }}
+              >
+                <ComboboxInput
+                  className="w-full"
+                  placeholder={familySlipPlaceholder}
+                  aria-label={tPage("colSku")}
+                  disabled={familySlipDisabled}
+                />
+                <ComboboxContent>
+                  <ComboboxList>
+                    {(opt) => (
+                      <ComboboxItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             ) : null}
             {cartEmpty ? (
               <p className="text-muted-foreground flex min-h-32 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm">
@@ -649,15 +715,17 @@ export function StoreSalesDocumentPanel({
           </CardContent>
           <CardFooter className="shrink-0 flex-col gap-3 border-t bg-card">
             <div className="flex w-full flex-col gap-2 @md/store-sales-doc:flex-row">
-              <Button
-                type="button"
-                variant="destructive"
-                size="lg"
-                className="min-w-0 @md/store-sales-doc:flex-1"
-                onClick={onCancel}
-              >
-                {tCrud("btn.cancel")}
-              </Button>
+              {showCancel ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="lg"
+                  className="min-w-0 @md/store-sales-doc:flex-1"
+                  onClick={onCancel}
+                >
+                  {tCrud("btn.cancel")}
+                </Button>
+              ) : null}
               {showSaveDraft ? (
                 <Button
                   type="button"

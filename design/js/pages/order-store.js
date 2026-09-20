@@ -182,9 +182,6 @@
             : "") +
           "</td>" +
           "<td>" +
-          (isHead ? start + idx + 1 : "") +
-          "</td>" +
-          "<td>" +
           (isChild ? '<span class="crud-table__indent"></span>' : "") +
           lib.escapeHtml(sku) +
           "</td>" +
@@ -242,7 +239,7 @@
       statusTabs +
       "</div></div>" +
       '<div class="crud-table-wrap"><div class="crud-table-wrap__body"><table class="data-table crud-table"><thead><tr>' +
-      '<th class="wh-expand-col" aria-hidden="true"></th><th>#</th><th>' +
+      '<th class="wh-expand-col" aria-hidden="true"></th><th>' +
       t("orderStore.colSku") +
       "</th><th>" +
       t("orderStore.colMember") +
@@ -257,7 +254,7 @@
       "</th><th>" +
       t("orderStore.colSeller") +
       '</th><th class="data-table__actions-col"></th></tr></thead><tbody>' +
-      (body || '<tr><td colspan="10">—</td></tr>') +
+      (body || '<tr><td colspan="9">—</td></tr>') +
       "</tbody></table></div></div>" +
       '<nav class="crud-pagination" id="order-store-pagination" aria-label="Pagination"></nav></div>';
 

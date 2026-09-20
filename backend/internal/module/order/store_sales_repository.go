@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +36,25 @@ func skuFamilyBase(sku string) string {
 
 func formatLinkedSKU(base string, n int) string {
 	return fmt.Sprintf("%s-%02d", base, n)
+}
+
+// splitIndexFromFamilySKU returns the -NN suffix for a family slip (0 if none).
+func splitIndexFromFamilySKU(sku, base string) int {
+	if sku == "" || base == "" {
+		return 0
+	}
+	if sku == base {
+		return 0
+	}
+	prefix := base + "-"
+	if !strings.HasPrefix(sku, prefix) {
+		return 0
+	}
+	n, err := strconv.Atoi(strings.TrimPrefix(sku, prefix))
+	if err != nil || n < 1 {
+		return 0
+	}
+	return n
 }
 
 func shouldAllocateSKU(status string) bool {
@@ -403,8 +423,9 @@ func (r *StoreSalesRepository) loadFamily(ctx context.Context, rootID int64) ([]
 SELECT d.id, d.sku, d.status::text, d.ordered_at, d.parent_id, d.member_name,
   (SELECT COALESCE(SUM(i.amount), 0) FROM order_list_item i WHERE i.order_list_id = d.id AND i.deleted_at IS NULL),
   (SELECT %s FROM order_list_item i WHERE i.order_list_id = d.id AND i.deleted_at IS NULL),
-  0, d.created_at, NULL
+  0, d.created_at, au.username
 FROM order_list d
+LEFT JOIN admin_user au ON au.id = d.created_by
 WHERE d.deleted_at IS NULL AND (d.id = $1 OR d.parent_id = $1)
 ORDER BY d.created_at ASC, d.id ASC`, lineTotalSub)
 	rows, err := r.db.QueryContext(ctx, query, rootID)
@@ -418,9 +439,9 @@ ORDER BY d.created_at ASC, d.id ASC`, lineTotalSub)
 		var sku sql.NullString
 		var orderedAt sql.NullTime
 		var parentID sql.NullInt64
-		var memberName sql.NullString
+		var memberName, createdByName sql.NullString
 		if err := rows.Scan(&it.ID, &sku, &it.Status, &orderedAt, &parentID, &memberName,
-			&it.ItemCount, &it.TotalPrice, &it.ChildCount, &it.CreatedAt, new(sql.NullString)); err != nil {
+			&it.ItemCount, &it.TotalPrice, &it.ChildCount, &it.CreatedAt, &createdByName); err != nil {
 			return nil, err
 		}
 		if sku.Valid {
@@ -436,6 +457,10 @@ ORDER BY d.created_at ASC, d.id ASC`, lineTotalSub)
 			s := memberName.String
 			it.MemberName = &s
 		}
+		if createdByName.Valid {
+			s := createdByName.String
+			it.CreatedByName = &s
+		}
 		out = append(out, it)
 	}
 	return out, rows.Err()
@@ -443,23 +468,56 @@ ORDER BY d.created_at ASC, d.id ASC`, lineTotalSub)
 
 func (r *StoreSalesRepository) nextSKUTx(ctx context.Context, tx *sql.Tx, parentID *int64) (string, error) {
 	if parentID != nil && *parentID > 0 {
-		var parentSKU sql.NullString
+		rootID := *parentID
+		var rowParentID sql.NullInt64
 		if err := tx.QueryRowContext(ctx, `
-SELECT sku FROM order_list WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, *parentID).Scan(&parentSKU); err != nil {
+SELECT parent_id FROM order_list WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, rootID).Scan(&rowParentID); err != nil {
 			return "", err
 		}
-		if !parentSKU.Valid || parentSKU.String == "" {
+		if rowParentID.Valid && rowParentID.Int64 > 0 {
+			rootID = rowParentID.Int64
+		}
+		rows, err := tx.QueryContext(ctx, `
+SELECT sku FROM order_list
+WHERE deleted_at IS NULL AND sku IS NOT NULL AND trim(sku) <> ''
+  AND (id = $1 OR parent_id = $1)
+FOR UPDATE`, rootID)
+		if err != nil {
+			return "", err
+		}
+		defer rows.Close()
+		var base string
+		maxSplit := 0
+		for rows.Next() {
+			var sku sql.NullString
+			if err := rows.Scan(&sku); err != nil {
+				return "", err
+			}
+			if !sku.Valid {
+				continue
+			}
+			s := strings.TrimSpace(sku.String)
+			b := skuFamilyBase(s)
+			if b == "" {
+				continue
+			}
+			if base == "" {
+				base = b
+			}
+			if b != base {
+				continue
+			}
+			if n := splitIndexFromFamilySKU(s, base); n > maxSplit {
+				maxSplit = n
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return "", err
+		}
+		if base == "" {
 			return "", ErrValidation
 		}
-		base := skuFamilyBase(parentSKU.String)
-		var next int
-		if err := tx.QueryRowContext(ctx, `
-SELECT COALESCE(MAX(CASE WHEN sku LIKE $1 || '-%' THEN substring(sku FROM '([0-9]+)$')::int ELSE 0 END), 0) + 1
-FROM order_list
-WHERE deleted_at IS NULL AND sku IS NOT NULL AND (sku = $1 OR sku LIKE $1 || '-%')`, base).Scan(&next); err != nil {
-			return "", err
-		}
-		return formatLinkedSKU(base, next), nil
+		return formatLinkedSKU(base, maxSplit+1), nil
 	}
 	base, err := r.code.NextCode(ctx, tx, "order_list", time.Now())
 	if err != nil {

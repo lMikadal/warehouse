@@ -64,13 +64,18 @@ import {
   normalizeCompareLineDetail,
   repriceStoreSalesCartLines,
   summaryLinesFromCartItems,
+  type StoreSalesPriceSummary,
 } from "@/lib/store-sales-cart-pricing";
 import { loadMemberUserCreditOptions } from "@/lib/member-user-filters-combobox";
 import {
   canStartAnotherStoreSalesSlip,
+  familySlipSelectOptions,
   storeSalesFamilyContext,
 } from "./store-sales-list-rows";
-import { StoreSalesDocumentPanel } from "./store-sales-document-panel";
+import {
+  StoreSalesDocumentPanel,
+  type StoreSalesDocumentCartLine,
+} from "./store-sales-document-panel";
 import {
   fetchStoreSalesMemberSnapshot,
   loadStoreSalesMemberComboboxOptions,
@@ -138,6 +143,20 @@ type CartLine = {
   unitPrice: number;
   discount: number;
   detail?: string;
+};
+
+type ViewSlipSnapshot = {
+  documentHeading: string;
+  orderDateDisplay: string;
+  receiveAtDisplay: string;
+  receiveTypeLabel: string;
+  itemLines: StoreSalesDocumentCartLine[];
+  compareLines: StoreSalesDocumentCartLine[];
+  lineCount: number;
+  cartEmpty: boolean;
+  priceSummary: StoreSalesPriceSummary;
+  orderId: number;
+  status: StoreSalesStatus;
 };
 
 function defaultReceiveAt(): Date {
@@ -280,6 +299,10 @@ export function StoreSalesFormPage({ orderId }: Props) {
     useState(false);
   const [confirmingCustomer, setConfirmingCustomer] = useState(false);
   const [addonCreate, setAddonCreate] = useState(false);
+  const [viewSlipSnapshot, setViewSlipSnapshot] =
+    useState<ViewSlipSnapshot | null>(null);
+  const [priorSlipCollapsed, setPriorSlipCollapsed] = useState(false);
+  const [viewCartTab, setViewCartTab] = useState<"items" | "compare">("items");
   const [familyRootId, setFamilyRootId] = useState<number | null>(null);
   const [familyMembers, setFamilyMembers] = useState<StoreSalesListItem[]>([]);
   const [familyRootWaiting, setFamilyRootWaiting] = useState(false);
@@ -381,12 +404,24 @@ export function StoreSalesFormPage({ orderId }: Props) {
       setFamilyMembers(fam.members);
       setFamilyRootWaiting(fam.rootWaiting);
       setAddonCreate(false);
+      setViewSlipSnapshot(null);
+      setPriorSlipCollapsed(false);
+      setViewCartTab("items");
     } catch {
       toast.error(tError("loadFailed"));
     } finally {
       setLoading(false);
     }
   }, [orderId, locale, tError, applyMemberSnapshot, clearMemberSnapshot]);
+
+  const cancelAddonSlip = useCallback(() => {
+    setAddonCreate(false);
+    setViewSlipSnapshot(null);
+    setPriorSlipCollapsed(false);
+    setViewCartTab("items");
+    setDocumentCollapsed(false);
+    void loadDetail();
+  }, [loadDetail]);
 
   useEffect(() => {
     void loadDetail();
@@ -623,6 +658,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
     nextStatus: StoreSalesStatus,
     options?: { printAfter?: boolean }
   ) => {
+    if (addonCreate && nextStatus === "draft") {
+      return;
+    }
     if (cart.length === 0) {
       toast.error(tForm("emptyCart"));
       return;
@@ -768,6 +806,14 @@ export function StoreSalesFormPage({ orderId }: Props) {
     setSelectedBrowse({});
   }, [browseRows, selectedBrowse, addProduct]);
 
+  const familySlipOptions = useMemo(() => {
+    if (addonCreate || !orderId || familyMembers.length === 0) return [];
+    return familySlipSelectOptions(
+      familyMembers,
+      familyRootId ?? orderId
+    );
+  }, [addonCreate, orderId, familyMembers, familyRootId]);
+
   if (!perms.view) {
     return <p className="text-muted-foreground">{tError("forbidden")}</p>;
   }
@@ -823,7 +869,28 @@ export function StoreSalesFormPage({ orderId }: Props) {
     familyMembers
   );
 
+  const showFamilySlipCombobox =
+    familySlipOptions.length > 1 && (!cartEmpty || !!sku.trim());
+
   const startAnotherSlip = () => {
+    if (!orderId) return;
+    const priorHeading = sku.trim() ? sku : tForm("documentTitle");
+    setViewSlipSnapshot({
+      documentHeading: priorHeading,
+      orderDateDisplay,
+      receiveAtDisplay,
+      receiveTypeLabel,
+      itemLines: [...itemLines],
+      compareLines: [...compareLines],
+      lineCount,
+      cartEmpty,
+      priceSummary,
+      orderId,
+      status,
+    });
+    setViewCartTab(cartTab);
+    setPriorSlipCollapsed(true);
+    setChangeCustomerDialogOpen(false);
     setAddonCreate(true);
     setCart([]);
     setCartTab("items");
@@ -871,24 +938,86 @@ export function StoreSalesFormPage({ orderId }: Props) {
     onCompareEdit: openCompareEdit,
     onCompareRemove: (key: string) =>
       updateCart((c) => c.filter((x) => x.key !== key)),
-    onCancel: () => router.push("/admin/sales/store"),
+    onCancel: addonCreate
+      ? () => void cancelAddonSlip()
+      : () => router.push("/admin/sales/store"),
     onSaveDraft: () => void save("draft"),
-    onSubmitPending: () => void save("pending", { printAfter: true }),
+    onSubmitPending: () =>
+      void save("pending", addonCreate ? undefined : { printAfter: true }),
     onPrintSlip: () => void printSlip(),
     showSaveDraft:
-      status === "draft" && !!(perms.create || perms.update),
+      status === "draft" &&
+      !addonCreate &&
+      !!(perms.create || perms.update),
     showSubmitPending:
-      status === "draft" && !!(perms.create || perms.update),
+      (status === "draft" || addonCreate) &&
+      !!(perms.create || perms.update),
     showGreenPrint: !!orderId && status !== "draft" && !addonCreate,
+    showCancel:
+      addonCreate || status === "draft" || status === "pending",
+    ...(showFamilySlipCombobox
+      ? {
+          familySlipOptions,
+          familySlipValue: String(orderId),
+          onFamilySlipChange: (id: number) => {
+            if (id === orderId) return;
+            router.replace(`/admin/sales/store/${id}`);
+          },
+        }
+      : {}),
   };
 
-  const documentPanel = (
-    <StoreSalesDocumentPanel layout="stacked" {...documentPanelCommon} />
-  );
+  const renderDocumentPanels = (layout: "stacked" | "split") => {
+    if (addonCreate && viewSlipSnapshot) {
+      const snap = viewSlipSnapshot;
+      return (
+        <div className="flex w-full min-w-[400px] flex-col gap-4">
+          <StoreSalesDocumentPanel
+            layout={layout}
+            stickyOnSplit={false}
+            locale={locale}
+            documentHeading={snap.documentHeading}
+            orderDateDisplay={snap.orderDateDisplay}
+            receiveAtDisplay={snap.receiveAtDisplay}
+            receiveTypeLabel={snap.receiveTypeLabel}
+            cartTab={viewCartTab}
+            onCartTabChange={setViewCartTab}
+            itemLines={snap.itemLines}
+            compareLines={snap.compareLines}
+            cartEmpty={snap.cartEmpty}
+            lineCount={snap.lineCount}
+            priceSummary={snap.priceSummary}
+            documentCollapsed={priorSlipCollapsed}
+            onToggleCollapsed={() => setPriorSlipCollapsed((c) => !c)}
+            productActionsDisabled
+            orderId={snap.orderId}
+            perms={perms}
+            onShippingEdit={() => {}}
+            onItemQtyChange={() => {}}
+            onItemRemove={() => {}}
+            onCompareQtyChange={() => {}}
+            onCompareEdit={() => {}}
+            onCompareRemove={() => {}}
+            onCancel={() => router.push("/admin/sales/store")}
+            onSaveDraft={() => {}}
+            onSubmitPending={() => {}}
+            onPrintSlip={() => void printSlip()}
+            showSaveDraft={false}
+            showSubmitPending={false}
+            showGreenPrint={snap.status !== "draft"}
+            showCancel={
+              snap.status === "draft" || snap.status === "pending"
+            }
+          />
+          <StoreSalesDocumentPanel layout={layout} {...documentPanelCommon} />
+        </div>
+      );
+    }
+    return <StoreSalesDocumentPanel layout={layout} {...documentPanelCommon} />;
+  };
 
-  const documentPanelSplit = (
-    <StoreSalesDocumentPanel layout="split" {...documentPanelCommon} />
-  );
+  const documentPanel = renderDocumentPanels("stacked");
+  const documentPanelSplit = renderDocumentPanels("split");
 
   const browseColumn = (
         <div className="flex flex-col gap-4 md:h-full md:min-h-0">
@@ -1054,7 +1183,9 @@ export function StoreSalesFormPage({ orderId }: Props) {
                       {tForm("nextStep")}
                     </Button>
                   ) : null}
-                  {customerPhase === "locked" && status === "draft" ? (
+                  {customerPhase === "locked" &&
+                  status === "draft" &&
+                  !addonCreate ? (
                     <Button
                       type="button"
                       variant="outline"
