@@ -57,9 +57,29 @@
       },
       "acceptModal": {
         "title": "เลือกรูปแบบการชำระเงิน",
+        "hint": "ต้องการดำเนินการต่อหรือไม่?",
         "payment": "ชำระเลย",
         "credit": "ออกใบยืม",
-        "creditDate": "วันครบกำหนดชำระ"
+        "creditDate": "วันครบกำหนดชำระ",
+        "channelsTitle": "เลือกช่องทางการชำระเงิน",
+        "payFull": "จ่ายเต็ม",
+        "payPartial": "จ่ายบางส่วน",
+        "paymentSummary": "สรุปยอดชำระเงิน",
+        "purchaseSummary": "สรุปการสั่งซื้อ ({count} รายการ)",
+        "grandTotal": "ยอดเงินรวมทั้งสิ้น",
+        "exVat": "มูลค่าก่อนภาษี (Excl. VAT)",
+        "vatLine": "ภาษีมูลค่าเพิ่ม (VAT {rate}%)",
+        "change": "เงินทอน",
+        "outstanding": "ยอดคงค้าง",
+        "baht": "บาท",
+        "confirmPayment": "ยืนยันชำระเงิน",
+        "methods": {
+          "cash": "เงินสด",
+          "transfer": "โอนเงิน",
+          "qr": "QR Payment",
+          "card": "บัตรเครดิต/บัตรเดบิต",
+          "cod": "เก็บเงินปลายทาง (COD)"
+        }
       },
       "payment": {
         "title": "ชำระเงิน",

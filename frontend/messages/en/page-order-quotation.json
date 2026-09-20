@@ -57,9 +57,29 @@
       },
       "acceptModal": {
         "title": "Choose payment format",
+        "hint": "Do you want to continue?",
         "payment": "Pay now",
-        "credit": "Credit / borrow",
-        "creditDate": "Payment due date"
+        "credit": "Issue loan note",
+        "creditDate": "Payment due date",
+        "channelsTitle": "Select payment channel",
+        "payFull": "Pay in full",
+        "payPartial": "Partial payment",
+        "paymentSummary": "Payment summary",
+        "purchaseSummary": "Purchase summary ({count} items)",
+        "grandTotal": "Grand total",
+        "exVat": "Amount before VAT (Excl. VAT)",
+        "vatLine": "VAT ({rate}%)",
+        "change": "Change",
+        "outstanding": "Outstanding",
+        "baht": "THB",
+        "confirmPayment": "Confirm payment",
+        "methods": {
+          "cash": "Cash",
+          "transfer": "Bank transfer",
+          "qr": "QR Payment",
+          "card": "Credit / debit card",
+          "cod": "Cash on delivery (COD)"
+        }
       },
       "payment": {
         "title": "Payment",

@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { ArrowLeft, Check } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,9 @@ import type { StoreSalesDocumentCartLine } from "../../store/_shared/store-sales
 import { StoreSalesFormDesktopSplitSkeleton } from "../../store/_shared/store-sales-form-desktop-split-skeleton";
 
 import { QuotationFormPage } from "./quotation-form-page";
+import { QuotationAcceptDialog } from "./quotation-accept-dialog";
+import type { QuotationAcceptPanelMode } from "./quotation-accept-dialog";
+import { QuotationAcceptSidePanel } from "./quotation-accept-side-panel";
 import { QuotationCustomerReadonlyCard } from "./quotation-customer-readonly-card";
 import { QuotationDetailItemsPanel } from "./quotation-detail-items-panel";
 import { QuotationDetailMetaCard } from "./quotation-detail-meta-card";
@@ -97,7 +100,8 @@ export function QuotationDetailPage({ id }: Props) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [acceptOpen, setAcceptOpen] = useState(false);
-  const [creditDate, setCreditDate] = useState("");
+  const [acceptPanel, setAcceptPanel] =
+    useState<QuotationAcceptPanelMode | null>(null);
   const [superadminEditMode, setSuperadminEditMode] = useState(false);
   const [baselineItemLines, setBaselineItemLines] = useState<
     StoreSalesDocumentCartLine[]
@@ -218,31 +222,6 @@ export function QuotationDetailPage({ id }: Props) {
       0
     );
   }, [detail, itemLines]);
-
-  const accept = async (mode: "payment" | "credit") => {
-    try {
-      const body: Record<string, string> = { mode };
-      if (mode === "credit") {
-        if (!creditDate) {
-          toast.error(tError("required"));
-          return;
-        }
-        body.credit_date = creditDate;
-      }
-      await postQuotationAction(locale, id, "accept", body);
-      setAcceptOpen(false);
-      if (mode === "payment") {
-        router.push(`/admin/sales/quotation/${id}/payment`);
-      } else {
-        toast.success(tPage("detail.accept"));
-        void load();
-      }
-    } catch (e) {
-      toast.error(
-        e instanceof OrderQuotationApiError ? e.message : tError("saveFailed")
-      );
-    }
-  };
 
   const lineEditFingerprint = (lines: StoreSalesDocumentCartLine[]) =>
     lines
@@ -393,6 +372,28 @@ export function QuotationDetailPage({ id }: Props) {
     />
   );
 
+  const acceptSidePanel =
+    acceptPanel != null ? (
+      <QuotationAcceptSidePanel
+        mode={acceptPanel}
+        detail={detail}
+        locale={locale}
+        itemCount={itemLines.length}
+        layout="split"
+      />
+    ) : null;
+
+  const acceptSidePanelStacked =
+    acceptPanel != null ? (
+      <QuotationAcceptSidePanel
+        mode={acceptPanel}
+        detail={detail}
+        locale={locale}
+        itemCount={itemLines.length}
+        layout="stacked"
+      />
+    ) : null;
+
   const metaPanelStacked = (
     <QuotationDetailMetaCard
       locale={locale}
@@ -424,6 +425,9 @@ export function QuotationDetailPage({ id }: Props) {
     </div>
   );
 
+  const rightPanelSplit = acceptSidePanel ?? metaPanelSplit;
+  const rightPanelStacked = acceptSidePanelStacked ?? metaPanelStacked;
+
   return (
     <div className="flex flex-col gap-4 pb-20">
       <CrudPageHeader
@@ -441,12 +445,12 @@ export function QuotationDetailPage({ id }: Props) {
       <div className="flex flex-col gap-4 md:hidden">
         <QuotationCustomerReadonlyCard locale={locale} {...customerView} />
         {itemsPanel}
-        {metaPanelStacked}
+        {rightPanelStacked}
       </div>
       <div className="hidden min-w-0 w-full md:block">
         <StoreSalesFormDesktopSplit
           browse={leftColumnSplit}
-          documentPanel={metaPanelSplit}
+          documentPanel={rightPanelSplit}
         />
       </div>
 
@@ -456,7 +460,39 @@ export function QuotationDetailPage({ id }: Props) {
           footerInsetLeft ? "left-[var(--sidebar-width)]" : "left-0"
         )}
       >
-        <div className="mx-auto flex w-full max-w-crud-page flex-wrap items-center justify-end gap-2 px-admin-content py-3">
+        <div
+          className={cn(
+            "mx-auto flex w-full max-w-crud-page flex-wrap items-center gap-2 px-admin-content py-3",
+            acceptPanel ? "justify-between" : "justify-end"
+          )}
+        >
+          {acceptPanel ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  setAcceptPanel(null);
+                  setAcceptOpen(true);
+                }}
+              >
+                <ArrowLeft className="text-current" aria-hidden />
+                {tCrud("btn.back")}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                onClick={() => setAcceptPanel(null)}
+              >
+                <Check className="text-current" aria-hidden />
+                {acceptPanel === "payment"
+                  ? tPage("acceptModal.confirmPayment")
+                  : tPage("confirm")}
+              </Button>
+            </>
+          ) : (
+            <>
           <Button
             type="button"
             variant="outline"
@@ -549,7 +585,7 @@ export function QuotationDetailPage({ id }: Props) {
             </>
           ) : null}
 
-          {showSellerAccept ? (
+          {showSellerAccept && !acceptPanel ? (
             <>
               <Button
                 type="button"
@@ -571,7 +607,9 @@ export function QuotationDetailPage({ id }: Props) {
             </>
           ) : null}
 
-          {detail.status === "approved" && !showSellerAccept ? (
+          {detail.status === "approved" &&
+          !showSellerAccept &&
+          !acceptPanel ? (
             <Button
               type="button"
               variant="outline"
@@ -594,7 +632,7 @@ export function QuotationDetailPage({ id }: Props) {
             </Button>
           ) : null}
 
-          {detail.status === "success" ? (
+          {detail.status === "success" && !acceptPanel ? (
             <>
               <Button
                 type="button"
@@ -617,6 +655,8 @@ export function QuotationDetailPage({ id }: Props) {
               ) : null}
             </>
           ) : null}
+            </>
+          )}
         </div>
       </div>
 
@@ -663,30 +703,14 @@ export function QuotationDetailPage({ id }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={acceptOpen} onOpenChange={setAcceptOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{tPage("acceptModal.title")}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <Button onClick={() => void accept("payment")}>
-              {tPage("acceptModal.payment")}
-            </Button>
-            <div className="grid gap-2">
-              <Label htmlFor="credit-date">{tPage("acceptModal.creditDate")}</Label>
-              <Input
-                id="credit-date"
-                type="date"
-                value={creditDate}
-                onChange={(e) => setCreditDate(e.target.value)}
-              />
-              <Button variant="secondary" onClick={() => void accept("credit")}>
-                {tPage("acceptModal.credit")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QuotationAcceptDialog
+        open={acceptOpen}
+        onOpenChange={setAcceptOpen}
+        onSelect={(mode) => {
+          setAcceptOpen(false);
+          setAcceptPanel(mode);
+        }}
+      />
     </div>
   );
 }
