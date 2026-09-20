@@ -428,7 +428,7 @@ export function WarehouseListPage() {
           totalPages: Math.max(1, Math.ceil(total / listQuery.pageSize)),
         }}
         onPageChange={listQuery.setPage}
-        onPageSizeChange={listQuery.setPageSize}
+        onPageSizeChange={(pageSize) => listQuery.setPageSize(pageSize as 10 | 25 | 50 | 100)}
       />
 
       <WarehouseNodeEditSheet

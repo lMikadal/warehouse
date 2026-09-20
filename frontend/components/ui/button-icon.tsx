@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type ButtonIconSize = "xs" | "sm" | "md" | "lg";
-export type ButtonIconTone = "neutral" | "add" | "delete";
+export type ButtonIconTone = "neutral" | "view" | "edit" | "add" | "delete";
 
 const sizeMap: Record<
   ButtonIconSize,
@@ -20,6 +20,8 @@ const sizeMap: Record<
 
 const toneClass: Record<ButtonIconTone, string> = {
   neutral: "",
+  view: "text-warehouse-action-add hover:text-warehouse-action-add",
+  edit: "text-primary hover:text-primary",
   add: "text-warehouse-action-add hover:text-warehouse-action-add",
   delete: "text-warehouse-action-delete hover:text-warehouse-action-delete",
 };

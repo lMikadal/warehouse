@@ -2,9 +2,10 @@
 
 import {
   ClipboardList,
-  Pencil,
   Plus,
+  SquarePen,
   Trash2,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/button-icon";
 import { cn } from "@/lib/utils";
 
-export type TableIconActionKey = "view" | "edit" | "add" | "delete";
+export type TableIconActionKey = "view" | "edit" | "add" | "delete" | "cancel";
 
 export type TableIconActionsProps = {
   actions: TableIconActionKey[];
@@ -27,16 +28,18 @@ export type TableIconActionsProps = {
 
 const ICONS: Record<TableIconActionKey, LucideIcon> = {
   view: ClipboardList,
-  edit: Pencil,
+  edit: SquarePen,
   add: Plus,
   delete: Trash2,
+  cancel: X,
 };
 
 const TONE: Record<TableIconActionKey, ButtonIconTone> = {
-  view: "neutral",
-  edit: "neutral",
+  view: "view",
+  edit: "edit",
   add: "add",
   delete: "delete",
+  cancel: "delete",
 };
 
 export function TableIconActions({
@@ -53,6 +56,7 @@ export function TableIconActions({
     if (key === "view") return tAction("view");
     if (key === "edit") return tCrud("btn.edit");
     if (key === "delete") return tCrud("btn.delete");
+    if (key === "cancel") return tCrud("btn.cancel");
     return tCrud("btn.create");
   };
 

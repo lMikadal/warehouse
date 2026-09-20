@@ -179,7 +179,7 @@ Shared engine: [`design/js/components/crud-list.js`](../../design/js/components/
 - **Self-FK tree tables** (`tree_path`): `parent_id` + `tree_path` (LTREE) + `sort_order`; examples: `admin_menu`, `warehouse_list`, `product_attribute`, `member_tier`
 - **`tree_path` labels:** `n{id}` per segment from root to row (e.g. `n2.n6.n7`) — structural only; sibling display order uses `sort_order`. Seeds derive paths via `ADMIN_SEED_SHARED.assignTreePaths()` in [`design/js/seed/_admin_shared.js`](../../design/js/seed/_admin_shared.js)
 - **Geo chain** (`system_*`): `system_country` → `system_province` → `system_district` → `system_sub_district`; typed parent FK + `sort_order` only (not tree tables)
-- **Not trees**: split-document `parent_id` only (`order_order`, `purchase_order_item`); flat lists `sort_order` only (`system_language`, `system_country`, `setting_bank`, `setting_claim_reason`, …)
+- **Not trees**: split-document `parent_id` only (`order_list`, `purchase_order_item`); flat lists `sort_order` only (`system_language`, `system_country`, `setting_bank`, `setting_claim_reason`, …)
 - Money: `NUMERIC(15,4)` · Rate/percent: `NUMERIC(5,2)` · Quantities: `NUMERIC(15,4)` or `INTEGER`
 - Root list tables use `{module}_list` or `{module}_user`: `product_list`, `warehouse_list`, `supplier_user`, `member_user`
   Children under `member_user`: `member_user_address`, `member_user_discount`, `member_user_file`, `member_user_setting`, `member_user_owner` (legacy design used shorter `member_address` / `member_file` / `member_discount` — renamed for consistency)

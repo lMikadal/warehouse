@@ -121,4 +121,12 @@ func TestCodeForRoute(t *testing.T) {
 	if !ok || code != "order.order_store.view" {
 		t.Fatalf("order store list: got %q %v", code, ok)
 	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/store-sales/count")
+	if !ok || code != "order.order_store.view" {
+		t.Fatalf("order store count: got %q %v", code, ok)
+	}
+	code, ok = CodeForRoute("GET", "/api/v1/order/store-sales/filters")
+	if !ok || code != "order.order_store.view" {
+		t.Fatalf("order store filters: got %q %v", code, ok)
+	}
 }

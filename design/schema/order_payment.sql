@@ -9,7 +9,7 @@ CREATE TYPE order_payment_category AS ENUM ('credit', 'payment');
 
 CREATE TABLE order_payment (
     id                    BIGSERIAL              PRIMARY KEY,              -- surrogate PK
-    order_order_id        BIGINT                 NOT NULL REFERENCES order_order(id) ON DELETE CASCADE, -- parent order
+    order_list_id         BIGINT                 NOT NULL REFERENCES order_list(id) ON DELETE CASCADE, -- parent order
     sku                   TEXT,                                    -- payment document number
     payment_category      order_payment_category NOT NULL,         -- credit vs payment (approval flow)
     ordered_at            TIMESTAMPTZ            NOT NULL DEFAULT CURRENT_TIMESTAMP, -- payment record timestamp
@@ -30,8 +30,8 @@ CREATE TABLE order_payment (
     CONSTRAINT uq_order_payment_sku UNIQUE (sku)
 );
 
-CREATE INDEX idx_order_payment_order              ON order_payment (order_order_id)       WHERE deleted_at IS NULL;
-CREATE INDEX idx_order_payment_unpaid             ON order_payment (order_order_id)       WHERE deleted_at IS NULL AND NOT is_full;
+CREATE INDEX idx_order_payment_order              ON order_payment (order_list_id)       WHERE deleted_at IS NULL;
+CREATE INDEX idx_order_payment_unpaid             ON order_payment (order_list_id)       WHERE deleted_at IS NULL AND NOT is_full;
 CREATE INDEX idx_order_payment_credit_approved_by ON order_payment (credit_approved_by)   WHERE credit_approved_by IS NOT NULL;
 CREATE INDEX idx_order_payment_discount_approved  ON order_payment (discount_approved_by) WHERE discount_approved_by IS NOT NULL;
 CREATE INDEX idx_order_payment_created_by         ON order_payment (created_by) WHERE created_by IS NOT NULL;

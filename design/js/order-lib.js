@@ -59,7 +59,7 @@
     var order =
       orderOrRootId != null && typeof orderOrRootId === "object"
         ? orderOrRootId
-        : global.store.getById("order_order", orderOrRootId);
+        : global.store.getById("order_list", orderOrRootId);
     if (!order) return "";
     var rootId = order.parent_id || order.id;
     var members = familyMembers(rootId);
@@ -81,7 +81,7 @@
     var parent =
       parentOrderOrId != null && typeof parentOrderOrId === "object"
         ? parentOrderOrId
-        : global.store.getById("order_order", parentOrderOrId);
+        : global.store.getById("order_list", parentOrderOrId);
     if (!parent) return nextOrderSku();
     var rootId = parent.parent_id || parent.id;
     var base = familyBaseSku(parent);
@@ -103,32 +103,32 @@
   }
 
   function familyMembers(rootId) {
-    return activeRows("order_order").filter(function (o) {
+    return activeRows("order_list").filter(function (o) {
       return o.id === rootId || o.parent_id === rootId;
     });
   }
 
   function childCount(parentId) {
-    return activeRows("order_order").filter(function (o) {
+    return activeRows("order_list").filter(function (o) {
       return o.parent_id === parentId;
     }).length;
   }
 
   function orderItems(orderId) {
-    return activeRows("order_order_item").filter(function (i) {
-      return Number(i.order_order_id) === Number(orderId);
+    return activeRows("order_list_item").filter(function (i) {
+      return Number(i.order_list_id) === Number(orderId);
     });
   }
 
   function orderShipping(orderId) {
     return activeRows("order_shipping").find(function (s) {
-      return Number(s.order_order_id) === Number(orderId);
+      return Number(s.order_list_id) === Number(orderId);
     });
   }
 
   function paymentsForOrder(orderId) {
     return activeRows("order_payment").filter(function (p) {
-      return Number(p.order_order_id) === Number(orderId);
+      return Number(p.order_list_id) === Number(orderId);
     });
   }
 
@@ -256,7 +256,7 @@
     var m = String(new Date().getMonth() + 1).padStart(2, "0");
     var yyyymm = String(y) + m;
     var maxSeq = 0;
-    activeRows("order_order").forEach(function (o) {
+    activeRows("order_list").forEach(function (o) {
       var p = parseOrderSku(o.sku);
       if (p && p.yyyymm === yyyymm) {
         var n = parseInt(p.seq, 10);

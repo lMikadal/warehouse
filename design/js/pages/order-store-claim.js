@@ -19,7 +19,7 @@
     return paymentRows().filter(function (p) {
       if (state.category && p.payment_category !== state.category) return false;
       if (!lib.inDateRange(p.created_at, state.dateFrom, state.dateTo)) return false;
-      var order = global.store.getById("order_order", p.order_order_id);
+      var order = global.store.getById("order_list", p.order_list_id);
       if (!q) return true;
       return (
         String(p.sku || "").toLowerCase().indexOf(q) >= 0 ||
@@ -52,7 +52,7 @@
 
     var body = rows
       .map(function (p) {
-        var order = global.store.getById("order_order", p.order_order_id);
+        var order = global.store.getById("order_list", p.order_list_id);
         var href = global.nav.resolve("pages/order-store-claim-form.html?id=" + p.id);
         var catLabel =
           p.payment_category === "credit"

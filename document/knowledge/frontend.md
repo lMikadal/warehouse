@@ -57,7 +57,7 @@ Add primitives: `make frontend-shadcn-add COMPONENT=<name>` (style `base-nova`).
 | `StatusFilterGroup` | All / active / inactive segmented filter |
 | `StatusSwitchField` | `is_active` switch with `col.status` aria-label |
 | `StatusBadge` | Read-only active/inactive pill |
-| `TableIconActions` | View / edit / add (green) / delete (red) icon row |
+| `TableIconActions` | Row actions via [`ButtonIcon`](../../frontend/components/ui/button-icon.tsx) tones: **view** (green, same token as add), **edit** (primary blue), **add** (green), **delete** / **cancel** (red) |
 | `FormField` | shadcn `Field` / `FieldLabel` + `Input`; required asterisk, placeholder pattern (unchanged when invalid); when `invalid`, `FieldError` with `error.required` under the control + reserved `min-h-5` slot; clear via `onClearInvalid` on change; `readOnly` locks the default `Input` (`readOnly` + `disabled`) so callers do not fork a second field / children override; shared `Input` defaults `maxLength` **100** on text-like types (`DEFAULT_INPUT_MAX_LENGTH`, overridable per field) |
 | `BreadcrumbNav` | shadcn `Breadcrumb*` + `@/i18n/navigation` `Link` |
 | `CrudPaginationBar` | shadcn `PaginationContent` / `PaginationItem` / `PaginationEllipsis` + page-size `Select` |
@@ -126,7 +126,9 @@ Do not use shadcn `bg-muted` when the design intent is a **border** — use `bor
 | `--color-success` / `--success` (shadcn bridge) | Solid green for filled controls — same as `--color-action-add` (`#16a34a` light); `#22c55e` dark |
 | `--color-success-foreground` | Text on solid success (white light; white dark) |
 | `--color-success-*` (bg/fg/border) | `.wh-badge--active` / `StatusBadge` active — `bg-warehouse-success-bg`, `text-warehouse-success-fg` |
-| `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*`; inactive badge — `bg-warehouse-status-inactive-bg`, `text-warehouse-status-inactive-fg` |
+| `--color-status-active-*` / `--color-status-inactive-*` | `.crud-badge--*`; inactive badge — `bg-warehouse-status-inactive-bg`, `text-warehouse-status-inactive-fg`, `border-warehouse-status-inactive-border` |
+| `--color-warning-*` (bg/fg/border) | Order sale **pending** pills — `bg-warehouse-warning-bg`, `text-warehouse-warning-fg`, `border-warehouse-warning-border` |
+| `--color-error-*` (bg/fg/border) | Order sale **cancelled/rejected** pills — `bg-warehouse-error-bg`, `text-warehouse-error-fg`, `border-warehouse-error-border` |
 | `--color-action-add` | `#16a34a` — crud-add / green actions |
 | `--color-action-delete` | `#dc2626` — crud-delete |
 | `--color-warning` / `--warning` | `#d97706` light / `#fbbf24` dark — toast warning, `Button` `warning` variant |
@@ -308,6 +310,18 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | UI | Design [`member-user.html`](../../design/pages/member-user.html): [`member-user-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-user-list.tsx), [`member-user-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-user-form.tsx) + tab modules (orders placeholder, [`member-user-form-discounts-tab.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/member/_shared/member-user-form-discounts-tab.tsx) — credit sub-tabs from form **`creditIds`** only (`creditTabsFromSelection`), not full business credit catalog; address geo via [`WebsiteGeoFields`](../../frontend/components/molecules/website-geo-fields.tsx); list KPI row — **Sales this month** card + `sales_this_month` from stats API only when [`useAdminBackofficeActor`](../../frontend/lib/admin-backoffice-actor-context.tsx) `type === "superadmin"`; list / bulk inline editor / expired, single-row bulk-apply bar (min qty, percent discount, dates, apply — always `discount_type: percent`), toolbar search+brand+date, pagination, multi-product picker (+ add product only); product labels via `GET …/filters?facet=product_items|product_brands|product_brand_categories`; discount product picker brand/category filter uses cascade dialog (`member-user-brand-category-filter-dialog.tsx`); picker confirm switches to **ราคาพิเศษ** (`bulk`) with **local pending rows** (negative temp ids) — no `POST …/discounts` until per-row Save or bulk Apply; persisted via `createMemberUserDiscount` / `patchMemberUserDiscount`, files) |
 | i18n | [`messages/{th,en}/page-member-user.json`](../../frontend/messages/th/page-member-user.json), [`member-user.json`](../../frontend/messages/th/member-user.json) |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-member-user.md`](../checklist/frontend/phase-frontend-member-user.md) |
+
+### Store sales (order store)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/sales/store`, `/new`, `/[id]` + `loading.tsx` |
+| BFF / API | [`lib/bff-order-store-handlers.ts`](../../frontend/lib/bff-order-store-handlers.ts) → `app/api/v1/auth/proxy/order/store-sales/`; client [`lib/order-store-api.ts`](../../frontend/lib/order-store-api.ts) |
+| List UI | [`sales/store/_shared/store-sales-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-list.tsx) — status pills via [`store-sales-status-styles.ts`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-status-styles.ts); qty/net from API; **จัดการ** = [`TableIconActions`](../../frontend/components/molecules/table-icon-actions.tsx) — **draft:** edit (blue) + cancel (red X); **pending:** view (green) + cancel; **success/cancelled/rejected:** view |
+| Form UI | [`store-sales-form-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/store/_shared/store-sales-form-page.tsx) — print picking slip = `window.print()` only (no print-log API) |
+| i18n | [`messages/{th,en}/page-order-store.json`](../../frontend/messages/th/page-order-store.json) |
+| RBAC | `order.order_store` |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-order-store.md`](../checklist/frontend/phase-frontend-order-store.md) |
 
 ### Order compare (catalog special price)
 

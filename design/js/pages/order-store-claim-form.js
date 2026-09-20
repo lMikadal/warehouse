@@ -51,7 +51,7 @@
     var root = document.getElementById("order-store-claim-form-root");
     if (!root) return;
     var pay = payment();
-    var order = pay ? global.store.getById("order_order", pay.order_order_id) : null;
+    var order = pay ? global.store.getById("order_list", pay.order_list_id) : null;
     var lines = pay ? lib.paymentItems(pay.id) : [];
     var draftTotal = state.draftItems.reduce(function (s, d) {
       return s + (Number(d.lineTotal) || 0);
@@ -59,7 +59,7 @@
 
     var lineRows = lines
       .map(function (pi) {
-        var ooi = global.store.getById("order_order_item", pi.order_order_item_id);
+        var ooi = global.store.getById("order_list_item", pi.order_list_item_id);
         return (
           "<tr><td>" +
           lib.escapeHtml(lib.productItemLabel(ooi && ooi.product_item_id)) +

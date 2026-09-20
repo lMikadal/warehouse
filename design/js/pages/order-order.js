@@ -1,7 +1,7 @@
 (function (global) {
   var lib = global.orderLib;
   var dlib = global.orderDeliveryLib;
-  var PERM = { module: "order", type: "order_order" };
+  var PERM = { module: "order", type: "order_list" };
   var state = {
     query: "",
     dateFrom: "",
@@ -22,7 +22,7 @@
   }
 
   function pickableOrders() {
-    return lib.activeRows("order_order").filter(function (o) {
+    return lib.activeRows("order_list").filter(function (o) {
       return o.status === "pending" || o.status === "success";
     });
   }
@@ -145,7 +145,7 @@
             "</div></td></tr>"
           );
         }
-        var childOrder = global.store.getById("order_order", r.orderId);
+        var childOrder = global.store.getById("order_list", r.orderId);
         var payTot = lib.paymentTotals(r.id);
         return (
           "<tr class='crud-table__child'><td class='wh-expand-cell'></td><td class='data-table__col-center'>" +
@@ -236,7 +236,7 @@
 
   function fulfillStatusForRow(r, orderIdForChild) {
     if (r.kind === "parent") return r.fulfill_status;
-    var order = global.store.getById("order_order", orderIdForChild);
+    var order = global.store.getById("order_list", orderIdForChild);
     return order ? order.fulfill_status : "";
   }
 

@@ -6,7 +6,7 @@ INSERT INTO system_code_prefix (
 )
 VALUES
   (1, 'member_user', 'MEM', 'month', 'prefix_yyyymm_dash_seq', 5, 'Asia/Bangkok', '', 0, TRUE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-  (2, 'order_order', 'PJB', 'month', 'prefix_yyyymm_dash_seq', 5, 'Asia/Bangkok', '', 0, TRUE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+  (2, 'order_list', 'PJB', 'month', 'prefix_yyyymm_dash_seq', 5, 'Asia/Bangkok', '', 0, TRUE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
   (3, 'purchase_order', 'PO', 'month', 'prefix_yyyymm_dash_seq', 5, 'Asia/Bangkok', '', 0, TRUE, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
 ON CONFLICT (id) DO UPDATE SET
   code_key = EXCLUDED.code_key,

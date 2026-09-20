@@ -59,7 +59,7 @@
         var unit = Number(l.price_per_unit) || 0;
         var disc = cart.lineMemberDiscount(l, qty);
         return {
-          order_order_item_id: l.id,
+          order_list_item_id: l.id,
           amount: qty,
           price_per_unit: unit,
           discount: disc,

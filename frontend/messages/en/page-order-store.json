@@ -1,0 +1,61 @@
+{
+  "page": {
+    "orderStore": {
+      "title": "Store sales",
+      "subtitle": "Manage and track in-store sales easily",
+      "create": "Create",
+      "dateRange": "Date range",
+      "dateRangePlaceholder": "Select date range",
+      "confirm": "Confirm",
+      "statusAll": "All",
+      "confirmCancel": "Cancel this document?",
+      "colSku": "Delivery no.",
+      "colMember": "Customer",
+      "colOrderedAt": "Ordered at",
+      "colItems": "Items",
+      "colTotal": "Net total",
+      "colStatus": "Status",
+      "colSeller": "Seller",
+      "saleStatus": {
+        "draft": "Draft",
+        "pending": "Pending pick",
+        "success": "Success",
+        "cancelled": "Cancelled",
+        "rejected": "Rejected"
+      },
+      "form": {
+        "titleCreate": "Create store sale",
+        "titleEdit": "Edit store sale",
+        "customerStep": "Customer information",
+        "productStep": "Search products",
+        "documentTitle": "Create document",
+        "documentSubtitle": "Review items and create the order",
+        "walkInHint": "No member on file — you can skip and create the order",
+        "memberCode": "Customer code",
+        "creditType": "Payment type",
+        "emptyCart": "No items yet. Add products to create an order.",
+        "tabProducts": "All products",
+        "tabCompare": "Compare",
+        "tabCartItems": "Items",
+        "tabCartCompare": "Compare",
+        "saveDraft": "Save draft",
+        "submitPending": "Create order",
+        "printPicking": "Print picking slip",
+        "shippingEdit": "Shipping method",
+        "shippingStore": "Pick up at branch",
+        "shippingParking": "Pick up at parking",
+        "shippingDelivery": "Delivery",
+        "shippingDate": "Ship date",
+        "shippingTime": "Customer pickup time",
+        "compareModalTitle": "Add compare line",
+        "compareDetail": "Detail",
+        "compareQty": "Quantity",
+        "bulkAdd": "Add selected",
+        "selectAll": "Select all",
+        "loadMore": "Load more",
+        "priceHint": "Prices shown for the selected customer",
+        "emptyBrowse": "Search or filter to show products"
+      }
+    }
+  }
+}

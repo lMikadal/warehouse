@@ -22,6 +22,13 @@
   --color-status-active-fg: rgb(21 128 61);
   --color-status-inactive-bg: rgb(148 163 184 / 0.2);
   --color-status-inactive-fg: rgb(100 116 139);
+  --color-status-inactive-border: rgb(148 163 184 / 0.45);
+  --color-warning-bg: #fef3c7;
+  --color-warning-fg: #b45309;
+  --color-warning-border: #fcd34d;
+  --color-error-bg: #fee2e2;
+  --color-error-fg: #b91c1c;
+  --color-error-border: #fca5a5;
   --color-action-add: #16a34a;
   --color-action-delete: #dc2626;
   --color-success: var(--color-action-add);
@@ -79,6 +86,13 @@
   --color-status-active-fg: rgb(74 222 128);
   --color-status-inactive-bg: rgb(148 163 184 / 0.2);
   --color-status-inactive-fg: rgb(148 163 184);
+  --color-status-inactive-border: rgb(148 163 184 / 0.35);
+  --color-warning-bg: rgb(180 83 9 / 0.25);
+  --color-warning-fg: #fcd34d;
+  --color-warning-border: rgb(251 191 36 / 0.4);
+  --color-error-bg: rgb(185 28 28 / 0.25);
+  --color-error-fg: #fca5a5;
+  --color-error-border: rgb(248 113 113 / 0.4);
   --color-row-expanded: color-mix(
     in srgb,
     var(--color-primary) 4%,
@@ -253,6 +267,13 @@
   --color-warehouse-success-border: var(--color-success-border);
   --color-warehouse-status-inactive-bg: var(--color-status-inactive-bg);
   --color-warehouse-status-inactive-fg: var(--color-status-inactive-fg);
+  --color-warehouse-status-inactive-border: var(--color-status-inactive-border);
+  --color-warehouse-warning-bg: var(--color-warning-bg);
+  --color-warehouse-warning-fg: var(--color-warning-fg);
+  --color-warehouse-warning-border: var(--color-warning-border);
+  --color-warehouse-error-bg: var(--color-error-bg);
+  --color-warehouse-error-fg: var(--color-error-fg);
+  --color-warehouse-error-border: var(--color-error-border);
   --color-warehouse-switch-checked: var(--color-switch-checked);
   --color-warehouse-switch-thumb-dark: var(--color-switch-thumb-dark);
   --color-warehouse-table-head: var(--color-table-head-bg);

@@ -2,7 +2,7 @@
   var lib = global.orderLib;
   var cart = global.orderCart;
   var dlib = global.orderDeliveryLib;
-  var PERM = { module: "order", type: "order_order" };
+  var PERM = { module: "order", type: "order_list" };
 
   var state = {
     orderIds: [],
@@ -38,7 +38,7 @@
   }
 
   function activeOrder() {
-    return global.store.getById("order_order", state.activeId);
+    return global.store.getById("order_list", state.activeId);
   }
 
   function activeItems() {
@@ -83,7 +83,7 @@
 
     var tabs = state.orderIds
       .map(function (id) {
-        var o = global.store.getById("order_order", id);
+        var o = global.store.getById("order_list", id);
         return (
           '<button type="button" class="order-order-form__tab' +
           (state.activeId === id ? " is-active" : "") +
@@ -159,7 +159,7 @@
   }
 
   function patchItem(itemId, patch) {
-    global.store.update("order_order_item", itemId, Object.assign({ updated_at: lib.now() }, patch));
+    global.store.update("order_list_item", itemId, Object.assign({ updated_at: lib.now() }, patch));
   }
 
   function bind(root) {
@@ -184,14 +184,14 @@
     });
     root.querySelector("[data-verify]").addEventListener("click", verifyScan);
     root.querySelector("[data-fail]").addEventListener("click", function () {
-      global.store.update("order_order", state.activeId, {
+      global.store.update("order_list", state.activeId, {
         fulfill_status: "fail",
         updated_at: lib.now(),
       });
       global.location.href = global.nav.resolve("pages/order-order.html");
     });
     root.querySelector("[data-draft]").addEventListener("click", function () {
-      global.store.update("order_order", state.activeId, {
+      global.store.update("order_list", state.activeId, {
         fulfill_status: "in_progress",
         updated_at: lib.now(),
         updated_by: lib.actorId(),
@@ -209,7 +209,7 @@
 
   function verifyScan() {
     if (!state.verifyItemId) return;
-    var item = global.store.getById("order_order_item", state.verifyItemId);
+    var item = global.store.getById("order_list_item", state.verifyItemId);
     if (!item) return;
     var rem = dlib.remainingQty(item);
     if (rem <= 0) {

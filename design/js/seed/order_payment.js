@@ -10,7 +10,7 @@
     return Object.assign(
       {
         id: id,
-        order_order_id: orderId,
+        order_list_id: orderId,
         sku: opts.sku,
         payment_category: category,
         ordered_at: orderedAt,

@@ -30,14 +30,14 @@
   function parentsFiltered() {
     var q = state.query.trim().toLowerCase();
     return lib
-      .activeRows("order_order")
+      .activeRows("order_list")
       .filter(function (o) {
         return o.parent_id == null;
       })
       .filter(function (o) {
         if (state.status && o.status !== state.status) {
           if (state.status && lib.childCount(o.id) > 0) {
-            var kids = lib.activeRows("order_order").filter(function (c) {
+            var kids = lib.activeRows("order_list").filter(function (c) {
               return c.parent_id === o.id && c.status === state.status;
             });
             if (!kids.length) return false;
@@ -54,13 +54,14 @@
       .sort(function (a, b) {
         var ca = a.created_at || "";
         var cb = b.created_at || "";
-        return ca < cb ? 1 : ca > cb ? -1 : 0;
+        if (ca !== cb) return ca < cb ? 1 : -1;
+        return Number(b.id) - Number(a.id);
       });
   }
 
   function statusCounts() {
     var counts = { all: 0, draft: 0, pending: 0, success: 0, cancelled: 0, rejected: 0 };
-    lib.activeRows("order_order").forEach(function (o) {
+    lib.activeRows("order_list").forEach(function (o) {
       counts.all++;
       if (counts[o.status] != null) counts[o.status]++;
     });
@@ -70,7 +71,7 @@
   function familyRows(parent) {
     var rootId = parent.id;
     var kids = lib
-      .activeRows("order_order")
+      .activeRows("order_list")
       .filter(function (c) {
         return c.parent_id === rootId;
       })
@@ -308,8 +309,10 @@
           '" data-family="' +
           (familyHead ? "1" : "0") +
           '" aria-label="' +
-          lib.escapeHtml(t("crud.delete")) +
-          '"><img src="../assets/icons/trash-2.svg" alt="" width="18" height="18"/></button>';
+          lib.escapeHtml(t("crud.cancel")) +
+          '" title="' +
+          lib.escapeHtml(t("crud.cancel")) +
+          '"><img src="../assets/icons/x.svg" alt="" width="18" height="18"/></button>';
       }
       if (row.status === "cancelled" || row.status === "rejected") {
         html +=
@@ -324,11 +327,11 @@
   }
 
   function setStatus(id, status) {
-    global.store.update("order_order", id, { status: status, updated_at: lib.now() });
+    global.store.update("order_list", id, { status: status, updated_at: lib.now() });
   }
 
   function cancelFamily(rootId) {
-    familyRows(global.store.getById("order_order", rootId)).forEach(function (r) {
+    familyRows(global.store.getById("order_list", rootId)).forEach(function (r) {
       setStatus(r.id, "cancelled");
     });
   }

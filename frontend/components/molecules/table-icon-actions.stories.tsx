@@ -32,6 +32,20 @@ export const EditDelete: Story = {
   },
 };
 
+export const EditCancel: Story = {
+  name: "Edit + Cancel (order)",
+  args: {
+    actions: ["edit", "cancel"],
+  },
+};
+
+export const ViewEditCancel: Story = {
+  name: "View + Edit + Cancel (store sales draft)",
+  args: {
+    actions: ["view", "edit", "cancel"],
+  },
+};
+
 export const DeleteDisabled: Story = {
   name: "Delete disabled",
   args: {

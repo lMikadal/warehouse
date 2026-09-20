@@ -114,7 +114,7 @@
     var body = pageRows
       .map(function (c) {
         var pay = global.store.getById("order_payment", c.order_payment_id);
-        var order = pay ? global.store.getById("order_order", pay.order_order_id) : null;
+        var order = pay ? global.store.getById("order_list", pay.order_list_id) : null;
         var href = pay
           ? global.nav.resolve("pages/order-store-claim-form.html?id=" + pay.id)
           : "#";

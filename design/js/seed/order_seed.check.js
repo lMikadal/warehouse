@@ -7,7 +7,7 @@ var shared = {
   },
 };
 var g = { ADMIN_SEED_SHARED: shared };
-["order_order", "order_order_item", "order_payment", "order_payment_item", "order_claim", "order_claim_item"].forEach(
+["order_list", "order_list_item", "order_payment", "order_payment_item", "order_claim", "order_claim_item"].forEach(
   function (f) {
     var code = fs.readFileSync(path.join(__dirname, f + ".js"), "utf8");
     eval(code.replace(/}\)\(window\);/, "})(g);"));
@@ -47,10 +47,10 @@ orders.forEach(function (o) {
   }
 });
 items.forEach(function (i) {
-  if (!oids[i.order_order_id]) throw new Error("item " + i.id);
+  if (!oids[i.order_list_id]) throw new Error("item " + i.id);
 });
 pays.forEach(function (p) {
-  if (!oids[p.order_order_id]) throw new Error("pay " + p.id);
+  if (!oids[p.order_list_id]) throw new Error("pay " + p.id);
 });
 var pids = {};
 pays.forEach(function (p) {

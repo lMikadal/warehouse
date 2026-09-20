@@ -150,9 +150,9 @@
   });
 
   var orderTables = [
-    "order_order",
-    "order_order_item",
-    "order_order_item_warehouse",
+    "order_list",
+    "order_list_item",
+    "order_list_item_warehouse",
     "order_payment",
     "order_payment_item",
     "order_payment_method",

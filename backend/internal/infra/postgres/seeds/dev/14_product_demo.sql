@@ -240,6 +240,10 @@ ON CONFLICT (id) DO UPDATE SET
 
 SELECT setval(pg_get_serial_sequence('purchase_order_item', 'id'), GREATEST((SELECT MAX(id) FROM purchase_order_item), 1));
 
+-- Re-run: only one is_used=TRUE per product_item_id (partial unique index)
+UPDATE product_item_stock SET is_used = FALSE, updated_at = NOW()
+WHERE product_item_id IN (1, 2, 3, 4, 5, 6) AND deleted_at IS NULL;
+
 INSERT INTO product_item_stock (id, product_item_id, product_item_warehouse_id, purchase_order_item_id, supplier_user_id, order_quantity, order_free_gift, quantity, remain_quantity, cost_per_unit, discount_per_unit, vat_type, vat_rate, sell_price, is_used, received_at, created_by, updated_by, created_at, updated_at)
 VALUES
   (1, 1, 1, 1, NULL, 48, 2, 50, 10, 6.5, 0.2, 'exclude', 7.00, 10, TRUE, '2024-05-20T10:00:00.000Z', 1, 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),

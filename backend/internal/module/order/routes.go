@@ -16,4 +16,16 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	c.PUT("/rules", h.putRules)
 	c.GET("/export", h.export)
 	c.POST("/import", h.importRules)
+
+	storeRepo := NewStoreSalesRepository(db)
+	storeH := NewStoreSalesHandler(storeRepo)
+	s := g.Group("/store-sales")
+	s.GET("", storeH.list)
+	s.GET("/count", storeH.count)
+	s.GET("/filters", storeH.filters)
+	s.POST("", storeH.create)
+	s.GET("/:id", storeH.getByID)
+	s.PATCH("/:id", storeH.update)
+	s.PATCH("/:id/status", storeH.patchStatus)
+	s.DELETE("/:id", storeH.delete)
 }

@@ -1044,7 +1044,7 @@
 
   function orderShippingType(orderId) {
     var row = lib.activeRows("order_shipping").find(function (r) {
-      return Number(r.order_order_id) === Number(orderId);
+      return Number(r.order_list_id) === Number(orderId);
     });
     return row ? row.type : "store";
   }
@@ -1053,7 +1053,7 @@
     return lib
       .activeRows("order_payment")
       .filter(function (p) {
-        return Number(p.order_order_id) === Number(orderId);
+        return Number(p.order_list_id) === Number(orderId);
       })
       .sort(function (a, b) {
         return b.id - a.id;
@@ -1092,14 +1092,14 @@
   function memberOrderEntries() {
     if (!memberId) return [];
     return lib
-      .activeRows("order_order")
+      .activeRows("order_list")
       .filter(function (o) {
         return Number(o.member_user_id) === Number(memberId);
       })
       .map(function (order) {
         var payment = paymentsForOrder(order.id)[0] || null;
-        var items = lib.activeRows("order_order_item").filter(function (i) {
-          return Number(i.order_order_id) === Number(order.id);
+        var items = lib.activeRows("order_list_item").filter(function (i) {
+          return Number(i.order_list_id) === Number(order.id);
         });
         var itemQty = items.reduce(function (s, i) {
           return s + (Number(i.amount) || 0);
@@ -1167,8 +1167,8 @@
     lib.activeRows("order_payment_item").forEach(function (pi) {
       var pay = global.store.getById("order_payment", pi.order_payment_id);
       if (!pay || pay.deleted_at != null) return;
-      if (!orderIds[pay.order_order_id]) return;
-      var ooi = global.store.getById("order_order_item", pi.order_order_item_id);
+      if (!orderIds[pay.order_list_id]) return;
+      var ooi = global.store.getById("order_list_item", pi.order_list_item_id);
       if (!ooi) return;
       lines.push({
         payment: pay,
@@ -1259,7 +1259,7 @@
     var sum = 0;
     lib.activeRows("order_payment").forEach(function (p) {
       if (p.payment_category !== "credit" || p.is_full) return;
-      var o = global.store.getById("order_order", p.order_order_id);
+      var o = global.store.getById("order_list", p.order_list_id);
       if (!o || Number(o.member_user_id) !== Number(memberId)) return;
       sum += Math.max(0, (Number(p.total_price) || 0) - (Number(p.amount_paid) || 0));
     });
@@ -1269,7 +1269,7 @@
   function memberOverdueKpi() {
     if (!memberId) return 0;
     var sum = 0;
-    lib.activeRows("order_order").forEach(function (order) {
+    lib.activeRows("order_list").forEach(function (order) {
       if (Number(order.member_user_id) !== Number(memberId)) return;
       var payment = paymentsForOrder(order.id)[0];
       if (!payment || orderDisplayStatus(order, payment) !== "overdue") return;
@@ -2368,18 +2368,18 @@
     have.forEach(function (r, idx) {
       var all = global.store.getAll("member_user_setting");
       var i = all.indexOf(r);
-      if (wanted.indexOf(r.member_setting_relation_id) < 0 && i >= 0) {
+      if (wanted.indexOf(r.member_setting_credit_id) < 0 && i >= 0) {
         global.store.deleteAt("member_user_setting", i);
       }
     });
     wanted.forEach(function (rid) {
       var exists = global.store.getAll("member_user_setting").some(function (r) {
-        return r.member_user_id === memberId && r.member_setting_relation_id === rid;
+        return r.member_user_id === memberId && r.member_setting_credit_id === rid;
       });
       if (!exists) {
         global.store.create("member_user_setting", {
           member_user_id: memberId,
-          member_setting_relation_id: rid,
+          member_setting_credit_id: rid,
           created_at: now(),
         });
       }
@@ -2598,7 +2598,7 @@
     });
     var rels = settings
       .map(function (s) {
-        return global.store.getById("member_setting_relation", s.member_setting_relation_id);
+        return global.store.getById("member_setting_relation", s.member_setting_credit_id);
       })
       .filter(Boolean);
     var credits = [];

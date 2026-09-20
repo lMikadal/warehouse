@@ -10,7 +10,7 @@
     return Object.assign(
       {
         id: id,
-        order_order_id: orderId,
+        order_list_id: orderId,
         product_item_id: opts.product_item_id != null ? opts.product_item_id : 1,
         type: opts.type || "item",
         amount: amount,
@@ -19,6 +19,8 @@
         status: opts.status || (checked >= amount ? "success" : checked > 0 ? "in_progress" : "pending"),
         price_per_unit: price,
         discount: discount,
+        vat_type: opts.vat_type != null ? opts.vat_type : "exclude",
+        vat_rate: opts.vat_rate != null ? opts.vat_rate : 7,
         total_price:
           opts.type === "compare" ? 0 : amount * price - amount * discount,
         detail: opts.detail != null ? opts.detail : null,
@@ -27,7 +29,7 @@
     );
   }
 
-  global.SEED_ORDER_ORDER_ITEM = [
+  global.SEED_ORDER_LIST_ITEM = [
     ooi(1, 1, { product_item_id: 1, amount: 10, price: 10.0 }),
     ooi(2, 1, { product_item_id: 2, amount: 2, price: 18.0 }),
     ooi(3, 2, { product_item_id: 1, amount: 25, price: 9.5, discount: 0.5 }),

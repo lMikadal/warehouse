@@ -1472,7 +1472,8 @@ body.sidebar-open .admin-sidebar-backdrop {
 }
 
 .crud-icon-btn.crud-delete img,
-button.crud-icon-btn:has(img[src*="trash"]) img {
+button.crud-icon-btn:has(img[src*="trash"]) img,
+button.crud-icon-btn:has(img[src*="x.svg"]) img {
   filter: invert(27%) sepia(94%) saturate(2577%) hue-rotate(346deg) brightness(92%) contrast(93%);
 }
 

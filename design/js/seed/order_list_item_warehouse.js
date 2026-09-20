@@ -4,14 +4,14 @@
     return Object.assign(
       {
         id: id,
-        order_order_item_id: itemId,
+        order_list_item_id: itemId,
         warehouse_list_id: whId,
         amount_checked: qty,
       },
       audit(1)
     );
   }
-  global.SEED_ORDER_ORDER_ITEM_WAREHOUSE = [
+  global.SEED_ORDER_LIST_ITEM_WAREHOUSE = [
     row(1, 1, 1, 10),
     row(2, 3, 1, 25),
     row(3, 17, 1, 5),

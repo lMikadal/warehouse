@@ -194,7 +194,7 @@
     var biz = null;
     lib.activeRows("member_user_setting").forEach(function (s) {
       if (s.member_user_id !== uid) return;
-      var rel = global.store.getById("member_setting_relation", s.member_setting_relation_id);
+      var rel = global.store.getById("member_setting_relation", s.member_setting_credit_id);
       if (rel && rel.business_id != null) biz = rel.business_id;
     });
     return biz;
@@ -221,7 +221,7 @@
       if (!out.length) {
         lib.activeRows("member_user_setting").forEach(function (s) {
           if (s.member_user_id !== Number(memberId)) return;
-          var rel = global.store.getById("member_setting_relation", s.member_setting_relation_id);
+          var rel = global.store.getById("member_setting_relation", s.member_setting_credit_id);
           if (rel && rel.is_active !== false) addCredit(rel.credit_id);
         });
       }
@@ -423,14 +423,14 @@
   }
 
   function familyMembersFromStore(orderId) {
-    var current = global.store.getById("order_order", orderId);
+    var current = global.store.getById("order_list", orderId);
     if (!current) return [];
-    var parent = current.parent_id ? global.store.getById("order_order", current.parent_id) : null;
+    var parent = current.parent_id ? global.store.getById("order_list", current.parent_id) : null;
     var rootId = parent ? parent.id : current.id;
     var byId = {};
     if (parent) byId[parent.id] = parent;
     byId[current.id] = current;
-    lib.activeRows("order_order").forEach(function (o) {
+    lib.activeRows("order_list").forEach(function (o) {
       if (o.parent_id === rootId) byId[o.id] = o;
     });
     return Object.keys(byId)
@@ -468,7 +468,7 @@
   }
 
   function applyOrderToState(orderId) {
-    var o = global.store.getById("order_order", orderId);
+    var o = global.store.getById("order_list", orderId);
     if (!o) return;
     state.orderId = orderId;
     state.selectedFamilyId = orderId;
@@ -492,10 +492,10 @@
   }
 
   function loadOrder(id) {
-    var o = global.store.getById("order_order", id);
+    var o = global.store.getById("order_list", id);
     if (!o) return;
     state.familyDetails = familyMembersFromStore(id);
-    var parent = o.parent_id ? global.store.getById("order_order", o.parent_id) : null;
+    var parent = o.parent_id ? global.store.getById("order_list", o.parent_id) : null;
     var root = parent || o;
     state.familyRootId = root.id;
     state.familyRootWaiting = root.status === "pending" && !root.parent_id;
@@ -557,7 +557,7 @@
       updated_by: actor,
     };
     var creating = state.addonCreate || !state.orderId;
-    var existingOrder = !creating && state.orderId ? global.store.getById("order_order", state.orderId) : null;
+    var existingOrder = !creating && state.orderId ? global.store.getById("order_list", state.orderId) : null;
     if (status === "pending" && (creating || (existingOrder && !existingOrder.sku))) {
       body.sku = existingOrder && existingOrder.parent_id
         ? lib.nextFamilySplitSku(existingOrder.parent_id)
@@ -573,23 +573,23 @@
       body.fulfill_status = body.fulfill_status || "pending";
       body.parent_id = state.addonCreate ? state.familyRootId : null;
       if (status === "pending" && !body.sku && !state.addonCreate) body.sku = lib.nextOrderSku();
-      var created = global.store.create("order_order", body);
+      var created = global.store.create("order_list", body);
       oid = created.id;
       state.orderId = oid;
     } else {
-      global.store.update("order_order", state.orderId, body);
+      global.store.update("order_list", state.orderId, body);
       oid = state.orderId;
     }
     lib.orderItems(oid).forEach(function (i) {
-      global.store.remove("order_order_item", i.id);
+      global.store.remove("order_list_item", i.id);
     });
     state.products.forEach(function (p) {
       var row = productRow(p.product_item_id);
       var qty = Number(p.amount) || 1;
       var disc = cart.lineTotalDiscount(row, qty);
       var unit = cart.isWholesale(row, qty) ? Number(row.price) || 0 : cart.unitPrice(row, qty);
-      global.store.create("order_order_item", {
-        order_order_id: oid,
+      global.store.create("order_list_item", {
+        order_list_id: oid,
         product_item_id: p.product_item_id,
         type: "item",
         amount: qty,
@@ -607,8 +607,8 @@
       });
     });
     state.compares.forEach(function (c) {
-      global.store.create("order_order_item", {
-        order_order_id: oid,
+      global.store.create("order_list_item", {
+        order_list_id: oid,
         product_item_id: null,
         type: "compare",
         amount: Number(c.amount) || 1,
@@ -627,27 +627,27 @@
     });
     var ship = lib.orderShipping(oid);
     var shipBody = {
-      order_order_id: oid,
+      order_list_id: oid,
       type: state.deliveryType,
       received_at: state.receiveAt ? new Date(state.receiveAt).toISOString() : null,
       updated_at: ts,
     };
     if (ship) {
       var sidx = global.store.getAll("order_shipping").findIndex(function (s) {
-        return Number(s.order_order_id) === Number(oid);
+        return Number(s.order_list_id) === Number(oid);
       });
       if (sidx >= 0) global.store.updateAt("order_shipping", sidx, shipBody);
     } else {
       global.store.create(
         "order_shipping",
-        Object.assign({ order_order_id: oid, created_at: ts }, shipBody)
+        Object.assign({ order_list_id: oid, created_at: ts }, shipBody)
       );
     }
   }
 
   function patchOrderStatus(id, status) {
     if (!id) return;
-    global.store.update("order_order", id, {
+    global.store.update("order_list", id, {
       status: status,
       updated_at: lib.now(),
       updated_by: lib.actorId(),
@@ -1629,7 +1629,7 @@
   function viewPanelData() {
     var id = state.selectedFamilyId || state.orderId;
     if (!id) return null;
-    var o = global.store.getById("order_order", id);
+    var o = global.store.getById("order_list", id);
     if (!o) return null;
     var lines = orderLines(id);
     var ship = lib.orderShipping(id);
@@ -1915,7 +1915,7 @@
           });
       }
     } else {
-      var order = state.orderId ? global.store.getById("order_order", state.orderId) : null;
+      var order = state.orderId ? global.store.getById("order_list", state.orderId) : null;
       docPanels += renderDocumentPanel({
         panel: "main",
         products: state.products,

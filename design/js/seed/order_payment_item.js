@@ -6,7 +6,7 @@
       {
         id: id,
         order_payment_id: paymentId,
-        order_order_item_id: orderItemId,
+        order_list_item_id: orderItemId,
         amount: amount,
         vat_rate: 7,
         price_per_unit: price,

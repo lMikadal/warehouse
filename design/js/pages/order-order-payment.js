@@ -2,7 +2,7 @@
   var lib = global.orderLib;
   var cart = global.orderCart;
   var dlib = global.orderDeliveryLib;
-  var PERM = { module: "order", type: "order_order" };
+  var PERM = { module: "order", type: "order_list" };
 
   var state = {
     orderId: null,
@@ -64,7 +64,7 @@
   function render() {
     var root = document.getElementById("order-order-payment-root");
     if (!root) return;
-    var order = global.store.getById("order_order", state.orderId);
+    var order = global.store.getById("order_list", state.orderId);
     var pays = lib.paymentsForOrder(state.orderId);
     var net = netTotal();
     var methodOpts = lib
@@ -221,7 +221,7 @@
     var saveDraft = root.querySelector("[data-save-draft]");
     if (saveDraft) saveDraft.addEventListener("click", function () {
       savePayment(false);
-      global.store.update("order_order", state.orderId, { fulfill_status: "in_progress" });
+      global.store.update("order_list", state.orderId, { fulfill_status: "in_progress" });
       global.toast.success(t("notification.success.save"));
       global.location.href = global.nav.resolve("pages/order-order.html");
     });
@@ -237,7 +237,7 @@
         }
       }
       savePayment(true);
-      global.store.update("order_order", state.orderId, {
+      global.store.update("order_list", state.orderId, {
         fulfill_status: "success",
         status: "success",
         updated_at: lib.now(),
@@ -259,7 +259,7 @@
     var total = netTotal();
     var skuPrefix = state.flow === "credit" ? "REV" : "INV";
     var pay = global.store.create("order_payment", {
-      order_order_id: state.orderId,
+      order_list_id: state.orderId,
       sku: skuPrefix + ts.slice(0, 10).replace(/-/g, "") + lib.paymentsForOrder(state.orderId).length,
       payment_category: state.flow === "credit" ? "credit" : "payment",
       ordered_at: ts,
@@ -279,7 +279,7 @@
     payableLines().forEach(function (i) {
       global.store.create("order_payment_item", {
         order_payment_id: pay.id,
-        order_order_item_id: i.id,
+        order_list_item_id: i.id,
         amount: i.amount_checked,
         vat_rate: lib.vatPercent(),
         price_per_unit: i.price_per_unit,

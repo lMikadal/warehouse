@@ -4067,9 +4067,9 @@
     var idSet = historyAllItemIdSet();
     var seen = {};
     var out = [];
-    global.store.getAll("order_order_item").forEach(function (ooi) {
+    global.store.getAll("order_list_item").forEach(function (ooi) {
       if (ooi.deleted_at != null || !idSet[ooi.product_item_id]) return;
-      var oo = global.store.getById("order_order", ooi.order_order_id);
+      var oo = global.store.getById("order_list", ooi.order_list_id);
       if (!oo || oo.deleted_at != null) return;
       var name = oo.member_name || "—";
       if (seen[name]) return;
@@ -4088,9 +4088,9 @@
       var po = global.store.getById("purchase_order", poi.purchase_order_id);
       if (po && po.deleted_at == null) years[String(po.ordered_at || po.created_at).slice(0, 4)] = true;
     });
-    global.store.getAll("order_order_item").forEach(function (ooi) {
+    global.store.getAll("order_list_item").forEach(function (ooi) {
       if (ooi.deleted_at != null || !idSet[ooi.product_item_id]) return;
-      var oo = global.store.getById("order_order", ooi.order_order_id);
+      var oo = global.store.getById("order_list", ooi.order_list_id);
       if (oo && oo.deleted_at == null) years[String(oo.ordered_at || oo.created_at).slice(0, 4)] = true;
     });
     return Object.keys(years).filter(Boolean).sort();
@@ -4232,12 +4232,12 @@
     var byKey = {};
     var order = [];
     global.store
-      .getAll("order_order_item")
+      .getAll("order_list_item")
       .filter(function (ooi) {
         return ooi.deleted_at == null && idSet[ooi.product_item_id];
       })
       .forEach(function (ooi) {
-        var oo = global.store.getById("order_order", ooi.order_order_id);
+        var oo = global.store.getById("order_list", ooi.order_list_id);
         if (!oo || oo.deleted_at != null) return;
         if (filters.partyId !== "all" && (oo.member_name || "—") !== filters.partyId) return;
         var iso = oo.ordered_at || oo.created_at;

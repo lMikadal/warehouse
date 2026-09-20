@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { Pencil, Plus, Trash2, Eye } from "lucide-react";
+import { ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { ButtonIcon } from "./button-icon";
 
@@ -38,7 +38,17 @@ export const SizeLg: Story = {
 
 export const ToneNeutral: Story = {
   name: "Tone: neutral",
-  args: { tone: "neutral", "aria-label": "View", children: <Eye /> },
+  args: { tone: "neutral", "aria-label": "Neutral", children: <Pencil /> },
+};
+
+export const ToneView: Story = {
+  name: "Tone: view (green)",
+  args: { tone: "view", "aria-label": "View", children: <ClipboardList /> },
+};
+
+export const ToneEdit: Story = {
+  name: "Tone: edit (blue)",
+  args: { tone: "edit", "aria-label": "Edit", children: <Pencil /> },
 };
 
 export const ToneAdd: Story = {
@@ -84,8 +94,10 @@ export const AllTones: Story = {
   name: "All tones (overview)",
   args: { "aria-label": "overview", children: <Pencil /> },
   render: () => (
-    <div className="flex items-center gap-3">
-      <ButtonIcon tone="neutral" aria-label="view"><Eye /></ButtonIcon>
+    <div className="flex flex-wrap items-center gap-3">
+      <ButtonIcon tone="neutral" aria-label="neutral"><Pencil /></ButtonIcon>
+      <ButtonIcon tone="view" aria-label="view"><ClipboardList /></ButtonIcon>
+      <ButtonIcon tone="edit" aria-label="edit"><Pencil /></ButtonIcon>
       <ButtonIcon tone="add" aria-label="add"><Plus /></ButtonIcon>
       <ButtonIcon tone="delete" aria-label="delete"><Trash2 /></ButtonIcon>
     </div>

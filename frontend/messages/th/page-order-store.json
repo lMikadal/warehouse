@@ -1,0 +1,61 @@
+{
+  "page": {
+    "orderStore": {
+      "title": "งานขาย (หน้าร้าน)",
+      "subtitle": "จัดการและติดตามรายการขายหน้าร้านได้อย่างง่ายดาย",
+      "create": "สร้างรายการ",
+      "dateRange": "ช่วงวันที่",
+      "dateRangePlaceholder": "เลือกช่วงวันที่",
+      "confirm": "ยืนยัน",
+      "statusAll": "ทั้งหมด",
+      "confirmCancel": "ยืนยันยกเลิกเอกสาร?",
+      "colSku": "เลขที่ใบจัด",
+      "colMember": "ลูกค้า",
+      "colOrderedAt": "วันที่สร้างรายการ",
+      "colItems": "จำนวนสั่งจัด",
+      "colTotal": "ยอดเงินสุทธิ",
+      "colStatus": "สถานะ",
+      "colSeller": "ผู้ขาย",
+      "saleStatus": {
+        "draft": "แบบร่าง",
+        "pending": "รอจัดสินค้า",
+        "success": "สำเร็จ",
+        "cancelled": "ยกเลิก",
+        "rejected": "ปฏิเสธ"
+      },
+      "form": {
+        "titleCreate": "สร้างรายการขาย",
+        "titleEdit": "แก้ไขรายการขาย",
+        "customerStep": "กรอกข้อมูลลูกค้า",
+        "productStep": "ค้นหาสินค้า",
+        "documentTitle": "สร้างเอกสาร",
+        "documentSubtitle": "ตรวจสอบรายการและดำเนินการสร้างใบสั่งซื้อ",
+        "walkInHint": "กรณีไม่มีข้อมูลสมาชิก (สามารถข้ามเพื่อสร้างใบจัดได้เลย)",
+        "memberCode": "รหัสลูกค้า",
+        "creditType": "รูปแบบชำระ",
+        "emptyCart": "ยังไม่มีรายการสินค้า กรุณาเพิ่มสินค้าลงในรายการ เพื่อสร้างใบสั่งซื้อ",
+        "tabProducts": "สินค้าทั้งหมด",
+        "tabCompare": "เทียบสินค้า",
+        "tabCartItems": "จัดสินค้า",
+        "tabCartCompare": "เทียบสินค้า",
+        "saveDraft": "บันทึกร่าง",
+        "submitPending": "สร้างใบสั่งซื้อ",
+        "printPicking": "พิมพ์ใบจัดสินค้า",
+        "shippingEdit": "เลือกรูปแบบจัดส่ง",
+        "shippingStore": "รับหน้าสาขา",
+        "shippingParking": "รับลานจอดรถ",
+        "shippingDelivery": "ฝากส่งสินค้า",
+        "shippingDate": "เลือกวันที่ที่ฝากส่งสินค้า",
+        "shippingTime": "เวลารับของลูกค้า",
+        "compareModalTitle": "เพิ่มรายการเทียบสินค้า",
+        "compareDetail": "รายละเอียด",
+        "compareQty": "จำนวน",
+        "bulkAdd": "เพิ่มที่เลือก",
+        "selectAll": "เลือกทั้งหมด",
+        "loadMore": "โหลดเพิ่มเติม",
+        "priceHint": "แสดงราคาของลูกค้าคนนั้นๆ",
+        "emptyBrowse": "ค้นหาสินค้าเพื่อเพิ่มในรายการ กรุณาค้นหาสินค้าหรือเลือกตัวกรองเพื่อแสดงผลลัพธ์"
+      }
+    }
+  }
+}

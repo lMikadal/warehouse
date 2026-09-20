@@ -1743,6 +1743,56 @@
               }
             }
           ]
+        },
+        {
+          "name": "Store sales",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales?page=1&limit=10",
+                "description": "order.order_store.view — parent orders only"
+              }
+            },
+            {
+              "name": "Count by status",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/count",
+                "description": "order.order_store.view"
+              }
+            },
+            {
+              "name": "Filters (sellers)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/filters?page=1&limit=50&search=",
+                "description": "order.order_store.view — active admin_user rows for seller toolbar combobox (no admin.admin_user.view)"
+              }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"draft\",\n  \"member_user_id\": 1,\n  \"member_setting_credit_id\": 1,\n  \"member_name\": \"Test\",\n  \"shipping\": { \"type\": \"store\", \"received_at\": null },\n  \"items\": []\n}"
+                },
+                "url": "{{baseUrl}}/order/store-sales",
+                "description": "order.order_store.create — writes member_history when member_user_id set"
+              }
+            },
+            {
+              "name": "Get by id",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-sales/1",
+                "description": "order.order_store.view"
+              }
+            }
+          ]
         }
       ]
     }
