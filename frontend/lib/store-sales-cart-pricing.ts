@@ -270,3 +270,134 @@ export async function repriceStoreSalesCartLines(
   }
   return out;
 }
+
+export type StoreSalesPriceSummaryLine = {
+  qty: number;
+  listPrice: number;
+  discount: number;
+};
+
+export type StoreSalesPriceSummary = {
+  itemsTotal: number;
+  discountTotal: number;
+  shipping: number;
+  vatAmount: number;
+  grandTotal: number;
+  netTotal: number;
+};
+
+/** VAT extracted from tax-inclusive subtotal (design order-cart.extractVat). */
+export function extractVatFromInclusive(inc: number, pct: number): number {
+  if (!Number.isFinite(inc) || inc <= 0) return 0;
+  const rate = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
+  if (rate === 0) return 0;
+  return roundMoney2((inc * rate) / (100 + rate));
+}
+
+/** Document panel totals (design orderCart.priceSummary). */
+export function computeStoreSalesPriceSummary(
+  lines: StoreSalesPriceSummaryLine[],
+  vatPercent: number,
+  shipping = 0
+): StoreSalesPriceSummary {
+  const ship = roundMoney2(shipping);
+  const itemsTotal = roundMoney2(
+    lines.reduce(
+      (sum, line) => sum + line.qty * (Number(line.listPrice) || 0),
+      0
+    )
+  );
+  const discountTotal = roundMoney2(
+    lines.reduce((sum, line) => sum + (Number(line.discount) || 0), 0)
+  );
+  const inc = roundMoney2(itemsTotal - discountTotal + ship);
+  const vatBase = roundMoney2(itemsTotal - discountTotal);
+  const vatAmount = extractVatFromInclusive(vatBase, vatPercent);
+  return {
+    itemsTotal,
+    discountTotal,
+    shipping: ship,
+    grandTotal: roundMoney2(inc - vatAmount),
+    vatAmount,
+    netTotal: inc,
+  };
+}
+
+/** Available units for browse/add (design cart.availableStock). */
+export function browseAvailableStock(product: {
+  available_stock?: number;
+  total_stock?: number;
+}): number {
+  const raw = product.available_stock ?? product.total_stock ?? 0;
+  return Math.max(0, Math.trunc(Number(raw) || 0));
+}
+
+export function canAddProductFromBrowse(product: {
+  available_stock?: number;
+  total_stock?: number;
+}): boolean {
+  return browseAvailableStock(product) >= 1;
+}
+
+/** Max cart qty when stock is known; `0` = out of stock, `null` = no cap. */
+export function cartLineMaxQty(
+  product: { available_stock?: number; total_stock?: number } | undefined
+): number | null {
+  if (!product) return null;
+  const raw = product.available_stock ?? product.total_stock;
+  if (raw == null || !Number.isFinite(raw)) return null;
+  const stock = Math.trunc(raw);
+  if (stock < 1) return 0;
+  return stock;
+}
+
+/** Clamp cart line qty to [1, maxStock] when stock is known (design parseQty). */
+export function clampCartItemQty(
+  raw: number,
+  fallback: number,
+  maxStock: number | null
+): number {
+  let qty = Number.isFinite(raw) ? Math.trunc(raw) : fallback;
+  if (!Number.isFinite(qty) || qty < 1) qty = Math.max(1, fallback);
+  if (maxStock != null && maxStock >= 1) qty = Math.min(qty, maxStock);
+  return qty;
+}
+
+/** Build summary lines from cart item rows (list price × qty, line discount). */
+export function summaryLinesFromCartItems(
+  lines: StoreSalesCartLineForPricing[]
+): StoreSalesPriceSummaryLine[] {
+  return lines
+    .filter((l) => l.type === "item")
+    .map((l) => ({
+      qty: l.qty,
+      listPrice: l.product?.price ?? l.unitPrice,
+      discount: l.discount,
+    }));
+}
+
+// ponytail: self-check — run via `bun -e "import './frontend/lib/store-sales-cart-pricing.ts'"` if needed
+if (typeof process !== "undefined" && process.env.STORE_SALES_PRICING_SELF_CHECK) {
+  const empty = computeStoreSalesPriceSummary([], 7, 0);
+  if (empty.netTotal !== 0 || empty.itemsTotal !== 0) {
+    throw new Error("empty priceSummary");
+  }
+  const one = computeStoreSalesPriceSummary(
+    [{ qty: 1, listPrice: 115, discount: 0 }],
+    7,
+    0
+  );
+  if (one.netTotal !== 115 || one.vatAmount !== 7.52) {
+    throw new Error("sample priceSummary");
+  }
+  if (clampCartItemQty(99, 1, 15) !== 15) throw new Error("clampCartItemQty");
+  if (clampCartItemQty(0, 3, 15) !== 3) throw new Error("clampCartItemQty min");
+  if (cartLineMaxQty({ available_stock: 0 }) !== 0) {
+    throw new Error("cartLineMaxQty zero stock");
+  }
+  if (!canAddProductFromBrowse({ available_stock: 0 })) {
+    /* ok */
+  } else {
+    throw new Error("canAddProductFromBrowse");
+  }
+}

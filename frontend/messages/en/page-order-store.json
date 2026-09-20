@@ -82,7 +82,19 @@
         "orderDate": "Order date",
         "receiveLabel": "Receive:",
         "collapseCard": "Collapse card",
-        "expandCard": "Expand card"
+        "expandCard": "Expand card",
+        "priceSummary": "Price summary",
+        "itemsTotal": "Total {count} items",
+        "discountTotal": "Total discount",
+        "shipping": "Shipping",
+        "vatAmount": "VAT",
+        "grandTotal": "Subtotal (ex-VAT)",
+        "netTotal": "Net total",
+        "colProduct": "Product",
+        "quantity": "Qty",
+        "pricePerUnit": "Unit price",
+        "discount": "Discount",
+        "lineTotal": "Line total"
       }
     }
   }

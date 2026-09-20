@@ -82,7 +82,19 @@
         "orderDate": "วันที่สั่งซื้อ",
         "receiveLabel": "รับสินค้า :",
         "collapseCard": "ย่อการ์ด",
-        "expandCard": "ขยายการ์ด"
+        "expandCard": "ขยายการ์ด",
+        "priceSummary": "สรุปราคา",
+        "itemsTotal": "รวม {count} รายการ",
+        "discountTotal": "รวมส่วนลด",
+        "shipping": "ค่าขนส่ง",
+        "vatAmount": "ราคา VAT",
+        "grandTotal": "รวมทั้งหมด",
+        "netTotal": "รวมสุทธิ",
+        "colProduct": "สินค้า",
+        "quantity": "จำนวน",
+        "pricePerUnit": "ราคา/หน่วย",
+        "discount": "ส่วนลด",
+        "lineTotal": "ราคารวม"
       }
     }
   }

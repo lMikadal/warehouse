@@ -183,6 +183,7 @@ export type StoreSalesProductBrowseTableProps = {
   onToggleRow: (id: number, checked: boolean) => void;
   onTogglePage: (checked: boolean) => void;
   onAdd: (row: ProductItemBrowseRow) => void;
+  cartQtyByItemId?: Record<number, number>;
   onOpenCars: (listId: number) => void;
   onOpenWarehouse: (itemId: number) => void;
   disabled?: boolean;
@@ -198,6 +199,7 @@ export function StoreSalesProductBrowseTable({
   onToggleRow,
   onTogglePage,
   onAdd,
+  cartQtyByItemId = {},
   onOpenCars,
   onOpenWarehouse,
   disabled = false,
@@ -306,6 +308,9 @@ export function StoreSalesProductBrowseTable({
                 row.low_stock ||
                 stock < (row.minimum_stock ?? 0);
               const carSummary = row.car_summary?.trim() ?? "";
+              const inCart = cartQtyByItemId[row.id] ?? 0;
+              const addDisabled =
+                disabled || stock < 1 || inCart >= stock;
               return (
                 <TableRow key={row.id}>
                   <TableCell className="w-10">
@@ -416,7 +421,7 @@ export function StoreSalesProductBrowseTable({
                     <ButtonIcon
                       variant="outline"
                       tone="add"
-                      disabled={disabled}
+                      disabled={addDisabled}
                       onClick={() => onAdd(row)}
                       aria-label={tList("colManageProduct")}
                     >

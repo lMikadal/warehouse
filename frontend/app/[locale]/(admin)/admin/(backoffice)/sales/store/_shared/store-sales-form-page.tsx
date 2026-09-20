@@ -1,19 +1,11 @@
 "use client";
 
 import {
-  ChevronDown,
-  ClipboardList,
   FileText,
   Filter,
   MapPin,
-  Minus,
-  Plus,
-  SquarePen,
-  Printer,
   RotateCcw,
-  Save,
   Search,
-  Trash2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
@@ -26,13 +18,7 @@ import { CrudSearchField } from "@/components/molecules/crud-search-field";
 import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -57,17 +43,26 @@ const StoreSalesFormDesktopSplit = dynamic(
 );
 import type { RemoteComboboxOption } from "@/hooks/use-remote-combobox-options";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import {
+  formatDate,
   formatDateTime,
   type DisplayLocale,
 } from "@/lib/format-datetime";
+import { fetchSettingVat } from "@/lib/setting-api";
+import {
+  canAddProductFromBrowse,
+  cartLineMaxQty,
+  clampCartItemQty,
+  computeStoreSalesPriceSummary,
+  repriceStoreSalesCartLines,
+  summaryLinesFromCartItems,
+} from "@/lib/store-sales-cart-pricing";
 import { loadMemberUserCreditOptions } from "@/lib/member-user-filters-combobox";
-import { repriceStoreSalesCartLines } from "@/lib/store-sales-cart-pricing";
+import { StoreSalesDocumentPanel } from "./store-sales-document-panel";
 import {
   fetchStoreSalesMemberSnapshot,
   loadStoreSalesMemberComboboxOptions,
@@ -192,17 +187,6 @@ function shippingDraftDisplayIso(draft: ShippingDraft): string | null {
   return new Date(`${date}T${time}:00`).toISOString();
 }
 
-function lineTotal(line: CartLine) {
-  return Math.max(0, line.qty * line.unitPrice - line.discount);
-}
-
-function money(n: number, locale: string) {
-  return new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
 /** Matches product list variant `Section` step badge (product-list-form-variant-sections). */
 const storeSalesStepBadgeClass =
   "bg-primary/10 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold";
@@ -275,8 +259,10 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const [orderedAtIso, setOrderedAtIso] = useState<string | null>(null);
   const [documentCollapsed, setDocumentCollapsed] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [compareEditKey, setCompareEditKey] = useState<string | null>(null);
   const [compareDetail, setCompareDetail] = useState("");
   const [compareQty, setCompareQty] = useState("1");
+  const [vatRate, setVatRate] = useState(7);
   const [customerPhase, setCustomerPhase] = useState<CustomerPhase>("editing");
   const [changeCustomerDialogOpen, setChangeCustomerDialogOpen] =
     useState(false);
@@ -403,6 +389,22 @@ export function StoreSalesFormPage({ orderId }: Props) {
     );
   }, [creditOptions]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSettingVat(locale)
+      .then((vat) => {
+        if (!cancelled && vat.is_active !== false && Number.isFinite(vat.rate)) {
+          setVatRate(vat.rate);
+        }
+      })
+      .catch(() => {
+        /* ponytail: default 7% when setting_vat unavailable */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
+
   const onMemberIdChange = async (nextId: string) => {
     setMemberId(nextId);
     if (!nextId) {
@@ -526,27 +528,6 @@ export function StoreSalesFormPage({ orderId }: Props) {
     [orderId]
   );
 
-  const addProduct = (row: ProductItemBrowseRow) => {
-    updateCart((c) => [
-      ...c,
-      {
-        key: `p-${row.id}-${Date.now()}`,
-        type: "item",
-        product: row,
-        qty: 1,
-        unitPrice: row.price ?? 0,
-        discount: 0,
-      },
-    ]);
-  };
-
-  const addSelected = () => {
-    for (const row of browseRows) {
-      if (selectedBrowse[row.id]) addProduct(row);
-    }
-    setSelectedBrowse({});
-  };
-
   const toggleBrowseRow = (id: number, checked: boolean) => {
     setSelectedBrowse((s) => ({ ...s, [id]: checked }));
   };
@@ -636,13 +617,19 @@ export function StoreSalesFormPage({ orderId }: Props) {
     window.print();
   };
 
-  const totals = useMemo(() => {
-    const sub = cart.reduce((s, l) => s + lineTotal(l), 0);
-    return { sub, discount: 0, shipping: 0, grand: sub };
-  }, [cart]);
-
   const itemLines = cart.filter((c) => c.type === "item");
   const compareLines = cart.filter((c) => c.type === "compare");
+  const lineCount = itemLines.length + compareLines.length;
+
+  const priceSummary = useMemo(
+    () =>
+      computeStoreSalesPriceSummary(
+        summaryLinesFromCartItems(cart),
+        vatRate,
+        0
+      ),
+    [cart, vatRate]
+  );
 
   const displayLocale = locale as DisplayLocale;
   const receiveAtDisplay = useMemo(() => {
@@ -652,8 +639,98 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const orderDateDisplay = useMemo(() => {
     const iso = orderedAtIso ?? new Date().toISOString();
-    return formatDateTime(iso, displayLocale);
+    return formatDate(iso, displayLocale);
   }, [orderedAtIso, displayLocale]);
+
+  const receiveTypeLabel = tForm(shippingTypeLabelKey(shipping.type));
+
+  const repriceCartLines = useCallback(
+    async (lines: CartLine[]) => {
+      try {
+        const repriced = await repriceStoreSalesCartLines(
+          locale,
+          lines,
+          memberId ? Number(memberId) : null,
+          creditId
+        );
+        setCart(repriced);
+        setShipping((s) => scheduleShippingForCart(repriced, orderId, s));
+      } catch {
+        setCart(lines);
+        setShipping((s) => scheduleShippingForCart(lines, orderId, s));
+      }
+    },
+    [locale, memberId, creditId, orderId]
+  );
+
+  const cartQtyByItemId = useMemo(() => {
+    const m: Record<number, number> = {};
+    for (const line of cart) {
+      if (line.type !== "item" || !line.product?.id) continue;
+      m[line.product.id] = (m[line.product.id] ?? 0) + line.qty;
+    }
+    return m;
+  }, [cart]);
+
+  const addProduct = useCallback(
+    (row: ProductItemBrowseRow) => {
+      const readOnlyOrder =
+        !!orderId && status !== "draft" && status !== "pending";
+      const actionsDisabled = readOnlyOrder || customerPhase !== "locked";
+      if (actionsDisabled || !canAddProductFromBrowse(row)) return;
+      const max = cartLineMaxQty(row);
+      const related = cart.filter(
+        (c) => c.type === "item" && c.product?.id === row.id
+      );
+      let next: CartLine[];
+      if (related.length > 0) {
+        const totalQty = related.reduce((s, l) => s + l.qty, 0);
+        const nextQty = clampCartItemQty(totalQty + 1, totalQty, max);
+        if (nextQty <= totalQty) return;
+        const keepKey = related[0]!.key;
+        next = cart
+          .filter(
+            (c) =>
+              !(
+                c.type === "item" &&
+                c.product?.id === row.id &&
+                c.key !== keepKey
+              )
+          )
+          .map((c) =>
+            c.key === keepKey
+              ? {
+                  ...c,
+                  qty: nextQty,
+                  product: row,
+                  unitPrice: row.price ?? c.unitPrice,
+                }
+              : c
+          );
+      } else {
+        next = [
+          ...cart,
+          {
+            key: `p-${row.id}`,
+            type: "item",
+            product: row,
+            qty: 1,
+            unitPrice: row.price ?? 0,
+            discount: 0,
+          },
+        ];
+      }
+      void repriceCartLines(next);
+    },
+    [cart, orderId, status, customerPhase, repriceCartLines]
+  );
+
+  const addSelected = useCallback(() => {
+    for (const row of browseRows) {
+      if (selectedBrowse[row.id]) addProduct(row);
+    }
+    setSelectedBrowse({});
+  }, [browseRows, selectedBrowse, addProduct]);
 
   if (!perms.view) {
     return <p className="text-muted-foreground">{tError("forbidden")}</p>;
@@ -685,218 +762,71 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const openCompareAdd = () => {
     if (productActionsDisabled) return;
+    setCompareEditKey(null);
     setCompareDetail("");
     setCompareQty("1");
     setCompareOpen(true);
   };
 
+  const openCompareEdit = (key: string) => {
+    const line = cart.find((c) => c.key === key);
+    if (!line) return;
+    setCompareEditKey(key);
+    setCompareDetail(line.detail ?? "");
+    setCompareQty(String(line.qty));
+    setCompareOpen(true);
+  };
+
+  const documentPanelCommon = {
+    locale,
+    sku: sku || undefined,
+    orderDateDisplay,
+    receiveAtDisplay,
+    receiveTypeLabel,
+    cartTab,
+    onCartTabChange: setCartTab,
+    itemLines,
+    compareLines,
+    cartEmpty,
+    lineCount,
+    priceSummary,
+    documentCollapsed,
+    onToggleCollapsed: () => setDocumentCollapsed((c) => !c),
+    productActionsDisabled,
+    orderId,
+    perms,
+    onShippingEdit: () => setShippingOpen(true),
+    onItemQtyChange: (key: string, qty: number) => {
+      void repriceCartLines(
+        cart.map((x) => {
+          if (x.key !== key) return x;
+          const max = cartLineMaxQty(x.product);
+          return {
+            ...x,
+            qty: clampCartItemQty(qty, x.qty, max),
+          };
+        })
+      );
+    },
+    onItemRemove: (key: string) =>
+      updateCart((c) => c.filter((x) => x.key !== key)),
+    onCompareQtyChange: (key: string, qty: number) =>
+      updateCart((c) => c.map((x) => (x.key === key ? { ...x, qty } : x))),
+    onCompareEdit: openCompareEdit,
+    onCompareRemove: (key: string) =>
+      updateCart((c) => c.filter((x) => x.key !== key)),
+    onCancel: () => router.push("/admin/sales/store"),
+    onSaveDraft: () => void save("draft"),
+    onSubmitPending: () => void save("pending"),
+    onPrintSlip: () => void printSlip(),
+  };
+
   const documentPanel = (
-        <Card
-          className={cn(
-            "@container/store-sales-doc flex w-full min-w-0 shrink-0 flex-col",
-          )}
-        >
-          <CardHeader className="shrink-0 space-y-0">
-            <div
-              className={cn(
-                "flex justify-between gap-2",
-                documentCollapsed ? "items-center" : "items-start",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex min-w-0 flex-1 gap-3",
-                  documentCollapsed ? "items-center" : "items-start",
-                )}
-              >
-                <span
-                  className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
-                  aria-hidden
-                >
-                  <ClipboardList className="size-5" />
-                </span>
-                <div className="min-w-0 space-y-1">
-                  <CardTitle className="text-base leading-snug">
-                    {tForm("documentTitle")}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm">
-                    {tForm("documentSubtitle")}
-                  </p>
-                  {sku ? <p className="font-medium">{sku}</p> : null}
-                </div>
-              </div>
-              <div
-                className={cn(
-                  "flex shrink-0 gap-1",
-                  documentCollapsed ? "items-center" : "items-start",
-                )}
-              >
-                {!cartEmpty ? (
-                  <div className="text-right text-sm">
-                    <p className="text-muted-foreground">{tForm("orderDate")}</p>
-                    <p className="font-medium tabular-nums">{orderDateDisplay}</p>
-                  </div>
-                ) : null}
-                <ButtonIcon
-                  type="button"
-                  variant="ghost"
-                  size="lg"
-                  className="shrink-0"
-                  aria-expanded={!documentCollapsed}
-                  aria-label={
-                    documentCollapsed ? tForm("expandCard") : tForm("collapseCard")
-                  }
-                  onClick={() => setDocumentCollapsed((c) => !c)}
-                >
-                  <ChevronDown
-                    className={cn(
-                      "text-current transition-transform",
-                      documentCollapsed && "-rotate-90"
-                    )}
-                    aria-hidden
-                  />
-                </ButtonIcon>
-              </div>
-            </div>
-          </CardHeader>
-          {!documentCollapsed ? (
-            <>
-              <CardContent
-                className={cn(
-                  "flex flex-col gap-3",
-                  !cartEmpty &&
-                    "max-h-[min(28rem,calc(100svh-14rem))] overflow-y-auto",
-                )}
-              >
-                {!cartEmpty ? (
-                  <div className="flex items-center gap-x-2 text-sm">
-                    <span className="text-foreground shrink-0 font-semibold">
-                      {tForm("receiveLabel")}
-                    </span>
-                    <span className="text-primary min-w-0 flex-1 font-medium">
-                      {tForm(shippingTypeLabelKey(shipping.type))}{" "}
-                      <span className="tabular-nums">{receiveAtDisplay}</span>
-                    </span>
-                    <ButtonIcon
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      tone="edit"
-                      className="shrink-0"
-                      aria-label={tCrud("btn.edit")}
-                      onClick={() => setShippingOpen(true)}
-                      disabled={productActionsDisabled}
-                    >
-                      <SquarePen className="text-current" aria-hidden />
-                    </ButtonIcon>
-                  </div>
-                ) : null}
-                {cartEmpty ? (
-                  <p className="text-muted-foreground flex min-h-32 items-center justify-center rounded-md border border-dashed p-8 text-center text-sm">
-                    {tForm("emptyCart")}
-                  </p>
-                ) : (
-                  <Tabs
-                    value={cartTab}
-                    onValueChange={(v) => setCartTab(v as typeof cartTab)}
-                  >
-                    <TabsList>
-                      <TabsTrigger value="items">
-                        {tForm("tabCartItems")} ({itemLines.length})
-                      </TabsTrigger>
-                      <TabsTrigger value="compare">
-                        {tForm("tabCartCompare")} ({compareLines.length})
-                      </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="items" className="space-y-2">
-                      {itemLines.map((line) => (
-                        <CartRow
-                          key={line.key}
-                          line={line}
-                          locale={locale}
-                          readOnly={productActionsDisabled}
-                          onChange={(next) =>
-                            updateCart((c) =>
-                              c.map((x) => (x.key === line.key ? next : x))
-                            )
-                          }
-                          onRemove={() =>
-                            updateCart((c) =>
-                              c.filter((x) => x.key !== line.key)
-                            )
-                          }
-                        />
-                      ))}
-                    </TabsContent>
-                    <TabsContent value="compare" className="space-y-2">
-                      {compareLines.map((line) => (
-                        <div
-                          key={line.key}
-                          className="rounded-md border p-2 text-sm"
-                        >
-                          {line.detail}
-                        </div>
-                      ))}
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </CardContent>
-              <CardFooter className="shrink-0 flex-col gap-3 border-t bg-card">
-                <div className="w-full space-y-1 text-sm">
-                  <div className="flex justify-between tabular-nums">
-                    <span>{tPage("colTotal")}</span>
-                    <span>{money(totals.grand, locale)}</span>
-                  </div>
-                </div>
-                <div className="grid w-full grid-cols-1 gap-2 @md/store-sales-doc:grid-cols-3">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="lg"
-                    onClick={() => router.push("/admin/sales/store")}
-                  >
-                    <Trash2 className="text-current" aria-hidden />
-                    {tCrud("btn.cancel")}
-                  </Button>
-                  {perms.create || perms.update ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      onClick={() => void save("draft")}
-                      disabled={productActionsDisabled || cartEmpty}
-                    >
-                      <Save className="text-current" aria-hidden />
-                      {tForm("saveDraft")}
-                    </Button>
-                  ) : null}
-                  {perms.create || perms.update ? (
-                    <Button
-                      type="button"
-                      size="lg"
-                      onClick={() => void save("pending")}
-                      disabled={productActionsDisabled || cartEmpty}
-                    >
-                      {tForm("submitPending")}
-                    </Button>
-                  ) : null}
-                  {orderId ? (
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="@md/store-sales-doc:col-span-3"
-                      variant="secondary"
-                      onClick={() => void printSlip()}
-                    >
-                      <Printer className="text-current" aria-hidden />
-                      {tForm("printPicking")}
-                    </Button>
-                  ) : null}
-                </div>
-              </CardFooter>
-            </>
-          ) : null}
-        </Card>
+    <StoreSalesDocumentPanel layout="stacked" {...documentPanelCommon} />
+  );
+
+  const documentPanelSplit = (
+    <StoreSalesDocumentPanel layout="split" {...documentPanelCommon} />
   );
 
   const browseColumn = (
@@ -1303,6 +1233,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
                       onToggleRow={toggleBrowseRow}
                       onTogglePage={toggleBrowsePage}
                       onAdd={addProduct}
+                      cartQtyByItemId={cartQtyByItemId}
                       onOpenCars={setCarListId}
                       onOpenWarehouse={setWhItemId}
                       disabled={productActionsDisabled}
@@ -1338,7 +1269,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
       <div className="hidden min-w-0 w-full md:block">
         <StoreSalesFormDesktopSplit
           browse={browseColumn}
-          documentPanel={documentPanel}
+          documentPanel={documentPanelSplit}
         />
       </div>
 
@@ -1391,7 +1322,13 @@ export function StoreSalesFormPage({ orderId }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+      <Dialog
+        open={compareOpen}
+        onOpenChange={(open) => {
+          setCompareOpen(open);
+          if (!open) setCompareEditKey(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{tForm("compareModalTitle")}</DialogTitle>
@@ -1424,18 +1361,29 @@ export function StoreSalesFormPage({ orderId }: Props) {
               disabled={productActionsDisabled}
               onClick={() => {
                 const qty = Math.max(1, Number.parseInt(compareQty, 10) || 1);
-                updateCart((c) => [
-                  ...c,
-                  {
-                    key: `cmp-${Date.now()}`,
-                    type: "compare",
-                    qty,
-                    unitPrice: 0,
-                    discount: 0,
-                    detail: compareDetail,
-                  },
-                ]);
+                if (compareEditKey) {
+                  updateCart((c) =>
+                    c.map((x) =>
+                      x.key === compareEditKey
+                        ? { ...x, qty, detail: compareDetail }
+                        : x
+                    )
+                  );
+                } else {
+                  updateCart((c) => [
+                    ...c,
+                    {
+                      key: `cmp-${Date.now()}`,
+                      type: "compare",
+                      qty,
+                      unitPrice: 0,
+                      discount: 0,
+                      detail: compareDetail,
+                    },
+                  ]);
+                }
                 setCompareOpen(false);
+                setCompareEditKey(null);
                 setCompareDetail("");
               }}
             >
@@ -1444,63 +1392,6 @@ export function StoreSalesFormPage({ orderId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function CartRow({
-  line,
-  locale,
-  readOnly,
-  onChange,
-  onRemove,
-}: {
-  line: CartLine;
-  locale: string;
-  readOnly: boolean;
-  onChange: (line: CartLine) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border p-2 text-sm">
-      <span className="min-w-0">
-        {line.product?.name || line.product?.sku || "—"}
-      </span>
-      <div className="flex shrink-0 items-center gap-1">
-        <Button
-          type="button"
-          variant="outline"
-          className="size-10 p-0"
-          disabled={readOnly}
-          onClick={() => onChange({ ...line, qty: Math.max(1, line.qty - 1) })}
-        >
-          <Minus className="text-current" aria-hidden />
-        </Button>
-        <Input
-          className="w-16 text-center tabular-nums"
-          value={String(line.qty)}
-          onChange={(e) =>
-            onChange({
-              ...line,
-              qty: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-            })
-          }
-          disabled={readOnly}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          className="size-10 p-0"
-          disabled={readOnly}
-          onClick={() => onChange({ ...line, qty: line.qty + 1 })}
-        >
-          <Plus className="text-current" aria-hidden />
-        </Button>
-      </div>
-      <span className="tabular-nums">{money(lineTotal(line), locale)}</span>
-      <Button type="button" variant="ghost" className="size-10 p-0 text-destructive" onClick={onRemove} disabled={readOnly}>
-        <Trash2 className="text-current" aria-hidden />
-      </Button>
     </div>
   );
 }
