@@ -212,6 +212,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const [loading, setLoading] = useState(!!orderId);
   const [memberId, setMemberId] = useState("");
+  const [memberComboboxLabel, setMemberComboboxLabel] = useState("");
   const [memberName, setMemberName] = useState("");
   const [memberTel, setMemberTel] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
@@ -270,6 +271,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const clearMemberSnapshot = useCallback(() => {
     setMemberId("");
+    setMemberComboboxLabel("");
     setMemberName("");
     setMemberTel("");
     setMemberEmail("");
@@ -279,12 +281,14 @@ export function StoreSalesFormPage({ orderId }: Props) {
 
   const applyMemberSnapshot = useCallback(
     (snap: {
+      memberComboboxLabel: string;
       memberName: string;
       memberTel: string;
       memberEmail: string;
       memberAddressDisplay: string;
       memberTaxNumber: string;
     }) => {
+      setMemberComboboxLabel(snap.memberComboboxLabel);
       setMemberName(snap.memberName);
       setMemberTel(snap.memberTel);
       setMemberEmail(snap.memberEmail);
@@ -311,6 +315,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
           );
           applyMemberSnapshot(snap);
         } catch {
+          setMemberComboboxLabel(d.member_name?.trim() ?? "");
           setMemberName(d.member_name ?? "");
           setMemberTel(d.member_tel ?? "");
           setMemberEmail(d.member_email ?? "");
@@ -856,13 +861,21 @@ export function StoreSalesFormPage({ orderId }: Props) {
                           label={tForm("memberCode")}
                           value={memberId}
                           onValueChange={(v) => void onMemberIdChange(v)}
-                          placeholder={tFormRoot("placeholder.select", {
-                            label: tForm("memberCode"),
-                          })}
+                          placeholder={tForm("memberCodeSearchPlaceholder")}
                           emptyLabel={tFormRoot("combobox.noResults")}
                           inputClassName="w-full min-w-min"
                           disabled={customerFieldsDisabled}
                           showClear={!customerFieldsDisabled}
+                          pinnedItems={
+                            memberId && memberComboboxLabel
+                              ? [
+                                  {
+                                    value: memberId,
+                                    label: memberComboboxLabel,
+                                  },
+                                ]
+                              : []
+                          }
                           onLoadOptions={({ search, signal }) =>
                             loadStoreSalesMemberComboboxOptions(locale, {
                               search,

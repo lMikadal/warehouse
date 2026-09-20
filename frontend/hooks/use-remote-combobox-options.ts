@@ -72,7 +72,9 @@ export function useRemoteComboboxOptions({
   }, [inputValue]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     const controller = new AbortController();
     let cancelled = false;
     void (async () => {

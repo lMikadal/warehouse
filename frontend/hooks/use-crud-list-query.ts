@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { StatusFilterValue } from "@/components/molecules/status-filter-group";
 import type { TableSortDirection } from "@/components/ui/table";
@@ -23,6 +23,11 @@ export function useCrudListQuery(options?: UseCrudListQueryOptions) {
   const [pageSize, setPageSize] = useState<PageSizeOption>(10);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<TableSortDirection | null>(null);
+  const [listRefreshKey, setListRefreshKey] = useState(0);
+
+  const refreshList = useCallback(() => {
+    setListRefreshKey((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), debounceMs);
@@ -131,5 +136,7 @@ export function useCrudListQuery(options?: UseCrudListQueryOptions) {
     onSearchChange,
     onStatusFilterChange,
     onPageSizeChange,
+    listRefreshKey,
+    refreshList,
   };
 }

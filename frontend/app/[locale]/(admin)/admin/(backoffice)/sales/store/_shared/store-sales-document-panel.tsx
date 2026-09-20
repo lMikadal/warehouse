@@ -386,16 +386,19 @@ export function StoreSalesDocumentPanel({
                   onCartTabChange(v as "items" | "compare")
                 }
               >
-                <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-b border-border bg-transparent p-0">
+                <TabsList
+                  variant="line"
+                  className="h-auto w-full justify-start gap-5 p-0"
+                >
                   <TabsTrigger
                     value="items"
-                    className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+                    className="text-muted-foreground flex-none px-0 data-active:text-primary"
                   >
                     {tForm("tabCartItems")} ({itemLines.length})
                   </TabsTrigger>
                   <TabsTrigger
                     value="compare"
-                    className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+                    className="text-muted-foreground flex-none px-0 data-active:text-primary"
                   >
                     {tForm("tabCartCompare")} ({compareLines.length})
                   </TabsTrigger>

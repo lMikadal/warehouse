@@ -67,6 +67,7 @@ export function RemoteComboboxField({
       items={items}
       value={comboboxValue}
       autoComplete={autoComplete}
+      filter={null}
       itemToStringLabel={(itemValue) =>
         items.find((o) => o.value === itemValue)?.label ?? ""
       }

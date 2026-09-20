@@ -31,7 +31,10 @@ import {
   type TableSortDirection,
 } from "@/components/ui/table";
 import { useCrudListQuery } from "@/hooks/use-crud-list-query";
-import type { PageSizeOption } from "@/lib/crud-pagination";
+import {
+  pageAfterDelete,
+  type PageSizeOption,
+} from "@/lib/crud-pagination";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
   useAdminBackofficeActor,
@@ -139,6 +142,8 @@ export function MemberUserList() {
     debouncedQuery,
     isActiveFromStatus,
     sortParamsForFetch,
+    listRefreshKey,
+    refreshList,
   } = listQuery;
 
   const [rows, setRows] = useState<MemberUserListItem[]>([]);
@@ -159,6 +164,7 @@ export function MemberUserList() {
         dateFrom: dateRange?.from ?? "",
         dateTo: dateRange?.to ?? "",
         businessId,
+        listRefreshKey,
       }),
     [
       page,
@@ -169,48 +175,56 @@ export function MemberUserList() {
       dateRange?.from,
       dateRange?.to,
       businessId,
+      listRefreshKey,
     ]
   );
 
-  useEffect(() => {
+  const loadList = useCallback(async () => {
     if (!perms.view) {
       setLoading(false);
       return;
     }
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- list fetch loading
     setLoading(true);
-    void fetchMemberUserStats(locale)
-      .then((s) => {
-        if (!cancelled) setStats(s);
-      })
-      .catch(() => {});
-    void fetchMemberUsers(locale, {
-      page,
-      limit: pageSize,
-      search: debouncedQuery.trim() || undefined,
-      isActive: isActiveFromStatus,
-      sort: sortParamsForFetch.sort,
-      order: sortParamsForFetch.order,
-      created_from: dateRange?.from || undefined,
-      created_to: dateRange?.to || undefined,
-      business_id: businessId ? Number(businessId) : undefined,
-    })
-      .then(({ rows: data, meta }) => {
-        if (cancelled) return;
-        setRows(data);
-        setTotal(meta.total);
-      })
-      .catch(() => {
-        if (!cancelled) toast.error(t("error.generic"));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    try {
+      void fetchMemberUserStats(locale)
+        .then((s) => setStats(s))
+        .catch(() => {});
+      const { rows: data, meta } = await fetchMemberUsers(locale, {
+        page,
+        limit: pageSize,
+        search: debouncedQuery.trim() || undefined,
+        isActive: isActiveFromStatus,
+        sort: sortParamsForFetch.sort,
+        order: sortParamsForFetch.order,
+        created_from: dateRange?.from || undefined,
+        created_to: dateRange?.to || undefined,
+        business_id: businessId ? Number(businessId) : undefined,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [locale, listFetchKey, perms.view, page, pageSize, t]);
+      setRows(data);
+      setTotal(meta.total);
+    } catch {
+      toast.error(t("error.generic"));
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    locale,
+    page,
+    pageSize,
+    debouncedQuery,
+    isActiveFromStatus,
+    sortParamsForFetch.sort,
+    sortParamsForFetch.order,
+    dateRange?.from,
+    dateRange?.to,
+    businessId,
+    perms.view,
+    t,
+  ]);
+
+  useEffect(() => {
+    void loadList();
+  }, [listFetchKey]); // eslint-disable-line react-hooks/exhaustive-deps -- listFetchKey encodes query inputs
 
   const onToggleActive = useCallback(
     async (row: MemberUserListItem, next: boolean) => {
@@ -234,13 +248,25 @@ export function MemberUserList() {
       await deleteMemberUser(locale, deleteId);
       toast.success(tCrud("toast.deleted"));
       setDeleteId(null);
-      setPage(1);
+      setPage((p) =>
+        pageAfterDelete({ page: p, pageSize, totalBefore: total })
+      );
+      refreshList();
     } catch (e) {
       toast.error(
         e instanceof MemberUserApiError ? e.message : t("error.generic")
       );
     }
-  }, [deleteId, locale, perms.delete, setPage, tCrud, t]);
+  }, [
+    deleteId,
+    locale,
+    perms.delete,
+    pageSize,
+    total,
+    refreshList,
+    tCrud,
+    t,
+  ]);
 
   const rowActions = (row: MemberUserListItem): TableIconActionKey[] =>
     tableIconActionsFromResource(perms);

@@ -32,6 +32,7 @@
         "documentSubtitle": "ตรวจสอบรายการและดำเนินการสร้างใบสั่งซื้อ",
         "walkInHint": "กรณีไม่มีข้อมูลสมาชิก (สามารถข้ามเพื่อสร้างใบจัดได้เลย)",
         "memberCode": "รหัสลูกค้า",
+        "memberCodeSearchPlaceholder": "ค้นหารหัสหรือชื่อลูกค้า",
         "memberName": "ชื่อลูกค้า",
         "memberTel": "เบอร์โทรติดต่อ",
         "memberEmail": "อีเมล",

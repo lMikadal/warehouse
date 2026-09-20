@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lMikadal/warehouse/backend/internal/config"
+	"github.com/lMikadal/warehouse/backend/internal/module/product"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	"github.com/lMikadal/warehouse/backend/internal/tree"
 )
@@ -235,8 +236,8 @@ func userListFilterWhere(f UserListFilter, paramStart int) (string, []any) {
 	if q := strings.TrimSpace(f.Search); q != "" {
 		pat := "%" + strings.ToLower(q) + "%"
 		clauses = append(clauses, fmt.Sprintf(`(
-  LOWER(u.name) LIKE $%d OR LOWER(COALESCE(u.sku, '')) LIKE $%d OR LOWER(COALESCE(u.tel, '')) LIKE $%d OR LOWER(COALESCE(u.email, '')) LIKE $%d
-)`, n, n, n, n))
+  LOWER(u.name) LIKE $%d OR LOWER(COALESCE(u.store_name, '')) LIKE $%d OR LOWER(COALESCE(u.sku, '')) LIKE $%d OR LOWER(COALESCE(u.tel, '')) LIKE $%d OR LOWER(COALESCE(u.email, '')) LIKE $%d
+)`, n, n, n, n, n))
 		args = append(args, pat)
 		n++
 	}
@@ -1153,17 +1154,25 @@ const userProductItemFilterFrom = `
 FROM product_item i
 INNER JOIN product_list pl ON pl.id = i.product_list_id AND pl.deleted_at IS NULL
 LEFT JOIN product_item_language il ON il.product_item_id = i.id AND il.locale = $1
-LEFT JOIN product_attribute_language bl ON bl.product_attribute_id = pl.product_brand_id AND bl.locale = $1
+LEFT JOIN product_attribute_language bl ON bl.product_attribute_id = pl.product_brand_id AND bl.locale = $1`
+
+const userProductItemFilterJoins = product.DisplayPriceVatJoin + product.DisplayPriceStockLotJoin
+
+const userProductItemFilterWhere = `
 WHERE i.deleted_at IS NULL AND i.is_active = TRUE`
 
-const userProductItemFilterSelect = `
+var userProductItemFilterSelect = `
 SELECT i.id,
   TRIM(COALESCE(i.sku, '') || ' ' || COALESCE(il.name, '')),
   COALESCE(i.sku, ''),
   COALESCE(il.name, ''),
   COALESCE(bl.name, ''),
   pl.product_brand_id,
-  COALESCE(i.price, 0)`
+  COALESCE(` + product.DisplayPriceSellSQL + `, 0)`
+
+func userProductItemFilterSQLSuffix() string {
+	return userProductItemFilterFrom + userProductItemFilterJoins + userProductItemFilterWhere
+}
 
 func scanUserProductItemFilterRow(rows *sql.Rows) ([]userProductItemFilterRow, error) {
 	var out []userProductItemFilterRow
@@ -1268,7 +1277,7 @@ func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, 
 		limit = 10
 	}
 	offset := (page - 1) * limit
-	base := userProductItemFilterFrom
+	base := userProductItemFilterSQLSuffix()
 	args := []any{locale}
 	clause := ""
 	if brandID > 0 {
@@ -1300,7 +1309,7 @@ func (r *UserRepository) FilterProductItems(ctx context.Context, locale string, 
 }
 
 func (r *UserRepository) loadProductItemFilterByID(ctx context.Context, locale string, id int64) (*userProductItemFilterRow, error) {
-	rows, err := r.db.QueryContext(ctx, userProductItemFilterSelect+userProductItemFilterFrom+` AND i.id = $2`, locale, id)
+	rows, err := r.db.QueryContext(ctx, userProductItemFilterSelect+userProductItemFilterSQLSuffix()+` AND i.id = $2`, locale, id)
 	if err != nil {
 		return nil, err
 	}

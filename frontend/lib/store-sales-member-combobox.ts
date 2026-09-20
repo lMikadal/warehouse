@@ -10,6 +10,8 @@ import {
 } from "@/lib/member-user-api";
 
 export type StoreSalesMemberFormSnapshot = {
+  /** Combobox display: `{sku} — {name}` (matches list options). */
+  memberComboboxLabel: string;
   memberName: string;
   memberTel: string;
   memberEmail: string;
@@ -47,6 +49,14 @@ export function storeSalesMemberSnapshotFromDetail(
   d: MemberUserDetail
 ): StoreSalesMemberFormSnapshot {
   return {
+    memberComboboxLabel: memberListLabel({
+      id: d.id,
+      sku: d.sku,
+      name: d.name,
+      is_active: d.is_active,
+      created_at: d.created_at ?? "",
+      updated_at: d.updated_at,
+    }),
     memberName: d.name?.trim() ?? "",
     memberTel: d.tel?.trim() ?? "",
     memberEmail: d.email?.trim() ?? "",

@@ -32,6 +32,7 @@
         "documentSubtitle": "Review items and create the order",
         "walkInHint": "No member on file — you can skip and create the order",
         "memberCode": "Customer code",
+        "memberCodeSearchPlaceholder": "Search customer code or name",
         "memberName": "Customer name",
         "memberTel": "Phone",
         "memberEmail": "Email",

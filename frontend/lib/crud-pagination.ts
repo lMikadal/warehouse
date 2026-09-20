@@ -28,6 +28,23 @@ export function buildPageItems(
   return items;
 }
 
+/** After deleting rows, clamp page so the user is not left on an empty page. */
+export function pageAfterDelete({
+  page,
+  pageSize,
+  totalBefore,
+  removedCount = 1,
+}: {
+  page: number;
+  pageSize: number;
+  totalBefore: number;
+  removedCount?: number;
+}): number {
+  const totalAfter = Math.max(0, totalBefore - removedCount);
+  const maxPage = Math.max(1, Math.ceil(totalAfter / pageSize) || 1);
+  return Math.min(Math.max(1, page), maxPage);
+}
+
 // ponytail: self-check — fails if ellipsis window drifts from design crud-list
 if (process.env.NODE_ENV !== "production") {
   const sample = buildPageItems(5, 20);
@@ -37,5 +54,8 @@ if (process.env.NODE_ENV !== "production") {
     !sample.includes("...")
   ) {
     throw new Error("buildPageItems self-check failed");
+  }
+  if (pageAfterDelete({ page: 3, pageSize: 10, totalBefore: 21 }) !== 2) {
+    throw new Error("pageAfterDelete self-check failed");
   }
 }

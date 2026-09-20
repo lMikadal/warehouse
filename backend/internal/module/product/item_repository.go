@@ -25,18 +25,7 @@ LEFT JOIN product_list_language ll2 ON ll2.product_list_id = pl.id AND ll2.local
 LEFT JOIN product_attribute_language bl ON bl.product_attribute_id = pl.product_brand_id AND bl.locale = $1
 LEFT JOIN product_attribute_language cl ON cl.product_attribute_id = pl.product_category_id AND cl.locale = $1`
 
-const itemBrowseVatJoin = `
-LEFT JOIN LATERAL (
-  SELECT v.vat_type
-  FROM setting_vat v
-  WHERE v.deleted_at IS NULL AND v.is_active = TRUE
-  ORDER BY v.id ASC
-  LIMIT 1
-) vat ON TRUE`
-
-const itemBrowseManualSellPriceSQL = `(CASE WHEN vat.vat_type = 'include' THEN i.price_vat ELSE i.price END)`
 const itemBrowseWholesalePriceSQL = `(CASE WHEN vat.vat_type = 'include' THEN i.price_wholesale_vat ELSE i.price_wholesale END)`
-const itemBrowseDisplayPriceSQL = `(CASE WHEN i.type_price = 'stock'::product_item_type_price THEN COALESCE(stock_px.sell_price, ` + itemBrowseManualSellPriceSQL + `) ELSE ` + itemBrowseManualSellPriceSQL + ` END)`
 
 func itemListOrderBy(sort, order string) string {
 	col := "i.created_at ASC, i.id ASC"
@@ -99,7 +88,8 @@ func (r *ItemRepository) ListBrowse(ctx context.Context, f ItemListFilter) ([]It
 	q := fmt.Sprintf(`
 SELECT
   i.id, i.product_list_id, COALESCE(NULLIF(TRIM(i.sku), ''), pl.sku) AS sku,
-  %s::float8 AS display_price, i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
+  %s::float8 AS display_price,
+  i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
   pl.tag, i.is_new, pl.product_brand_id, pl.product_category_id,
   COALESCE(NULLIF(TRIM(COALESCE(il.name, il2.name, ll.name, ll2.name)), ''), '') AS display_name,
   COALESCE(NULLIF(TRIM(bl.name), ''), '—') AS brand_name,
@@ -135,13 +125,7 @@ LEFT JOIN LATERAL (
     AND oli.type = 'item'::order_list_item_type
     AND oli.status IN ('pending'::order_list_item_status, 'in_progress'::order_list_item_status)
 ) rs ON TRUE
-LEFT JOIN LATERAL (
-  SELECT s.sell_price::float8 AS sell_price
-  FROM product_item_stock s
-  WHERE s.product_item_id = i.id AND s.deleted_at IS NULL AND s.is_used = TRUE
-  ORDER BY s.received_at ASC NULLS LAST, s.id ASC
-  LIMIT 1
-) stock_px ON TRUE
+` + DisplayPriceStockLotJoin + `
 LEFT JOIN LATERAL (
   SELECT COUNT(DISTINCT zone.parent_id) AS cnt
   FROM product_item_warehouse piw
@@ -166,7 +150,7 @@ LEFT JOIN LATERAL (
 ) car ON TRUE
 WHERE %s
 ORDER BY %s
-LIMIT $%d OFFSET $%d`, itemBrowseDisplayPriceSQL, itemBrowseWholesalePriceSQL, itemBrowseFrom+itemBrowseVatJoin, where, itemListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
+LIMIT $%d OFFSET $%d`, DisplayPriceSellSQL, itemBrowseWholesalePriceSQL, itemBrowseFrom+DisplayPriceVatJoin, where, itemListOrderBy(f.Sort, f.Order), limitIdx, offsetIdx)
 
 	rows, err := r.db.QueryContext(ctx, q, listArgs...)
 	if err != nil {

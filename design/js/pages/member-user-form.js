@@ -951,6 +951,61 @@
     return Math.max(0, out);
   }
 
+  function activeSettingVat() {
+    if (!global.store) return { vat_type: "exclude", rate: 0 };
+    var rows = global.store.getAll("setting_vat").filter(function (r) {
+      return r.deleted_at == null && r.is_active !== false;
+    });
+    if (!rows.length) return { vat_type: "exclude", rate: 0 };
+    rows.sort(function (a, b) {
+      return (a.id || 0) - (b.id || 0);
+    });
+    return rows[0];
+  }
+
+  function priceInclVat(exVat, vatRate) {
+    var p = Number(exVat) || 0;
+    var v = Number(vatRate) || 0;
+    return p * (1 + v / 100);
+  }
+
+  function manualSellPrice(item) {
+    var setting = activeSettingVat();
+    if (setting.vat_type === "include") {
+      if (item.price_vat != null && Number(item.price_vat) > 0) {
+        return Number(item.price_vat);
+      }
+      return priceInclVat(item.price, setting.rate);
+    }
+    return Number(item.price) || 0;
+  }
+
+  function oldestStockSellPrice(itemId) {
+    var lots = lib
+      .activeRows("product_item_stock")
+      .filter(function (s) {
+        return s.product_item_id === itemId && s.is_used !== false;
+      })
+      .sort(function (a, b) {
+        var ta = a.received_at || a.created_at || "";
+        var tb = b.received_at || b.created_at || "";
+        return String(ta).localeCompare(String(tb)) || (a.id || 0) - (b.id || 0);
+      });
+    if (!lots.length) return null;
+    var p = Number(lots[0].sell_price);
+    return Number.isFinite(p) ? p : null;
+  }
+
+  /** Regular price for discount tab — same axis as product browse / store sales. */
+  function productItemRegularPrice(item) {
+    if (!item) return 0;
+    if (item.type_price === "stock") {
+      var fromStock = oldestStockSellPrice(item.id);
+      if (fromStock != null) return fromStock;
+    }
+    return manualSellPrice(item);
+  }
+
   (function selfCheck() {
     if (calcSpecial(100, 10, "percent") !== 90) throw new Error("member-user special percent");
     if (calcSpecial(100, 15, "baht") !== 85) throw new Error("member-user special baht");
@@ -1735,7 +1790,7 @@
     var body = pageRows
       .map(function (r) {
         var item = global.store.getById("product_item", r.product_item_id) || {};
-        var price = item.price || 0;
+        var price = productItemRegularPrice(item);
         var special = calcSpecial(price, r.discount, r.discount_type);
         var actions = editable
           ? '<td class="data-table__actions-cell"><div class="data-table__actions">' +
@@ -1785,7 +1840,7 @@
     var body = pageRows
       .map(function (r) {
         var item = global.store.getById("product_item", r.product_item_id) || {};
-        var price = item.price || 0;
+        var price = productItemRegularPrice(item);
         var d = bulkRowDraft(r);
         var special = calcSpecial(price, d.discount, "percent");
         return (
@@ -3332,7 +3387,7 @@
     var d = bulkDraft[discId];
     var item = global.store.getById("product_item", row.product_item_id) || {};
     var cell = root.querySelector('.mu-disc-special[data-id="' + discId + '"]');
-    if (cell) cell.textContent = formatMoney(calcSpecial(item.price || 0, d.discount, "percent"));
+    if (cell) cell.textContent = formatMoney(calcSpecial(productItemRegularPrice(item), d.discount, "percent"));
   }
 
   function saveBulkDiscountRow(discId) {
