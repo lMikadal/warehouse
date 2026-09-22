@@ -261,6 +261,30 @@ export async function loadOrderSalesCarModelComboboxOptions(
   return filterItemsToComboboxOptions(res.items as ProductFilterItem[]);
 }
 
+export async function loadOrderSalesCarEngineComboboxOptions(
+  locale: string,
+  resource: OrderSalesFormResource,
+  params: { search: string; signal?: AbortSignal; parentId?: number }
+): Promise<RemoteComboboxOption[]> {
+  if (params.signal?.aborted) return [];
+  const res = await fetchOrderSalesFormFilters(
+    locale,
+    resource,
+    "cars",
+    {
+      page: 1,
+      limit: REMOTE_COMBOBOX_LIMIT,
+      search: params.search,
+      typeCar: "engine",
+      parentId: params.parentId,
+      isActive: true,
+    },
+    params.signal
+  );
+  if (params.signal?.aborted) return [];
+  return filterItemsToComboboxOptions(res.items as ProductFilterItem[]);
+}
+
 export async function loadOrderSalesCategoryComboboxOptions(
   locale: string,
   resource: OrderSalesFormResource,
@@ -324,6 +348,20 @@ export async function resolveOrderSalesCarModelLabel(
     limit: 1,
     id,
     typeCar: "model",
+  });
+  return res.items[0]?.name ?? String(id);
+}
+
+export async function resolveOrderSalesCarEngineLabel(
+  locale: string,
+  resource: OrderSalesFormResource,
+  id: number
+): Promise<string> {
+  const res = await fetchOrderSalesFormFilters(locale, resource, "cars", {
+    page: 1,
+    limit: 1,
+    id,
+    typeCar: "engine",
   });
   return res.items[0]?.name ?? String(id);
 }

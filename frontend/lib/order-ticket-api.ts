@@ -240,6 +240,8 @@ export async function fetchTicketFilters(
     limit?: number;
     search?: string;
     id?: number;
+    /** Facet-specific params, e.g. is_sale for payment_methods. */
+    extra?: Record<string, string>;
     signal?: AbortSignal;
   } = {}
 ): Promise<TicketFiltersResponse> {
@@ -249,6 +251,9 @@ export async function fetchTicketFilters(
   q.set("limit", String(params.limit ?? REMOTE_COMBOBOX_LIMIT));
   if (params.search) q.set("search", params.search);
   if (params.id) q.set("id", String(params.id));
+  for (const [key, value] of Object.entries(params.extra ?? {})) {
+    if (value) q.set(key, value);
+  }
   const res = await authFetch(`${PROXY_BASE}/filters?${q}`, {
     signal: params.signal,
   });
