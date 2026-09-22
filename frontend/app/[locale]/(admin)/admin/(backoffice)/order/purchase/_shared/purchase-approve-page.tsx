@@ -42,6 +42,7 @@ import { TicketDetailPage } from "../../../sales/ticket/_shared/ticket-detail-pa
 import { PurchaseConvertUnitDialog } from "./purchase-convert-unit-dialog";
 import { PurchaseHistoryDialog } from "./purchase-history-dialog";
 import { PurchaseItemsTable } from "./purchase-items-table";
+import { PurchasePageFooter } from "./purchase-page-footer";
 import { PurchaseSummaryCard } from "./purchase-summary-card";
 
 /** v1 stepper on the approve screen; the PO's own status decides how far it has come. */
@@ -230,59 +231,10 @@ export function PurchaseApprovePage({ purchaseId }: { purchaseId: number }) {
     detail.items.every((item) => item.status === "rejected");
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4 pb-20">
       <CrudPageHeader
         title={tApprove("pageTitle")}
         description={detail.sku?.trim() || detail.sku_draft?.trim() || ""}
-        actions={
-          <>
-            <Button type="button" variant="outline" onClick={() => void openHistory()}>
-              <History className="text-current" aria-hidden />
-              {tDetail("openHistory")}
-            </Button>
-            {locked ? null : (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={submitting}
-                  onClick={() => {
-                    setReason("");
-                    setReasonMode("revision");
-                  }}
-                >
-                  {tApprove("requestRevision")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
-                  disabled={submitting}
-                  onClick={() => {
-                    setReason("");
-                    setReasonMode("cancel");
-                  }}
-                >
-                  {tApprove("cancelOrderShort")}
-                </Button>
-                <Button
-                  type="button"
-                  disabled={submitting || allRejected}
-                  onClick={() => void approveOrder()}
-                >
-                  {tApprove("confirmButton")}
-                </Button>
-              </>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/admin/order/purchase")}
-            >
-              {tCrud("btn.back")}
-            </Button>
-          </>
-        }
       />
 
       {allRejected ? (
@@ -502,6 +454,54 @@ export function PurchaseApprovePage({ purchaseId }: { purchaseId: number }) {
         onOpenChange={setHistoryOpen}
         entries={history}
       />
+
+      <PurchasePageFooter>
+        <Button type="button" variant="outline" onClick={() => void openHistory()}>
+          <History className="text-current" aria-hidden />
+          {tDetail("openHistory")}
+        </Button>
+        {locked ? null : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={() => {
+                setReason("");
+                setReasonMode("revision");
+              }}
+            >
+              {tApprove("requestRevision")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
+              disabled={submitting}
+              onClick={() => {
+                setReason("");
+                setReasonMode("cancel");
+              }}
+            >
+              {tApprove("cancelOrderShort")}
+            </Button>
+            <Button
+              type="button"
+              disabled={submitting || allRejected}
+              onClick={() => void approveOrder()}
+            >
+              {tApprove("confirmButton")}
+            </Button>
+          </>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/admin/order/purchase")}
+        >
+          {tCrud("btn.back")}
+        </Button>
+      </PurchasePageFooter>
     </div>
   );
 }

@@ -1,11 +1,13 @@
-import { PurchaseFormPage } from "../_shared/purchase-form-page";
+import { PurchaseByIdPage } from "../_shared/purchase-by-id-page";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function PurchaseEditPage({ params }: Props) {
   const { id } = await params;
-  const editId = Number(id);
+  const purchaseId = Number(id);
   return (
-    <PurchaseFormPage editId={Number.isFinite(editId) ? editId : undefined} />
+    <PurchaseByIdPage
+      purchaseId={Number.isFinite(purchaseId) ? purchaseId : 0}
+    />
   );
 }

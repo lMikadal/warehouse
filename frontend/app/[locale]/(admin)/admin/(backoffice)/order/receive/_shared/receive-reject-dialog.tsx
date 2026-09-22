@@ -448,7 +448,7 @@ export function ReceiveRejectDialog({
             <div className="flex flex-col gap-1.5">
               <ImageUploadField
                 id="reject-images"
-                labelKey={t("attachImagesLabel")}
+                labelKey="page.orderReceive.proceed.rejectDialog.attachImagesLabel"
                 purpose="purchase_order_item_reject_image"
                 value={images}
                 onChange={(next) => setImages(next.slice(0, MAX_IMAGES))}

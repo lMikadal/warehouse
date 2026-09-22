@@ -219,24 +219,27 @@ func (r *ReceiveRepository) ReceiveItem(ctx context.Context, orderID, itemID int
 	defer tx.Rollback() //nolint:errcheck
 
 	var (
-		status, unit  string
-		qty           int
-		pricePerUnit  float64
-		vatRate       float64
-		discount      float64
-		productItemID sql.NullInt64
-		supplierID    sql.NullInt64
-		orderStatus   string
-		vatType       string
+		status, unit, itemType string
+		qty                    int
+		pricePerUnit           float64
+		vatRate                float64
+		discount               float64
+		productItemID          sql.NullInt64
+		supplierID             sql.NullInt64
+		orderStatus            string
+		vatType                string
+		lineName               sql.NullString
 	)
 	err = tx.QueryRowContext(ctx, `
 SELECT i.status::text, i.unit::text, i.qty, i.price_per_unit::float8, i.vat_rate::float8, i.discount::float8,
-  i.product_item_id, po.supplier_user_id, po.status::text, po.vat_type::text
+  i.product_item_id, po.supplier_user_id, po.status::text, po.vat_type::text,
+  i.type::text, i.name
 FROM purchase_order_item i
 INNER JOIN purchase_order po ON po.id = i.purchase_order_id AND po.deleted_at IS NULL
 WHERE i.id = $2 AND i.purchase_order_id = $1 AND i.deleted_at IS NULL
 FOR UPDATE OF i`, orderID, itemID).
-		Scan(&status, &unit, &qty, &pricePerUnit, &vatRate, &discount, &productItemID, &supplierID, &orderStatus, &vatType)
+		Scan(&status, &unit, &qty, &pricePerUnit, &vatRate, &discount, &productItemID, &supplierID, &orderStatus, &vatType,
+			&itemType, &lineName)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -250,10 +253,6 @@ FOR UPDATE OF i`, orderID, itemID).
 	if orderStatus != "completed" && orderStatus != "receive_partial" && orderStatus != "receive_completed" {
 		return nil, ErrValidation
 	}
-	if !productItemID.Valid || productItemID.Int64 <= 0 {
-		// Custom lines have no catalog row yet; v1 required the product item before receiving.
-		return nil, ErrValidation
-	}
 	if placedQty > qty+in.BonusQty {
 		return nil, ErrValidation
 	}
@@ -264,7 +263,12 @@ FOR UPDATE OF i`, orderID, itemID).
 		}
 	}
 
-	itemPID := productItemID.Int64
+	itemPID, err := ensureProductItemForReceiveTx(ctx, tx, itemID, itemType, lineName, unit, productItemID,
+		supplierID, pricePerUnit, vatRate, vatType, in.SellPrice, in.SellPriceVat, actorID)
+	if err != nil {
+		return nil, err
+	}
+
 	costPerUnit := pricePerUnit
 	discountPerUnit := 0.0
 	if qty > 0 {
@@ -309,9 +313,9 @@ RETURNING id`,
 
 	if _, err := tx.ExecContext(ctx, `
 UPDATE purchase_order_item SET
-  status = 'receive_approved', free_gift = $2,
+  status = 'receive_approved', free_gift = $2, product_item_id = $4,
   updated_by = $3, updated_at = CURRENT_TIMESTAMP
-WHERE id = $1`, itemID, in.BonusQty, nullActorID(actorID)); err != nil {
+WHERE id = $1`, itemID, in.BonusQty, nullActorID(actorID), itemPID); err != nil {
 		return nil, err
 	}
 	oldItemStatus := status
@@ -382,6 +386,95 @@ WHERE purchase_order_item_id = $1 AND deleted_at IS NULL AND remain_quantity < q
 UPDATE product_item_stock SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
 WHERE purchase_order_item_id = $1 AND deleted_at IS NULL`, itemID)
 	return err
+}
+
+// ensureProductItemForReceiveTx returns the catalog variant for a receive line. Catalog lines already
+// have product_item_id; custom (v1 type=new) lines get a minimal product_list + product_item created
+// here — same behaviour as v1 ReceiveNewItem.
+func ensureProductItemForReceiveTx(
+	ctx context.Context,
+	tx *sql.Tx,
+	itemID int64,
+	itemType string,
+	lineName sql.NullString,
+	unit string,
+	existing sql.NullInt64,
+	supplierID sql.NullInt64,
+	costPerUnit, lineVatRate float64,
+	orderVatType string,
+	sellPrice, sellPriceVat float64,
+	actorID int64,
+) (int64, error) {
+	if existing.Valid && existing.Int64 > 0 {
+		return existing.Int64, nil
+	}
+	if itemType != "custom" {
+		return 0, fmt.Errorf("%w: missing product_item_id", ErrValidation)
+	}
+	langName := strings.TrimSpace(lineName.String)
+	if langName == "" {
+		langName = "-"
+	}
+	if unit == "" {
+		unit = "piece"
+	}
+	vatType := orderVatType
+	if vatType != "include" && vatType != "exclude" {
+		vatType = "exclude"
+	}
+	sku := fmt.Sprintf("NEW-%s-%d", time.Now().UTC().Format("20060102150405"), itemID)
+
+	var listID int64
+	if err := tx.QueryRowContext(ctx, `
+INSERT INTO product_list (sku, tag, supplier_sku, note, is_active, created_by, updated_by)
+VALUES ($1, '', '', '', TRUE, $2, $2)
+RETURNING id`, sku, nullActorID(actorID)).Scan(&listID); err != nil {
+		return 0, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_list_language (product_list_id, locale, name, sub_name, description)
+VALUES ($1, 'th', $2, '', ''), ($1, 'en', $2, '', '')`, listID, langName); err != nil {
+		return 0, err
+	}
+	if supplierID.Valid && supplierID.Int64 > 0 {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_list_supplier (product_list_id, supplier_user_id)
+VALUES ($1, $2) ON CONFLICT DO NOTHING`, listID, supplierID.Int64); err != nil {
+			return 0, err
+		}
+	}
+
+	var itemPID int64
+	if err := tx.QueryRowContext(ctx, `
+INSERT INTO product_item (
+  product_list_id, sku, price, price_wholesale, price_vat, price_wholesale_vat,
+  vat_type, vat_rate, type_price, unit, qty_per_unit,
+  is_new, is_stopped, is_authentic, is_active, created_by, updated_by
+) VALUES (
+  $1, $2, $3, 0, $4, 0, $5::setting_vat_type, $6, 'stock'::product_item_type_price,
+  $7::product_unit, 1, TRUE, FALSE, TRUE, TRUE, $8, $8
+)
+RETURNING id`,
+		listID, sku, sellPrice, sellPriceVat, vatType, lineVatRate, unit, nullActorID(actorID),
+	).Scan(&itemPID); err != nil {
+		return 0, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_language (product_item_id, locale, name)
+VALUES ($1, 'th', $2), ($1, 'en', $2)`, itemPID, langName); err != nil {
+		return 0, err
+	}
+	if supplierID.Valid && supplierID.Int64 > 0 {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO product_item_supplier (
+  product_item_id, supplier_user_id, cost_price, vat_rate, discount, discount_type, created_by, updated_by
+) VALUES ($1, $2, $3, $4, 0, 'baht'::discount_unit, $5, $5)
+ON CONFLICT (product_item_id, supplier_user_id) DO NOTHING`,
+			itemPID, supplierID.Int64, costPerUnit, lineVatRate, nullActorID(actorID)); err != nil {
+			return 0, err
+		}
+	}
+	return itemPID, nil
 }
 
 // findOrCreatePlacementTx resolves the product_item_warehouse row for one bin, honouring the bin-only

@@ -24,7 +24,8 @@ type ReceiveItemBody struct {
 }
 
 // ReceiveItemResult tells the UI which catalog rows the receive created or touched, so it can jump to
-// the product item (v1 returned product_id / product_item_id for the same reason).
+// the product item (v1 returned product_id / product_item_id for the same reason). Custom lines create
+// a minimal product_list + product_item during receive when product_item_id was still null.
 type ReceiveItemResult struct {
 	ProductItemID int64  `json:"product_item_id"`
 	ProductListID int64  `json:"product_list_id"`

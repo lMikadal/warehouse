@@ -1,5 +1,5 @@
-import { PurchaseFormPage } from "../_shared/purchase-form-page";
+import { PurchaseCreatePage } from "../_shared/purchase-create-page";
 
 export default function PurchaseNewPage() {
-  return <PurchaseFormPage />;
+  return <PurchaseCreatePage />;
 }

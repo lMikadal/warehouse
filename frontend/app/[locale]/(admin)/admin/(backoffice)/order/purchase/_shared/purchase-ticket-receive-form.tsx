@@ -133,7 +133,9 @@ export function PurchaseTicketReceiveForm({ ticketId }: { ticketId: number }) {
   const draftLineIds = useMemo(() => {
     const s = new Set<number>();
     for (const card of draftCards) {
-      for (const line of card.lines) s.add(line.ticketItemId);
+      for (const line of card.lines) {
+        if (line.ticketItemId != null) s.add(line.ticketItemId);
+      }
     }
     return s;
   }, [draftCards]);
@@ -154,7 +156,10 @@ export function PurchaseTicketReceiveForm({ ticketId }: { ticketId: number }) {
         );
         if (idx >= 0) {
           const card = prev[idx]!;
-          if (card.lines.some((l) => l.ticketItemId === line.ticketItemId)) {
+          if (
+            line.ticketItemId != null &&
+            card.lines.some((l) => l.ticketItemId === line.ticketItemId)
+          ) {
             return prev;
           }
           const next = [...prev];

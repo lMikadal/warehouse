@@ -17,7 +17,8 @@ type Props = {
   binId: number;
   onBinChange: (binId: number) => void;
   readOnlyQty?: string;
-  layout?: "grid" | "table";
+  /** grid = product form row; table = table cells; stack = vertical cascade (receive panel). */
+  layout?: "grid" | "table" | "stack";
   pathHints?: Partial<Record<WarehouseCascadeLevel, string>>;
   disabled?: boolean;
 };
@@ -277,6 +278,10 @@ export function WarehousePlacementCascadeRow({
             ))}
       </>
     );
+  }
+
+  if (layout === "stack") {
+    return <div className="grid gap-3">{levelFields}</div>;
   }
 
   return (

@@ -1,21 +1,33 @@
 "use client";
 
-import { AlertTriangle, ArrowLeftRight, Copy, Printer, Undo2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  Building2,
+  Calendar,
+  Copy,
+  Package,
+  Undo2,
+  User,
+  Warehouse,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import { type DisplayLocale, formatDateTime } from "@/lib/format-datetime";
 import type { PurchaseDetail, PurchaseItemDetail } from "@/lib/order-purchase-api";
@@ -26,12 +38,12 @@ import {
   OrderReceiveApiError,
   revertReceiveItemUnit,
   type ReceiveRejectDetail,
+  type ReceiveStatusFilter,
 } from "@/lib/order-receive-api";
 
 import { lineNet } from "../../purchase/_lib/purchase-totals";
 import { PurchaseConvertUnitDialog } from "../../purchase/_shared/purchase-convert-unit-dialog";
 import { PurchaseItemsTable } from "../../purchase/_shared/purchase-items-table";
-import { PurchaseSummaryCard } from "../../purchase/_shared/purchase-summary-card";
 import { ReceiveFilesPanel } from "./receive-files-panel";
 import { ReceivePlacementPanel } from "./receive-placement-panel";
 import {
@@ -39,6 +51,10 @@ import {
   type ReceivePrintTarget,
 } from "./receive-print-dialog";
 import { ReceiveRejectDialog } from "./receive-reject-dialog";
+import {
+  receiveDisplayStatus,
+  receiveStatusPillClass,
+} from "./receive-status-styles";
 
 function money(n: number, locale: string): string {
   return n.toLocaleString(locale === "th" ? "th-TH" : "en-US", {
@@ -47,11 +63,30 @@ function money(n: number, locale: string): string {
   });
 }
 
+function receiveStatusLabel(
+  status: ReceiveStatusFilter,
+  tPage: ReturnType<typeof useTranslations>
+): string {
+  switch (status) {
+    case "completed":
+      return tPage("statusPurchaseCompleted");
+    case "receive_partial":
+      return tPage("statusReceivePartial");
+    case "receive_completed":
+      return tPage("statusReceiveCompleted");
+    case "reject":
+      return tPage("statusReject");
+    default:
+      return "—";
+  }
+}
+
 export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
   const locale = useLocale() as DisplayLocale;
   const router = useRouter();
   const t = useTranslations("page.orderReceive.proceed");
   const tPage = useTranslations("page.orderReceive");
+  const tDetail = useTranslations("page.orderPurchase.detail");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("order", "order_receive");
 
@@ -59,9 +94,15 @@ export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
   const [detail, setDetail] = useState<PurchaseDetail | null>(null);
   const [rejects, setRejects] = useState<ReceiveRejectDetail[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<PurchaseItemDetail | null>(null);
-  const [convertTarget, setConvertTarget] = useState<PurchaseItemDetail | null>(null);
-  const [printTarget, setPrintTarget] = useState<ReceivePrintTarget | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<PurchaseItemDetail | null>(
+    null
+  );
+  const [convertTarget, setConvertTarget] = useState<PurchaseItemDetail | null>(
+    null
+  );
+  const [printTarget, setPrintTarget] = useState<ReceivePrintTarget | null>(
+    null
+  );
   const [revertingId, setRevertingId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -122,9 +163,18 @@ export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
       receivedCount: received.length,
       receivedValue: value(received),
       problemValue: value(problematic),
-      percent: items.length ? (received.length / items.length) * 100 : 0,
     };
   }, [items]);
+
+  const displayStatus = useMemo(() => {
+    if (!detail) return "completed" as ReceiveStatusFilter;
+    return receiveDisplayStatus({
+      status: detail.status,
+      approved_item_count: progress.receivedCount,
+      total_qty: detail.total_qty,
+      item_reject_count: rejects.length,
+    });
+  }, [detail, progress.receivedCount, rejects.length]);
 
   const revertConvert = async (item: PurchaseItemDetail) => {
     setRevertingId(item.id);
@@ -172,134 +222,208 @@ export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
     return <p className="text-muted-foreground">{t("notFound")}</p>;
   }
 
-  const poNumber = detail.sku?.trim() || detail.sku_draft?.trim() || t("emptyCell");
+  const poNumber =
+    detail.sku?.trim() || detail.sku_draft?.trim() || t("emptyCell");
   const canReceive = perms.update && detail.status !== "receive_completed";
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       <CrudPageHeader
-        title={`${t("purchaseNumberLabel")} ${poNumber}`}
+        title={tPage("title")}
         actions={
-          <div className="flex items-center gap-2">
-            <ButtonIcon
-              variant="outline"
-              aria-label={t("ariaCopyPO")}
-              onClick={copyPo}
-            >
-              <Copy className="size-4" />
-            </ButtonIcon>
-            {copied ? (
-              <span className="text-xs text-muted-foreground">
-                {tPage("copyDone")}
-              </span>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/admin/order/receive")}
-            >
-              {t("back")}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/admin/order/receive")}
+          >
+            {t("back")}
+          </Button>
         }
       />
 
       <ResizablePanelGroup className="min-h-[60vh] w-full">
         <ResizablePanel defaultSize={68} minSize={40} className="min-w-0">
           <div className="flex h-full flex-col gap-4 overflow-y-auto pr-1">
-            <PurchaseSummaryCard detail={detail} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="shadow-none">
+                <CardHeader className="flex-row flex-wrap items-start justify-between gap-2 space-y-0 pb-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <CardTitle className="truncate text-lg tabular-nums">
+                      {poNumber}
+                    </CardTitle>
+                    <ButtonIcon
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-label={t("ariaCopyPO")}
+                      onClick={() => void copyPo()}
+                    >
+                      <Copy className="size-3.5" />
+                    </ButtonIcon>
+                    {copied ? (
+                      <span className="text-xs text-muted-foreground">
+                        {tPage("copyDone")}
+                      </span>
+                    ) : null}
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className={receiveStatusPillClass(displayStatus)}
+                  >
+                    {receiveStatusLabel(displayStatus, tPage)}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="size-4 shrink-0" aria-hidden />
+                    <span className="tabular-nums">
+                      {formatDateTime(detail.created_at, locale)}
+                    </span>
+                  </p>
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <User className="size-4 shrink-0" aria-hidden />
+                    <span>{detail.created_by_name?.trim() || "—"}</span>
+                  </p>
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Building2 className="size-4 shrink-0" aria-hidden />
+                    <span>{detail.supplier_name?.trim() || "—"}</span>
+                  </p>
+                  {detail.purchase_request_id &&
+                  detail.purchase_request_sku?.trim() ? (
+                    <div className="border-t pt-2 text-xs text-muted-foreground">
+                      <p>
+                        {tDetail("requestTicketNumberLabel")}{" "}
+                        <Link
+                          href={`/admin/sales/ticket/${detail.purchase_request_id}/detail`}
+                          className="font-medium text-primary underline"
+                        >
+                          {detail.purchase_request_sku}
+                        </Link>
+                      </p>
+                      {detail.request_created_by_name?.trim() ? (
+                        <p>
+                          {tDetail("ticketCreatorLabel")}{" "}
+                          {detail.request_created_by_name.trim()}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
 
-            <div className="rounded-xl border bg-card p-5">
-              <h2 className="mb-3 text-base font-semibold">{t("progressTitle")}</h2>
-              <Progress value={progress.percent} className="mb-3" />
-              <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {t("progressTotal")}
-                  </span>
-                  <span className="font-semibold tabular-nums">
-                    {progress.total.toLocaleString()} {t("progressUnit")}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {t("progressReceived")}
-                  </span>
-                  <span className="font-semibold tabular-nums">
-                    {progress.receivedCount.toLocaleString()} {t("progressUnit")}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {t("progressReceivedValue")}
-                  </span>
-                  <span className="font-bold tabular-nums">
-                    {money(progress.receivedValue, locale)} {tPage("currencySuffix")}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {t("progressProblemValue")}
-                  </span>
-                  <span className="font-semibold tabular-nums">
-                    {money(progress.problemValue, locale)} {tPage("currencySuffix")}
-                  </span>
-                </div>
-              </div>
+              <Card className="shadow-none">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <span
+                      className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10"
+                      aria-hidden
+                    >
+                      <Package className="size-4 text-primary" />
+                    </span>
+                    {t("progressTitle")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {t("progressReceived")}
+                    </p>
+                    <p className="font-semibold tabular-nums">
+                      {progress.receivedCount.toLocaleString()}{" "}
+                      {t("progressUnit")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {t("progressTotal")}
+                    </p>
+                    <p className="font-semibold tabular-nums">
+                      {progress.total.toLocaleString()} {t("progressUnit")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {t("progressReceivedValue")}
+                    </p>
+                    <p className="font-bold tabular-nums">
+                      {money(progress.receivedValue, locale)}{" "}
+                      {tPage("currencySuffix")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {t("progressProblemValue")}
+                    </p>
+                    <p className="font-semibold tabular-nums">
+                      {money(progress.problemValue, locale)}{" "}
+                      {tPage("currencySuffix")}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="rounded-xl border bg-card p-5">
-              <h2 className="mb-3 text-base font-semibold">{t("colProduct")}</h2>
+              <h2 className="mb-3 text-base font-semibold">
+                {t("itemsHeading", { count: items.length })}
+              </h2>
               <PurchaseItemsTable
                 items={items}
                 selectedItemId={selectedId}
-                onSelectItem={(item) => setSelectedId(item.id)}
                 actionsHeader={t("colManage")}
                 renderProductExtra={(item) => {
                   const rows = rejectsByItem.get(item.id) ?? [];
                   if (rows.length === 0) return null;
                   return (
                     <span className="flex items-center gap-1 text-xs text-warehouse-error-fg">
-                      <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+                      <AlertTriangle
+                        className="size-3.5 shrink-0"
+                        aria-hidden
+                      />
                       {t("problemFoundBadge")}
                       {` (${rows.length})`}
                     </span>
                   );
                 }}
                 renderActions={(item) => (
-                  <>
-                    <ButtonIcon
-                      aria-label={t("ariaPrintBarcode")}
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={
+                        selectedId === item.id ? "default" : "outline"
+                      }
+                      className="gap-1"
+                      aria-label={t("ariaSelectWarehouse")}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPrintTarget({
-                          sku: item.product_item_sku?.trim() ?? "",
-                          name:
-                            item.product_item_name?.trim() ||
-                            item.name?.trim() ||
-                            "",
-                          barcode: item.code_barcode?.trim() ?? "",
-                          qrcode: item.code_qrcode?.trim() ?? "",
-                          supplierName: detail.supplier_name?.trim() ?? "",
-                          receivedAt: formatDateTime(item.updated_at, locale),
-                        });
+                        setSelectedId(item.id);
                       }}
                     >
-                      <Printer className="size-4" />
-                    </ButtonIcon>
+                      <Warehouse className="size-3.5" aria-hidden />
+                      {t("labelActionWarehouse")}
+                    </Button>
                     {canReceive && item.status !== "receive_approved" ? (
-                      <ButtonIcon
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
                         aria-label={t("ariaReject")}
                         onClick={(e) => {
                           e.stopPropagation();
                           setRejectTarget(item);
                         }}
                       >
-                        <AlertTriangle className="size-4 text-warehouse-error-fg" />
-                      </ButtonIcon>
+                        <X className="size-3.5" aria-hidden />
+                        {t("labelActionCancel")}
+                      </Button>
                     ) : null}
                     {canReceive && item.status !== "receive_approved" ? (
                       <ButtonIcon
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         aria-label={t("unitConvert.ariaConvertUnit")}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -311,6 +435,9 @@ export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
                     ) : null}
                     {canReceive && item.parent_id != null ? (
                       <ButtonIcon
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         aria-label={t("ariaRevertConvert")}
                         disabled={revertingId === item.id}
                         onClick={(e) => {
@@ -321,7 +448,7 @@ export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
                         <Undo2 className="size-4" />
                       </ButtonIcon>
                     ) : null}
-                  </>
+                  </div>
                 )}
               />
               <p className="mt-2 text-xs text-muted-foreground">
@@ -345,6 +472,7 @@ export function ReceiveProceedPage({ purchaseId }: { purchaseId: number }) {
               item={selectedItem}
               vatRate={detail.vat_rate}
               disabled={!canReceive}
+              onCancel={() => setSelectedId(null)}
               onReceived={() => {
                 setSelectedId(null);
                 void load();

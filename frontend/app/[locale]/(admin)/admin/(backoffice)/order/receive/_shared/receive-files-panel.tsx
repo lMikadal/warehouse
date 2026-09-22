@@ -91,7 +91,7 @@ export function ReceiveFilesPanel({
         <>
           <ImageUploadField
             id={`receive-files-${purchaseId}`}
-            labelKey={t("uploadButton")}
+            labelKey="page.orderReceive.files.uploadButton"
             purpose="purchase_order_attachment"
             value={items}
             onChange={setItems}

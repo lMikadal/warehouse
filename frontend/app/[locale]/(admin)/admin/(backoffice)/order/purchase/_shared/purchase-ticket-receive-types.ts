@@ -7,7 +7,10 @@ export type ReceiveDraftLinePricing = {
 };
 
 export type ReceiveDraftLine = {
-  ticketItemId: number;
+  /** Stable client key (React + patch/remove). */
+  key: string;
+  /** Set when the line came from a purchase-request ticket item. */
+  ticketItemId?: number | null;
   productItemId: number | null;
   name: string;
   sku: string;
@@ -20,6 +23,7 @@ export type ReceiveDraftLine = {
   engineId: number | null;
   identificationNumber: string;
   note: string;
+  systemFileIds?: number[];
   pricing: ReceiveDraftLinePricing;
 };
 
@@ -56,6 +60,7 @@ export function ticketLineToDraftLine(
   const sell = Math.max(0, item.qty_sell);
   const reorder = Math.max(0, item.qty_reorder);
   return {
+    key: `ticket-${item.id}`,
     ticketItemId: item.id,
     productItemId: item.product_item_id ?? null,
     name: ticketLineDisplayName(item),
@@ -69,6 +74,7 @@ export function ticketLineToDraftLine(
     engineId: item.product_attribute_engine_id ?? null,
     identificationNumber: item.identification_number ?? "",
     note: item.note ?? "",
+    systemFileIds: item.files.map((f) => f.system_file_id),
     pricing: {
       pricePerUnit: pricing?.pricePerUnit ?? 0,
       discount: pricing?.discount ?? 0,

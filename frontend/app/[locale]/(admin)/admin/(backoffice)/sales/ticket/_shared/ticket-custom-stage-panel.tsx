@@ -25,8 +25,12 @@ import {
   resolveOrderSalesCarBrandLabel,
   resolveOrderSalesCarEngineLabel,
   resolveOrderSalesCarModelLabel,
+  type OrderSalesFormResource,
 } from "@/lib/order-sales-form-api";
-import type { ImageUploadItem } from "@/lib/system-file-api";
+import type {
+  ImageUploadItem,
+  SystemFilePurpose,
+} from "@/lib/system-file-api";
 import { cn } from "@/lib/utils";
 
 export type StagedCustom = {
@@ -54,7 +58,12 @@ export type CustomDraft = {
 };
 
 type Props = {
-  resource: "tickets";
+  resource: Extract<OrderSalesFormResource, "tickets" | "purchases">;
+  /** Image upload purpose; tickets use request-item, PO create uses order-item. */
+  imagePurpose?: Extract<
+    SystemFilePurpose,
+    "purchase_request_item_image" | "purchase_order_item_image"
+  >;
   displayLocale: DisplayLocale;
   readOnly: boolean;
   draft: CustomDraft;
@@ -81,6 +90,7 @@ function detailsLabel(row: StagedCustom): string {
 
 export function TicketCustomStagePanel({
   resource,
+  imagePurpose = "purchase_request_item_image",
   displayLocale,
   readOnly,
   draft,
@@ -106,9 +116,9 @@ export function TicketCustomStagePanel({
   return (
     <div className="flex flex-col gap-3">
       <ImageUploadField
-        id="ticket-new-images"
+        id={`${resource}-new-images`}
         labelKey="page.orderTicket.form.newImages"
-        purpose="purchase_request_item_image"
+        purpose={imagePurpose}
         value={images}
         onChange={onImagesChange}
         maxFiles={3}

@@ -52,7 +52,6 @@ import {
   type PurchaseVatType,
 } from "@/lib/order-purchase-api";
 import type { ProductItemBrowseRow } from "@/lib/product-list-api";
-import { cn } from "@/lib/utils";
 
 import { StoreSalesProductBrowsePanel } from "../../../sales/store/_shared/store-sales-product-browse-panel";
 import {
@@ -60,6 +59,7 @@ import {
   roundMoney,
 } from "../_lib/purchase-totals";
 import { PurchaseMoneySummary } from "./purchase-money-summary";
+import { PurchasePageFooter } from "./purchase-page-footer";
 import { purchaseStatusPillClass } from "./purchase-status-styles";
 
 const PURCHASE_UNITS: PurchaseUnit[] = ["piece", "box", "set"];
@@ -312,7 +312,7 @@ export function PurchaseFormPage({ editId }: PurchaseFormPageProps) {
     detail?.sku?.trim() || detail?.sku_draft?.trim() || tForm("numberPending");
 
   return (
-    <div className="flex w-full min-w-0 flex-col">
+    <div className="flex w-full min-w-0 flex-col pb-20">
       <CrudPageHeader
         title={editId ? tForm("titleEdit") : tForm("titleCreate")}
         description={
@@ -332,31 +332,6 @@ export function PurchaseFormPage({ editId }: PurchaseFormPageProps) {
               </>
             ) : null}
           </span>
-        }
-        actions={
-          <>
-            {canCancel ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
-                disabled={saving}
-                onClick={() => {
-                  setCancelNote("");
-                  setCancelOpen(true);
-                }}
-              >
-                {tForm("cancelOrder")}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/admin/order/purchase")}
-            >
-              {tCrud("btn.back")}
-            </Button>
-          </>
         }
       />
 
@@ -679,26 +654,6 @@ export function PurchaseFormPage({ editId }: PurchaseFormPageProps) {
                   totals={totals}
                   vatPercent={vatType === "none" ? 0 : vatRate}
                 />
-
-                {readOnly ? null : (
-                  <div className={cn("flex flex-wrap justify-end gap-2 border-t pt-3")}>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={saving}
-                      onClick={() => void save("draft")}
-                    >
-                      {tForm("saveDraft")}
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => void save("pending")}
-                    >
-                      {tForm("submit")}
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </ResizablePanel>
@@ -741,6 +696,49 @@ export function PurchaseFormPage({ editId }: PurchaseFormPageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PurchasePageFooter>
+        {canCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
+            disabled={saving}
+            onClick={() => {
+              setCancelNote("");
+              setCancelOpen(true);
+            }}
+          >
+            {tForm("cancelOrder")}
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/admin/order/purchase")}
+        >
+          {tCrud("btn.back")}
+        </Button>
+        {readOnly ? null : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={() => void save("draft")}
+            >
+              {tForm("saveDraft")}
+            </Button>
+            <Button
+              type="button"
+              disabled={saving}
+              onClick={() => void save("pending")}
+            >
+              {tForm("submit")}
+            </Button>
+          </>
+        )}
+      </PurchasePageFooter>
     </div>
   );
 }

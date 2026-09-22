@@ -15,6 +15,7 @@ import {
   createPurchase,
   OrderPurchaseApiError,
   type PurchaseItemInput,
+  type PurchaseVatType,
 } from "@/lib/order-purchase-api";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ import { PurchaseMoneySummary } from "./purchase-money-summary";
 import type { ReceiveDraftCard } from "./purchase-ticket-receive-types";
 
 const DEFAULT_VAT_RATE = 7;
+const DEFAULT_VAT_TYPE: PurchaseVatType = "exclude";
 
 function money(n: number, locale: string): string {
   return n.toLocaleString(locale === "th" ? "th-TH" : "en-US", {
@@ -37,16 +39,23 @@ function money(n: number, locale: string): string {
 export type PurchaseTicketReceiveSummaryPanelProps = {
   cards: ReceiveDraftCard[];
   setCards: Dispatch<SetStateAction<ReceiveDraftCard[]>>;
-  ticketId: number;
+  /** When set, create attaches the PO to this purchase request. */
+  ticketId?: number | null;
+  vatRate?: number;
+  vatType?: PurchaseVatType;
   suppressEmptyPlaceholder?: boolean;
+  emptyStateMessage?: string;
   onSaveSuccess: (savedTicketItemIds: number[]) => void;
 };
 
 export function PurchaseTicketReceiveSummaryPanel({
   cards,
   setCards,
-  ticketId,
+  ticketId = null,
+  vatRate = DEFAULT_VAT_RATE,
+  vatType = DEFAULT_VAT_TYPE,
   suppressEmptyPlaceholder = false,
+  emptyStateMessage,
   onSaveSuccess,
 }: PurchaseTicketReceiveSummaryPanelProps) {
   const locale = useLocale();
@@ -67,7 +76,7 @@ export function PurchaseTicketReceiveSummaryPanel({
             <ClipboardCheck className="size-7" aria-hidden />
           </div>
           <p className="max-w-xs text-sm text-muted-foreground">
-            {t("draftPoEmptyState")}
+            {emptyStateMessage ?? t("draftPoEmptyState")}
           </p>
         </CardContent>
       </Card>
@@ -82,7 +91,7 @@ export function PurchaseTicketReceiveSummaryPanel({
 
   const patchLine = (
     cardKey: string,
-    ticketItemId: number,
+    lineKey: string,
     patch: {
       qtyOrder?: number;
       pricePerUnit?: number;
@@ -95,7 +104,7 @@ export function PurchaseTicketReceiveSummaryPanel({
         return {
           ...card,
           lines: card.lines.map((line) => {
-            if (line.ticketItemId !== ticketItemId) return line;
+            if (line.key !== lineKey) return line;
             return {
               ...line,
               qtyOrder:
@@ -123,7 +132,7 @@ export function PurchaseTicketReceiveSummaryPanel({
     setCards((prev) => prev.filter((card) => card.key !== key));
   };
 
-  const removeLine = (cardKey: string, ticketItemId: number) => {
+  const removeLine = (cardKey: string, lineKey: string) => {
     setCards((prev) =>
       prev
         .map((card) =>
@@ -131,9 +140,7 @@ export function PurchaseTicketReceiveSummaryPanel({
             ? card
             : {
                 ...card,
-                lines: card.lines.filter(
-                  (line) => line.ticketItemId !== ticketItemId
-                ),
+                lines: card.lines.filter((line) => line.key !== lineKey),
               }
         )
         .filter((card) => card.lines.length > 0)
@@ -155,7 +162,9 @@ export function PurchaseTicketReceiveSummaryPanel({
     setSubmittingKey(card.key);
     try {
       const items: PurchaseItemInput[] = card.lines.map((line) => ({
-        purchase_request_item_id: line.ticketItemId,
+        ...(line.ticketItemId != null
+          ? { purchase_request_item_id: line.ticketItemId }
+          : {}),
         type: line.type,
         product_item_id: line.productItemId,
         name: line.type === "custom" ? line.name : null,
@@ -167,16 +176,19 @@ export function PurchaseTicketReceiveSummaryPanel({
         free_gift: 0,
         unit: line.unit,
         price_per_unit: line.pricing.pricePerUnit,
-        vat_rate: DEFAULT_VAT_RATE,
+        vat_rate: vatRate,
         discount: line.pricing.discount,
         note: line.note,
+        ...(line.systemFileIds?.length
+          ? { system_file_ids: line.systemFileIds }
+          : {}),
       }));
       await createPurchase(locale, {
         status,
         supplier_user_id: Number(card.supplierId),
-        purchase_request_id: ticketId,
-        vat_type: "exclude",
-        vat_rate: DEFAULT_VAT_RATE,
+        ...(ticketId != null ? { purchase_request_id: ticketId } : {}),
+        vat_type: vatType,
+        vat_rate: vatRate,
         discount: card.discount,
         special_discount: 0,
         is_waiting: status === "draft",
@@ -184,7 +196,9 @@ export function PurchaseTicketReceiveSummaryPanel({
         items,
       });
       toast.success(tCrud("toast.saved"));
-      const ids = card.lines.map((l) => l.ticketItemId);
+      const ids = card.lines
+        .map((l) => l.ticketItemId)
+        .filter((id): id is number => id != null && id > 0);
       setCards((prev) => prev.filter((c) => c.key !== card.key));
       onSaveSuccess(ids);
     } catch (e) {
@@ -209,7 +223,7 @@ export function PurchaseTicketReceiveSummaryPanel({
           {
             discount: card.discount,
             specialDiscount: 0,
-            vatRate: DEFAULT_VAT_RATE,
+            vatRate,
           }
         );
         const busy = submittingKey === card.key;
@@ -252,7 +266,7 @@ export function PurchaseTicketReceiveSummaryPanel({
               <CardContent className="space-y-3 px-4 pb-4">
                 {card.lines.map((line) => (
                   <div
-                    key={line.ticketItemId}
+                    key={line.key}
                     className="space-y-2 rounded-md border p-3"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -271,7 +285,7 @@ export function PurchaseTicketReceiveSummaryPanel({
                         variant="ghost"
                         size="icon-sm"
                         disabled={busy}
-                        onClick={() => removeLine(card.key, line.ticketItemId)}
+                        onClick={() => removeLine(card.key, line.key)}
                         aria-label={tCrud("btn.delete")}
                       >
                         <Trash2 className="size-3.5" />
@@ -287,7 +301,7 @@ export function PurchaseTicketReceiveSummaryPanel({
                           value={line.qtyOrder}
                           disabled={busy}
                           onChange={(e) =>
-                            patchLine(card.key, line.ticketItemId, {
+                            patchLine(card.key, line.key, {
                               qtyOrder: Number(e.target.value) || 1,
                             })
                           }
@@ -305,7 +319,7 @@ export function PurchaseTicketReceiveSummaryPanel({
                           value={line.pricing.pricePerUnit}
                           disabled={busy}
                           onChange={(e) =>
-                            patchLine(card.key, line.ticketItemId, {
+                            patchLine(card.key, line.key, {
                               pricePerUnit: Number(e.target.value) || 0,
                             })
                           }
@@ -323,7 +337,7 @@ export function PurchaseTicketReceiveSummaryPanel({
                           value={line.pricing.discount}
                           disabled={busy}
                           onChange={(e) =>
-                            patchLine(card.key, line.ticketItemId, {
+                            patchLine(card.key, line.key, {
                               discount: Number(e.target.value) || 0,
                             })
                           }
@@ -331,8 +345,13 @@ export function PurchaseTicketReceiveSummaryPanel({
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {t("colUnit")}: {tUnit(line.unit)} · {t("colQtySell")}:{" "}
-                      {line.qtySell}
+                      {t("colUnit")}: {tUnit(line.unit)}
+                      {line.ticketItemId != null ? (
+                        <>
+                          {" · "}
+                          {t("colQtySell")}: {line.qtySell}
+                        </>
+                      ) : null}
                     </p>
                   </div>
                 ))}
@@ -373,7 +392,7 @@ export function PurchaseTicketReceiveSummaryPanel({
 
                 <PurchaseMoneySummary
                   totals={totals}
-                  vatPercent={DEFAULT_VAT_RATE}
+                  vatPercent={vatRate}
                   className={cn("pt-2")}
                 />
 

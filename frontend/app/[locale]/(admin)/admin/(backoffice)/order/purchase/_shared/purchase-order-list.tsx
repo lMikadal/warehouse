@@ -80,14 +80,19 @@ function parseAmount(raw: string): string {
   return String(n);
 }
 
-/** v1 list buttons: view always; edit on draft/revision; pay on paying; delete unless ordered. */
+/** v1 list buttons: view always; edit on draft/revision/pending; pay on paying; delete unless ordered. */
 function rowActions(
   row: PurchaseListItem,
   perms: { view: boolean; update: boolean; delete: boolean }
 ): TableIconActionKey[] {
   const actions: TableIconActionKey[] = [];
   if (perms.view) actions.push("view");
-  if (perms.update && (row.status === "draft" || row.status === "rejected")) {
+  if (
+    perms.update &&
+    (row.status === "draft" ||
+      row.status === "rejected" ||
+      row.status === "pending")
+  ) {
     actions.push("edit");
   }
   if (perms.update && row.status === "paying") actions.push("pay");

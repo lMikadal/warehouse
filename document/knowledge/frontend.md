@@ -352,6 +352,18 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Design mockups | [`design/pages/order-quotation*.html`](../../design/pages/order-quotation.html) |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-order-quotation.md`](../checklist/frontend/phase-frontend-order-quotation.md) |
 
+### Purchase orders (PO list + by-id)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/order/purchase` (list tabs); `/new` standalone create; `/[id]` status router; `/[id]/detail`; `/[id]/payment`; legacy `/[id]/approve` redirects to `/[id]` |
+| Standalone create | [`purchase-create-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-create-page.tsx) — same split chrome as ticket receive; left [`purchase-create-left-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-create-left-panel.tsx) (catalog browse + custom stage → consider/compare/partner); right multi-supplier draft cards via shared [`purchase-ticket-receive-summary-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-summary-panel.tsx) **without** `purchase_request_id`. VAT from `fetchSettingVat` (fallback 7% / exclude). |
+| List edit | [`purchase-order-list.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-order-list.tsx) — `TableIconActions` edit when `draft` / `rejected` / `pending` (+ `order_purchase.update`). Waiting draft (`is_waiting`) opens refill tab; else → `/admin/order/purchase/[id]`. |
+| `/[id]` router | [`purchase-by-id-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-by-id-page.tsx): `draft`/`rejected` → form; `pending` → approve (PO + คำร้อง tab when `purchase_request_id`); `paying` → payment; else → detail. |
+| Sticky footer | Approve / detail / payment / form page actions live in [`purchase-page-footer.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-page-footer.tsx) (`fixed` bar + `useSidebar` inset + page `pb-20`); header is title/description only. |
+| Ticket-created | Receive submit with `status: pending` + `purchase_request_id` → list shows edit → approve shell with request tab. |
+| Phase checklist (create) | [`document/checklist/frontend/phase-frontend-order-purchase-create.md`](../checklist/frontend/phase-frontend-order-purchase-create.md) |
+
 ### Purchase ticket receive (คำร้อง → PO)
 
 | Item | Detail |
@@ -360,10 +372,18 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | UI | [`purchase-ticket-receive-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-form.tsx) — resizable split (`purchase-ticket-receive-desktop-split.tsx`, `ssr: false`); left [`purchase-ticket-receive-left-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-left-panel.tsx) (header + catalog/custom tabs + พิจารณา + history); right existing POs + draft cards / empty state [`draftPoEmptyState`](../../frontend/messages/th/page-order-purchase.json). |
 | Line types | API `catalog` / `custom` → UI tabs สินค้าที่ซื้อ / สินค้าใหม่. |
 | Consider | Topics dialog → stock-history select partner, supplier pick (`GET /purchases/filters?facet=suppliers`), `createTicketItemReject` (`change`/`wait`/`stop`; `wait.date` is `YYYY-MM-DD`), `patchTicketItemStatus` rejected (cancel), `patchProductItemStopped` (stop). Ticket `product_item_name` / reject name = `product_item_language` then `product_list_language` (th) — same fallback as product browse. |
-| Create PO | Draft cards → `createPurchase` with `purchase_request_id` + `items[].purchase_request_item_id`. |
+| Create PO | Draft cards → `createPurchase` with `purchase_request_id` + `items[].purchase_request_item_id`. Shared summary panel also supports standalone create (omit ticket ids). |
 | Clients | [`lib/order-ticket-api.ts`](../../frontend/lib/order-ticket-api.ts), [`lib/order-purchase-api.ts`](../../frontend/lib/order-purchase-api.ts) |
 | i18n | `page.orderPurchase.receive` in [`page-order-purchase.json`](../../frontend/messages/th/page-order-purchase.json) |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-order-purchase-ticket-receive.md`](../checklist/frontend/phase-frontend-order-purchase-ticket-receive.md) |
+
+### Order receive (รับเข้า)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/order/receive`, `/[id]` proceed, `/[id]/detail` |
+| Proceed UI | [`receive-proceed-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-proceed-page.tsx) — PO meta + progress cards; items with labeled **คลัง** / **พบปัญหา**; right [`receive-placement-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-placement-panel.tsx) warehouse→bin cascade (`WarehousePlacementCascadeRow` `layout="stack"`) + qty/free + Cancel/Receive. API still posts `bin_id` only. Custom (`type=custom`) lines without `product_item_id` are allowed — backend creates catalog rows on receive (v1 parity). |
+| i18n | `page.orderReceive` in [`page-order-receive.json`](../../frontend/messages/th/page-order-receive.json) |
 
 ### Order compare (catalog special price)
 

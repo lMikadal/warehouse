@@ -32,6 +32,7 @@ import type { TicketHistoryEntry } from "@/lib/order-ticket-api";
 import { PurchaseFilesPanel } from "./purchase-files-panel";
 import { PurchaseHistoryDialog } from "./purchase-history-dialog";
 import { PurchaseItemsTable } from "./purchase-items-table";
+import { PurchasePageFooter } from "./purchase-page-footer";
 import {
   PurchaseStockHistoryDialog,
   type PurchaseStockHistoryTarget,
@@ -126,55 +127,10 @@ export function PurchaseDetailPage({ purchaseId }: { purchaseId: number }) {
     detail.note.trim() !== "";
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4 pb-20">
       <CrudPageHeader
         title={tDetail("title")}
         description={poNumber}
-        actions={
-          <>
-            {poNumber ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void copyNumber()}
-              >
-                <Copy className="text-current" aria-hidden />
-                {copied ? tDetail("copyDone") : tDetail("copyLabel")}
-              </Button>
-            ) : null}
-            <Button type="button" variant="outline" onClick={() => void openHistory()}>
-              <History className="text-current" aria-hidden />
-              {tDetail("openHistory")}
-            </Button>
-            {perms.update && detail.status === "pending" ? (
-              <Button
-                type="button"
-                onClick={() =>
-                  router.push(`/admin/order/purchase/${detail.id}/approve`)
-                }
-              >
-                {tDetail("goApprove")}
-              </Button>
-            ) : null}
-            {perms.update && detail.status === "paying" ? (
-              <Button
-                type="button"
-                onClick={() =>
-                  router.push(`/admin/order/purchase/${detail.id}/payment`)
-                }
-              >
-                {tDetail("goPayment")}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/admin/order/purchase")}
-            >
-              {tCrud("btn.back")}
-            </Button>
-          </>
-        }
       />
 
       {showReason ? (
@@ -290,6 +246,48 @@ export function PurchaseDetailPage({ purchaseId }: { purchaseId: number }) {
         onOpenChange={setHistoryOpen}
         entries={history}
       />
+
+      <PurchasePageFooter>
+        {poNumber ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void copyNumber()}
+          >
+            <Copy className="text-current" aria-hidden />
+            {copied ? tDetail("copyDone") : tDetail("copyLabel")}
+          </Button>
+        ) : null}
+        <Button type="button" variant="outline" onClick={() => void openHistory()}>
+          <History className="text-current" aria-hidden />
+          {tDetail("openHistory")}
+        </Button>
+        {perms.update && detail.status === "pending" ? (
+          <Button
+            type="button"
+            onClick={() => router.push(`/admin/order/purchase/${detail.id}`)}
+          >
+            {tDetail("goApprove")}
+          </Button>
+        ) : null}
+        {perms.update && detail.status === "paying" ? (
+          <Button
+            type="button"
+            onClick={() =>
+              router.push(`/admin/order/purchase/${detail.id}/payment`)
+            }
+          >
+            {tDetail("goPayment")}
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/admin/order/purchase")}
+        >
+          {tCrud("btn.back")}
+        </Button>
+      </PurchasePageFooter>
     </div>
   );
 }

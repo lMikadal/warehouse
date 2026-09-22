@@ -60,6 +60,7 @@ import { TicketDetailPage } from "../../../sales/ticket/_shared/ticket-detail-pa
 import { PurchaseHistoryDialog } from "./purchase-history-dialog";
 import { PurchaseLineEditDialog } from "./purchase-line-edit-dialog";
 import { PurchaseItemsTable } from "./purchase-items-table";
+import { PurchasePageFooter } from "./purchase-page-footer";
 import { PurchaseSummaryCard } from "./purchase-summary-card";
 
 function money(n: number, locale: string): string {
@@ -281,52 +282,10 @@ export function PurchasePaymentPage({ purchaseId }: { purchaseId: number }) {
   );
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4 pb-20">
       <CrudPageHeader
         title={tPay("dialogTitle")}
         description={detail.sku?.trim() || detail.sku_draft?.trim() || ""}
-        actions={
-          <>
-            <Button type="button" variant="outline" onClick={() => void openHistory()}>
-              <History className="text-current" aria-hidden />
-              {tDetail("openHistory")}
-            </Button>
-            {locked ? null : (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={submitting}
-                  onClick={() => {
-                    setReason("");
-                    setReasonMode("revision");
-                  }}
-                >
-                  {tApprove("requestRevision")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
-                  disabled={submitting}
-                  onClick={() => {
-                    setReason("");
-                    setReasonMode("cancel");
-                  }}
-                >
-                  {tApprove("cancelOrderShort")}
-                </Button>
-              </>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/admin/order/purchase")}
-            >
-              {tCrud("btn.back")}
-            </Button>
-          </>
-        }
       />
 
       <Tabs defaultValue="po" className="w-full min-w-0">
@@ -522,16 +481,7 @@ export function PurchasePaymentPage({ purchaseId }: { purchaseId: number }) {
               <p className="text-sm text-muted-foreground">
                 {tPay("lockedHint", { status: tPage(`status.${detail.status}`) })}
               </p>
-            ) : (
-              <Button
-                type="button"
-                className="w-full"
-                disabled={submitting}
-                onClick={() => void submitPayment()}
-              >
-                {tPay("confirmPayment")}
-              </Button>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </div>
@@ -695,6 +645,54 @@ export function PurchasePaymentPage({ purchaseId }: { purchaseId: number }) {
         onOpenChange={setHistoryOpen}
         entries={history}
       />
+
+      <PurchasePageFooter>
+        <Button type="button" variant="outline" onClick={() => void openHistory()}>
+          <History className="text-current" aria-hidden />
+          {tDetail("openHistory")}
+        </Button>
+        {locked ? null : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting}
+              onClick={() => {
+                setReason("");
+                setReasonMode("revision");
+              }}
+            >
+              {tApprove("requestRevision")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-warehouse-error-border text-warehouse-error-fg hover:bg-warehouse-error-bg"
+              disabled={submitting}
+              onClick={() => {
+                setReason("");
+                setReasonMode("cancel");
+              }}
+            >
+              {tApprove("cancelOrderShort")}
+            </Button>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => void submitPayment()}
+            >
+              {tPay("confirmPayment")}
+            </Button>
+          </>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/admin/order/purchase")}
+        >
+          {tCrud("btn.back")}
+        </Button>
+      </PurchasePageFooter>
     </div>
   );
 }
