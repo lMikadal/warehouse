@@ -24,6 +24,7 @@ import {
   fetchPurchaseStockHistory,
   type PurchaseStockHistoryRow,
 } from "@/lib/order-purchase-api";
+import { cn } from "@/lib/utils";
 
 export type PurchaseStockHistoryTarget = {
   productItemId: number;
@@ -31,16 +32,22 @@ export type PurchaseStockHistoryTarget = {
   supplierUserId?: number | null;
 };
 
+export type PurchaseStockHistoryDialogProps = {
+  target: PurchaseStockHistoryTarget | null;
+  onOpenChange: (open: boolean) => void;
+  /** When set, rows with a supplier become clickable assign shortcuts. */
+  onSelectRow?: (row: PurchaseStockHistoryRow) => void;
+};
+
 /** v1 "stock history" popup: the last receipts of one product item, optionally from one supplier. */
 export function PurchaseStockHistoryDialog({
   target,
   onOpenChange,
-}: {
-  target: PurchaseStockHistoryTarget | null;
-  onOpenChange: (open: boolean) => void;
-}) {
+  onSelectRow,
+}: PurchaseStockHistoryDialogProps) {
   const locale = useLocale() as DisplayLocale;
   const tDetail = useTranslations("page.orderPurchase.detail");
+  const tReceive = useTranslations("page.orderPurchase.receive");
   const tError = useTranslations("error");
   const tApprove = useTranslations("page.orderPurchase.approve");
 
@@ -82,6 +89,11 @@ export function PurchaseStockHistoryDialog({
           <DialogTitle>{tDetail("stockHistoryTitle")}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">{target?.productName}</p>
+        {onSelectRow ? (
+          <p className="text-xs text-muted-foreground">
+            {tReceive("stockHistorySelectHint")}
+          </p>
+        ) : null}
         {loading ? (
           <Skeleton className="h-40 w-full" />
         ) : rows.length === 0 ? (
@@ -110,28 +122,48 @@ export function PurchaseStockHistoryDialog({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      {formatDateTime(row.received_at ?? row.created_at, locale)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.quantity.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.remain_quantity.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {money(row.cost_per_unit)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {money(row.sell_price)}
-                    </TableCell>
-                    <TableCell>
-                      {row.supplier_name?.trim() || tDetail("emptyCell")}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {rows.map((row) => {
+                  const selectable =
+                    onSelectRow != null &&
+                    row.supplier_user_id != null &&
+                    row.supplier_user_id > 0;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={cn(selectable && "cursor-pointer hover:bg-muted/50")}
+                      aria-label={
+                        selectable
+                          ? tReceive("stockHistorySelectAria")
+                          : undefined
+                      }
+                      onClick={() => {
+                        if (selectable) onSelectRow(row);
+                      }}
+                    >
+                      <TableCell>
+                        {formatDateTime(
+                          row.received_at ?? row.created_at,
+                          locale
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.quantity.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.remain_quantity.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {money(row.cost_per_unit)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {money(row.sell_price)}
+                      </TableCell>
+                      <TableCell>
+                        {row.supplier_name?.trim() || tDetail("emptyCell")}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

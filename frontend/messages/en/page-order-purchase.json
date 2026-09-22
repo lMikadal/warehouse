@@ -101,6 +101,128 @@
         "confirmDeleteTitle": "Delete request",
         "confirmDeleteDescription": "Delete request \"{ticketNumber}\"? This cannot be undone."
       },
+      "receive": {
+        "headerTitle": "Request",
+        "createdDate": "Created",
+        "headerCreatorLabel": "Creator",
+        "statusBadgePendingApproval": "Pending approval",
+        "tabOldItems": "Purchased items",
+        "tabNewItems": "New items",
+        "btnConsider": "Consider",
+        "loading": "Loading…",
+        "loadError": "Failed to load request",
+        "emptyItems": "No items",
+        "lineLinkedPurchaseOrder": "This line already has a purchase order",
+        "colProduct": "Product",
+        "colDetails": "Details",
+        "colQtySell": "Qty to sell",
+        "colQtyReorder": "Reorder qty",
+        "colQtyWanted": "Required qty",
+        "colSellShort": "Sell",
+        "colReorderShort": "Reorder qty",
+        "colUnit": "Unit",
+        "colDeposit": "Deposit",
+        "colOpeningPrice": "Opening price",
+        "colManage": "Manage",
+        "historyTitle": "Action history",
+        "historyViewAll": "View all",
+        "historyEmpty": "No history",
+        "historyActorUnknown": "—",
+        "draftPoEmptyState": "Select a partner to display the purchase order",
+        "existingPoSectionTitle": "Purchase orders for this request",
+        "existingPoLoadError": "Failed to load purchase orders",
+        "existingPoOpenDetail": "Open purchase order",
+        "existingPoReadOnlyHint": "Read-only on this page",
+        "supplierPickTitle": "Select partner",
+        "supplierPickLabel": "Partner",
+        "supplierPickSearchPlaceholder": "Search name, address, phone",
+        "supplierPickLoading": "Loading partners…",
+        "supplierPickEmpty": "No matching partners",
+        "summaryPricePerUnit": "Price / unit",
+        "summaryLineDiscount": "Discount",
+        "summaryNoteLabel": "Note",
+        "summaryNotePlaceholder": "Optional note",
+        "summaryRemoveSupplier": "Remove this partner",
+        "summaryLineCountShort": "{count} lines",
+        "summaryCollapsedNetBaht": "Net {amount} THB",
+        "summaryNothingToSubmit": "Add products before saving",
+        "summaryCreatePending": "Create purchase order",
+        "summaryCreateDraft": "Save draft",
+        "ticketLineRejectProblemPrefix": "Issue:",
+        "ticketLineRejectSectionTitle": "Proposed replacement",
+        "ticketLineRejectStatusPending": "Awaiting reply",
+        "ticketLineRejectTypeChange": "Requested product change",
+        "ticketLineRejectTypeReject": "Line cancelled",
+        "ticketLineRejectTypeStop": "Stop ordering temporarily",
+        "ticketLineRejectTypeWait": "Out of stock — waiting",
+        "stockHistorySelectHint": "Click a row to pick partner and cost",
+        "stockHistorySelectAria": "Use this row as partner",
+        "considerModal": {
+          "title": "Choose an action",
+          "subtitle": "Pick what to do with this line",
+          "footerNote": "Actions are recorded in purchase history",
+          "btnClose": "Close",
+          "topics": {
+            "compare_prices": {
+              "title": "Compare prices",
+              "description": "Compare cost across suppliers"
+            },
+            "select_partner": {
+              "title": "Select partner",
+              "description": "Assign another partner for this line"
+            },
+            "change_brand": {
+              "title": "Change product",
+              "description": "Propose a similar product instead"
+            },
+            "out_of_stock_wait": {
+              "title": "Out of stock — wait",
+              "description": "Temporarily unavailable; wait for stock"
+            },
+            "cancel_line": {
+              "title": "Cancel",
+              "description": "Cancel this line"
+            },
+            "stop_ordering": {
+              "title": "Stop ordering",
+              "description": "Stop ordering this product for now"
+            }
+          }
+        },
+        "stopOrderingModal": {
+          "reasonLabel": "Reason",
+          "reasonPlaceholder": "Enter the reason to stop ordering",
+          "submitRequest": "Submit",
+          "reasonRequired": "Please enter a reason",
+          "missingProductItem": "No product linked to this line",
+          "ineligibleType": "Only for purchased catalog items",
+          "success": "Stopped ordering"
+        },
+        "cancelLineModal": {
+          "reasonPlaceholder": "Enter the reason to cancel this line",
+          "success": "Line cancelled"
+        },
+        "outOfStockWaitModal": {
+          "followUpDateLabel": "Follow-up date",
+          "pickDate": "Pick a date",
+          "dateRequired": "Please pick a follow-up date",
+          "saveSuccess": "Follow-up date saved",
+          "saveFailed": "Failed to save follow-up date",
+          "loadError": "Line not found",
+          "noteLabel": "Note",
+          "notePlaceholder": "Optional note"
+        },
+        "changeBrandModal": {
+          "title": "Change product",
+          "searchPlaceholder": "Search product name / SKU",
+          "pickProductFirst": "Please select a replacement product",
+          "sameProduct": "That product is already on this line",
+          "requestSuccess": "Change request submitted",
+          "ineligibleType": "Only for purchased catalog items",
+          "missingProductItem": "No product linked to this line",
+          "submit": "Submit"
+        }
+      },
       "refill": {
         "title": "Refill queue",
         "subtitle": "Items below their reorder point",

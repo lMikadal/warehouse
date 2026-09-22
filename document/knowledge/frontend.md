@@ -352,6 +352,19 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Design mockups | [`design/pages/order-quotation*.html`](../../design/pages/order-quotation.html) |
 | Phase checklist | [`document/checklist/frontend/phase-frontend-order-quotation.md`](../checklist/frontend/phase-frontend-order-quotation.md) |
 
+### Purchase ticket receive (คำร้อง → PO)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/order/purchase/ticket/[id]` = **receive** (not sales edit form). Create stays `/ticket/new`; read-only view `/ticket/[id]/detail`. |
+| UI | [`purchase-ticket-receive-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-form.tsx) — resizable split (`purchase-ticket-receive-desktop-split.tsx`, `ssr: false`); left [`purchase-ticket-receive-left-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-left-panel.tsx) (header + catalog/custom tabs + พิจารณา + history); right existing POs + draft cards / empty state [`draftPoEmptyState`](../../frontend/messages/th/page-order-purchase.json). |
+| Line types | API `catalog` / `custom` → UI tabs สินค้าที่ซื้อ / สินค้าใหม่. |
+| Consider | Topics dialog → stock-history select partner, supplier pick (`GET /purchases/filters?facet=suppliers`), `createTicketItemReject` (`change`/`wait`/`stop`; `wait.date` is `YYYY-MM-DD`), `patchTicketItemStatus` rejected (cancel), `patchProductItemStopped` (stop). Ticket `product_item_name` / reject name = `product_item_language` then `product_list_language` (th) — same fallback as product browse. |
+| Create PO | Draft cards → `createPurchase` with `purchase_request_id` + `items[].purchase_request_item_id`. |
+| Clients | [`lib/order-ticket-api.ts`](../../frontend/lib/order-ticket-api.ts), [`lib/order-purchase-api.ts`](../../frontend/lib/order-purchase-api.ts) |
+| i18n | `page.orderPurchase.receive` in [`page-order-purchase.json`](../../frontend/messages/th/page-order-purchase.json) |
+| Phase checklist | [`document/checklist/frontend/phase-frontend-order-purchase-ticket-receive.md`](../checklist/frontend/phase-frontend-order-purchase-ticket-receive.md) |
+
 ### Order compare (catalog special price)
 
 | Item | Detail |

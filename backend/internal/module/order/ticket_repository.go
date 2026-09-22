@@ -271,7 +271,8 @@ const productItemStockExpr = `(
 
 func (r *TicketRepository) loadItems(ctx context.Context, id int64) ([]TicketItemDetail, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT i.id, i.status::text, i.type::text, i.product_item_id, pi.sku, pil.name,
+SELECT i.id, i.status::text, i.type::text, i.product_item_id, pi.sku,
+  COALESCE(NULLIF(TRIM(pil.name), ''), NULLIF(TRIM(pll.name), '')),
   `+productItemStockExpr+`,
   i.name, i.product_attribute_brand_id, bl.name, i.product_attribute_model_id, ml.name,
   i.product_attribute_engine_id, el.name,
@@ -281,7 +282,9 @@ SELECT i.id, i.status::text, i.type::text, i.product_item_id, pi.sku, pil.name,
     WHERE poi.purchase_request_item_id = i.id AND poi.deleted_at IS NULL)
 FROM purchase_request_item i
 LEFT JOIN product_item pi ON pi.id = i.product_item_id
+LEFT JOIN product_list pl ON pl.id = pi.product_list_id
 LEFT JOIN product_item_language pil ON pil.product_item_id = pi.id AND pil.locale = 'th'
+LEFT JOIN product_list_language pll ON pll.product_list_id = pl.id AND pll.locale = 'th'
 LEFT JOIN product_attribute_language bl ON bl.product_attribute_id = i.product_attribute_brand_id AND bl.locale = 'th'
 LEFT JOIN product_attribute_language ml ON ml.product_attribute_id = i.product_attribute_model_id AND ml.locale = 'th'
 LEFT JOIN product_attribute_language el ON el.product_attribute_id = i.product_attribute_engine_id AND el.locale = 'th'
@@ -378,9 +381,14 @@ ORDER BY f.sort_order ASC, f.id ASC`, int64Array(ids))
 func (r *TicketRepository) attachItemRejects(ctx context.Context, ids []int64, byID map[int64]*TicketItemDetail) error {
 	rows, err := r.db.QueryContext(ctx, `
 SELECT rj.id, rj.purchase_request_item_id, rj.status::text, rj.type::text, rj.note, rj.date,
-  rj.product_item_id, pil.name, rj.created_at, au.username
+  rj.product_item_id,
+  COALESCE(NULLIF(TRIM(pil.name), ''), NULLIF(TRIM(pll.name), '')),
+  rj.created_at, au.username
 FROM purchase_request_item_reject rj
-LEFT JOIN product_item_language pil ON pil.product_item_id = rj.product_item_id AND pil.locale = 'th'
+LEFT JOIN product_item pi ON pi.id = rj.product_item_id
+LEFT JOIN product_list pl ON pl.id = pi.product_list_id
+LEFT JOIN product_item_language pil ON pil.product_item_id = pi.id AND pil.locale = 'th'
+LEFT JOIN product_list_language pll ON pll.product_list_id = pl.id AND pll.locale = 'th'
 LEFT JOIN admin_user au ON au.id = rj.created_by
 WHERE rj.purchase_request_item_id = ANY($1) AND rj.deleted_at IS NULL
 ORDER BY rj.created_at DESC, rj.id DESC`, int64Array(ids))
@@ -996,6 +1004,24 @@ WHERE id = $2 AND purchase_request_id = $1 AND deleted_at IS NULL`, ticketID, it
 	return err
 }
 
+// parseOptionalRejectDate accepts YYYY-MM-DD (preferred) or RFC3339.
+func parseOptionalRejectDate(s *string) (*time.Time, error) {
+	if s == nil {
+		return nil, nil
+	}
+	trimmed := strings.TrimSpace(*s)
+	if trimmed == "" {
+		return nil, nil
+	}
+	if t, err := time.Parse("2006-01-02", trimmed); err == nil {
+		return &t, nil
+	}
+	if t, err := time.Parse(time.RFC3339, trimmed); err == nil {
+		return &t, nil
+	}
+	return nil, ErrValidation
+}
+
 func (r *TicketRepository) CreateItemReject(ctx context.Context, ticketID, itemID int64, in TicketItemRejectInput, actorID int64) (int64, error) {
 	if _, ok := ticketItemRejectTypes[in.Type]; !ok {
 		return 0, ErrValidation
@@ -1008,6 +1034,10 @@ func (r *TicketRepository) CreateItemReject(ctx context.Context, ticketID, itemI
 		return 0, ErrValidation
 	}
 	if in.Type == "change" && (in.ProductItemID == nil || *in.ProductItemID <= 0) {
+		return 0, ErrValidation
+	}
+	date, err := parseOptionalRejectDate(in.Date)
+	if err != nil {
 		return 0, ErrValidation
 	}
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -1025,7 +1055,7 @@ INSERT INTO purchase_request_item_reject (
   purchase_request_item_id, status, type, note, date, product_item_id, created_by, updated_by
 ) VALUES ($1, $2::purchase_request_item_reject_status, $3::purchase_request_item_reject_type, $4, $5, $6, $7, $7)
 RETURNING id`,
-		itemID, status, in.Type, in.Note, in.Date, in.ProductItemID, nullActorID(actorID)).Scan(&id); err != nil {
+		itemID, status, in.Type, in.Note, date, in.ProductItemID, nullActorID(actorID)).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, tx.Commit()

@@ -148,11 +148,12 @@ type TicketItemReject struct {
 }
 
 type TicketItemRejectInput struct {
-	Type          string     `json:"type"`
-	Status        string     `json:"status,omitempty"`
-	Note          string     `json:"note"`
-	Date          *time.Time `json:"date,omitempty"`
-	ProductItemID *int64     `json:"product_item_id,omitempty"`
+	Type          string `json:"type"`
+	Status        string `json:"status,omitempty"`
+	Note          string `json:"note"`
+	// Date is YYYY-MM-DD (date-only). encoding/json cannot bind that into *time.Time.
+	Date          *string `json:"date,omitempty"`
+	ProductItemID *int64  `json:"product_item_id,omitempty"`
 }
 
 type TicketItemRejectStatusInput struct {

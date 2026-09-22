@@ -101,6 +101,128 @@
         "confirmDeleteTitle": "ลบคำร้อง",
         "confirmDeleteDescription": "ลบคำร้อง \"{ticketNumber}\"? การดำเนินการนี้ไม่สามารถย้อนกลับได้"
       },
+      "receive": {
+        "headerTitle": "คำร้อง",
+        "createdDate": "วันที่สร้าง",
+        "headerCreatorLabel": "ผู้สร้าง",
+        "statusBadgePendingApproval": "รออนุมัติ",
+        "tabOldItems": "สินค้าที่ซื้อ",
+        "tabNewItems": "สินค้าใหม่",
+        "btnConsider": "พิจารณา",
+        "loading": "กำลังโหลด…",
+        "loadError": "โหลดข้อมูลคำร้องไม่สำเร็จ",
+        "emptyItems": "ไม่มีรายการ",
+        "lineLinkedPurchaseOrder": "รายการนี้มีใบสั่งซื้อแล้ว ไม่สามารถเลือกซ้ำได้",
+        "colProduct": "สินค้า",
+        "colDetails": "รายละเอียด",
+        "colQtySell": "จำนวนที่ต้องการขาย",
+        "colQtyReorder": "จำนวนที่สั่งเพิ่ม",
+        "colQtyWanted": "จำนวนที่ต้องการ",
+        "colSellShort": "ขาย",
+        "colReorderShort": "จำนวนที่สั่งเพิ่ม",
+        "colUnit": "หน่วย",
+        "colDeposit": "ราคามัดจำ",
+        "colOpeningPrice": "ราคาเปิดตัว",
+        "colManage": "จัดการ",
+        "historyTitle": "ประวัติการดำเนินการ",
+        "historyViewAll": "ดูทั้งหมด",
+        "historyEmpty": "ไม่มีประวัติ",
+        "historyActorUnknown": "—",
+        "draftPoEmptyState": "เลือกคู่ค้าเพื่อแสดงใบสั่งซื้อ",
+        "existingPoSectionTitle": "ใบสั่งซื้อจากคำร้องนี้",
+        "existingPoLoadError": "โหลดรายการใบสั่งซื้อไม่สำเร็จ",
+        "existingPoOpenDetail": "เปิดรายละเอียดใบสั่งซื้อ",
+        "existingPoReadOnlyHint": "แสดงอย่างเดียว — ไม่สามารถแก้ไขจากหน้านี้",
+        "supplierPickTitle": "เลือกคู่ค้า",
+        "supplierPickLabel": "คู่ค้า",
+        "supplierPickSearchPlaceholder": "ค้นหาจากชื่อ ที่อยู่ เบอร์โทร",
+        "supplierPickLoading": "กำลังโหลดคู่ค้า…",
+        "supplierPickEmpty": "ไม่พบคู่ค้าที่ตรงกับการค้นหา",
+        "summaryPricePerUnit": "ราคา/หน่วย",
+        "summaryLineDiscount": "ส่วนลด",
+        "summaryNoteLabel": "หมายเหตุ",
+        "summaryNotePlaceholder": "ระบุหมายเหตุ (ถ้ามี)",
+        "summaryRemoveSupplier": "ลบผู้จำหน่ายนี้",
+        "summaryLineCountShort": "{count} รายการ",
+        "summaryCollapsedNetBaht": "ราคาสุทธิ {amount} บาท",
+        "summaryNothingToSubmit": "เพิ่มรายการสินค้าก่อนบันทึก",
+        "summaryCreatePending": "สร้างใบสั่งซื้อ",
+        "summaryCreateDraft": "บันทึกแบบร่าง",
+        "ticketLineRejectProblemPrefix": "ปัญหาที่พบ:",
+        "ticketLineRejectSectionTitle": "รายการที่เสนอเปลี่ยน",
+        "ticketLineRejectStatusPending": "รอตอบกลับ",
+        "ticketLineRejectTypeChange": "สถานะขอเปลี่ยนแบรนด์หรือรายการสินค้า",
+        "ticketLineRejectTypeReject": "ยกเลิกรายการ",
+        "ticketLineRejectTypeStop": "หยุดสั่งสินค้าชั่วคราว",
+        "ticketLineRejectTypeWait": "ไม่มีสินค้า — รอสินค้าเข้า",
+        "stockHistorySelectHint": "คลิกแถวเพื่อเลือกคู่ค้าและราคาทุน",
+        "stockHistorySelectAria": "เลือกแถวนี้เป็นคู่ค้า",
+        "considerModal": {
+          "title": "เลือกหัวข้อพิจารณา",
+          "subtitle": "โปรดเลือกหัวข้อที่ต้องการดำเนินการ",
+          "footerNote": "ข้อมูลการดำเนินการจะถูกบันทึกในประวัติการสั่งซื้อ",
+          "btnClose": "ปิด",
+          "topics": {
+            "compare_prices": {
+              "title": "เทียบราคาสินค้า",
+              "description": "เปรียบเทียบราคากับผู้จัดจำหน่ายรายอื่น"
+            },
+            "select_partner": {
+              "title": "เลือกคู่ค้า",
+              "description": "เลือกคู่ค้าเจ้าอื่นสำหรับรายการนี้"
+            },
+            "change_brand": {
+              "title": "เปลี่ยนแบรนด์สินค้า",
+              "description": "เปลี่ยนเป็นแบรนด์อื่นที่ใกล้เคียง"
+            },
+            "out_of_stock_wait": {
+              "title": "ไม่มีสินค้า ต้องการรอสินค้า",
+              "description": "ไม่มีสินค้าชั่วคราว ต้องการรอสินค้าเข้ามา"
+            },
+            "cancel_line": {
+              "title": "ยกเลิก",
+              "description": "ยกเลิกรายการสินค้านี้"
+            },
+            "stop_ordering": {
+              "title": "หยุดสั่งสินค้า",
+              "description": "หยุดการสั่งสินค้านี้ไว้ชั่วคราว"
+            }
+          }
+        },
+        "stopOrderingModal": {
+          "reasonLabel": "ระบุเหตุผล",
+          "reasonPlaceholder": "โปรดระบุเหตุผลการหยุดสั่งซื้อ",
+          "submitRequest": "ส่งคำร้อง",
+          "reasonRequired": "กรุณาระบุเหตุผล",
+          "missingProductItem": "ไม่พบสินค้าที่เชื่อมกับรายการนี้",
+          "ineligibleType": "ใช้ได้เฉพาะสินค้าที่ซื้อแล้ว",
+          "success": "หยุดสั่งสินค้าแล้ว"
+        },
+        "cancelLineModal": {
+          "reasonPlaceholder": "โปรดระบุเหตุผลการยกเลิกรายการ",
+          "success": "ยกเลิกรายการแล้ว"
+        },
+        "outOfStockWaitModal": {
+          "followUpDateLabel": "เลือกวันที่ติดตาม",
+          "pickDate": "เลือกวันที่",
+          "dateRequired": "กรุณาเลือกวันที่ติดตาม",
+          "saveSuccess": "บันทึกวันที่ติดตามแล้ว",
+          "saveFailed": "บันทึกวันที่ติดตามไม่สำเร็จ",
+          "loadError": "ไม่พบข้อมูลรายการ",
+          "noteLabel": "หมายเหตุ",
+          "notePlaceholder": "ระบุหมายเหตุ (ถ้ามี)"
+        },
+        "changeBrandModal": {
+          "title": "เปลี่ยนแบรนด์สินค้า",
+          "searchPlaceholder": "ค้นหาชื่อสินค้า / SKU",
+          "pickProductFirst": "กรุณาเลือกสินค้าที่ต้องการเปลี่ยน",
+          "sameProduct": "เลือกสินค้าเดิมอยู่แล้ว",
+          "requestSuccess": "ส่งคำขอเปลี่ยนสินค้าแล้ว",
+          "ineligibleType": "ใช้ได้เฉพาะสินค้าที่ซื้อแล้ว",
+          "missingProductItem": "ไม่พบสินค้าที่เชื่อมกับรายการนี้",
+          "submit": "ส่งคำร้อง"
+        }
+      },
       "refill": {
         "title": "สินค้ารอเติม",
         "subtitle": "สินค้าที่คงเหลือต่ำกว่าจุดสั่งซื้อ",

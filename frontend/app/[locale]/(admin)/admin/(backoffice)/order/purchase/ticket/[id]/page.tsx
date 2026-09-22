@@ -1,9 +1,16 @@
-import { TicketFormPage } from "../../../../sales/ticket/_shared/ticket-form-page";
+"use client";
+
+import { use } from "react";
+
+import { PurchaseTicketReceiveForm } from "../../_shared/purchase-ticket-receive-form";
 
 type Props = { params: Promise<{ id: string }> };
 
-export default async function PurchaseTicketEditPage({ params }: Props) {
-  const { id } = await params;
-  const editId = Number(id);
-  return <TicketFormPage editId={Number.isFinite(editId) ? editId : undefined} />;
+export default function PurchaseTicketReceivePage({ params }: Props) {
+  const { id } = use(params);
+  const ticketId = Number(id);
+  if (!Number.isFinite(ticketId) || ticketId <= 0) {
+    return null;
+  }
+  return <PurchaseTicketReceiveForm ticketId={ticketId} />;
 }
