@@ -124,6 +124,8 @@ export type PickingItemPatchBody = {
   amount_checked?: number;
   status?: PickingItemStatus;
   product_item_id?: number;
+  /** Set when mapping a compare line so the summary/payment use the catalogue sell price. */
+  price_per_unit?: number;
   warehouse_list_id?: number;
 };
 
@@ -152,6 +154,11 @@ export type PickingPaymentSaveBody = {
   is_paid: boolean;
   credit_approved_by?: number;
   discount_approved_by?: number;
+  member_user_id?: number | null;
+  member_setting_credit_id?: number | null;
+  member_name?: string | null;
+  member_tel?: string | null;
+  member_email?: string | null;
   methods: PickingPaymentMethodInput[];
   /** Omit to keep the priced snapshot as it is; that is what the draft save relies on. */
   items?: PickingPaymentItemInput[];
@@ -190,6 +197,11 @@ export type PickingPaymentDetail = {
   is_paid: boolean;
   credit_approved_by?: number | null;
   discount_approved_by?: number | null;
+  member_user_id?: number | null;
+  member_setting_credit_id?: number | null;
+  member_name?: string | null;
+  member_tel?: string | null;
+  member_email?: string | null;
   methods: PickingPaymentMethodDetail[];
   items: PickingPaymentItemDetail[];
   created_at: string;

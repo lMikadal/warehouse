@@ -101,16 +101,18 @@ type PickingFamilyResponse struct {
 
 // PickingItemPatchInput is v1's single item PATCH. Absent fields stay untouched: the verify step sends
 // amount_checked + status, the store-check toggle sends status alone, and mapping a compare line to a
-// real product sends product_item_id alone.
+// real product sends product_item_id (and usually price_per_unit from the catalogue sell price).
 type PickingItemPatchInput struct {
 	AmountChecked   *float64 `json:"amount_checked,omitempty"`
 	Status          *string  `json:"status,omitempty"`
 	ProductItemID   *int64   `json:"product_item_id,omitempty"`
+	PricePerUnit    *float64 `json:"price_per_unit,omitempty"`
 	WarehouseListID *int64   `json:"warehouse_list_id,omitempty"`
 }
 
 func (in PickingItemPatchInput) hasPatch() bool {
-	return in.AmountChecked != nil || in.Status != nil || in.ProductItemID != nil || in.WarehouseListID != nil
+	return in.AmountChecked != nil || in.Status != nil || in.ProductItemID != nil ||
+		in.PricePerUnit != nil || in.WarehouseListID != nil
 }
 
 type PickingStatusInput struct {
@@ -133,17 +135,22 @@ type PickingPaymentItemInput struct {
 // PickingPaymentSaveInput covers both the draft save and the settle. Items is a pointer so an omitted
 // `items` key means "leave the priced snapshot alone", which is what v1's draft save relied on.
 type PickingPaymentSaveInput struct {
-	PaymentCategory    string                      `json:"payment_category"`
-	OrderedAt          *time.Time                  `json:"ordered_at,omitempty"`
-	VatRate            float64                     `json:"vat_rate"`
-	Discount           float64                     `json:"discount"`
-	SpecialDiscount    float64                     `json:"special_discount"`
-	TotalPrice         float64                     `json:"total_price"`
-	IsPaid             bool                        `json:"is_paid"`
-	CreditApprovedBy   *int64                      `json:"credit_approved_by,omitempty"`
-	DiscountApprovedBy *int64                      `json:"discount_approved_by,omitempty"`
-	Methods            []PickingPaymentMethodInput `json:"methods"`
-	Items              *[]PickingPaymentItemInput  `json:"items,omitempty"`
+	PaymentCategory       string                      `json:"payment_category"`
+	OrderedAt             *time.Time                  `json:"ordered_at,omitempty"`
+	VatRate               float64                     `json:"vat_rate"`
+	Discount              float64                     `json:"discount"`
+	SpecialDiscount       float64                     `json:"special_discount"`
+	TotalPrice            float64                     `json:"total_price"`
+	IsPaid                bool                        `json:"is_paid"`
+	CreditApprovedBy      *int64                      `json:"credit_approved_by,omitempty"`
+	DiscountApprovedBy    *int64                      `json:"discount_approved_by,omitempty"`
+	MemberUserID          *int64                      `json:"member_user_id,omitempty"`
+	MemberSettingCreditID *int64                      `json:"member_setting_credit_id,omitempty"`
+	MemberName            *string                     `json:"member_name,omitempty"`
+	MemberTel             *string                     `json:"member_tel,omitempty"`
+	MemberEmail           *string                     `json:"member_email,omitempty"`
+	Methods               []PickingPaymentMethodInput `json:"methods"`
+	Items                 *[]PickingPaymentItemInput  `json:"items,omitempty"`
 }
 
 type PickingPaymentMethodDetail struct {
@@ -178,11 +185,16 @@ type PickingPaymentDetail struct {
 	// here instead, so the payment screen restores that toggle from this flag.
 	IsFull             bool                         `json:"is_full"`
 	IsPaid             bool                         `json:"is_paid"`
-	CreditApprovedBy   *int64                       `json:"credit_approved_by,omitempty"`
-	DiscountApprovedBy *int64                       `json:"discount_approved_by,omitempty"`
-	Methods            []PickingPaymentMethodDetail `json:"methods"`
-	Items              []PickingPaymentItemDetail   `json:"items"`
-	CreatedAt          time.Time                    `json:"created_at"`
+	CreditApprovedBy      *int64                       `json:"credit_approved_by,omitempty"`
+	DiscountApprovedBy    *int64                       `json:"discount_approved_by,omitempty"`
+	MemberUserID          *int64                       `json:"member_user_id,omitempty"`
+	MemberSettingCreditID *int64                       `json:"member_setting_credit_id,omitempty"`
+	MemberName            *string                      `json:"member_name,omitempty"`
+	MemberTel             *string                      `json:"member_tel,omitempty"`
+	MemberEmail           *string                      `json:"member_email,omitempty"`
+	Methods               []PickingPaymentMethodDetail `json:"methods"`
+	Items                 []PickingPaymentItemDetail   `json:"items"`
+	CreatedAt             time.Time                    `json:"created_at"`
 }
 
 type PickingPaymentsResponse struct {

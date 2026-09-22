@@ -29,7 +29,12 @@ import { fetchSettingLangList } from "@/lib/setting-api";
 import { computeStoreSalesPriceSummary } from "@/lib/store-sales-cart-pricing";
 import { cn } from "@/lib/utils";
 
-import { loadPickingFamily } from "../_lib/picking-family";
+import {
+  enrichPickingCustomerFromMember,
+  loadPickingFamily,
+  paymentHasStoredMember,
+  pickingCustomerFromPayment,
+} from "../_lib/picking-family";
 import {
   familySku,
   hasRemainingItems,
@@ -58,7 +63,13 @@ import {
   type PickingCustomerDisplay,
 } from "./picking-panels";
 import {
+  fetchStoreSalesMemberSnapshot,
+  resolveStoreSalesMemberLabel,
+} from "@/lib/store-sales-member-combobox";
+
+import {
   LoanDocumentCard,
+  PickingPaymentCustomerEditor,
   PickingPaymentMethodsPanel,
   PickingSettleSummary,
   type PickingPayMethod,
@@ -206,7 +217,16 @@ export function PickingPaymentPage({
   const [saving, setSaving] = useState(false);
   const [orders, setOrders] = useState<PickingOrderDetail[]>([]);
   const [root, setRoot] = useState<PickingOrderDetail | null>(null);
+  const [baseMeta, setBaseMeta] = useState<PickingCustomerDisplay | null>(null);
   const [customer, setCustomer] = useState<PickingCustomerDisplay | null>(null);
+  const [memberId, setMemberId] = useState("");
+  const [memberComboboxLabel, setMemberComboboxLabel] = useState("");
+  const [memberName, setMemberName] = useState("");
+  const [memberTel, setMemberTel] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberCreditId, setMemberCreditId] = useState("");
+  const [memberSku, setMemberSku] = useState("");
+  const [memberImageFileId, setMemberImageFileId] = useState<number | null>(null);
   const [productsById, setProductsById] = useState<
     Map<number, ProductItemBrowseRow>
   >(() => new Map());
@@ -246,13 +266,20 @@ export function PickingPaymentPage({
 
       setOrders(family.orders);
       setRoot(family.root);
-      setCustomer(family.customer);
+      setBaseMeta(family.customer);
       setProductsById(family.productsById);
       setVatPercent(family.vatPercent);
       setPayments(paymentList.items);
       setOrderAt(isoDateOf(family.root.ordered_at ?? family.root.created_at));
 
-      const pickingOrders = family.orders.filter((o) => o.doc_status !== "draft");
+      const pickingOrders = family.orders.filter(
+        (o) => o.doc_status === "success"
+      );
+      if (pickingOrders.length === 0) {
+        toast.error(tPage("notFound"));
+        router.replace(LIST_HREF);
+        return;
+      }
       setRemainingItems(
         hasRemainingItems(pickingOrders.flatMap((o) => o.items))
       );
@@ -262,6 +289,7 @@ export function PickingPaymentPage({
         const active =
           paymentList.items.find((p) => p.id === paymentId) ?? paymentList.items[0];
         setActivePaymentId(String(active.id));
+        setCustomer(family.customer);
         return;
       }
 
@@ -326,6 +354,71 @@ export function PickingPaymentPage({
           };
         })
       );
+
+      const creditDefault = family.root.member_setting_credit_id
+        ? String(family.root.member_setting_credit_id)
+        : "";
+      if (draft && paymentHasStoredMember(draft)) {
+        setMemberId(
+          draft.member_user_id && draft.member_user_id > 0
+            ? String(draft.member_user_id)
+            : ""
+        );
+        setMemberName(draft.member_name?.trim() ?? "");
+        setMemberTel(draft.member_tel?.trim() ?? "");
+        setMemberEmail(draft.member_email?.trim() ?? "");
+        setMemberCreditId(
+          draft.member_setting_credit_id && draft.member_setting_credit_id > 0
+            ? String(draft.member_setting_credit_id)
+            : creditDefault
+        );
+        if (draft.member_user_id && draft.member_user_id > 0) {
+          const snap = await fetchStoreSalesMemberSnapshot(
+            locale,
+            draft.member_user_id,
+            "orders"
+          );
+          setMemberComboboxLabel(snap.memberComboboxLabel);
+          const enriched = await enrichPickingCustomerFromMember(
+            locale,
+            draft.member_user_id,
+            {
+              ...family.customer,
+              name: draft.member_name?.trim() ?? family.customer.name,
+              tel: draft.member_tel?.trim() ?? family.customer.tel,
+              email: draft.member_email?.trim() ?? family.customer.email,
+            }
+          );
+          setMemberSku(enriched.memberSku);
+          setMemberImageFileId(enriched.imageFileId);
+        } else {
+          setMemberComboboxLabel("");
+          setMemberSku("");
+          setMemberImageFileId(null);
+        }
+      } else {
+        setMemberId(
+          family.root.member_user_id && family.root.member_user_id > 0
+            ? String(family.root.member_user_id)
+            : ""
+        );
+        setMemberName(family.customer.name);
+        setMemberTel(family.customer.tel);
+        setMemberEmail(family.customer.email);
+        setMemberCreditId(creditDefault);
+        setMemberSku(family.customer.memberSku);
+        setMemberImageFileId(family.customer.imageFileId);
+        if (family.root.member_user_id && family.root.member_user_id > 0) {
+          const label = await resolveStoreSalesMemberLabel(
+            locale,
+            String(family.root.member_user_id),
+            "orders"
+          );
+          setMemberComboboxLabel(label ?? "");
+        } else {
+          setMemberComboboxLabel("");
+        }
+      }
     } catch (e) {
       toast.error(
         e instanceof OrderPickingApiError ? e.message : tPage("notFound")
@@ -339,6 +432,136 @@ export function PickingPaymentPage({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const customerDisplay = useMemo((): PickingCustomerDisplay | null => {
+    if (!baseMeta) return null;
+    return {
+      name: memberName,
+      memberSku,
+      tel: memberTel,
+      email: memberEmail,
+      preparedAt: baseMeta.preparedAt,
+      deliveryAt: baseMeta.deliveryAt,
+      sellerName: baseMeta.sellerName,
+      imageFileId: memberImageFileId,
+    };
+  }, [
+    baseMeta,
+    memberName,
+    memberSku,
+    memberTel,
+    memberEmail,
+    memberImageFileId,
+  ]);
+
+  useEffect(() => {
+    if (!readOnly || !baseMeta) return;
+    const payment = payments.find((p) => String(p.id) === activePaymentId);
+    if (!payment) {
+      setCustomer(baseMeta);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      let next = pickingCustomerFromPayment(payment, baseMeta);
+      next = await enrichPickingCustomerFromMember(
+        locale,
+        payment.member_user_id,
+        next
+      );
+      if (!cancelled) setCustomer(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [readOnly, baseMeta, payments, activePaymentId, locale]);
+
+  const applySavedPaymentMember = useCallback(
+    async (payment: PickingPaymentDetail) => {
+      if (!baseMeta) return;
+      if (payment.member_user_id && payment.member_user_id > 0) {
+        setMemberId(String(payment.member_user_id));
+      }
+      setMemberName(payment.member_name?.trim() ?? "");
+      setMemberTel(payment.member_tel?.trim() ?? "");
+      setMemberEmail(payment.member_email?.trim() ?? "");
+      if (
+        payment.member_setting_credit_id &&
+        payment.member_setting_credit_id > 0
+      ) {
+        setMemberCreditId(String(payment.member_setting_credit_id));
+      }
+      if (payment.member_user_id && payment.member_user_id > 0) {
+        const snap = await fetchStoreSalesMemberSnapshot(
+          locale,
+          payment.member_user_id,
+          "orders"
+        );
+        setMemberComboboxLabel(snap.memberComboboxLabel);
+        const enriched = await enrichPickingCustomerFromMember(
+          locale,
+          payment.member_user_id,
+          {
+            ...baseMeta,
+            name: payment.member_name?.trim() ?? "",
+            tel: payment.member_tel?.trim() ?? "",
+            email: payment.member_email?.trim() ?? "",
+            memberSku: "",
+            imageFileId: null,
+          }
+        );
+        setMemberSku(enriched.memberSku);
+        setMemberImageFileId(enriched.imageFileId);
+      }
+    },
+    [baseMeta, locale]
+  );
+
+  const onPaymentMemberIdChange = useCallback(
+    async (value: string) => {
+      setMemberId(value);
+      if (!value) {
+        setMemberComboboxLabel("");
+        setMemberSku("");
+        setMemberImageFileId(null);
+        return;
+      }
+      const id = Number(value);
+      if (!Number.isFinite(id) || id <= 0) return;
+      try {
+        const snap = await fetchStoreSalesMemberSnapshot(locale, id, "orders");
+        setMemberComboboxLabel(snap.memberComboboxLabel);
+        setMemberName(snap.memberName);
+        setMemberTel(snap.memberTel);
+        setMemberEmail(snap.memberEmail);
+        if (baseMeta) {
+          const enriched = await enrichPickingCustomerFromMember(locale, id, {
+            ...baseMeta,
+            name: snap.memberName,
+            tel: snap.memberTel,
+            email: snap.memberEmail,
+            memberSku: "",
+            imageFileId: null,
+          });
+          setMemberSku(enriched.memberSku);
+          setMemberImageFileId(enriched.imageFileId);
+        }
+      } catch {
+        toast.error(tPage("saveFailed"));
+      }
+    },
+    [baseMeta, locale, tPage]
+  );
+
+  const resetPaymentMember = useCallback(() => {
+    setMemberId("");
+    setMemberComboboxLabel("");
+    setMemberName("");
+    setMemberTel("");
+    setMemberEmail("");
+    setMemberSku("");
+    setMemberImageFileId(null);
+  }, []);
 
   const itemsById = useMemo(() => itemsByIdOf(orders), [orders]);
 
@@ -363,9 +586,12 @@ export function PickingPaymentPage({
   const savePayment = async (isPaid: boolean) => {
     if (!root) return null;
     const creditApprovedBy = getCreditApprovedBy(root.id);
+    const dateOnly = orderAt || todayIso();
+    // API expects RFC3339 time.Time; the date input keeps YYYY-MM-DD for the picker.
+    const orderedAtIso = new Date(`${dateOnly}T00:00:00`).toISOString();
     return savePickingPayment(locale, root.id, editingPaymentId, {
       payment_category: flow,
-      ordered_at: orderAt || todayIso(),
+      ordered_at: orderedAtIso,
       vat_rate: vatPercent,
       discount: summary.discountTotal,
       special_discount: specialDiscount,
@@ -381,7 +607,15 @@ export function PickingPaymentPage({
               .filter((m) => m.enabled && m.amount > 0)
               .map((m) => ({ setting_payment_method_id: m.id, amount: m.amount }))
           : [],
-      items: paymentItemsFromOrderLines(lines),
+      // Unpaid payment drafts must omit items (backend validate); credit + settled may snapshot.
+      ...(isPaid || flow === "credit"
+        ? { items: paymentItemsFromOrderLines(lines) }
+        : {}),
+      member_user_id: memberId ? Number(memberId) : null,
+      member_setting_credit_id: memberCreditId ? Number(memberCreditId) : null,
+      member_name: memberName.trim() || null,
+      member_tel: memberTel.trim() || null,
+      member_email: memberEmail.trim() || null,
     });
   };
 
@@ -403,7 +637,10 @@ export function PickingPaymentPage({
     setSaving(true);
     try {
       const next = await savePayment(false);
-      if (next) setEditingPaymentId(next.id);
+      if (next) {
+        setEditingPaymentId(next.id);
+        await applySavedPaymentMember(next);
+      }
       await patchPickingStatus(locale, root?.id ?? orderId, "in_progress");
       if (root) clearCreditApprovedBy(root.id);
       toast.success(tPage("saveSuccess"));
@@ -424,7 +661,10 @@ export function PickingPaymentPage({
     setSaving(true);
     try {
       const next = await savePayment(false);
-      if (next) setEditingPaymentId(next.id);
+      if (next) {
+        setEditingPaymentId(next.id);
+        await applySavedPaymentMember(next);
+      }
       await closePickingOrders();
       if (root) {
         clearCreditApprovedBy(root.id);
@@ -449,6 +689,7 @@ export function PickingPaymentPage({
       if (next) {
         setEditingPaymentId(next.id);
         setPayments((prev) => [...prev.filter((p) => p.id !== next.id), next]);
+        await applySavedPaymentMember(next);
       }
       await closePickingOrders();
       if (root) {
@@ -460,7 +701,7 @@ export function PickingPaymentPage({
       setRemainingItems(
         hasRemainingItems(
           family.orders
-            .filter((o) => o.doc_status !== "draft")
+            .filter((o) => o.doc_status === "success")
             .flatMap((o) => o.items)
         )
       );
@@ -508,11 +749,35 @@ export function PickingPaymentPage({
     return <p className="text-muted-foreground">{tError("forbidden")}</p>;
   }
   if (loading) return <PaymentSkeleton />;
-  if (!root || !customer) return null;
+  if (!root || !baseMeta) return null;
+  if (readOnly && !customer) return null;
+  if (!readOnly && !customerDisplay) return null;
 
-  const customerCard = (
+  const customerCard = readOnly ? (
     <PickingCustomerCard
-      customer={customer}
+      customer={customer!}
+      sku={familySku(root.sku)}
+      locale={locale}
+    />
+  ) : canUpdate && !payConfirmed ? (
+    <PickingPaymentCustomerEditor
+      customerMeta={customerDisplay!}
+      slipSku={familySku(root.sku)}
+      locale={locale}
+      memberId={memberId}
+      memberComboboxLabel={memberComboboxLabel}
+      onMemberIdChange={(v) => void onPaymentMemberIdChange(v)}
+      memberName={memberName}
+      onMemberNameChange={setMemberName}
+      memberTel={memberTel}
+      onMemberTelChange={setMemberTel}
+      memberEmail={memberEmail}
+      onMemberEmailChange={setMemberEmail}
+      onResetMember={resetPaymentMember}
+    />
+  ) : (
+    <PickingCustomerCard
+      customer={customerDisplay!}
       sku={familySku(root.sku)}
       locale={locale}
     />
@@ -532,7 +797,7 @@ export function PickingPaymentPage({
               variant={loanVariantOf(activePayment)}
               issuedAt={new Date(activePayment.created_at)}
               orderAt={isoDateOf(activePayment.ordered_at)}
-              sellerName={customer.sellerName}
+              sellerName={customer!.sellerName}
               shipping={root.shipping ?? null}
               locale={locale}
             />
@@ -623,7 +888,7 @@ export function PickingPaymentPage({
             issuedAt={new Date()}
             orderAt={orderAt}
             onOrderAtChange={canUpdate && !payConfirmed ? setOrderAt : undefined}
-            sellerName={customer.sellerName}
+            sellerName={customerDisplay!.sellerName}
             shipping={root.shipping ?? null}
             locale={locale}
           />

@@ -58,8 +58,8 @@ LEFT JOIN admin_user uu ON uu.id = d.updated_by
 const pickingOwnLineScope = ` WHERE i.order_list_id = d.id AND i.deleted_at IS NULL`
 
 func pickingListWhere(q PickingListQuery) (string, []any) {
-	// The picking desk never sees drafts: a slip reaches it once the shop submits the sale.
-	where := "d.deleted_at IS NULL AND d.status <> 'draft'"
+	// The picking desk only sees settled sale documents: a slip reaches it once the sale is success.
+	where := "d.deleted_at IS NULL AND d.status = 'success'"
 	args := []any{}
 	if q.RootOnly {
 		where += " AND d.parent_id IS NULL"
@@ -342,15 +342,19 @@ SELECT EXISTS (SELECT 1 FROM product_item WHERE id = $1 AND deleted_at IS NULL)`
 			return zero, fmt.Errorf("%w: product item not found", ErrValidation)
 		}
 	}
+	if in.PricePerUnit != nil && *in.PricePerUnit < 0 {
+		return zero, fmt.Errorf("%w: price_per_unit must not be negative", ErrValidation)
+	}
 	if _, err := tx.ExecContext(ctx, `
 UPDATE order_list_item SET
   amount_checked = COALESCE($2, amount_checked),
   amount_picked = COALESCE($2, amount_picked),
   status = COALESCE($3::order_list_item_status, status),
   product_item_id = COALESCE($4, product_item_id),
-  updated_by = $5, updated_at = NOW()
+  price_per_unit = COALESCE($5, price_per_unit),
+  updated_by = $6, updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL`,
-		itemID, in.AmountChecked, in.Status, in.ProductItemID, nullActorID(actorID)); err != nil {
+		itemID, in.AmountChecked, in.Status, in.ProductItemID, in.PricePerUnit, nullActorID(actorID)); err != nil {
 		return zero, err
 	}
 	if in.WarehouseListID != nil {
@@ -526,7 +530,9 @@ func (r *PickingRepository) Payments(ctx context.Context, orderListID int64) (Pi
 	rows, err := r.db.QueryContext(ctx, `
 SELECT id, order_list_id, sku, payment_category::text, ordered_at, vat_rate::float8,
        discount::float8, special_discount::float8, total_price::float8, amount_paid::float8,
-       is_full, is_paid, credit_approved_by, discount_approved_by, created_at
+       is_full, is_paid, credit_approved_by, discount_approved_by,
+       member_user_id, member_setting_credit_id, member_name, member_tel, member_email,
+       created_at
 FROM order_payment
 WHERE order_list_id = $1 AND deleted_at IS NULL
 ORDER BY id`, orderListID)
@@ -537,10 +543,13 @@ ORDER BY id`, orderListID)
 	for rows.Next() {
 		var p PickingPaymentDetail
 		var sku sql.NullString
-		var creditBy, discountBy sql.NullInt64
+		var creditBy, discountBy, memberUserID, memberCreditID sql.NullInt64
+		var memberName, memberTel, memberEmail sql.NullString
 		if err := rows.Scan(&p.ID, &p.OrderListID, &sku, &p.PaymentCategory, &p.OrderedAt, &p.VatRate,
 			&p.Discount, &p.SpecialDiscount, &p.TotalPrice, &p.AmountPaid,
-			&p.IsFull, &p.IsPaid, &creditBy, &discountBy, &p.CreatedAt); err != nil {
+			&p.IsFull, &p.IsPaid, &creditBy, &discountBy,
+			&memberUserID, &memberCreditID, &memberName, &memberTel, &memberEmail,
+			&p.CreatedAt); err != nil {
 			return resp, err
 		}
 		p.SKU = sku.String
@@ -550,6 +559,15 @@ ORDER BY id`, orderListID)
 		if discountBy.Valid {
 			p.DiscountApprovedBy = &discountBy.Int64
 		}
+		if memberUserID.Valid {
+			p.MemberUserID = &memberUserID.Int64
+		}
+		if memberCreditID.Valid {
+			p.MemberSettingCreditID = &memberCreditID.Int64
+		}
+		p.MemberName = nullableString(memberName)
+		p.MemberTel = nullableString(memberTel)
+		p.MemberEmail = nullableString(memberEmail)
 		p.Methods = []PickingPaymentMethodDetail{}
 		p.Items = []PickingPaymentItemDetail{}
 		resp.Items = append(resp.Items, p)
@@ -618,6 +636,81 @@ ORDER BY id`, payID)
 		out = append(out, it)
 	}
 	return out, rows.Err()
+}
+
+type paymentMemberCols struct {
+	userID   sql.NullInt64
+	creditID sql.NullInt64
+	name     sql.NullString
+	tel      sql.NullString
+	email    sql.NullString
+}
+
+func paymentMemberEmpty(in PickingPaymentSaveInput) bool {
+	if in.MemberUserID != nil && *in.MemberUserID > 0 {
+		return false
+	}
+	if in.MemberSettingCreditID != nil && *in.MemberSettingCreditID > 0 {
+		return false
+	}
+	for _, s := range []*string{in.MemberName, in.MemberTel, in.MemberEmail} {
+		if s != nil && strings.TrimSpace(*s) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func paymentMemberFromInput(in PickingPaymentSaveInput) paymentMemberCols {
+	var out paymentMemberCols
+	if in.MemberUserID != nil && *in.MemberUserID > 0 {
+		out.userID = sql.NullInt64{Int64: *in.MemberUserID, Valid: true}
+	}
+	if in.MemberSettingCreditID != nil && *in.MemberSettingCreditID > 0 {
+		out.creditID = sql.NullInt64{Int64: *in.MemberSettingCreditID, Valid: true}
+	}
+	if in.MemberName != nil {
+		out.name = sql.NullString{String: strings.TrimSpace(*in.MemberName), Valid: strings.TrimSpace(*in.MemberName) != ""}
+	}
+	if in.MemberTel != nil {
+		out.tel = sql.NullString{String: strings.TrimSpace(*in.MemberTel), Valid: strings.TrimSpace(*in.MemberTel) != ""}
+	}
+	if in.MemberEmail != nil {
+		out.email = sql.NullString{String: strings.TrimSpace(*in.MemberEmail), Valid: strings.TrimSpace(*in.MemberEmail) != ""}
+	}
+	return out
+}
+
+func loadOrderListMemberTx(ctx context.Context, tx *sql.Tx, orderListID int64) (paymentMemberCols, error) {
+	var out paymentMemberCols
+	var name, tel, email sql.NullString
+	err := tx.QueryRowContext(ctx, `
+SELECT member_user_id, member_setting_credit_id, member_name, member_tel, member_email
+FROM order_list WHERE id = $1 AND deleted_at IS NULL`, orderListID).Scan(
+		&out.userID, &out.creditID, &name, &tel, &email,
+	)
+	if err != nil {
+		return out, err
+	}
+	out.name = name
+	out.tel = tel
+	out.email = email
+	return out, nil
+}
+
+func resolvePaymentMemberTx(ctx context.Context, tx *sql.Tx, orderListID, paymentID int64, in PickingPaymentSaveInput) (paymentMemberCols, error) {
+	if !paymentMemberEmpty(in) {
+		return paymentMemberFromInput(in), nil
+	}
+	if paymentID > 0 {
+		var out paymentMemberCols
+		err := tx.QueryRowContext(ctx, `
+SELECT member_user_id, member_setting_credit_id, member_name, member_tel, member_email
+FROM order_payment WHERE id = $1 AND order_list_id = $2 AND deleted_at IS NULL`,
+			paymentID, orderListID).Scan(&out.userID, &out.creditID, &out.name, &out.tel, &out.email)
+		return out, err
+	}
+	return loadOrderListMemberTx(ctx, tx, orderListID)
 }
 
 func validatePickingPaymentInput(in PickingPaymentSaveInput) error {
@@ -689,6 +782,10 @@ SELECT EXISTS (SELECT 1 FROM order_list WHERE id = $1 AND deleted_at IS NULL)`, 
 			paid += m.Amount
 		}
 	}
+	member, err := resolvePaymentMemberTx(ctx, tx, orderListID, paymentID, in)
+	if err != nil {
+		return zero, err
+	}
 	if paymentID > 0 {
 		var curCategory string
 		err := tx.QueryRowContext(ctx, `
@@ -706,10 +803,13 @@ UPDATE order_payment SET
   special_discount = $6, total_price = $7, amount_paid = $8, is_paid = $9,
   credit_approved_by = COALESCE($10, credit_approved_by),
   discount_approved_by = COALESCE($11, discount_approved_by),
-  updated_by = $12, updated_at = NOW()
+  member_user_id = $12, member_setting_credit_id = $13, member_name = $14, member_tel = $15, member_email = $16,
+  updated_by = $17, updated_at = NOW()
 WHERE id = $1`, paymentID, in.PaymentCategory, orderedAt, in.VatRate, in.Discount,
 			in.SpecialDiscount, in.TotalPrice, paid, in.IsPaid,
-			in.CreditApprovedBy, in.DiscountApprovedBy, nullActorID(actorID)); err != nil {
+			in.CreditApprovedBy, in.DiscountApprovedBy,
+			member.userID, member.creditID, member.name, member.tel, member.email,
+			nullActorID(actorID)); err != nil {
 			return zero, err
 		}
 		// The document series follows the category, so a loan turned receipt gets a fresh number.
@@ -730,11 +830,16 @@ WHERE id = $1`, paymentID, in.PaymentCategory, orderedAt, in.VatRate, in.Discoun
 		if err := tx.QueryRowContext(ctx, `
 INSERT INTO order_payment (
   order_list_id, sku, payment_category, ordered_at, vat_rate, discount, special_discount,
-  total_price, amount_paid, is_paid, credit_approved_by, discount_approved_by, created_by, updated_by
-) VALUES ($1, $2, $3::order_payment_category, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
+  total_price, amount_paid, is_paid, credit_approved_by, discount_approved_by,
+  member_user_id, member_setting_credit_id, member_name, member_tel, member_email,
+  created_by, updated_by
+) VALUES ($1, $2, $3::order_payment_category, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+  $13, $14, $15, $16, $17, $18, $18)
 RETURNING id`, orderListID, sku, in.PaymentCategory, orderedAt, in.VatRate, in.Discount,
 			in.SpecialDiscount, in.TotalPrice, paid, in.IsPaid,
-			in.CreditApprovedBy, in.DiscountApprovedBy, nullActorID(actorID)).Scan(&paymentID); err != nil {
+			in.CreditApprovedBy, in.DiscountApprovedBy,
+			member.userID, member.creditID, member.name, member.tel, member.email,
+			nullActorID(actorID)).Scan(&paymentID); err != nil {
 			return zero, err
 		}
 	}

@@ -4,7 +4,11 @@
  * screen open on the same family, so they share this instead of each rebuilding it.
  */
 
-import { fetchPickingFamily, type PickingOrderDetail } from "@/lib/order-picking-api";
+import {
+  fetchPickingFamily,
+  type PickingOrderDetail,
+  type PickingPaymentDetail,
+} from "@/lib/order-picking-api";
 import {
   fetchOrderSalesFormItemsByIds,
   fetchOrderSalesFormMember,
@@ -13,6 +17,46 @@ import {
 import type { ProductItemBrowseRow } from "@/lib/product-list-api";
 
 import type { PickingCustomerDisplay } from "../_shared/picking-panels";
+
+export function paymentHasStoredMember(payment: PickingPaymentDetail): boolean {
+  if (payment.member_user_id != null && payment.member_user_id > 0) return true;
+  return Boolean(
+    payment.member_name?.trim() ||
+      payment.member_tel?.trim() ||
+      payment.member_email?.trim()
+  );
+}
+
+export async function enrichPickingCustomerFromMember(
+  locale: string,
+  memberUserId: number | null | undefined,
+  customer: PickingCustomerDisplay
+): Promise<PickingCustomerDisplay> {
+  if (!memberUserId || memberUserId <= 0) return customer;
+  try {
+    const member = await fetchOrderSalesFormMember(locale, "orders", memberUserId);
+    return {
+      ...customer,
+      memberSku: member.sku?.trim() ?? customer.memberSku,
+      imageFileId: member.system_file_id ?? customer.imageFileId,
+    };
+  } catch {
+    return customer;
+  }
+}
+
+export function pickingCustomerFromPayment(
+  payment: PickingPaymentDetail,
+  fallback: PickingCustomerDisplay
+): PickingCustomerDisplay {
+  if (!paymentHasStoredMember(payment)) return fallback;
+  return {
+    ...fallback,
+    name: payment.member_name?.trim() ?? fallback.name,
+    tel: payment.member_tel?.trim() ?? fallback.tel,
+    email: payment.member_email?.trim() ?? fallback.email,
+  };
+}
 
 export type PickingFamilyLoad = {
   orders: PickingOrderDetail[];

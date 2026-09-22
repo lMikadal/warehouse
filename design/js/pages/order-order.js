@@ -23,7 +23,7 @@
 
   function pickableOrders() {
     return lib.activeRows("order_list").filter(function (o) {
-      return o.status === "pending" || o.status === "success";
+      return o.status === "success";
     });
   }
 

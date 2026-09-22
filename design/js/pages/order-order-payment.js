@@ -13,6 +13,10 @@
     discountApprovedBy: null,
     methods: {},
     amountInput: "",
+    memberId: "",
+    memberName: "",
+    memberTel: "",
+    memberEmail: "",
   };
 
   function t(k, params) {
@@ -22,6 +26,31 @@
 
   function fieldPh(kind, labelKey) {
     return global.i18n ? global.i18n.fieldPlaceholder(kind, labelKey) : "";
+  }
+
+  function memberInputField(id, labelKey, type, role, value, ro) {
+    var ph = lib.escapeHtml(fieldPh("input", labelKey));
+    return (
+      '<div class="form-field"><label for="' +
+      id +
+      '"><span data-i18n="' +
+      labelKey +
+      '"></span></label><input id="' +
+      id +
+      '" type="' +
+      type +
+      '" data-role="' +
+      role +
+      '" data-i18n-placeholder-input="' +
+      labelKey +
+      '" placeholder="' +
+      ph +
+      '" value="' +
+      lib.escapeHtml(value || "") +
+      '"' +
+      (ro ? " disabled" : "") +
+      '/><div class="form-field__error-slot" aria-live="polite"><p class="form-field__error" hidden role="alert"></p></div></div>'
+    );
   }
 
   function parseQuery() {
@@ -65,7 +94,28 @@
     var root = document.getElementById("order-order-payment-root");
     if (!root) return;
     var order = global.store.getById("order_list", state.orderId);
+    if (order && !state.memberId && !state.memberName) {
+      state.memberId = order.member_user_id ? String(order.member_user_id) : "";
+      state.memberName = order.member_name || "";
+      state.memberTel = order.member_tel || "";
+      state.memberEmail = order.member_email || "";
+    }
     var pays = lib.paymentsForOrder(state.orderId);
+    var members = lib
+      .activeRows("member_user")
+      .map(function (m) {
+        return (
+          '<option value="' +
+          m.id +
+          '"' +
+          (String(state.memberId) === String(m.id) ? " selected" : "") +
+          ">" +
+          lib.escapeHtml((m.sku || "") + " — " + (m.name || "")) +
+          "</option>"
+        );
+      })
+      .join("");
+    var memberPh = lib.escapeHtml(fieldPh("select", "orderForm.memberCustomerCode"));
     var net = netTotal();
     var methodOpts = lib
       .activeRows("setting_payment_method")
@@ -106,11 +156,30 @@
 
     root.innerHTML =
       '<div class="order-payment"><div class="order-payment__grid">' +
-      '<section class="crud-card"><h2>' +
-      lib.escapeHtml(order.member_name || "—") +
-      "</h2><p>" +
-      lib.escapeHtml(lib.formatOrderSku(order.sku || "")) +
-      "</p></section>" +
+      '<section class="crud-card">' +
+      (state.modeView
+        ? "<h2>" +
+          lib.escapeHtml(order.member_name || "—") +
+          "</h2><p>" +
+          lib.escapeHtml(lib.formatOrderSku(order.sku || "")) +
+          "</p>"
+        : '<div class="form-field"><label for="op-member"><span data-i18n="orderForm.memberCustomerCode"></span></label>' +
+          '<select id="op-member" data-role="member"' +
+          (state.modeView ? " disabled" : "") +
+          "><option value=\"\" disabled" +
+          (!state.memberId ? " selected" : "") +
+          ">" +
+          memberPh +
+          "</option>" +
+          members +
+          '</select><div class="form-field__error-slot" aria-live="polite"><p class="form-field__error" hidden role="alert"></p></div></div>' +
+          memberInputField("op-member-name", "orderForm.memberName", "text", "name", state.memberName, state.modeView) +
+          memberInputField("op-member-tel", "orderForm.memberTel", "tel", "tel", state.memberTel, state.modeView) +
+          memberInputField("op-member-email", "orderForm.memberEmail", "email", "email", state.memberEmail, state.modeView) +
+          "<p>" +
+          lib.escapeHtml(lib.formatOrderSku(order.sku || "")) +
+          "</p>") +
+      "</section>" +
       '<section class="crud-card"><h2 data-i18n="' +
       (state.flow === "credit" ? "orderPayment.titleCredit" : "orderPayment.titlePayment") +
       '"></h2>' +
@@ -173,6 +242,29 @@
   }
 
   function bind(root) {
+    var memberEl = root.querySelector("[data-role=member]");
+    if (memberEl) {
+      memberEl.addEventListener("change", function (e) {
+        var v = e.target.value;
+        state.memberId = v;
+        if (!v) return;
+        var m = global.store.getById("member_user", Number(v));
+        if (m) {
+          state.memberName = m.name || "";
+          state.memberTel = m.tel || "";
+          state.memberEmail = m.email || "";
+        }
+        render();
+      });
+    }
+    root.querySelectorAll("[data-role=name],[data-role=tel],[data-role=email]").forEach(function (inp) {
+      inp.addEventListener("input", function (e) {
+        var role = inp.getAttribute("data-role");
+        if (role === "name") state.memberName = e.target.value;
+        if (role === "tel") state.memberTel = e.target.value;
+        if (role === "email") state.memberEmail = e.target.value;
+      });
+    });
     root.querySelectorAll("[data-pay-tab]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         state.paymentId = Number(btn.getAttribute("data-pay-tab"));
@@ -258,6 +350,7 @@
     var ts = lib.now();
     var total = netTotal();
     var skuPrefix = state.flow === "credit" ? "REV" : "INV";
+    var orderRow = global.store.getById("order_list", state.orderId);
     var pay = global.store.create("order_payment", {
       order_list_id: state.orderId,
       sku: skuPrefix + ts.slice(0, 10).replace(/-/g, "") + lib.paymentsForOrder(state.orderId).length,
@@ -271,6 +364,11 @@
       is_paid: settled,
       credit_approved_by: lib.getCreditApprovedBy(state.orderId),
       discount_approved_by: state.discountApprovedBy,
+      member_user_id: state.memberId ? Number(state.memberId) : orderRow ? orderRow.member_user_id : null,
+      member_setting_credit_id: orderRow ? orderRow.member_setting_credit_id : null,
+      member_name: state.memberName || (orderRow && orderRow.member_name) || null,
+      member_tel: state.memberTel || (orderRow && orderRow.member_tel) || null,
+      member_email: state.memberEmail || (orderRow && orderRow.member_email) || null,
       created_at: ts,
       updated_at: ts,
       created_by: actor,

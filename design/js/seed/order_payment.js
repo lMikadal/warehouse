@@ -23,6 +23,12 @@
         is_paid: opts.is_paid != null ? opts.is_paid : paid >= total && total > 0,
         credit_approved_by: opts.credit_approved_by != null ? opts.credit_approved_by : category === "credit" ? 1 : null,
         discount_approved_by: opts.discount_approved_by || null,
+        member_user_id: opts.member_user_id != null ? opts.member_user_id : null,
+        member_setting_credit_id:
+          opts.member_setting_credit_id != null ? opts.member_setting_credit_id : null,
+        member_name: opts.member_name || null,
+        member_tel: opts.member_tel || null,
+        member_email: opts.member_email || null,
       },
       audit(opts.createdBy || 1),
       { created_at: orderedAt, updated_at: orderedAt }

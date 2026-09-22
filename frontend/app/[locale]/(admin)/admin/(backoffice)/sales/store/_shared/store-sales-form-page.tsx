@@ -302,6 +302,8 @@ export function StoreSalesFormPage({ orderId }: Props) {
   const [priorSlipCollapsed, setPriorSlipCollapsed] = useState(false);
   const [viewCartTab, setViewCartTab] = useState<"items" | "compare">("items");
   const [familyRootId, setFamilyRootId] = useState<number | null>(null);
+  /** Set from detail `parent_id` so saves keep addon slips under the family root. */
+  const [orderParentId, setOrderParentId] = useState<number | null>(null);
   const [familyMembers, setFamilyMembers] = useState<StoreSalesListItem[]>([]);
   const [familyRootWaiting, setFamilyRootWaiting] = useState(false);
 
@@ -407,6 +409,7 @@ export function StoreSalesFormPage({ orderId }: Props) {
       } catch {
         setCart(loadedCart);
       }
+      setOrderParentId(d.parent_id ?? null);
       const fam = storeSalesFamilyContext(d);
       setFamilyRootId(fam.rootId);
       setFamilyMembers(fam.members);
@@ -647,7 +650,11 @@ export function StoreSalesFormPage({ orderId }: Props) {
     return {
       status: nextStatus,
       parent_id:
-        addonCreate && familyRootId ? familyRootId : undefined,
+        addonCreate && familyRootId != null
+          ? familyRootId
+          : orderParentId != null
+            ? orderParentId
+            : undefined,
       member_user_id: memberId ? Number(memberId) : null,
       member_setting_credit_id: creditId ? Number(creditId) : null,
       member_name: memberName || null,

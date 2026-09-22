@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  AlertTriangle,
   Barcode,
   Building2,
   Calendar,
   Check,
   CircleHelp,
+  EyeOff,
   Image as ImageIcon,
   List,
   Plus,
@@ -67,7 +69,7 @@ function money(n: number, locale: string) {
 }
 
 /** Mirrors the store sales cart thumb: the browse row only carries the cover file id. */
-function ProductThumb({
+export function ProductThumb({
   fileId,
   locale,
 }: {
@@ -130,6 +132,7 @@ export function PickingProductCell({
   locale: string;
 }) {
   const tPage = useTranslations("page.orderPicking");
+  const tList = useTranslations("productList");
 
   if (!product) {
     return (
@@ -138,17 +141,47 @@ export function PickingProductCell({
       </p>
     );
   }
+
+  const stock = product.available_stock ?? product.total_stock ?? 0;
+  const low =
+    product.low_stock || stock < (product.minimum_stock ?? 0);
+  const carSummary = product.car_summary?.trim() ?? "";
+
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-3">
       <ProductThumb fileId={product.cover_system_file_id} locale={locale} />
-      <div className="min-w-0 space-y-0.5">
-        <p className="text-foreground truncate font-medium">{product.name}</p>
-        <p className="text-muted-foreground truncate text-xs">
-          {tPage("colProduct")}: {product.sku}
-        </p>
-        <p className="text-muted-foreground truncate text-xs">
-          {product.brand_name || tPage("emptyCell")}
-        </p>
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap gap-1">
+          {product.is_new ? (
+            <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs">
+              {tList("badgeNew")}
+            </span>
+          ) : null}
+          {low ? (
+            <span className="inline-flex items-center gap-0.5 rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
+              <AlertTriangle className="size-3" aria-hidden />
+              {tList("lowStock")}
+            </span>
+          ) : null}
+          {product.is_stopped ? (
+            <span className="inline-flex items-center gap-0.5 rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
+              <EyeOff className="size-3" aria-hidden />
+              {tList("salesStopped")}
+            </span>
+          ) : null}
+        </div>
+        <div className="font-medium">{product.name}</div>
+        <div className="text-muted-foreground text-sm">SKU: {product.sku}</div>
+        {product.car_count > 0 && carSummary ? (
+          <span className="border-primary/20 bg-primary/5 text-primary mt-1.5 inline-flex max-w-full items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.625rem] leading-snug">
+            <span className="truncate">{carSummary}</span>
+            {product.car_count > 1 ? (
+              <span className="shrink-0 opacity-85">
+                +{product.car_count - 1}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -463,18 +496,31 @@ export function PickingItemsPanel({
                         </button>
                       </TableCell>
                       <TableCell className="text-center">
-                        <ButtonIcon
-                          tone={mapped ? "add" : "edit"}
-                          aria-label={mapped ? tPage("ordered") : tCrud("btn.edit")}
-                          disabled={!canAdd}
-                          onClick={() => {
-                            if (!canAdd) return;
-                            if (mapped) onAddToOrder(activeOrder.id, row);
-                            else onSelectItem(activeOrder.id, row);
-                          }}
-                        >
-                          <Plus className="text-current" aria-hidden />
-                        </ButtonIcon>
+                        <div className="flex justify-center">
+                          <ButtonIcon
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            tone={mapped ? "add" : "edit"}
+                            aria-label={
+                              mapped
+                                ? tPage("extraOrderQty")
+                                : tCrud("btn.edit")
+                            }
+                            disabled={!canAdd}
+                            onClick={() => {
+                              if (!canAdd) return;
+                              if (mapped) onAddToOrder(activeOrder.id, row);
+                              else onSelectItem(activeOrder.id, row);
+                            }}
+                          >
+                            {mapped ? (
+                              <Plus className="text-current" aria-hidden />
+                            ) : (
+                              <SquarePen className="text-current" aria-hidden />
+                            )}
+                          </ButtonIcon>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -997,13 +1043,14 @@ export function PickingFormFooter({
 
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-      <Button type="button" variant="outline" onClick={onCancel}>
+      <Button type="button" variant="outline" size="lg" onClick={onCancel}>
         {tCrud("btn.cancel")}
       </Button>
       {extraPay ? null : (
         <Button
           type="button"
           variant="secondary"
+          size="lg"
           disabled={!canUpdate}
           onClick={onSaveDraft}
         >
@@ -1013,6 +1060,7 @@ export function PickingFormFooter({
       <Button
         type="button"
         variant="secondary"
+        size="lg"
         disabled={!canUpdate || !canIssueLoan || !canSettle}
         onClick={onIssueLoan}
       >
@@ -1020,6 +1068,7 @@ export function PickingFormFooter({
       </Button>
       <Button
         type="button"
+        size="lg"
         disabled={!canUpdate || !canSettle}
         onClick={onPay}
       >

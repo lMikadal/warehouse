@@ -1,14 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useRouter } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
 import { formatDate, type DisplayLocale } from "@/lib/format-datetime";
+import { cn } from "@/lib/utils";
 import {
   createPickingExtraOrder,
   OrderPickingApiError,
@@ -61,6 +63,13 @@ import {
   type PickingExtraCard,
   type PickingVerifySelection,
 } from "./picking-panels";
+import { PickingFormDesktopSplitSkeleton } from "./picking-form-desktop-split-skeleton";
+
+const PickingFormDesktopSplit = dynamic(
+  () =>
+    import("./picking-form-desktop-split").then((m) => m.PickingFormDesktopSplit),
+  { ssr: false, loading: () => <PickingFormDesktopSplitSkeleton /> }
+);
 
 const LIST_HREF = "/admin/sales/order";
 
@@ -71,18 +80,7 @@ type Props = {
 };
 
 function FormSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-[6fr_4fr]">
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-80 w-full" />
-      </div>
-    </div>
-  );
+  return <PickingFormDesktopSplitSkeleton />;
 }
 
 export function PickingFormPage({ orderId, mode }: Props) {
@@ -91,6 +89,8 @@ export function PickingFormPage({ orderId, mode }: Props) {
   const tPage = useTranslations("page.orderPicking");
   const tError = useTranslations("error");
   const perms = useResourcePermissions("order", "order_order");
+  const { open: sidebarOpen, isMobile } = useSidebar();
+  const footerInsetLeft = !isMobile && sidebarOpen;
 
   const readOnly = mode === "view";
   const extraPay = mode === "extraPay";
@@ -127,6 +127,14 @@ export function PickingFormPage({ orderId, mode }: Props) {
     setLoading(true);
     try {
       const family = await loadPickingFamily(locale, orderId);
+      const successOrders = family.orders.filter(
+        (o) => o.doc_status === "success"
+      );
+      if (successOrders.length === 0) {
+        toast.error(tPage("notFound"));
+        router.replace(LIST_HREF);
+        return;
+      }
 
       const nextItems = new Map<number, PickingItemDetail[]>();
       for (const o of family.orders) nextItems.set(o.id, o.items);
@@ -138,7 +146,7 @@ export function PickingFormPage({ orderId, mode }: Props) {
       setVatPercent(family.vatPercent);
       setCustomer(family.customer);
       setActiveOrderId((cur) =>
-        family.orders.some((o) => o.id === cur) ? cur : family.orders[0].id
+        successOrders.some((o) => o.id === cur) ? cur : successOrders[0].id
       );
     } catch (e) {
       toast.error(
@@ -159,9 +167,9 @@ export function PickingFormPage({ orderId, mode }: Props) {
     [orders]
   );
 
-  /** A child slip still in draft has not reached the picking desk; it is an extra order instead. */
+  /** Tabs cover settled sale documents only; draft siblings stay on the extra-order panel. */
   const pickingOrders = useMemo(
-    () => orders.filter((o) => o.doc_status !== "draft"),
+    () => orders.filter((o) => o.doc_status === "success"),
     [orders]
   );
   const draftOrders = useMemo(
@@ -320,8 +328,10 @@ export function PickingFormPage({ orderId, mode }: Props) {
           toast.error(tPage("verifySkuMismatch"));
           return;
         }
+        const sellPrice = Number(hit.price) || 0;
         const next = await patchPickingItem(locale, ownerId, selectedItem.id, {
           product_item_id: hit.id,
+          ...(sellPrice > 0 ? { price_per_unit: sellPrice } : {}),
         });
         setProductsById((prev) => new Map(prev).set(hit.id, hit));
         applyItem(ownerId, next);
@@ -355,10 +365,16 @@ export function PickingFormPage({ orderId, mode }: Props) {
       max
     );
     const checked = wholeQty(selectedItem.amount_checked) + qty;
+    const sellPrice = Number(product.price) || 0;
+    const needPrice =
+      selectedItem.type === "compare" &&
+      !(selectedItem.price_per_unit > 0) &&
+      sellPrice > 0;
     try {
       const next = await patchPickingItem(locale, ownerId, selectedItem.id, {
         amount_checked: checked,
         status: statusFromChecked(selectedItem.amount, checked),
+        ...(needPrice ? { price_per_unit: sellPrice } : {}),
       });
       applyItem(ownerId, next);
       if (extraPay) {
@@ -588,70 +604,90 @@ export function PickingFormPage({ orderId, mode }: Props) {
     ? formatDate(root.ordered_at, locale)
     : formatDate(root.created_at, locale);
 
+  const mainColumn = (
+    <>
+      <PickingCustomerCard
+        customer={customer}
+        sku={familySku(root.sku)}
+        locale={locale}
+      />
+      <PickingItemsPanel
+        orders={pickingOrders}
+        activeOrderId={activeOrderId}
+        onActiveOrderChange={(id) => {
+          setActiveOrderId(id);
+          setVerify(BLANK_VERIFY);
+        }}
+        itemsByOrder={itemsByOrder}
+        productsById={productsById}
+        selectedItemId={verify.itemId}
+        onSelectItem={selectItem}
+        onStatusChange={(ownerId, item, status) =>
+          void onStatusChange(ownerId, item, status)
+        }
+        onAddToOrder={onAddToExtra}
+        locale={locale}
+        readOnly={!canUpdate}
+        extraPay={extraPay}
+      />
+      {extraPay ? null : (
+        <PickingExtraOrderPanel
+          cards={extraCards}
+          canSubmit={canCreate}
+          submitting={extraSubmitting}
+          locale={locale}
+          onQtyChange={onExtraQtyChange}
+          onRemoveLine={onExtraRemove}
+          onSubmit={(key) => void onExtraSubmit(key)}
+        />
+      )}
+    </>
+  );
+
+  const sidebarColumn = (
+    <>
+      <PickingVerifyCard
+        selection={verify}
+        maxQty={maxVerifyQty}
+        onChange={setVerify}
+        onConfirm={() => void onVerifyConfirm()}
+        disabled={!canUpdate}
+        qtyDisabled={selectedItem ? !isMappedLine(selectedItem) : false}
+      />
+      <PickingOrderSummaryPanel
+        sku={familySku(root.sku)}
+        orderDate={orderDate}
+        lines={orderLines}
+        vatPercent={vatPercent}
+        locale={locale}
+        onRemoveLine={(line) => void onRemoveLine(line)}
+        readOnly={!canUpdate}
+      />
+    </>
+  );
+
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4 pb-20">
       <CrudPageHeader
         title={tPage("pageTitle")}
         description={tPage("pageSubtitle")}
       />
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-[6fr_4fr]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <PickingCustomerCard
-            customer={customer}
-            sku={familySku(root.sku)}
-            locale={locale}
-          />
-          <PickingItemsPanel
-            orders={pickingOrders}
-            activeOrderId={activeOrderId}
-            onActiveOrderChange={(id) => {
-              setActiveOrderId(id);
-              setVerify(BLANK_VERIFY);
-            }}
-            itemsByOrder={itemsByOrder}
-            productsById={productsById}
-            selectedItemId={verify.itemId}
-            onSelectItem={selectItem}
-            onStatusChange={(ownerId, item, status) =>
-              void onStatusChange(ownerId, item, status)
-            }
-            onAddToOrder={onAddToExtra}
-            locale={locale}
-            readOnly={!canUpdate}
-            extraPay={extraPay}
-          />
-          {extraPay ? null : (
-            <PickingExtraOrderPanel
-              cards={extraCards}
-              canSubmit={canCreate}
-              submitting={extraSubmitting}
-              locale={locale}
-              onQtyChange={onExtraQtyChange}
-              onRemoveLine={onExtraRemove}
-              onSubmit={(key) => void onExtraSubmit(key)}
-            />
-          )}
-        </div>
+      <div className="flex flex-col gap-4 md:hidden">
+        <div className="flex min-w-0 flex-col gap-4">{mainColumn}</div>
+        <div className="flex min-w-0 flex-col gap-4">{sidebarColumn}</div>
+      </div>
+      <div className="hidden min-w-0 w-full md:block">
+        <PickingFormDesktopSplit main={mainColumn} sidebar={sidebarColumn} />
+      </div>
 
-        <div className="flex min-w-0 flex-col gap-4">
-          <PickingVerifyCard
-            selection={verify}
-            maxQty={maxVerifyQty}
-            onChange={setVerify}
-            onConfirm={() => void onVerifyConfirm()}
-            disabled={!canUpdate}
-            qtyDisabled={selectedItem ? !isMappedLine(selectedItem) : false}
-          />
-          <PickingOrderSummaryPanel
-            sku={familySku(root.sku)}
-            orderDate={orderDate}
-            lines={orderLines}
-            vatPercent={vatPercent}
-            locale={locale}
-            onRemoveLine={(line) => void onRemoveLine(line)}
-            readOnly={!canUpdate}
-          />
+      <div
+        className={cn(
+          "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+          footerInsetLeft ? "left-(--sidebar-width)" : "left-0",
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-crud-page justify-end gap-2 px-admin-content py-3">
           <PickingFormFooter
             canUpdate={canUpdate && !saving}
             canIssueLoan={canIssueLoan}

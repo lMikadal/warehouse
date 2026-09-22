@@ -22,6 +22,11 @@ CREATE TABLE order_payment (
     is_paid               BOOLEAN                NOT NULL DEFAULT FALSE,   -- payment record settled/closed (not same as is_full)
     credit_approved_by    BIGINT                 REFERENCES admin_user(id) ON DELETE SET NULL, -- credit approver
     discount_approved_by  BIGINT                 REFERENCES admin_user(id) ON DELETE SET NULL, -- special-discount approver
+    member_user_id          BIGINT                       REFERENCES member_user(id) ON DELETE SET NULL, -- billing member account
+    member_setting_credit_id BIGINT                      REFERENCES member_setting_credit(id) ON DELETE SET NULL, -- credit format snapshot
+    member_name             TEXT,                                    -- member name snapshot at payment time
+    member_tel              TEXT,                                    -- member phone snapshot at payment time
+    member_email            TEXT,                                    -- member email snapshot at payment time
     deleted_at            TIMESTAMPTZ,
     created_at            TIMESTAMPTZ            NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMPTZ            NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,3 +41,5 @@ CREATE INDEX idx_order_payment_credit_approved_by ON order_payment (credit_appro
 CREATE INDEX idx_order_payment_discount_approved  ON order_payment (discount_approved_by) WHERE discount_approved_by IS NOT NULL;
 CREATE INDEX idx_order_payment_created_by         ON order_payment (created_by) WHERE created_by IS NOT NULL;
 CREATE INDEX idx_order_payment_updated_by         ON order_payment (updated_by) WHERE updated_by IS NOT NULL;
+CREATE INDEX idx_order_payment_member             ON order_payment (member_user_id) WHERE member_user_id IS NOT NULL;
+CREATE INDEX idx_order_payment_member_setting_credit ON order_payment (member_setting_credit_id) WHERE member_setting_credit_id IS NOT NULL;

@@ -629,7 +629,7 @@ SELECT status::text FROM order_list WHERE id = $1 AND deleted_at IS NULL FOR UPD
 	res, err := tx.ExecContext(ctx, `
 UPDATE order_list SET
   status = $2::order_list_status,
-  parent_id = $3,
+  parent_id = COALESCE($3, parent_id),
   member_user_id = $4,
   member_setting_credit_id = $5,
   member_name = $6,

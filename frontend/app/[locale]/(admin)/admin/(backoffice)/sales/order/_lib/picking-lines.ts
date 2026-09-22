@@ -42,11 +42,15 @@ export function statusFromChecked(
   return c >= o && c > 0 ? "success" : "pending";
 }
 
-/** The status toggle only flips between waiting and store-check, and only for catalogue lines. */
+/**
+ * Store-check toggles waiting ↔ shop-check. Catalogue lines always qualify; compare lines only after
+ * a product_item is mapped (otherwise there is nothing to check at the shop).
+ */
 export function nextStoreCheckStatus(
-  item: Pick<PickingItemDetail, "type" | "status">
+  item: Pick<PickingItemDetail, "type" | "status" | "product_item_id">
 ): PickingItemStatus | null {
-  if (item.type !== "item") return null;
+  if (item.type !== "item" && item.type !== "compare") return null;
+  if (!isMappedLine(item)) return null;
   if (item.status === "pending") return "in_progress";
   if (item.status === "in_progress") return "pending";
   return null;
@@ -78,7 +82,9 @@ export function matchesProductScan(
 }
 
 /** Compare lines wait for a real product; a catalogue line always has one. */
-export function isMappedLine(item: PickingItemDetail): boolean {
+export function isMappedLine(
+  item: Pick<PickingItemDetail, "product_item_id">
+): boolean {
   return (item.product_item_id ?? 0) > 0;
 }
 
@@ -176,16 +182,22 @@ export function orderLineFromItem(
   productsById: Map<number, ProductItemBrowseRow>,
   qty = wholeQty(item.amount_checked)
 ): PickingOrderLine {
+  const product = item.product_item_id
+    ? productsById.get(item.product_item_id)
+    : undefined;
+  // Compare lines are created at 0; after mapping, fall back to catalogue sell price until patched.
+  const pricePerUnit =
+    item.price_per_unit > 0
+      ? item.price_per_unit
+      : Number(product?.price) || 0;
   return {
     itemId: item.id,
     orderId,
     type: item.type,
-    product: item.product_item_id
-      ? productsById.get(item.product_item_id)
-      : undefined,
+    product,
     detail: item.detail?.trim() ?? "",
     qty,
-    pricePerUnit: item.price_per_unit,
+    pricePerUnit,
     discount: proratedDiscount(item, qty),
   };
 }

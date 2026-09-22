@@ -1840,6 +1840,61 @@
           ]
         },
         {
+          "name": "Picking (orders)",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/orders?page=1&limit=10",
+                "description": "order.order_order.view — doc_status success baseline; status query filters fulfill_status"
+              }
+            },
+            {
+              "name": "Family",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/orders/1/family",
+                "description": "order.order_order.view"
+              }
+            },
+            {
+              "name": "Payments list",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/orders/1/payments",
+                "description": "order.order_order.view — each payment includes member_* snapshot (billing customer on receipt; independent of order_list member)"
+              }
+            },
+            {
+              "name": "Create payment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"payment_category\": \"payment\",\n  \"ordered_at\": \"2026-09-22T00:00:00.000Z\",\n  \"vat_rate\": 7,\n  \"discount\": 0,\n  \"special_discount\": 0,\n  \"total_price\": 930,\n  \"is_paid\": true,\n  \"member_user_id\": 1,\n  \"member_setting_credit_id\": 1,\n  \"member_name\": \"Test member\",\n  \"member_tel\": \"0812345678\",\n  \"member_email\": \"test@example.com\",\n  \"methods\": [\n    {\n      \"setting_payment_method_id\": 1,\n      \"amount\": 930\n    }\n  ],\n  \"items\": [\n    {\n      \"order_list_item_id\": 1,\n      \"amount\": 1,\n      \"price_per_unit\": 930,\n      \"discount\": 0,\n      \"total_price\": 930\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/orders/1/payments",
+                "description": "order.order_order.update — omit member_* on create to copy from order_list; unpaid payment drafts must omit items"
+              }
+            },
+            {
+              "name": "Update payment",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"payment_category\": \"payment\",\n  \"ordered_at\": \"2026-09-22T00:00:00.000Z\",\n  \"vat_rate\": 7,\n  \"discount\": 0,\n  \"special_discount\": 0,\n  \"total_price\": 930,\n  \"is_paid\": false,\n  \"member_user_id\": 2,\n  \"member_name\": \"Other member\",\n  \"member_tel\": \"0899999999\",\n  \"member_email\": \"other@example.com\",\n  \"methods\": []\n}"
+                },
+                "url": "{{baseUrl}}/order/orders/1/payments/1",
+                "description": "order.order_order.update — member snapshot stored on order_payment only (order_list unchanged)"
+              }
+            }
+          ]
+        },
+        {
           "name": "Quotations",
           "item": [
             {

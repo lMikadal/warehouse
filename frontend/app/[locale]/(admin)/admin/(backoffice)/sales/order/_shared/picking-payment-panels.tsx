@@ -1,8 +1,9 @@
 "use client";
 
-import { ClipboardList, DollarSign, FileText, Printer } from "lucide-react";
+import { Building2, ClipboardList, DollarSign, FileText, Printer, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { RemoteComboboxField } from "@/components/molecules/remote-combobox-field";
 import { Button } from "@/components/ui/button";
 import { ButtonIcon } from "@/components/ui/button-icon";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +20,16 @@ import {
   summaryLinesFromOrderLines,
   type PickingOrderLine,
 } from "../_lib/picking-lines";
-import { PickingPriceSummary } from "./picking-panels";
+import {
+  loadStoreSalesMemberComboboxOptions,
+  resolveStoreSalesMemberLabel,
+} from "@/lib/store-sales-member-combobox";
+
+import {
+  PickingPriceSummary,
+  ProductThumb,
+  type PickingCustomerDisplay,
+} from "./picking-panels";
 
 export type PickingPayMode = "full" | "partial";
 
@@ -356,6 +366,208 @@ export function PickingSettleSummary({
             {tPage("printShortReceipt")}
           </Button>
         ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+const PICKING_MEMBER_RESOURCE = "orders" as const;
+
+export function PickingPaymentCustomerEditor({
+  customerMeta,
+  slipSku,
+  locale,
+  memberId,
+  memberComboboxLabel,
+  onMemberIdChange,
+  memberName,
+  onMemberNameChange,
+  memberTel,
+  onMemberTelChange,
+  memberEmail,
+  onMemberEmailChange,
+  onResetMember,
+  disabled,
+}: {
+  customerMeta: PickingCustomerDisplay;
+  slipSku?: string | null;
+  locale: DisplayLocale;
+  memberId: string;
+  memberComboboxLabel: string;
+  onMemberIdChange: (value: string) => void;
+  memberName: string;
+  onMemberNameChange: (value: string) => void;
+  memberTel: string;
+  onMemberTelChange: (value: string) => void;
+  memberEmail: string;
+  onMemberEmailChange: (value: string) => void;
+  onResetMember: () => void;
+  disabled?: boolean;
+}) {
+  const tPage = useTranslations("page.orderPicking");
+  const tForm = useTranslations("page.orderStore.form");
+  // Same as store-sales-form: combobox empty copy lives under `form`, not page.orderStore.
+  const tFormRoot = useTranslations("form");
+  const tPlaceholder = useTranslations("form.placeholder");
+  const dash = tPage("emptyCell");
+  const prepared = customerMeta.preparedAt
+    ? formatDateTime(customerMeta.preparedAt, locale)
+    : dash;
+  const delivery = customerMeta.deliveryAt
+    ? formatDateTime(customerMeta.deliveryAt, locale)
+    : dash;
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex items-start gap-3">
+          {customerMeta.imageFileId != null ? (
+            <ProductThumb fileId={customerMeta.imageFileId} locale={locale} />
+          ) : (
+            <div className="bg-primary/10 text-primary flex size-12 shrink-0 items-center justify-center rounded-full">
+              <Building2 className="size-6" aria-hidden />
+            </div>
+          )}
+          <div className="min-w-0 flex-1 space-y-3">
+            {slipSku?.trim() ? (
+              <p className="text-muted-foreground text-sm font-medium">
+                {slipSku.trim()}
+              </p>
+            ) : null}
+            <div className="grid gap-1">
+              <Label htmlFor="picking-payment-member">{tForm("memberCode")}</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <RemoteComboboxField
+                    id="picking-payment-member"
+                    label={tForm("memberCode")}
+                    value={memberId}
+                    onValueChange={onMemberIdChange}
+                    placeholder={tForm("memberCodeSearchPlaceholder")}
+                    emptyLabel={tFormRoot("combobox.noResults")}
+                    disabled={disabled}
+                    showClear={!disabled}
+                    pinnedItems={
+                      memberId && memberComboboxLabel
+                        ? [{ value: memberId, label: memberComboboxLabel }]
+                        : []
+                    }
+                    onLoadOptions={({ search, signal }) =>
+                      loadStoreSalesMemberComboboxOptions(locale, {
+                        search,
+                        signal,
+                        resource: PICKING_MEMBER_RESOURCE,
+                      })
+                    }
+                    resolveSelectedLabel={(v) =>
+                      resolveStoreSalesMemberLabel(
+                        locale,
+                        v,
+                        PICKING_MEMBER_RESOURCE
+                      )
+                    }
+                  />
+                </div>
+                {!disabled ? (
+                  <ButtonIcon
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    tone="delete"
+                    className="shrink-0"
+                    aria-label={tForm("resetCustomer")}
+                    title={tForm("resetCustomer")}
+                    onClick={onResetMember}
+                  >
+                    <RotateCcw className="text-current" />
+                  </ButtonIcon>
+                ) : null}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid gap-1">
+                <Label htmlFor="picking-payment-member-name">
+                  {tForm("memberName")}
+                </Label>
+                <Input
+                  id="picking-payment-member-name"
+                  value={memberName}
+                  onChange={(e) => onMemberNameChange(e.target.value)}
+                  disabled={disabled}
+                  placeholder={tPlaceholder("input", {
+                    label: tForm("memberName"),
+                  })}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="picking-payment-member-tel">
+                  {tPage("customerTel")}
+                </Label>
+                <Input
+                  id="picking-payment-member-tel"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={memberTel}
+                  onChange={(e) => onMemberTelChange(e.target.value)}
+                  disabled={disabled}
+                  placeholder={tPlaceholder("input", {
+                    label: tPage("customerTel"),
+                  })}
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="picking-payment-member-email">
+                  {tPage("customerEmail")}
+                </Label>
+                <Input
+                  id="picking-payment-member-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={memberEmail}
+                  onChange={(e) => onMemberEmailChange(e.target.value)}
+                  disabled={disabled}
+                  placeholder={tPlaceholder("input", {
+                    label: tPage("customerEmail"),
+                  })}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x">
+          <div className="lg:pr-4">
+            <p className="text-muted-foreground text-xs">
+              {tPage("customerCode")}
+            </p>
+            <p className="text-foreground font-semibold">
+              {customerMeta.memberSku || dash}
+            </p>
+          </div>
+          <div className="space-y-2 lg:px-4">
+            <div>
+              <p className="text-muted-foreground text-xs">
+                {tPage("preparedAt")}
+              </p>
+              <p className="text-foreground font-semibold">{prepared}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">
+                {tPage("deliverySchedule")}
+              </p>
+              <p className="text-foreground font-semibold">{delivery}</p>
+            </div>
+          </div>
+          <div className="lg:pl-4">
+            <p className="text-muted-foreground text-xs">
+              {tPage("customerSeller")}
+            </p>
+            <p className="text-foreground font-semibold">
+              {customerMeta.sellerName || dash}
+            </p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

@@ -67,11 +67,42 @@ describe("statusFromChecked", () => {
 });
 
 describe("nextStoreCheckStatus", () => {
-  test("only catalogue lines toggle, and never out of success", () => {
-    expect(nextStoreCheckStatus({ type: "item", status: "pending" })).toBe("in_progress");
-    expect(nextStoreCheckStatus({ type: "item", status: "in_progress" })).toBe("pending");
-    expect(nextStoreCheckStatus({ type: "item", status: "success" })).toBeNull();
-    expect(nextStoreCheckStatus({ type: "compare", status: "pending" })).toBeNull();
+  test("mapped catalogue and compare lines toggle; unmapped compare and success do not", () => {
+    expect(
+      nextStoreCheckStatus({
+        type: "item",
+        status: "pending",
+        product_item_id: 1,
+      })
+    ).toBe("in_progress");
+    expect(
+      nextStoreCheckStatus({
+        type: "item",
+        status: "in_progress",
+        product_item_id: 1,
+      })
+    ).toBe("pending");
+    expect(
+      nextStoreCheckStatus({
+        type: "item",
+        status: "success",
+        product_item_id: 1,
+      })
+    ).toBeNull();
+    expect(
+      nextStoreCheckStatus({
+        type: "compare",
+        status: "pending",
+        product_item_id: null,
+      })
+    ).toBeNull();
+    expect(
+      nextStoreCheckStatus({
+        type: "compare",
+        status: "pending",
+        product_item_id: 2,
+      })
+    ).toBe("in_progress");
   });
 });
 
@@ -202,6 +233,50 @@ describe("order lines", () => {
     );
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ itemId: 1, orderId: 7, qty: 2, discount: 20 });
+  });
+
+  test("a mapped compare line at 0 falls back to the catalogue sell price", () => {
+    const lines = orderLinesFromItems(
+      7,
+      [
+        item({
+          id: 9,
+          type: "compare",
+          product_item_id: 2,
+          price_per_unit: 0,
+          amount: 12,
+          amount_checked: 1,
+        }),
+      ],
+      new Map([
+        [
+          2,
+          {
+            id: 2,
+            product_list_id: 1,
+            sku: "B",
+            price: 890,
+            unit: "piece",
+            qty_per_unit: 1,
+            minimum_stock: 0,
+            is_active: true,
+            is_stopped: false,
+            updated_at: "",
+            tag: "",
+            is_new: false,
+            name: "b",
+            brand_name: "",
+            category_name: "",
+            total_stock: 0,
+            low_stock: false,
+            warehouse_root_count: 0,
+            car_count: 0,
+          },
+        ],
+      ])
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0].pricePerUnit).toBe(890);
   });
 
   test("a fully billed line keeps its whole discount", () => {

@@ -167,7 +167,37 @@ func TestPickingLifecycle(t *testing.T) {
 	if err := picking.PatchStatus(ctx, orderID, "success", 1); err != nil {
 		t.Fatalf("close slip: %v", err)
 	}
-	list, err := picking.List(ctx, PickingListQuery{Page: 1, Limit: 50, Status: "success", RootOnly: true})
+
+	// The desk lists settled sale documents only, so a slip still pending stays hidden even when its
+	// fulfillment matches the chip.
+	q := PickingListQuery{Page: 1, Limit: 50, Status: "success", RootOnly: true}
+	pending, err := picking.List(ctx, q)
+	if err != nil {
+		t.Fatalf("list pending doc: %v", err)
+	}
+	for _, row := range pending.Items {
+		if row.ID == orderID {
+			t.Fatal("a slip whose sale document is still pending must not reach the picking desk")
+		}
+	}
+	counts, err := picking.Count(ctx, q)
+	if err != nil {
+		t.Fatalf("count pending doc: %v", err)
+	}
+	before := counts.ByStatus["success"]
+
+	if err := store.PatchStatus(ctx, orderID, "success", 1); err != nil {
+		t.Fatalf("settle sale document: %v", err)
+	}
+	counts, err = picking.Count(ctx, q)
+	if err != nil {
+		t.Fatalf("count success doc: %v", err)
+	}
+	if counts.ByStatus["success"] != before+1 {
+		t.Fatalf("settling the sale document must add the slip to the counts, got %d then %d",
+			before, counts.ByStatus["success"])
+	}
+	list, err := picking.List(ctx, q)
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
