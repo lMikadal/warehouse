@@ -1,17 +1,22 @@
 import type { SalesClaimItemDetail } from "@/lib/order-sales-claim-api";
 import type { StoreClaimStatus } from "@/lib/order-store-claim-api";
 
-/** The happy path of `order_claim_status`, in the order the timeline draws it. */
+/**
+ * The six visual steps of a claim's life. They are richer than the four backend statuses: the middle
+ * ones (`waiting` → `replied` → `reviewed`) are derived from how many lines the supplier has answered.
+ */
 export const SALES_CLAIM_STEPS = [
-  "pending",
-  "acknowledged",
-  "waiting_supplier",
-  "success",
+  "created",
+  "sent",
+  "waiting",
+  "replied",
+  "reviewed",
+  "closed",
 ] as const;
 
 /** Mirror of the backend's transition table, so a disallowed button never reaches the API. */
 const TRANSITIONS: Record<StoreClaimStatus, StoreClaimStatus[]> = {
-  pending: ["acknowledged", "rejected", "cancelled"],
+  pending: ["acknowledged", "waiting_supplier", "rejected", "cancelled"],
   acknowledged: ["waiting_supplier", "success", "rejected", "cancelled"],
   waiting_supplier: ["success", "rejected", "cancelled"],
   success: [],
@@ -52,18 +57,27 @@ export function salesClaimActions(
 }
 
 /**
- * How far the document has travelled: steps before the current status are done, the status itself is
- * the live one. A closed claim lights the lot, and a killed one does too since it goes no further.
+ * How far the document has travelled across the six steps, derived from the status plus how many
+ * lines the supplier has answered. A finished or killed claim lights the lot since it goes no further.
  */
-export function salesClaimTimeline(status: StoreClaimStatus): {
+export function salesClaimTimeline(
+  status: StoreClaimStatus,
+  items: Pick<SalesClaimItemDetail, "status">[],
+): {
   done: number;
   current: number;
 } {
-  const index = SALES_CLAIM_STEPS.indexOf(
-    status as (typeof SALES_CLAIM_STEPS)[number],
-  );
-  if (index < 0 || status === "success") {
+  if (status === "success" || status === "cancelled" || status === "rejected") {
     return { done: SALES_CLAIM_STEPS.length, current: -1 };
   }
-  return { done: index, current: index };
+  if (status === "pending" || status === "acknowledged") {
+    return { done: 0, current: 0 };
+  }
+  // waiting_supplier: split "sent → waiting → replied → reviewed" by line verdicts.
+  const reviewed = items.filter(
+    (it) => it.status === "success" || it.status === "rejected",
+  ).length;
+  if (reviewed === 0) return { done: 2, current: 2 };
+  if (!salesClaimAllReviewed(items)) return { done: 3, current: 3 };
+  return { done: 4, current: 4 };
 }

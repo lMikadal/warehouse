@@ -36,6 +36,7 @@ type SalesClaimDetail struct {
 	Status            string                 `json:"status"`
 	PaymentType       string                 `json:"payment_type"`
 	OtherReason       string                 `json:"other_reason"`
+	NoteSupplier      string                 `json:"note_supplier"`
 	TotalPrice        float64                `json:"total_price"`
 	OrderPaymentID    int64                  `json:"order_payment_id"`
 	PaymentSKU        string                 `json:"payment_sku,omitempty"`
@@ -45,8 +46,14 @@ type SalesClaimDetail struct {
 	OrderSKU          string                 `json:"order_sku,omitempty"`
 	MemberName        *string                `json:"member_name,omitempty"`
 	MemberTel         *string                `json:"member_tel,omitempty"`
+	SupplierUserID    *int64                 `json:"supplier_user_id,omitempty"`
+	SupplierName      *string                `json:"supplier_name,omitempty"`
+	SupplierAddress   *string                `json:"supplier_address,omitempty"`
+	SupplierTel       *string                `json:"supplier_tel,omitempty"`
 	CreatedByName     *string                `json:"created_by_name,omitempty"`
 	UpdatedByName     *string                `json:"updated_by_name,omitempty"`
+	OrderCreatedAt    *time.Time             `json:"order_created_at,omitempty"`
+	DeliveryAt        *time.Time             `json:"delivery_at,omitempty"`
 	CreatedAt         time.Time              `json:"created_at"`
 	UpdatedAt         time.Time              `json:"updated_at"`
 	Items             []SalesClaimItemDetail `json:"items"`
@@ -54,6 +61,13 @@ type SalesClaimDetail struct {
 
 type SalesClaimStatusInput struct {
 	Status string `json:"status"`
+}
+
+// SalesClaimPatchInput assigns the supplier and the message that goes with the claim document, both
+// editable only before the document is sent (pending / acknowledged).
+type SalesClaimPatchInput struct {
+	SupplierUserID *int64  `json:"supplier_user_id,omitempty"`
+	NoteSupplier   *string `json:"note_supplier,omitempty"`
 }
 
 type SalesClaimItemPatchInput struct {
@@ -64,7 +78,8 @@ type SalesClaimItemPatchInput struct {
 // salesClaimTransitions is v1's validClaimStatusTransition, widened by the two statuses the warehouse
 // workflow adds: a claim may park at the supplier before it closes, and it may be cancelled outright.
 var salesClaimTransitions = map[string][]string{
-	"pending":          {"acknowledged", "rejected", "cancelled"},
+	// pending may skip acknowledge when the desk sends straight to the supplier (mock: edit while pending).
+	"pending":          {"acknowledged", "waiting_supplier", "rejected", "cancelled"},
 	"acknowledged":     {"waiting_supplier", "success", "rejected", "cancelled"},
 	"waiting_supplier": {"success", "rejected", "cancelled"},
 }

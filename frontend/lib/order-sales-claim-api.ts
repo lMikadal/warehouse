@@ -44,6 +44,7 @@ export type SalesClaimDetail = {
   status: StoreClaimStatus;
   payment_type: StoreClaimPaymentType;
   other_reason: string;
+  note_supplier: string;
   total_price: number;
   order_payment_id: number;
   payment_sku?: string;
@@ -53,11 +54,25 @@ export type SalesClaimDetail = {
   order_sku?: string;
   member_name?: string | null;
   member_tel?: string | null;
+  supplier_user_id?: number | null;
+  supplier_name?: string | null;
+  supplier_address?: string | null;
+  supplier_tel?: string | null;
   created_by_name?: string | null;
   updated_by_name?: string | null;
+  order_created_at?: string | null;
+  delivery_at?: string | null;
   created_at: string;
   updated_at: string;
   items: SalesClaimItemDetail[];
+};
+
+/** A supplier row for the assignment dialog (mock 3): name plus address / phone. */
+export type SalesClaimSupplierOption = {
+  id: number;
+  name: string;
+  address?: string;
+  tel?: string;
 };
 
 type ListParams = {
@@ -109,6 +124,38 @@ export async function fetchSalesClaimDetail(
   });
   if (!res.ok) throw await parseBffError(res);
   return res.json() as Promise<SalesClaimDetail>;
+}
+
+export async function patchSalesClaim(
+  locale: string,
+  id: number,
+  body: { supplier_user_id?: number; note_supplier?: string },
+): Promise<void> {
+  const res = await authFetch(`${BASE}/${id}`, {
+    method: "PATCH",
+    headers: bffJsonHeaders(locale),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseBffError(res);
+}
+
+export async function fetchSalesClaimSupplierOptions(params: {
+  locale: string;
+  search?: string;
+  page?: number;
+  signal?: AbortSignal;
+}): Promise<SalesClaimSupplierOption[]> {
+  const q = new URLSearchParams({ facet: "suppliers" });
+  q.set("page", String(params.page ?? 1));
+  q.set("limit", "20");
+  if (params.search?.trim()) q.set("search", params.search.trim());
+  const res = await authFetch(`${BASE}/filters?${q}`, {
+    headers: bffJsonHeaders(params.locale),
+    signal: params.signal,
+  });
+  if (!res.ok) throw await parseBffError(res);
+  const data = (await res.json()) as { items?: SalesClaimSupplierOption[] };
+  return data.items ?? [];
 }
 
 export async function patchSalesClaimStatus(

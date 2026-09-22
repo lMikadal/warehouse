@@ -65,6 +65,21 @@ func (h *SalesClaimHandler) getByID(c *echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (h *SalesClaimHandler) patch(c *echo.Context) error {
+	id, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	var body SalesClaimPatchInput
+	if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid body"})
+	}
+	if err := h.repo.Patch(c.Request().Context(), id, body, httputil.ActorID(c)); err != nil {
+		return pickingError(c, "sales claim patch", err, "failed to update claim")
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
 func (h *SalesClaimHandler) patchStatus(c *echo.Context) error {
 	id, err := httputil.PathID(c, "id")
 	if err != nil {

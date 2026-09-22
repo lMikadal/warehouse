@@ -1934,6 +1934,96 @@
           ]
         },
         {
+          "name": "Sales claims",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/sales-claims?page=1&limit=10",
+                "description": "order.order_sales_claim.view — purchasing view, fixed type=claim"
+              }
+            },
+            {
+              "name": "Count",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/sales-claims/count",
+                "description": "order.order_sales_claim.view — counts by status"
+              }
+            },
+            {
+              "name": "Get detail",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/order/sales-claims/1",
+                "description": "order.order_sales_claim.view — returns note_supplier, supplier snapshot (name/address/tel), order_created_at, delivery_at"
+              }
+            },
+            {
+              "name": "Filters (suppliers)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/sales-claims/filters?facet=suppliers&page=1&limit=20&search=",
+                "description": "order.order_sales_claim.view — supplier picker; items include address + tel"
+              }
+            },
+            {
+              "name": "Assign supplier / save note (draft)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"supplier_user_id\": 1,\n  \"note_supplier\": \"Please inspect and replace the defective unit.\"\n}"
+                },
+                "url": "{{baseUrl}}/order/sales-claims/1",
+                "description": "order.order_sales_claim.update — allowed only while pending/acknowledged; supplier must be active"
+              }
+            },
+            {
+              "name": "Send to supplier (status)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"waiting_supplier\"\n}"
+                },
+                "url": "{{baseUrl}}/order/sales-claims/1/status",
+                "description": "order.order_sales_claim.update — requires supplier_user_id set (else validation_error 'supplier required')"
+              }
+            },
+            {
+              "name": "Record line verdict",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"success\",\n  \"note\": \"Supplier approved the replacement.\"\n}"
+                },
+                "url": "{{baseUrl}}/order/sales-claims/1/items/1",
+                "description": "order.order_sales_claim.update — per-line supplier verdict (success | rejected) + note"
+              }
+            },
+            {
+              "name": "Close claim (status)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"success\"\n}"
+                },
+                "url": "{{baseUrl}}/order/sales-claims/1/status",
+                "description": "order.order_sales_claim.update — blocked until every line is reviewed"
+              }
+            }
+          ]
+        },
+        {
           "name": "Quotations",
           "item": [
             {

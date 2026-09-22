@@ -219,7 +219,14 @@ func (h *FiltersHandler) respondSupplierFilters(c *echo.Context) error {
 		if r.CompanyName.Valid && strings.TrimSpace(r.CompanyName.String) != "" {
 			label = r.CompanyName.String
 		}
-		items[i] = filterItem{ID: r.ID, Name: label}
+		item := filterItem{ID: r.ID, Name: label}
+		if r.CompanyAddress.Valid {
+			item.Address = strings.TrimSpace(r.CompanyAddress.String)
+		}
+		if r.ContactTel.Valid {
+			item.Tel = strings.TrimSpace(r.ContactTel.String)
+		}
+		items[i] = item
 	}
 	return c.JSON(http.StatusOK, filtersResponse{
 		Items: items,

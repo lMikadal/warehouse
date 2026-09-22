@@ -21,6 +21,7 @@ CREATE TABLE order_claim (
     type             claim_type               NOT NULL,                 -- claim vs return
     payment_type     order_claim_payment_type NOT NULL,                 -- refund/compensation method
     other_reason     TEXT                     NOT NULL DEFAULT '',      -- reason when payment_type='other'
+    note_supplier    TEXT                     NOT NULL DEFAULT '',      -- message sent with the supplier document
     total_price      NUMERIC(15,4)            NOT NULL DEFAULT 0,       -- claim total amount
     status           order_claim_status  NOT NULL DEFAULT 'pending', -- claim workflow (same enum as lines)
     deleted_at       TIMESTAMPTZ,

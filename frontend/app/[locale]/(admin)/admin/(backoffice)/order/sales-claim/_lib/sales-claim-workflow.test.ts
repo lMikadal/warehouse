@@ -12,10 +12,10 @@ const items = (...statuses: string[]) =>
   statuses.map((status) => ({ status })) as { status: never }[];
 
 describe("salesClaimActions", () => {
-  test("a filed claim can only be picked up or killed", () => {
+  test("a filed claim can be acknowledged, sent to supplier, or killed", () => {
     expect(
       salesClaimActions("pending", items("pending")).map((a) => a.status),
-    ).toEqual(["acknowledged", "rejected", "cancelled"]);
+    ).toEqual(["acknowledged", "waiting_supplier", "rejected", "cancelled"]);
   });
 
   test("closing is blocked while a line is unreviewed", () => {
@@ -52,18 +52,36 @@ test("line verdicts are only taken while under review", () => {
 });
 
 describe("salesClaimTimeline", () => {
-  test("the current status is the live step", () => {
-    expect(salesClaimTimeline("pending")).toEqual({ done: 0, current: 0 });
-    expect(salesClaimTimeline("waiting_supplier")).toEqual({
-      done: 2,
-      current: 2,
+  test("before send the claim sits on the first step", () => {
+    expect(salesClaimTimeline("pending", items("pending"))).toEqual({
+      done: 0,
+      current: 0,
     });
+    expect(salesClaimTimeline("acknowledged", items("pending"))).toEqual({
+      done: 0,
+      current: 0,
+    });
+  });
+
+  test("waiting_supplier advances as the supplier answers lines", () => {
+    // Sent, nothing answered yet.
+    expect(
+      salesClaimTimeline("waiting_supplier", items("pending", "pending")),
+    ).toEqual({ done: 2, current: 2 });
+    // At least one line answered → supplier replied.
+    expect(
+      salesClaimTimeline("waiting_supplier", items("success", "pending")),
+    ).toEqual({ done: 3, current: 3 });
+    // Every line answered → all reviewed, waiting to close.
+    expect(
+      salesClaimTimeline("waiting_supplier", items("success", "rejected")),
+    ).toEqual({ done: 4, current: 4 });
   });
 
   test("a finished or killed claim lights every step", () => {
     const all = { done: SALES_CLAIM_STEPS.length, current: -1 };
-    expect(salesClaimTimeline("success")).toEqual(all);
-    expect(salesClaimTimeline("cancelled")).toEqual(all);
-    expect(salesClaimTimeline("rejected")).toEqual(all);
+    expect(salesClaimTimeline("success", items("success"))).toEqual(all);
+    expect(salesClaimTimeline("cancelled", items("pending"))).toEqual(all);
+    expect(salesClaimTimeline("rejected", items("pending"))).toEqual(all);
   });
 });

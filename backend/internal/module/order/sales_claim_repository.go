@@ -22,21 +22,28 @@ func NewSalesClaimRepository(db *sql.DB) *SalesClaimRepository {
 func (r *SalesClaimRepository) Detail(ctx context.Context, claimID int64, locale string) (SalesClaimDetail, error) {
 	var d SalesClaimDetail
 	var sku, paymentSKU, orderSKU, memberName, memberTel, createdBy, updatedBy sql.NullString
+	var supplierID sql.NullInt64
+	var supplierName, supplierAddress, supplierTel sql.NullString
+	var orderCreatedAt, deliveryAt sql.NullTime
 	err := r.db.QueryRowContext(ctx, `
-SELECT c.id, c.sku, c.type::text, c.status::text, c.payment_type::text, c.other_reason,
+SELECT c.id, c.sku, c.type::text, c.status::text, c.payment_type::text, c.other_reason, c.note_supplier,
        c.total_price::float8, c.order_payment_id, p.sku, p.payment_category::text, p.total_price::float8,
-       p.order_list_id, d.sku, d.member_name, d.member_tel, cu.username, uu.username,
-       c.created_at, c.updated_at
+       p.order_list_id, d.sku, d.member_name, d.member_tel,
+       c.supplier_user_id, si.name, si.address, si.tel,
+       cu.username, uu.username, d.created_at, s.received_at, c.created_at, c.updated_at
 FROM order_claim c
 JOIN order_payment p ON p.id = c.order_payment_id AND p.deleted_at IS NULL
 JOIN order_list d ON d.id = p.order_list_id AND d.deleted_at IS NULL
+LEFT JOIN order_list_shipping s ON s.order_list_id = d.id
+LEFT JOIN supplier_information si ON si.supplier_user_id = c.supplier_user_id AND si.type = 'contact'
 LEFT JOIN admin_user cu ON cu.id = c.created_by
 LEFT JOIN admin_user uu ON uu.id = c.updated_by
 WHERE c.id = $1 AND c.deleted_at IS NULL`, claimID).Scan(
-		&d.ID, &sku, &d.Type, &d.Status, &d.PaymentType, &d.OtherReason,
+		&d.ID, &sku, &d.Type, &d.Status, &d.PaymentType, &d.OtherReason, &d.NoteSupplier,
 		&d.TotalPrice, &d.OrderPaymentID, &paymentSKU, &d.PaymentCategory, &d.PaymentTotalPrice,
-		&d.OrderListID, &orderSKU, &memberName, &memberTel, &createdBy, &updatedBy,
-		&d.CreatedAt, &d.UpdatedAt)
+		&d.OrderListID, &orderSKU, &memberName, &memberTel,
+		&supplierID, &supplierName, &supplierAddress, &supplierTel,
+		&createdBy, &updatedBy, &orderCreatedAt, &deliveryAt, &d.CreatedAt, &d.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return d, ErrNotFound
 	}
@@ -48,8 +55,20 @@ WHERE c.id = $1 AND c.deleted_at IS NULL`, claimID).Scan(
 	d.OrderSKU = orderSKU.String
 	d.MemberName = nullableString(memberName)
 	d.MemberTel = nullableString(memberTel)
+	if supplierID.Valid {
+		d.SupplierUserID = &supplierID.Int64
+	}
+	d.SupplierName = nullableString(supplierName)
+	d.SupplierAddress = nullableString(supplierAddress)
+	d.SupplierTel = nullableString(supplierTel)
 	d.CreatedByName = nullableString(createdBy)
 	d.UpdatedByName = nullableString(updatedBy)
+	if orderCreatedAt.Valid {
+		d.OrderCreatedAt = &orderCreatedAt.Time
+	}
+	if deliveryAt.Valid {
+		d.DeliveryAt = &deliveryAt.Time
+	}
 
 	items, err := r.detailItems(ctx, claimID, locale)
 	if err != nil {
@@ -57,6 +76,65 @@ WHERE c.id = $1 AND c.deleted_at IS NULL`, claimID).Scan(
 	}
 	d.Items = items
 	return d, nil
+}
+
+// Patch assigns the supplier and/or the document message. v1 froze the claim once it left the desk, so
+// only a pending or acknowledged claim may be edited here; the supplier must be an active row.
+func (r *SalesClaimRepository) Patch(ctx context.Context, claimID int64, in SalesClaimPatchInput, actor int64) error {
+	if in.SupplierUserID == nil && in.NoteSupplier == nil {
+		return fmt.Errorf("%w: nothing to update", ErrValidation)
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	var current string
+	err = tx.QueryRowContext(ctx, `
+SELECT status::text FROM order_claim WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, claimID).Scan(&current)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if current != "pending" && current != "acknowledged" {
+		return fmt.Errorf("%w: claim can no longer be edited", ErrValidation)
+	}
+
+	sets := []string{"updated_at = NOW()", "updated_by = NULLIF($2, 0)"}
+	args := []any{claimID, actor}
+	if in.SupplierUserID != nil {
+		if *in.SupplierUserID <= 0 {
+			return fmt.Errorf("%w: invalid supplier", ErrValidation)
+		}
+		var ok bool
+		if err := tx.QueryRowContext(ctx, `
+SELECT EXISTS (SELECT 1 FROM supplier_user WHERE id = $1 AND is_active AND deleted_at IS NULL)`,
+			*in.SupplierUserID).Scan(&ok); err != nil {
+			return err
+		}
+		if !ok {
+			return fmt.Errorf("%w: supplier not found", ErrValidation)
+		}
+		args = append(args, *in.SupplierUserID)
+		sets = append(sets, fmt.Sprintf("supplier_user_id = $%d", len(args)))
+	}
+	if in.NoteSupplier != nil {
+		args = append(args, strings.TrimSpace(*in.NoteSupplier))
+		sets = append(sets, fmt.Sprintf("note_supplier = $%d", len(args)))
+	}
+	res, err := tx.ExecContext(ctx, fmt.Sprintf(`
+UPDATE order_claim SET %s WHERE id = $1 AND deleted_at IS NULL`, strings.Join(sets, ", ")), args...)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return tx.Commit()
 }
 
 func (r *SalesClaimRepository) detailItems(ctx context.Context, claimID int64, locale string) ([]SalesClaimItemDetail, error) {
@@ -123,6 +201,18 @@ SELECT status::text FROM order_claim WHERE id = $1 AND deleted_at IS NULL FOR UP
 	}
 	if !containsString(salesClaimTransitions[current], next) {
 		return fmt.Errorf("%w: cannot move claim from %s to %s", ErrValidation, current, next)
+	}
+
+	if next == "waiting_supplier" {
+		var hasSupplier bool
+		if err := tx.QueryRowContext(ctx, `
+SELECT supplier_user_id IS NOT NULL FROM order_claim WHERE id = $1 AND deleted_at IS NULL`, claimID).
+			Scan(&hasSupplier); err != nil {
+			return err
+		}
+		if !hasSupplier {
+			return fmt.Errorf("%w: supplier required before sending", ErrValidation)
+		}
 	}
 
 	if next == "success" {

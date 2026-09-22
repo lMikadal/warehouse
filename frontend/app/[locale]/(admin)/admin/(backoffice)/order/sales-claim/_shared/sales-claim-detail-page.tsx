@@ -1,5 +1,6 @@
 "use client";
 
+import { Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -74,13 +75,25 @@ export function SalesClaimDetailPage({
       <CrudPageHeader
         title={`${t("docTitle")} ${detail.sku?.trim() || t("emptyCell")}`}
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/admin/order/sales-claim")}
-          >
-            {t("backToList")}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {detail.status === "success" ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => window.print()}
+              >
+                <Printer className="text-current" />
+                {t("printButton")}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/admin/order/sales-claim")}
+            >
+              {t("backToList")}
+            </Button>
+          </div>
         }
       />
       <SalesClaimProcessView

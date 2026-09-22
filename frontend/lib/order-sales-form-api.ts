@@ -28,7 +28,8 @@ export type OrderSalesFormResource =
   | "tickets"
   | "purchases"
   | "orders"
-  | "store-claims";
+  | "store-claims"
+  | "sales-claims";
 
 function proxyBase(resource: OrderSalesFormResource) {
   return `/api/v1/auth/proxy/order/${resource}`;
