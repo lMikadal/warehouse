@@ -108,7 +108,10 @@
       "deleteLocked": "A document already in progress cannot be deleted",
       "ariaView": "View details",
       "ariaEdit": "Edit",
-      "ariaDelete": "Delete"
+      "ariaDelete": "Delete",
+      "backToList": "Back to list",
+      "documentLoadFailed": "Failed to load document",
+      "documentNotFound": "Document not found"
     }
   }
 }

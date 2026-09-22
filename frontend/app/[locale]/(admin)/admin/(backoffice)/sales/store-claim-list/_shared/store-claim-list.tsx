@@ -270,11 +270,13 @@ export function StoreClaimList() {
               </TableRow>
             ) : (
               rows.map((row) => {
-                // Only an untouched document may still be edited or withdrawn.
+                // Returns may be edited on the payment form while pending; claims are view-only here.
                 const open = row.status === "pending";
                 const actions: TableIconActionKey[] = [];
                 if (perms.view) actions.push("view");
-                if (perms.update && open) actions.push("edit");
+                if (perms.update && open && row.type === "return") {
+                  actions.push("edit");
+                }
                 if (perms.delete && open) actions.push("delete");
                 return (
                   <TableRow key={row.id}>
@@ -310,8 +312,14 @@ export function StoreClaimList() {
                               setDeleteTarget(row);
                               return;
                             }
+                            if (row.type === "claim" && action === "view") {
+                              router.push(
+                                `/admin/sales/store-claim-list/${row.id}`,
+                              );
+                              return;
+                            }
                             router.push(
-                              `/admin/sales/store-claim/${row.order_payment_id}`
+                              `/admin/sales/store-claim/${row.order_payment_id}`,
                             );
                           }}
                         />

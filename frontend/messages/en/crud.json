@@ -3,6 +3,7 @@
     "btn": {
       "back": "Back",
       "cancel": "Cancel",
+      "confirm": "Confirm",
       "create": "Add",
       "delete": "Delete",
       "edit": "Edit",

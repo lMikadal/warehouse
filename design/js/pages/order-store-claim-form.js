@@ -195,6 +195,8 @@
     var total = state.draftItems.reduce(function (s, d) {
       return s + d.lineTotal;
     }, 0);
+    var claimType = state.draftItems[0].type;
+    var createStatus = claimType === "return" ? "success" : "pending";
     var existing = claimForPayment();
     var claimId;
     if (existing) {
@@ -220,7 +222,7 @@
         payment_type: state.paymentType,
         other_reason: state.otherReason,
         total_price: total,
-        status: "pending",
+        status: createStatus,
         created_at: ts,
         updated_at: ts,
         created_by: actor,
@@ -235,7 +237,7 @@
         setting_claim_reason_id: d.reasonId,
         type: d.type,
         amount: d.amount,
-        status: "pending",
+        status: createStatus,
         note: "",
         created_at: ts,
         updated_at: ts,

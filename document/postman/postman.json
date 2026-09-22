@@ -1895,6 +1895,45 @@
           ]
         },
         {
+          "name": "Store claims",
+          "item": [
+            {
+              "name": "Create claim (return → success)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"return\",\n  \"payment_type\": \"cash\",\n  \"items\": [\n    {\n      \"order_payment_item_id\": 1,\n      \"type\": \"return\",\n      \"setting_claim_reason_id\": 1,\n      \"amount\": 1\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/store-claims/1/claims",
+                "description": "order.order_store_claim.update — type return: order_claim + items created with status success; type claim: status pending"
+              }
+            },
+            {
+              "name": "Create claim (claim → pending)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"claim\",\n  \"payment_type\": \"cash\",\n  \"items\": [\n    {\n      \"order_payment_item_id\": 1,\n      \"type\": \"claim\",\n      \"setting_claim_reason_id\": 1,\n      \"amount\": 1\n    }\n  ]\n}"
+                },
+                "url": "{{baseUrl}}/order/store-claims/1/claims",
+                "description": "order.order_store_claim.update — claim documents stay pending for sales-claims desk"
+              }
+            },
+            {
+              "name": "Get claim document (store list)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/order/store-claim-lists/1",
+                "description": "order.order_store_claim_list.view — same body as GET /sales-claims/:id; store desk read-only view"
+              }
+            }
+          ]
+        },
+        {
           "name": "Quotations",
           "item": [
             {

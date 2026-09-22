@@ -14,12 +14,17 @@ import (
 // /api/v1/order/store-claim-lists (the filed documents). Both are the same table; they are two menus in
 // v1 and two RBAC resources here, so they stay two route groups over one repository.
 type StoreClaimHandler struct {
-	repo     *StoreClaimRepository
-	formRead *SalesFormReadHandlers
+	repo           *StoreClaimRepository
+	salesClaimRepo *SalesClaimRepository
+	formRead       *SalesFormReadHandlers
 }
 
-func NewStoreClaimHandler(repo *StoreClaimRepository, formRead *SalesFormReadHandlers) *StoreClaimHandler {
-	return &StoreClaimHandler{repo: repo, formRead: formRead}
+func NewStoreClaimHandler(
+	repo *StoreClaimRepository,
+	salesClaimRepo *SalesClaimRepository,
+	formRead *SalesFormReadHandlers,
+) *StoreClaimHandler {
+	return &StoreClaimHandler{repo: repo, salesClaimRepo: salesClaimRepo, formRead: formRead}
 }
 
 func (h *StoreClaimHandler) listPayments(c *echo.Context) error {
@@ -114,6 +119,18 @@ func (h *StoreClaimHandler) count(c *echo.Context) error {
 	resp, err := h.repo.Count(c.Request().Context(), h.parseListQuery(c))
 	if err != nil {
 		return pickingError(c, "store claim counts", err, "failed to load counts")
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *StoreClaimHandler) getDocument(c *echo.Context) error {
+	id, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	resp, err := h.salesClaimRepo.Detail(c.Request().Context(), id, api.LocaleFromRequest(c))
+	if err != nil {
+		return pickingError(c, "store claim document", err, "failed to load claim")
 	}
 	return c.JSON(http.StatusOK, resp)
 }

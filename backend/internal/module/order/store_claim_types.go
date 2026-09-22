@@ -161,8 +161,8 @@ type StoreClaimCountResponse struct {
 	ByStatus map[string]int64 `json:"by_status"`
 }
 
-// storeClaimStatuses is order_claim_status in workflow order. The shop floor only ever files `pending`;
-// the rest belong to the purchasing side (Phase 8) and to this list's filter tabs.
+// storeClaimStatuses is order_claim_status in workflow order. Shop-floor returns file as `success` on
+// create; claims file as `pending`. Later statuses belong to the purchasing desk and list filter tabs.
 var storeClaimStatuses = []string{
 	"pending", "acknowledged", "waiting_supplier", "success", "cancelled", "rejected",
 }

@@ -33,5 +33,7 @@ const listCrud = createSystemCrudHandlers(LIST_BASE);
 export const handleStoreClaimListGet = listCrud.listGet;
 export const handleStoreClaimListCountGet = (r: Request) =>
   proxyListGet(r, `${LIST_BASE}/count`);
+export const handleStoreClaimDocumentGet = (r: Request, id: string) =>
+  proxyListGet(r, `${LIST_BASE}/${id}`);
 export const handleStoreClaimDelete = (r: Request, id: string) =>
   proxyAuthedBackendJson(r, `${LIST_BASE}/${id}`, { method: "DELETE" });

@@ -146,7 +146,8 @@ func RegisterRoutes(g *echo.Group, db *sql.DB, cfg config.Config) {
 	o.PATCH("/:id/shipping", pickH.patchShipping)
 	o.PATCH("/:id/items/:itemId", pickH.patchItem)
 
-	scH := NewStoreClaimHandler(NewStoreClaimRepository(db), formRead)
+	storeClaimRepo := NewStoreClaimRepository(db)
+	scH := NewStoreClaimHandler(storeClaimRepo, NewSalesClaimRepository(db), formRead)
 	sc := g.Group("/store-claims")
 	sc.GET("", scH.listPayments)
 	sc.GET("/items", formRead.ListItems)
@@ -158,6 +159,7 @@ func RegisterRoutes(g *echo.Group, db *sql.DB, cfg config.Config) {
 	scl := g.Group("/store-claim-lists")
 	scl.GET("", scH.list)
 	scl.GET("/count", scH.count)
+	scl.GET("/:id", scH.getDocument)
 	scl.DELETE("/:id", scH.delete)
 
 	salesClaimH := NewSalesClaimHandler(NewSalesClaimRepository(db))

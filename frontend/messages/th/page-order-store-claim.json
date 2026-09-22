@@ -108,7 +108,10 @@
       "deleteLocked": "เอกสารที่เริ่มดำเนินการแล้วไม่สามารถลบได้",
       "ariaView": "ดูรายละเอียด",
       "ariaEdit": "แก้ไข",
-      "ariaDelete": "ลบ"
+      "ariaDelete": "ลบ",
+      "backToList": "กลับรายการ",
+      "documentLoadFailed": "โหลดเอกสารไม่สำเร็จ",
+      "documentNotFound": "ไม่พบเอกสาร"
     }
   }
 }

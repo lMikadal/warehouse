@@ -1,5 +1,6 @@
 import { authFetch } from "@/lib/auth-client";
 import { BffApiError, bffJsonHeaders, parseBffError } from "@/lib/bff-crud-client";
+import type { SalesClaimDetail } from "@/lib/order-sales-claim-api";
 
 export { BffApiError as OrderStoreClaimApiError };
 
@@ -243,4 +244,16 @@ export async function fetchStoreClaimCount(
 export async function deleteStoreClaim(id: number): Promise<void> {
   const res = await authFetch(`${LIST_BASE}/${id}`, { method: "DELETE" });
   if (!res.ok) throw await parseError(res);
+}
+
+/** Read-only claim document for the store claim list desk (`order_store_claim_list.view`). */
+export async function fetchStoreClaimDocumentDetail(
+  locale: string,
+  id: number,
+): Promise<SalesClaimDetail> {
+  const res = await authFetch(`${LIST_BASE}/${id}`, {
+    headers: bffJsonHeaders(locale),
+  });
+  if (!res.ok) throw await parseError(res);
+  return res.json() as Promise<SalesClaimDetail>;
 }

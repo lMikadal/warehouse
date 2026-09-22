@@ -119,8 +119,8 @@ func TestStoreClaimLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("claims: %v", err)
 	}
-	if len(claims.Items) != 1 || claims.Items[0].SKU == "" || claims.Items[0].Status != "pending" {
-		t.Fatalf("a filed claim carries a number and waits for purchasing, got %+v", claims.Items)
+	if len(claims.Items) != 1 || claims.Items[0].SKU == "" || claims.Items[0].Status != "success" {
+		t.Fatalf("a filed return closes immediately as success, got %+v", claims.Items)
 	}
 	if len(claims.Items[0].Items) != 1 || claims.Items[0].Items[0].Amount != 2 {
 		t.Fatalf("the claim keeps the quantity it was filed for, got %+v", claims.Items[0].Items)
@@ -144,7 +144,7 @@ func TestStoreClaimLifecycle(t *testing.T) {
 		t.Fatal("claiming more than was paid must be refused")
 	}
 
-	list, err := repo.List(ctx, StoreClaimListQuery{Page: 1, Limit: 50, Status: "pending"})
+	list, err := repo.List(ctx, StoreClaimListQuery{Page: 1, Limit: 50, Status: "success"})
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestStoreClaimLifecycle(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("the filed claim must show under the pending chip; got %d rows", len(list.Items))
+		t.Fatalf("the filed return must show under the success chip; got %d rows", len(list.Items))
 	}
 
 	if err := repo.Delete(ctx, claimID, 1); err != nil {

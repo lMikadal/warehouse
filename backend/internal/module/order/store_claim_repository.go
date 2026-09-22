@@ -316,13 +316,18 @@ SELECT is_paid FROM order_payment WHERE id = $1 AND deleted_at IS NULL`, payment
 		return 0, err
 	}
 
+	status := "pending"
+	if in.Type == "return" {
+		status = "success"
+	}
+
 	var claimID int64
 	if err := tx.QueryRowContext(ctx, `
 INSERT INTO order_claim (sku, order_payment_id, type, payment_type, other_reason, total_price,
                          status, created_by, updated_by)
-VALUES ($1, $2, $3::claim_type, $4::order_claim_payment_type, $5, $6, 'pending',
-        NULLIF($7, 0), NULLIF($7, 0))
-RETURNING id`, sku, paymentID, in.Type, in.PaymentType, strings.TrimSpace(in.OtherReason), total, actor).
+VALUES ($1, $2, $3::claim_type, $4::order_claim_payment_type, $5, $6, $7,
+        NULLIF($8, 0), NULLIF($8, 0))
+RETURNING id`, sku, paymentID, in.Type, in.PaymentType, strings.TrimSpace(in.OtherReason), total, status, actor).
 		Scan(&claimID); err != nil {
 		return 0, err
 	}
@@ -331,8 +336,8 @@ RETURNING id`, sku, paymentID, in.Type, in.PaymentType, strings.TrimSpace(in.Oth
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO order_claim_item (order_claim_id, order_payment_item_id, setting_claim_reason_id, type,
                               amount, status, note, created_by, updated_by)
-VALUES ($1, $2, $3, $4::claim_type, $5, 'pending', $6, NULLIF($7, 0), NULLIF($7, 0))`,
-			claimID, it.OrderPaymentItemID, it.SettingClaimReasonID, it.Type, it.Amount,
+VALUES ($1, $2, $3, $4::claim_type, $5, $6, $7, NULLIF($8, 0), NULLIF($8, 0))`,
+			claimID, it.OrderPaymentItemID, it.SettingClaimReasonID, it.Type, it.Amount, status,
 			strings.TrimSpace(it.Note), actor); err != nil {
 			return 0, err
 		}
