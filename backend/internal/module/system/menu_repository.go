@@ -296,12 +296,12 @@ func sortMenuTree(rows []MenuRow) []MenuRow {
 }
 
 type MenuCreateInput struct {
-	ParentID  *int64
-	Module    string
-	Path      *string
-	IsActive  bool
-	Names     map[string]string
-	ActorID   int64
+	ParentID *int64
+	Module   string
+	Path     *string
+	IsActive bool
+	Names    map[string]string
+	ActorID  int64
 }
 
 func (r *MenuRepository) Create(ctx context.Context, in MenuCreateInput) (MenuRow, error) {

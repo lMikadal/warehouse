@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
-	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
+	"github.com/labstack/echo/v5"
 )
 
 type userFilterItem struct {
@@ -40,7 +40,7 @@ func userStatsResponseFor(row UserStats, userType string) userStatsResponse {
 	out := userStatsResponse{
 		TotalCustomers: row.TotalCustomers,
 		ActiveMembers:  row.ActiveMembers,
-		NewThisMonth:     row.NewThisMonth,
+		NewThisMonth:   row.NewThisMonth,
 	}
 	if userType == "superadmin" {
 		v := row.SalesThisMonth

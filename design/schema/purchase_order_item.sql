@@ -23,6 +23,8 @@ CREATE TABLE purchase_order_item (
     qty                          INTEGER                      NOT NULL DEFAULT 1,       -- ordered quantity
     free_gift                    INTEGER                      NOT NULL DEFAULT 0,       -- bonus quantity
     unit                         product_unit                 NOT NULL DEFAULT 'piece', -- measurement unit
+    old_qty                      INTEGER,                                               -- qty taken off parent_id when this line was split off (v1 old_qty)
+    old_unit                     product_unit,                                          -- parent unit at split time (v1 old_unit); revert restores parent using both
     price_per_unit               NUMERIC(15,4)                NOT NULL DEFAULT 0,   -- unit price snapshot
     vat_rate                     NUMERIC(5,2)                 NOT NULL DEFAULT 0,   -- VAT rate snapshot
     discount                     NUMERIC(15,4)                NOT NULL DEFAULT 0,   -- line discount
@@ -33,6 +35,8 @@ CREATE TABLE purchase_order_item (
     updated_at                   TIMESTAMPTZ                  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                   BIGINT                       REFERENCES admin_user(id) ON DELETE SET NULL,
     updated_by                   BIGINT                       REFERENCES admin_user(id) ON DELETE SET NULL,
+    CONSTRAINT chk_purchase_order_item_catalog  CHECK (type <> 'catalog' OR product_item_id IS NOT NULL),
+    CONSTRAINT chk_purchase_order_item_custom   CHECK (type <> 'custom'  OR (name IS NOT NULL AND length(btrim(name)) > 0)),
     CONSTRAINT chk_purchase_order_item_discount CHECK (discount >= 0),
     CONSTRAINT chk_purchase_order_item_free_gift CHECK (free_gift >= 0)
 );

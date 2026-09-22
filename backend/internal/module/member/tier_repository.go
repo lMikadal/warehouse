@@ -28,8 +28,8 @@ type TierRow struct {
 	UpdatedAt     time.Time
 	Names         map[string]string
 	AttributeIDs  []int64
-	MemberCount    int64
-	RelationCount  int64
+	MemberCount   int64
+	RelationCount int64
 }
 
 type TierStats struct {
@@ -620,18 +620,18 @@ ON CONFLICT DO NOTHING`, tierID, attrID); err != nil {
 // Tier relation CRUD
 
 type TierRelationRow struct {
-	ID                     int64     `json:"id"`
-	MemberSettingRelationID int64    `json:"member_setting_relation_id"`
-	PurchaseStart          float64   `json:"purchase_start"`
-	PurchaseEnd            float64   `json:"purchase_end"`
-	Discount               float64   `json:"discount"`
-	DiscountType           string    `json:"discount_type"`
-	ScopeType              string    `json:"type"`
-	IsPromotion            bool      `json:"is_promotion"`
-	AttributeIDs           []int64   `json:"attribute_ids,omitempty"`
-	ProfileBusinessTitle   string    `json:"profile_business_title,omitempty"`
-	ProfileCreditName      string    `json:"profile_credit_name,omitempty"`
-	UpdatedAt              time.Time `json:"updated_at"`
+	ID                      int64     `json:"id"`
+	MemberSettingRelationID int64     `json:"member_setting_relation_id"`
+	PurchaseStart           float64   `json:"purchase_start"`
+	PurchaseEnd             float64   `json:"purchase_end"`
+	Discount                float64   `json:"discount"`
+	DiscountType            string    `json:"discount_type"`
+	ScopeType               string    `json:"type"`
+	IsPromotion             bool      `json:"is_promotion"`
+	AttributeIDs            []int64   `json:"attribute_ids,omitempty"`
+	ProfileBusinessTitle    string    `json:"profile_business_title,omitempty"`
+	ProfileCreditName       string    `json:"profile_credit_name,omitempty"`
+	UpdatedAt               time.Time `json:"updated_at"`
 }
 
 func (r *TierRepository) ListRelations(ctx context.Context, tierID int64, locale string) ([]TierRelationRow, error) {

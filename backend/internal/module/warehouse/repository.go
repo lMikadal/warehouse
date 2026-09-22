@@ -12,11 +12,11 @@ import (
 )
 
 type flatNode struct {
-	id            int64
-	sort, cap     int
+	id             int64
+	sort, cap      int
 	typ, sku, name string
-	parent        *int64
-	active        bool
+	parent         *int64
+	active         bool
 }
 
 type Row struct {
@@ -48,39 +48,39 @@ type Stats struct {
 }
 
 type TreeNode struct {
-	ID           int64            `json:"id"`
-	Type         string           `json:"type"`
-	SKU          string           `json:"sku"`
-	ParentID     *int64           `json:"parent_id"`
-	SortOrder    int              `json:"sort_order"`
-	Capacity     int              `json:"capacity"`
-	IsActive     bool             `json:"is_active"`
-	Name         string           `json:"name"`
-	Used         float64          `json:"used"`
-	CapacityPct  int              `json:"capacity_pct"`
-	ChildCounts  map[string]int   `json:"child_counts,omitempty"`
-	Conditions   []ConditionRow   `json:"conditions,omitempty"`
+	ID          int64          `json:"id"`
+	Type        string         `json:"type"`
+	SKU         string         `json:"sku"`
+	ParentID    *int64         `json:"parent_id"`
+	SortOrder   int            `json:"sort_order"`
+	Capacity    int            `json:"capacity"`
+	IsActive    bool           `json:"is_active"`
+	Name        string         `json:"name"`
+	Used        float64        `json:"used"`
+	CapacityPct int            `json:"capacity_pct"`
+	ChildCounts map[string]int `json:"child_counts,omitempty"`
+	Conditions  []ConditionRow `json:"conditions,omitempty"`
 }
 
 type ListFilter struct {
-	Page, Limit       int
-	Locale, Search    string
-	Type              string
-	ParentID          *int64
-	RootID            *int64
-	IsActive          *bool
-	IncludeStats      bool
+	Page, Limit    int
+	Locale, Search string
+	Type           string
+	ParentID       *int64
+	RootID         *int64
+	IsActive       *bool
+	IncludeStats   bool
 }
 
 type CreateInput struct {
-	Type        string
-	SKU         string
-	ParentID    *int64
-	Capacity    int
-	IsActive    bool
-	Names       map[string]string
-	Conditions  *ConditionsPatch
-	ActorID     int64
+	Type       string
+	SKU        string
+	ParentID   *int64
+	Capacity   int
+	IsActive   bool
+	Names      map[string]string
+	Conditions *ConditionsPatch
+	ActorID    int64
 }
 
 type Patch struct {

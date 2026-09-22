@@ -6,6 +6,7 @@ export type ProductItemBrowseRow = {
   id: number;
   product_list_id: number;
   sku: string;
+  barcode?: string;
   price: number;
   unit: string;
   qty_per_unit: number;
@@ -74,6 +75,8 @@ export type ProductItemListParams = {
   productAttributeModelId?: number;
   carYear?: number;
   oem?: string;
+  /** Purchase refill bucket: "low_stock" | "is_stop" | "ordered". */
+  refillFilter?: string;
   sort?: string;
   order?: "asc" | "desc";
   /** Comma-separated on wire; max 100 (backend). Omits is_active so inactive lines still resolve. */

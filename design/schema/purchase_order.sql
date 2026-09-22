@@ -1,7 +1,7 @@
 -- source: v1 order_purchases (renamed; v2 had no equivalent)
 --   - sku: PO number (null in draft; unique when set — replaces purchase_number)
---   - purchase_number_draft removed: draft state is sku IS NULL + status='draft'
---   - is_waiting removed: status enum covers all states
+--   - sku_draft: kept from v1 purchase_number_draft; drafts are referenced by number in the PO list before approval
+--   - is_waiting: kept from v1; refill flag is orthogonal to status (a refill PO passes through every status)
 --   - 12 workflow *_by/*_at columns removed: status transitions tracked in purchase_history instead
 --   - pricing: vat_rate + discount (Σ line item discounts) + special_discount → total_price
 --   - ordered_at: PO placement timestamp (v2 order_at)
@@ -13,6 +13,8 @@ CREATE TYPE purchase_order_status AS ENUM (
 CREATE TABLE purchase_order (
     id                  BIGSERIAL             PRIMARY KEY,              -- surrogate PK
     sku                 VARCHAR(50),          -- null until leaving draft
+    sku_draft           VARCHAR(50),          -- draft PO number, assigned on create and kept after promotion
+    is_waiting          BOOLEAN               NOT NULL DEFAULT FALSE, -- refill PO raised from a stock shortfall
     purchase_request_id BIGINT                REFERENCES purchase_request(id) ON DELETE SET NULL, -- source requisition
     supplier_user_id     BIGINT               REFERENCES supplier_user(id) ON DELETE SET NULL, -- supplier
     status              purchase_order_status NOT NULL DEFAULT 'draft', -- PO workflow state
@@ -28,7 +30,8 @@ CREATE TABLE purchase_order (
     updated_at          TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by          BIGINT                REFERENCES admin_user(id) ON DELETE SET NULL,
     updated_by          BIGINT                REFERENCES admin_user(id) ON DELETE SET NULL,
-    CONSTRAINT uq_purchase_order_sku UNIQUE (sku)
+    CONSTRAINT uq_purchase_order_sku UNIQUE (sku),
+    CONSTRAINT uq_purchase_order_sku_draft UNIQUE (sku_draft)
 );
 
 CREATE INDEX idx_purchase_order_status           ON purchase_order (status)              WHERE deleted_at IS NULL;

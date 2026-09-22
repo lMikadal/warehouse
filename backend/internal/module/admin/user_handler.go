@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
-	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
+	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type UserHandler struct {
@@ -141,12 +141,12 @@ func (h *UserHandler) get(c *echo.Context) error {
 }
 
 type userWriteBody struct {
-	Username    string  `json:"username"`
-	Email       string  `json:"email"`
-	Password    string  `json:"password"`
-	AdminRoleID int64   `json:"admin_role_id"`
-	Type        string  `json:"type"`
-	Status      string  `json:"status"`
+	Username    string `json:"username"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	AdminRoleID int64  `json:"admin_role_id"`
+	Type        string `json:"type"`
+	Status      string `json:"status"`
 }
 
 func (h *UserHandler) create(c *echo.Context) error {
@@ -298,4 +298,3 @@ func toUserListItem(r UserRow) userListItem {
 	}
 	return item
 }
-

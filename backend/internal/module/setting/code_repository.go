@@ -21,10 +21,10 @@ type CodeRow struct {
 }
 
 type CodeListFilter struct {
-	Page, Limit  int
-	Search       string
-	IsActive     *bool
-	Sort, Order  string
+	Page, Limit int
+	Search      string
+	IsActive    *bool
+	Sort, Order string
 }
 
 type CodeRepository struct {

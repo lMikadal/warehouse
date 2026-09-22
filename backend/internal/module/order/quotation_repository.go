@@ -913,9 +913,9 @@ FROM order_quotation_item WHERE order_quotation_id = $1 AND deleted_at IS NULL O
 			return err
 		}
 		type quoteLine struct {
-			pid                    sql.NullInt64
+			pid                            sql.NullInt64
 			amt, price, disc, vrate, total float64
-			vtype                  string
+			vtype                          string
 		}
 		var lines []quoteLine
 		for rows.Next() {
@@ -1046,9 +1046,9 @@ FROM order_quotation_item WHERE order_quotation_id = $1 AND deleted_at IS NULL O
 			return resp, err
 		}
 		type quoteLine struct {
-			pid                          sql.NullInt64
+			pid                            sql.NullInt64
 			amt, price, disc, vrate, total float64
-			vtype                        string
+			vtype                          string
 		}
 		var lines []quoteLine
 		for rows.Next() {

@@ -1,0 +1,218 @@
+{
+  "page": {
+    "orderClaim": {
+      "pageTitle": "รายการขอคืน/เคลมสินค้า",
+      "pageSubtitle": "จัดการและตรวจสอบรายการขอคืนหรือเคลมสินค้า",
+      "searchPlaceholder": "ค้นหาด้วยเลขที่เคลม...",
+      "filterDateRange": "ช่วงวันที่",
+      "filterDateRangePlaceholder": "เลือกช่วงวันที่",
+      "clearDateRange": "ล้างวันที่",
+      "filterTypeLabel": "ประเภท",
+      "filterTypeAll": "ทั้งหมด",
+      "exportButton": "ส่งออกข้อมูล",
+      "exportComingSoon": "ฟีเจอร์ส่งออกข้อมูลจะเปิดใช้งานเร็วๆ นี้",
+      "tabAll": "ทั้งหมด",
+      "colClaimNumber": "เลขที่เคลม",
+      "colClaimDate": "วันที่เคลม",
+      "colPurchaseNumber": "เลขที่ใบสั่งซื้อ",
+      "colType": "ประเภท",
+      "colRequester": "ผู้ขอ",
+      "colProgress": "รับเรื่อง/ส่งของ",
+      "colStatus": "สถานะ",
+      "resolution": {
+        "claim": "เคลมสินค้า",
+        "return": "คืนสินค้า",
+        "accept_loss": "ปฏิเสธ"
+      },
+      "status": {
+        "pending": "รอดำเนินการ",
+        "in_progress": "ระหว่างตรวจสอบ",
+        "completed": "สำเร็จ",
+        "cancelled": "ปฏิเสธ"
+      },
+      "empty": "ไม่พบรายการ",
+      "loadFailed": "โหลดรายการไม่สำเร็จ",
+      "updateFailed": "บันทึกไม่สำเร็จ",
+      "updateSuccess": "บันทึกสำเร็จ",
+      "cancelFailed": "ยกเลิกรายการไม่สำเร็จ",
+      "cancelSuccess": "ยกเลิกรายการแล้ว",
+      "ariaHistory": "ประวัติการดำเนินการ",
+      "ariaView": "ดูรายละเอียด",
+      "ariaEdit": "แก้ไขรายการ",
+      "ariaCancel": "ยกเลิกรายการ",
+      "editTitle": "จัดการรายการเคลม/คืน",
+      "noteTypeRejectLabel": "หมายเหตุ (ผู้ขอ)",
+      "noteProcessLabel": "หมายเหตุการดำเนินการ",
+      "historyModalTitle": "ประวัติการดำเนินการ",
+      "historyEmpty": "ยังไม่มีประวัติ",
+      "historyLoadError": "โหลดประวัติไม่สำเร็จ",
+      "historyClose": "ปิด",
+      "historyActorUnknown": "—",
+      "historyUntitled": "การดำเนินการ",
+      "edit": {
+        "backToList": "กลับรายการเคลม/คืน",
+        "loadError": "ไม่สามารถโหลดรายละเอียดได้",
+        "notFound": "ไม่พบรายการ",
+        "updateFailed": "บันทึกไม่สำเร็จ",
+        "updateSuccess": "บันทึกสำเร็จ",
+        "draftSaved": "บันทึกร่างแล้ว",
+        "confirmSuccess": "ยืนยันรายการแล้ว",
+        "rejectSuccess": "ปฏิเสธรายการแล้ว",
+        "rejectReasonRequired": "กรุณาระบุเหตุผลการปฏิเสธ",
+        "rowClickHint": "กดทั้งแถว เพื่อเลือกหัวข้อ",
+        "rightPanelTitle": "สร้างใบเคลม/คืน",
+        "rightPanelEmpty": "เลือกสินค้าสร้างใบเคลม/คืน",
+        "progressTitle": "ความคืบหน้าการรับเข้า",
+        "progressReceived": "รับเข้าแล้ว",
+        "progressRemaining": "คงเหลือ",
+        "progressReceivedValue": "มูลค่ารวม (รับเข้าแล้ว)",
+        "progressTotalValue": "มูลค่ารวมทั้งหมด",
+        "typePicker": {
+          "title": "เลือกหัวข้อที่ต้องการ",
+          "subtitle": "โปรดเลือกหัวข้อที่พบปัญหาหลังรับสินค้า",
+          "topics": {
+            "return": {
+              "title": "คืนสินค้า",
+              "description": "เลือกเพื่อสร้างใบคืนสินค้า"
+            },
+            "claim": {
+              "title": "เคลมสินค้า",
+              "description": "เลือกเพื่อสร้างใบเคลมสินค้า"
+            },
+            "accept_loss": {
+              "title": "ปฏิเสธ",
+              "description": "ระบุสาเหตุในการปฏิเสธ"
+            }
+          }
+        },
+        "rejectModal": {
+          "title": "ปฏิเสธ",
+          "subtitle": "ระบุเหตุผลการปฏิเสธ",
+          "reasonLabel": "ระบุเหตุผล"
+        },
+        "returnConfirmModal": {
+          "title": "คุณยืนยันจะส่งสินค้าคืนหรือไม่",
+          "subtitle": "หลังจากยืนยัน ระบบจะส่งอีเมลไปยังผู้จำหน่ายทันที ไม่ขอยืนยันอีกครั้ง"
+        },
+        "process": {
+          "download": "ดาวน์โหลด",
+          "ariaCopyClaimNumber": "คัดลอกเลขที่เคลม",
+          "metaCreateReturn": "สร้างใบคืนสินค้า",
+          "metaCreateClaim": "สร้างใบเคลม",
+          "metaSendToPartner": "ส่งให้คู่ค้า",
+          "vendorLabel": "ผู้จำหน่าย",
+          "refPoLabel": "เอกสารอ้างอิง (PO)",
+          "orderDateLabel": "วันที่สั่งซื้อ",
+          "receiveDateLabel": "วันที่รับสินค้า",
+          "quantityReturnLabel": "จำนวนที่ขอคืน",
+          "quantityClaimLabel": "จำนวนที่ขอเคลม",
+          "valueReturnLabel": "มูลค่าที่ขอคืน",
+          "valueClaimLabel": "มูลค่าที่ขอเคลม",
+          "noteLabel": "หมายเหตุ",
+          "editNoteAria": "แก้ไขหมายเหตุ",
+          "editNoteComingSoon": "ฟีเจอร์แก้ไขหมายเหตุจะเปิดใช้งานเร็วๆ นี้",
+          "itemsTitleReturn": "รายการสินค้าที่ขอคืน",
+          "itemsTitleClaim": "รายการสินค้าที่ขอเคลม",
+          "colItem": "รายการ",
+          "colBrand": "แบรนด์",
+          "colQty": "จำนวน",
+          "colUnit": "หน่วย",
+          "colUnitPrice": "ราคาต่อหน่วย",
+          "colDiscount": "ส่วนลด",
+          "colTotal": "ราคารวม",
+          "colIssue": "ปัญหา",
+          "colPartnerReview": "ตรวจสอบจากคู่ค้า",
+          "approveAria": "อนุมัติ",
+          "rejectAria": "ปฏิเสธ",
+          "rerouteClaim": "เปลี่ยนเป็นเคลม",
+          "rerouteReturn": "เปลี่ยนเป็นคืนสินค้า",
+          "timelineTitle": "สถานะการดำเนินการ",
+          "stepsReturn": {
+            "createDoc": "สร้างใบคืนสินค้า",
+            "sendToPartner": "ส่งเรื่องให้คู่ค้า",
+            "waitPartnerReview": "รอตรวจสอบจากคู่ค้า",
+            "partnerReply": "ตอบกลับผลตรวจสอบ",
+            "confirmAll": "ยืนยันผลการตรวจสอบทั้งหมด",
+            "close": "ปิดรายการ"
+          },
+          "stepsClaim": {
+            "createDoc": "สร้างใบเคลม",
+            "sendToPartner": "ส่งเรื่องให้คู่ค้า",
+            "waitPartnerReview": "รอตรวจสอบจากคู่ค้า",
+            "partnerReply": "ตอบกลับผลตรวจสอบ",
+            "confirmAll": "ยืนยันผลการตรวจสอบทั้งหมด",
+            "close": "ปิดรายการ"
+          },
+          "partnerReviewModal": {
+            "title": "ระบุรายละเอียดสถานะคู่ค้า",
+            "noteLabel": "รายละเอียด",
+            "notePlaceholder": "ระบุรายละเอียดสถานะคู่ค้า",
+            "noteRequired": "กรุณาระบุรายละเอียด"
+          },
+          "partnerApproved": "ยืนยันจากคู่ค้า : {note}",
+          "partnerRejected": "ปฏิเสธจากคู่ค้า : {note}",
+          "reviewSuccess": "บันทึกผลตรวจสอบแล้ว",
+          "stepsAcceptLoss": {
+            "createDoc": "สร้างใบเคลม",
+            "sendToPartner": "ส่งเรื่องให้คู่ค้า",
+            "waitPartnerReview": "รอตรวจสอบจากคู่ค้า",
+            "partnerReply": "ตอบกลับผลตรวจสอบ",
+            "confirmAll": "ยืนยันผลการตรวจสอบทั้งหมด",
+            "close": "ปิดรายการ"
+          }
+        },
+        "panel": {
+          "claimNumberPrefix": "ใบเคลม",
+          "returnTitle": "ใบรับสินค้า",
+          "claimTitle": "ใบเคลม",
+          "panelSubtitle": "ตรวจสอบรายการสินค้าที่ต้องการดำเนินการ",
+          "supplierLabel": "ผู้จำหน่าย",
+          "orderDateLabel": "วันที่สั่งซื้อ",
+          "receiveDateLabel": "วันที่รับสินค้า",
+          "colItem": "รายการ",
+          "colQty": "จำนวน",
+          "colUnit": "หน่วย",
+          "colManage": "จัดการ",
+          "removeItemAria": "ลบรายการออกจากแบบฟอร์ม",
+          "noteProcessLabel": "หมายเหตุ",
+          "noteProcessPlaceholder": "ระบุหมายเหตุ (ถ้ามี)",
+          "saveDraft": "บันทึกร่าง",
+          "summaryItems": "จำนวน {count} รายการ",
+          "summaryNet": "ราคาสุทธิ"
+        }
+      },
+      "itemsHeading": "รายการสินค้า",
+      "emptyCell": "-",
+      "currencySuffix": "฿",
+      "confirm": "ตกลง",
+      "claimDocLabel": "เลขที่ใบเคลม/คืน",
+      "claimDocStatus": {
+        "draft": "ฉบับร่าง",
+        "success": "สำเร็จ",
+        "cancelled": "ยกเลิก"
+      },
+      "kpiTotal": "รายการทั้งหมด",
+      "kpiPending": "รอดำเนินการ",
+      "kpiInProgress": "ระหว่างตรวจสอบ",
+      "kpiCompleted": "สำเร็จ",
+      "kpiCancelled": "ปฏิเสธ",
+      "kpiSubtitleUnit": "รายการ",
+      "filterStatusLabel": "สถานะ",
+      "colSupplier": "คู่ค้า",
+      "colQty": "จำนวน",
+      "colProduct": "สินค้า",
+      "issue": {
+        "overage": "สินค้ามาเกิน",
+        "shortage": "สินค้ามาไม่ครบ",
+        "damaged": "ของเสียหาย/แตกหัก",
+        "wrong": "ส่งสินค้าผิดรุ่น",
+        "other": "อื่นๆ"
+      },
+      "unit": {
+        "piece": "ชิ้น",
+        "box": "กล่อง",
+        "set": "ชุด"
+      }
+    }
+  }
+}

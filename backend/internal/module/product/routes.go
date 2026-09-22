@@ -3,10 +3,10 @@ package product
 import (
 	"database/sql"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/supplier"
 	"github.com/lMikadal/warehouse/backend/internal/module/warehouse"
+	"github.com/labstack/echo/v5"
 )
 
 func RegisterRoutes(g *echo.Group, db *sql.DB) {

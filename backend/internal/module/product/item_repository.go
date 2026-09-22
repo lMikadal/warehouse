@@ -88,6 +88,7 @@ func (r *ItemRepository) ListBrowse(ctx context.Context, f ItemListFilter) ([]It
 	q := fmt.Sprintf(`
 SELECT
   i.id, i.product_list_id, COALESCE(NULLIF(TRIM(i.sku), ''), pl.sku) AS sku,
+  COALESCE(i.barcode, '') AS barcode,
   %s::float8 AS display_price,
   i.unit::text, i.qty_per_unit, i.minimum_stock, i.is_active, i.is_stopped, i.updated_at,
   pl.tag, i.is_new, pl.product_brand_id, pl.product_category_id,
@@ -125,7 +126,7 @@ LEFT JOIN LATERAL (
     AND oli.type = 'item'::order_list_item_type
     AND oli.status IN ('pending'::order_list_item_status, 'in_progress'::order_list_item_status)
 ) rs ON TRUE
-` + DisplayPriceStockLotJoin + `
+`+DisplayPriceStockLotJoin+`
 LEFT JOIN LATERAL (
   SELECT COUNT(DISTINCT zone.parent_id) AS cnt
   FROM product_item_warehouse piw
@@ -164,7 +165,7 @@ LIMIT $%d OFFSET $%d`, DisplayPriceSellSQL, itemBrowseWholesalePriceSQL, itemBro
 		var brandID, catID, coverFileID sql.NullInt64
 		var carSummary sql.NullString
 		if err := rows.Scan(
-			&row.ID, &row.ProductListID, &row.SKU, &row.Price, &row.Unit, &row.QtyPerUnit,
+			&row.ID, &row.ProductListID, &row.SKU, &row.Barcode, &row.Price, &row.Unit, &row.QtyPerUnit,
 			&row.MinimumStock, &row.IsActive, &row.IsStopped, &row.UpdatedAt,
 			&row.Tag, &row.IsNew, &brandID, &catID,
 			&row.Name, &row.BrandName, &row.CategoryName,
@@ -228,17 +229,34 @@ func itemBrowseWhere(f ItemListFilter, startArg int) (string, []any) {
 		pat := "%" + strings.ToLower(q) + "%"
 		clauses = append(clauses, fmt.Sprintf(`(
   LOWER(COALESCE(i.sku, pl.sku, '')) LIKE $%d OR
+  LOWER(COALESCE(i.barcode, '')) LIKE $%d OR
   LOWER(COALESCE(pl.tag, '')) LIKE $%d OR
   LOWER(COALESCE(il.name, il2.name, ll.name, ll2.name, '')) LIKE $%d OR
   LOWER(COALESCE(bl.name, '')) LIKE $%d OR
   LOWER(COALESCE(cl.name, '')) LIKE $%d
-)`, n, n, n, n, n))
+)`, n, n, n, n, n, n))
 		args = append(args, pat)
 	}
 	if carClause, carArgs, nextN := itemBrowseCarFitmentClause(f, n); carClause != "" {
 		clauses = append(clauses, carClause)
 		args = append(args, carArgs...)
 		n = nextN
+	}
+	switch strings.TrimSpace(strings.ToLower(f.Refill)) {
+	case "low_stock":
+		clauses = append(clauses, `COALESCE((
+  SELECT SUM(s.remain_quantity) FROM product_item_stock s
+  WHERE s.product_item_id = i.id AND s.deleted_at IS NULL
+), 0) < i.minimum_stock`)
+	case "is_stop":
+		clauses = append(clauses, "i.is_stopped = TRUE")
+	case "ordered":
+		clauses = append(clauses, `EXISTS (
+  SELECT 1 FROM purchase_order_item poi
+  INNER JOIN purchase_order po ON po.id = poi.purchase_order_id AND po.deleted_at IS NULL
+  WHERE poi.product_item_id = i.id AND poi.deleted_at IS NULL
+    AND po.status NOT IN ('cancelled', 'rejected', 'receive_completed')
+)`)
 	}
 	if oem := strings.TrimSpace(f.OEM); oem != "" {
 		pat := "%" + strings.ToLower(oem) + "%"

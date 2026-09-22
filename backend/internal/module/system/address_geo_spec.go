@@ -11,10 +11,10 @@ const (
 )
 
 type geoSpec struct {
-	table      string
-	langTable  string
-	langFK     string
-	parentCol  string // empty for country
+	table       string
+	langTable   string
+	langFK      string
+	parentCol   string // empty for country
 	hasPostcode bool
 }
 
@@ -36,10 +36,10 @@ func geoSpecFor(level GeoLevel) geoSpec {
 		}
 	case GeoSubDistrict:
 		return geoSpec{
-			table:     "system_sub_district",
-			langTable: "system_sub_district_language",
-			langFK:    "system_sub_district_id",
-			parentCol: "system_district_id",
+			table:       "system_sub_district",
+			langTable:   "system_sub_district_language",
+			langFK:      "system_sub_district_id",
+			parentCol:   "system_district_id",
 			hasPostcode: true,
 		}
 	default:

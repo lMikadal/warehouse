@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
-	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
+	"github.com/labstack/echo/v5"
 )
 
 type Handler struct {
@@ -24,18 +24,18 @@ func NewHandler(repo *Repository, lang *setting.LangRepository) *Handler {
 }
 
 type listItem struct {
-	ID              int64   `json:"id"`
-	SKU             string  `json:"sku"`
-	CreditTerm      *int32  `json:"credit_term,omitempty"`
-	CreditTermNote  *string `json:"credit_term_note,omitempty"`
-	IsActive        bool    `json:"is_active"`
+	ID              int64     `json:"id"`
+	SKU             string    `json:"sku"`
+	CreditTerm      *int32    `json:"credit_term,omitempty"`
+	CreditTermNote  *string   `json:"credit_term_note,omitempty"`
+	IsActive        bool      `json:"is_active"`
 	UpdatedAt       time.Time `json:"updated_at"`
-	TaxNumber       string  `json:"tax_number,omitempty"`
-	CompanyName     string  `json:"company_name,omitempty"`
-	SettingPrefixID *int64  `json:"setting_prefix_id,omitempty"`
-	CompanyAddress  string  `json:"company_address,omitempty"`
-	ContactTel      string  `json:"contact_tel,omitempty"`
-	ContactEmail    string  `json:"contact_email,omitempty"`
+	TaxNumber       string    `json:"tax_number,omitempty"`
+	CompanyName     string    `json:"company_name,omitempty"`
+	SettingPrefixID *int64    `json:"setting_prefix_id,omitempty"`
+	CompanyAddress  string    `json:"company_address,omitempty"`
+	ContactTel      string    `json:"contact_tel,omitempty"`
+	ContactEmail    string    `json:"contact_email,omitempty"`
 }
 
 func (h *Handler) list(c *echo.Context) error {
@@ -82,13 +82,13 @@ func (h *Handler) get(c *echo.Context) error {
 }
 
 type createBody struct {
-	SKU            string                        `json:"sku"`
-	CreditTerm     *int32                        `json:"credit_term"`
-	CreditTermNote *string                       `json:"credit_term_note"`
-	IsActive       *bool                         `json:"is_active"`
-	Information    map[string]InformationInput   `json:"information"`
-	Contacts       []ContactInput                `json:"contacts"`
-	Banks          []BankInput                   `json:"banks"`
+	SKU            string                      `json:"sku"`
+	CreditTerm     *int32                      `json:"credit_term"`
+	CreditTermNote *string                     `json:"credit_term_note"`
+	IsActive       *bool                       `json:"is_active"`
+	Information    map[string]InformationInput `json:"information"`
+	Contacts       []ContactInput              `json:"contacts"`
+	Banks          []BankInput                 `json:"banks"`
 }
 
 func (h *Handler) create(c *echo.Context) error {

@@ -13,6 +13,7 @@
     "skuTaken": "This code is already in use",
     "generic": "Something went wrong. Please try again.",
     "loadFailed": "Failed to load data.",
-    "saveFailed": "Failed to save."
+    "saveFailed": "Failed to save.",
+    "deleteFailed": "Failed to delete."
   }
 }

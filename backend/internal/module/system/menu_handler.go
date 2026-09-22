@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type MenuHandler struct {
@@ -181,4 +181,3 @@ func (h *MenuHandler) delete(c *echo.Context) error {
 	}
 	return c.NoContent(http.StatusNoContent)
 }
-

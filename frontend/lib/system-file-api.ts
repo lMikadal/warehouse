@@ -12,7 +12,12 @@ export type SystemFilePurpose =
   | "member_avatar"
   | "member_tier_badge"
   | "member_document"
-  | "product_attribute_logo";
+  | "product_attribute_logo"
+  | "purchase_request_item_image"
+  | "purchase_order_item_image"
+  | "purchase_order_item_reject_image"
+  | "purchase_order_payment_proof"
+  | "purchase_order_attachment";
 
 export type SystemFileItem = {
   id: number;

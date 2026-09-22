@@ -7,17 +7,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/config"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
+	applog "github.com/lMikadal/warehouse/backend/internal/log"
 	"github.com/lMikadal/warehouse/backend/internal/module/member"
 	"github.com/lMikadal/warehouse/backend/internal/module/product"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/supplier"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	"github.com/lMikadal/warehouse/backend/internal/module/warehouse"
-	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 // SalesFormReadHandlers exposes member/product/vat reads under order.*.view RBAC.
@@ -27,6 +27,8 @@ type SalesFormReadHandlers struct {
 	productItems   *product.ItemHandler
 	productFilters *product.FiltersHandler
 	vat            *setting.VatRepository
+	settingLang    *setting.LangRepository
+	supplierBanks  *supplier.Repository
 }
 
 func NewSalesFormReadHandlers(db *sql.DB, cfg config.Config) *SalesFormReadHandlers {
@@ -34,6 +36,7 @@ func NewSalesFormReadHandlers(db *sql.DB, cfg config.Config) *SalesFormReadHandl
 	codePrefix := system.NewCodePrefixRepository(db)
 	userRepo := member.NewUserRepository(db, codePrefix, cfg)
 	prodRepo := product.NewRepository(db)
+	supplierRepo := supplier.NewRepository(db)
 	itemRepo := product.NewItemRepository(db)
 	listRepo := product.NewListRepository(db)
 	langRepo := setting.NewLangRepository(db)
@@ -41,8 +44,10 @@ func NewSalesFormReadHandlers(db *sql.DB, cfg config.Config) *SalesFormReadHandl
 		memberUsers:    userRepo,
 		memberSettings: setRepo,
 		productItems:   product.NewItemHandler(itemRepo, listRepo),
-		productFilters: product.NewFiltersHandler(prodRepo, supplier.NewRepository(db), langRepo, warehouse.NewRepository(db)),
+		productFilters: product.NewFiltersHandler(prodRepo, supplierRepo, langRepo, warehouse.NewRepository(db)),
 		vat:            setting.NewVatRepository(db),
+		settingLang:    langRepo,
+		supplierBanks:  supplierRepo,
 	}
 }
 
@@ -50,6 +55,9 @@ type salesFormFilterItem struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
 	SKU  string `json:"sku,omitempty"`
+	// Only the supplier_banks facet fills these; the payment form shows them as the payee details.
+	AccountName string `json:"account_name,omitempty"`
+	Branch      string `json:"branch,omitempty"`
 }
 
 type salesFormFiltersResponse struct {
@@ -138,9 +146,113 @@ func (h *SalesFormReadHandlers) FormFilters(c *echo.Context) error {
 		return h.productFilters.ItemBrowseFilters(c)
 	case "cars":
 		return h.productFilters.CarFilters(c)
+	case "suppliers":
+		return h.productFilters.SupplierFilters(c)
+	case "supplier_banks":
+		return h.filterSupplierBanks(c)
+	case "sale_channels":
+		return h.filterSettingLang(c, setting.LangSaleChannel)
+	case "payment_methods":
+		return h.filterSettingLang(c, setting.LangPaymentMethod)
+	case "claim_reasons":
+		return h.filterSettingLang(c, setting.LangClaimReason)
 	default:
 		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid or missing facet"})
 	}
+}
+
+// filterSupplierBanks lists the payee accounts of one supplier for the purchase payment form. The
+// combobox is meaningless without a supplier, so a missing supplier_user_id returns an empty page
+// rather than every bank row in the system.
+func (h *SalesFormReadHandlers) filterSupplierBanks(c *echo.Context) error {
+	q := api.ParsePageQuery(c)
+	empty := salesFormFiltersResponse{
+		Items: []salesFormFilterItem{},
+		Meta:  api.ListMeta{Total: 0, Page: 1, Limit: q.Limit},
+	}
+	supplierID, err := strconv.ParseInt(strings.TrimSpace(c.QueryParam("supplier_user_id")), 10, 64)
+	if err != nil || supplierID <= 0 {
+		return c.JSON(http.StatusOK, empty)
+	}
+	rows, err := h.supplierBanks.ListBankFilters(c.Request().Context(), supplierID,
+		strings.TrimSpace(c.QueryParam("search")), salesFormFilterQueryID(c))
+	if err != nil {
+		applog.HTTPError(c, "order form filters supplier banks", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+	}
+	items := make([]salesFormFilterItem, len(rows))
+	for i, r := range rows {
+		items[i] = salesFormFilterItem{
+			ID: r.ID, Name: r.Name, SKU: r.SKU,
+			AccountName: r.AccountName, Branch: r.Branch,
+		}
+	}
+	return c.JSON(http.StatusOK, salesFormFiltersResponse{
+		Items: items,
+		Meta:  api.ListMeta{Total: int64(len(items)), Page: 1, Limit: q.Limit},
+	})
+}
+
+// filterSettingLang exposes active setting_* options to sales/order pages under their own RBAC resource.
+func (h *SalesFormReadHandlers) filterSettingLang(c *echo.Context, kind setting.LangKind) error {
+	locale := api.LocaleFromRequest(c)
+	q := api.ParsePageQuery(c)
+	id := salesFormFilterQueryID(c)
+	if id > 0 {
+		row, err := h.settingLang.Get(c.Request().Context(), kind, id, locale)
+		if err != nil {
+			applog.HTTPError(c, "order form filters setting by id", err)
+			return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+		}
+		if row == nil {
+			return c.JSON(http.StatusOK, salesFormFiltersResponse{
+				Items: []salesFormFilterItem{},
+				Meta:  api.ListMeta{Total: 0, Page: 1, Limit: q.Limit},
+			})
+		}
+		return c.JSON(http.StatusOK, salesFormFiltersResponse{
+			Items: []salesFormFilterItem{{ID: row.ID, Name: row.Name}},
+			Meta:  api.ListMeta{Total: 1, Page: 1, Limit: q.Limit},
+		})
+	}
+	active := true
+	f := setting.LangListFilter{
+		Page: q.Page, Limit: q.Limit, Locale: locale,
+		Search: strings.TrimSpace(c.QueryParam("search")), IsActive: &active,
+	}
+	if kind == setting.LangPaymentMethod {
+		if v := strings.TrimSpace(c.QueryParam("is_purchase")); v == "true" {
+			t := true
+			f.IsPurchase = &t
+		}
+		if v := strings.TrimSpace(c.QueryParam("is_sale")); v == "true" {
+			t := true
+			f.IsSale = &t
+		}
+	}
+	if kind == setting.LangClaimReason {
+		if v := strings.TrimSpace(c.QueryParam("is_claim")); v == "true" {
+			t := true
+			f.IsClaim = &t
+		}
+		if v := strings.TrimSpace(c.QueryParam("is_return")); v == "true" {
+			t := true
+			f.IsReturn = &t
+		}
+	}
+	rows, total, err := h.settingLang.List(c.Request().Context(), kind, f)
+	if err != nil {
+		applog.HTTPError(c, "order form filters setting", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load filters"})
+	}
+	items := make([]salesFormFilterItem, len(rows))
+	for i, r := range rows {
+		items[i] = salesFormFilterItem{ID: r.ID, Name: r.Name}
+	}
+	return c.JSON(http.StatusOK, salesFormFiltersResponse{
+		Items: items,
+		Meta:  api.ListMeta{Total: int64(total), Page: q.Page, Limit: q.Limit},
+	})
 }
 
 func (h *SalesFormReadHandlers) filterMemberCredits(c *echo.Context) error {

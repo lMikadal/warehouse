@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type TierHandler struct {
@@ -22,16 +22,16 @@ func NewTierHandler(repo *TierRepository, rel *RelationRepository) *TierHandler 
 }
 
 type tierListItem struct {
-	ID           int64     `json:"id"`
-	ParentID     *int64    `json:"parent_id"`
-	TreePath     string    `json:"tree_path"`
-	Name         string    `json:"name"`
-	SortOrder    int       `json:"sort_order"`
-	SystemFileID *int64    `json:"system_file_id"`
-	IsDefault    bool      `json:"is_default"`
-	IsActive     bool      `json:"is_active"`
-	Discount     float64   `json:"discount"`
-	DiscountType string    `json:"discount_type"`
+	ID            int64     `json:"id"`
+	ParentID      *int64    `json:"parent_id"`
+	TreePath      string    `json:"tree_path"`
+	Name          string    `json:"name"`
+	SortOrder     int       `json:"sort_order"`
+	SystemFileID  *int64    `json:"system_file_id"`
+	IsDefault     bool      `json:"is_default"`
+	IsActive      bool      `json:"is_active"`
+	Discount      float64   `json:"discount"`
+	DiscountType  string    `json:"discount_type"`
 	MemberCount   int64     `json:"member_count"`
 	RelationCount int64     `json:"relation_count"`
 	UpdatedAt     time.Time `json:"updated_at"`

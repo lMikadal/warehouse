@@ -26,46 +26,47 @@ func NewItemHandler(repo *ItemRepository, listRepo *ListRepository) *ItemHandler
 }
 
 type itemBrowseJSON struct {
-	ID                 int64     `json:"id"`
-	ProductListID      int64     `json:"product_list_id"`
-	SKU                string    `json:"sku"`
-	Price              float64   `json:"price"`
-	Unit               string    `json:"unit"`
-	QtyPerUnit         int       `json:"qty_per_unit"`
-	MinimumStock       int       `json:"minimum_stock"`
-	IsActive           bool      `json:"is_active"`
-	IsStopped          bool      `json:"is_stopped"`
-	UpdatedAt          time.Time `json:"updated_at"`
-	Tag                string    `json:"tag"`
-	IsNew              bool      `json:"is_new"`
-	ProductBrandID     *int64    `json:"product_brand_id,omitempty"`
-	ProductCategoryID  *int64    `json:"product_category_id,omitempty"`
-	Name               string    `json:"name"`
-	BrandName          string    `json:"brand_name"`
-	CategoryName       string    `json:"category_name"`
-	TotalStock           float64 `json:"total_stock"`
-	ReservedStock        float64 `json:"reserved_stock"`
-	AvailableStock       float64 `json:"available_stock"`
-	TypePrice            string  `json:"type_price"`
-	PriceWholesale       float64 `json:"price_wholesale"`
-	AmountPriceWholesale int     `json:"amount_price_wholesale"`
-	LowStock             bool    `json:"low_stock"`
-	WarehouseRootCount int       `json:"warehouse_root_count"`
-	CarCount           int       `json:"car_count"`
-	CarSummary         string    `json:"car_summary,omitempty"`
-	CoverSystemFileID  *int64    `json:"cover_system_file_id,omitempty"`
+	ID                   int64     `json:"id"`
+	ProductListID        int64     `json:"product_list_id"`
+	SKU                  string    `json:"sku"`
+	Barcode              string    `json:"barcode,omitempty"`
+	Price                float64   `json:"price"`
+	Unit                 string    `json:"unit"`
+	QtyPerUnit           int       `json:"qty_per_unit"`
+	MinimumStock         int       `json:"minimum_stock"`
+	IsActive             bool      `json:"is_active"`
+	IsStopped            bool      `json:"is_stopped"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	Tag                  string    `json:"tag"`
+	IsNew                bool      `json:"is_new"`
+	ProductBrandID       *int64    `json:"product_brand_id,omitempty"`
+	ProductCategoryID    *int64    `json:"product_category_id,omitempty"`
+	Name                 string    `json:"name"`
+	BrandName            string    `json:"brand_name"`
+	CategoryName         string    `json:"category_name"`
+	TotalStock           float64   `json:"total_stock"`
+	ReservedStock        float64   `json:"reserved_stock"`
+	AvailableStock       float64   `json:"available_stock"`
+	TypePrice            string    `json:"type_price"`
+	PriceWholesale       float64   `json:"price_wholesale"`
+	AmountPriceWholesale int       `json:"amount_price_wholesale"`
+	LowStock             bool      `json:"low_stock"`
+	WarehouseRootCount   int       `json:"warehouse_root_count"`
+	CarCount             int       `json:"car_count"`
+	CarSummary           string    `json:"car_summary,omitempty"`
+	CoverSystemFileID    *int64    `json:"cover_system_file_id,omitempty"`
 }
 
 func toItemBrowseJSON(r ItemBrowseRow) itemBrowseJSON {
 	return itemBrowseJSON{
-		ID: r.ID, ProductListID: r.ProductListID, SKU: r.SKU, Price: r.Price,
+		ID: r.ID, ProductListID: r.ProductListID, SKU: r.SKU, Barcode: r.Barcode, Price: r.Price,
 		Unit: r.Unit, QtyPerUnit: r.QtyPerUnit, MinimumStock: r.MinimumStock,
 		IsActive: r.IsActive, IsStopped: r.IsStopped, UpdatedAt: r.UpdatedAt, Tag: r.Tag, IsNew: r.IsNew,
 		ProductBrandID: r.ProductBrandID, ProductCategoryID: r.ProductCategoryID,
 		Name: r.Name, BrandName: r.BrandName, CategoryName: r.CategoryName,
 		TotalStock: r.TotalStock, ReservedStock: r.ReservedStock, AvailableStock: r.AvailableStock,
 		TypePrice: r.TypePrice, PriceWholesale: r.PriceWholesale, AmountPriceWholesale: r.AmountPriceWholesale,
-		LowStock: r.LowStock,
+		LowStock:           r.LowStock,
 		WarehouseRootCount: r.WarehouseRootCount, CarCount: r.CarCount, CarSummary: r.CarSummary,
 		CoverSystemFileID: r.CoverSystemFileID,
 	}
@@ -114,6 +115,7 @@ func (h *ItemHandler) ListBrowse(c *echo.Context) error {
 		f.CarYear = &year
 	}
 	f.OEM = strings.TrimSpace(c.QueryParam("oem"))
+	f.Refill = strings.TrimSpace(c.QueryParam("refill_filter"))
 	if raw := strings.TrimSpace(c.QueryParam("ids")); raw != "" {
 		// ponytail: max 100 ids per request; split batch if cart grows beyond.
 		const maxIDs = 100
@@ -241,18 +243,18 @@ func (h *ItemHandler) listStocks(c *echo.Context) error {
 }
 
 type stockCreateBody struct {
-	BinID           int64    `json:"bin_id"`
-	SupplierUserID  *int64   `json:"supplier_user_id"`
-	OrderQuantity   float64  `json:"order_quantity"`
-	OrderFreeGift   float64  `json:"order_free_gift"`
-	Quantity        float64  `json:"quantity"`
-	RemainQuantity  float64  `json:"remain_quantity"`
-	CostPerUnit     float64  `json:"cost_per_unit"`
-	DiscountPerUnit float64  `json:"discount_per_unit"`
-	SellPrice       float64  `json:"sell_price"`
-	IsUsed          bool     `json:"is_used"`
-	ReceivedAt      *string  `json:"received_at"`
-	PoSKU           *string  `json:"po_sku"`
+	BinID           int64   `json:"bin_id"`
+	SupplierUserID  *int64  `json:"supplier_user_id"`
+	OrderQuantity   float64 `json:"order_quantity"`
+	OrderFreeGift   float64 `json:"order_free_gift"`
+	Quantity        float64 `json:"quantity"`
+	RemainQuantity  float64 `json:"remain_quantity"`
+	CostPerUnit     float64 `json:"cost_per_unit"`
+	DiscountPerUnit float64 `json:"discount_per_unit"`
+	SellPrice       float64 `json:"sell_price"`
+	IsUsed          bool    `json:"is_used"`
+	ReceivedAt      *string `json:"received_at"`
+	PoSKU           *string `json:"po_sku"`
 }
 
 func (h *ItemHandler) createStock(c *echo.Context) error {

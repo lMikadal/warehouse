@@ -15,11 +15,11 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 }
 
 type SessionRow struct {
-	ID           int64
-	AdminUserID  int64
-	RefreshHash  string
-	AccessJTI    string
-	ExpiresAt    time.Time
+	ID          int64
+	AdminUserID int64
+	RefreshHash string
+	AccessJTI   string
+	ExpiresAt   time.Time
 }
 
 func (r *SessionRepository) Create(ctx context.Context, userID int64, refreshHash, jti string, expiresAt time.Time, ip, userAgent string) error {

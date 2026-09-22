@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -90,15 +92,36 @@ WHERE id = $1 AND deleted_at IS NULL`, id, nullActor(actorID))
 	return nil
 }
 
+// fileParentTables lists every table with a system_file_id FK. Extend it when a new one is added;
+// both the in-use guard and the cleanup sweep read from here so they can never disagree.
+var fileParentTables = []string{
+	"setting_bank",
+	"setting_sale_channel",
+	"member_tier",
+	"member_user",
+	"member_user_file",
+	"product_attribute",
+	"product_item_file",
+	"order_quotation_file",
+	"purchase_request_item_file",
+	"purchase_order_file",
+	"purchase_order_item_file",
+	"purchase_order_item_reject_file",
+	"purchase_order_payment",
+}
+
+// fileReferencedUnion builds the UNION ALL body matching rows that still point at fileRef.
+func fileReferencedUnion(fileRef string) string {
+	parts := make([]string, len(fileParentTables))
+	for i, t := range fileParentTables {
+		parts[i] = fmt.Sprintf("SELECT 1 FROM %s WHERE system_file_id = %s AND deleted_at IS NULL", t, fileRef)
+	}
+	return strings.Join(parts, "\n  UNION ALL\n  ")
+}
+
 // IsReferenced reports whether an active parent row still points at this file.
-// ponytail: extend this query when new tables gain system_file_id FKs.
 func (r *FileRepository) IsReferenced(ctx context.Context, fileID int64) (bool, error) {
-	const q = `
-SELECT EXISTS (
-  SELECT 1 FROM setting_bank WHERE system_file_id = $1 AND deleted_at IS NULL
-  UNION ALL
-  SELECT 1 FROM setting_sale_channel WHERE system_file_id = $1 AND deleted_at IS NULL
-)`
+	q := "SELECT EXISTS (\n  " + fileReferencedUnion("$1") + "\n)"
 	var exists bool
 	if err := r.db.QueryRowContext(ctx, q, fileID).Scan(&exists); err != nil {
 		return false, err
@@ -108,15 +131,13 @@ SELECT EXISTS (
 
 // ListUnreferenced returns active system_file ids not referenced by any parent row, created before cutoff.
 func (r *FileRepository) ListUnreferenced(ctx context.Context, createdBefore time.Time) ([]int64, error) {
-	const q = `
+	q := `
 SELECT sf.id
 FROM system_file sf
 WHERE sf.deleted_at IS NULL AND sf.created_at < $1
   AND NOT EXISTS (
-    SELECT 1 FROM setting_bank WHERE system_file_id = sf.id AND deleted_at IS NULL
-    UNION ALL
-    SELECT 1 FROM setting_sale_channel WHERE system_file_id = sf.id AND deleted_at IS NULL
-  )
+  ` + fileReferencedUnion("sf.id") + `
+)
 ORDER BY sf.id`
 	rows, err := r.db.QueryContext(ctx, q, createdBefore)
 	if err != nil {

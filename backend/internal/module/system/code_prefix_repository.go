@@ -16,14 +16,14 @@ func NewCodePrefixRepository(db *sql.DB) *CodePrefixRepository {
 }
 
 type codePrefixRow struct {
-	id           int64
-	prefix       string
-	resetPeriod  string
-	formatStyle  string
-	seqWidth     int16
-	timezone     string
-	periodKey    string
-	lastSeq      int64
+	id          int64
+	prefix      string
+	resetPeriod string
+	formatStyle string
+	seqWidth    int16
+	timezone    string
+	periodKey   string
+	lastSeq     int64
 }
 
 // NextCode allocates the next document code for codeKey inside tx (FOR UPDATE).

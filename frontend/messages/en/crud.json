@@ -8,6 +8,7 @@
       "edit": "Edit",
       "export": "Export",
       "import": "Import",
+      "pay": "Pay",
       "save": "Save",
       "view": "View"
     },
@@ -39,7 +40,8 @@
       "none": "Sort by {field}"
     },
     "table": {
-      "actions": "Manage"
+      "actions": "Manage",
+      "selectAll": "Select all"
     },
     "toast": {
       "created": "Record added successfully",

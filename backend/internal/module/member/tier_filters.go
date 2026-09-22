@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type tierFiltersResponse struct {

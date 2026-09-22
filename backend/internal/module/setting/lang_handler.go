@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type LangHandler struct {
@@ -192,13 +192,13 @@ func (h *LangHandler) create(c *echo.Context) error {
 }
 
 type langPatchBody struct {
-	IsActive                *bool      `json:"is_active"`
-	Names                   *namesBody `json:"names"`
-	IsSale                  *bool      `json:"is_sale"`
-	IsPurchase              *bool      `json:"is_purchase"`
-	IsDefault               *bool      `json:"is_default"`
-	IsClaim                 *bool      `json:"is_claim"`
-	IsReturn                *bool      `json:"is_return"`
+	IsActive                *bool         `json:"is_active"`
+	Names                   *namesBody    `json:"names"`
+	IsSale                  *bool         `json:"is_sale"`
+	IsPurchase              *bool         `json:"is_purchase"`
+	IsDefault               *bool         `json:"is_default"`
+	IsClaim                 *bool         `json:"is_claim"`
+	IsReturn                *bool         `json:"is_return"`
 	SystemFileID            optionalInt64 `json:"system_file_id"`
 	MemberSettingRelationID *int64        `json:"member_setting_relation_id"`
 	IsPerson                *bool         `json:"is_person"`

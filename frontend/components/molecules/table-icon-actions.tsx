@@ -5,6 +5,7 @@ import {
   Plus,
   SquarePen,
   Trash2,
+  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -16,7 +17,13 @@ import {
 } from "@/components/ui/button-icon";
 import { cn } from "@/lib/utils";
 
-export type TableIconActionKey = "view" | "edit" | "add" | "delete" | "cancel";
+export type TableIconActionKey =
+  | "view"
+  | "edit"
+  | "add"
+  | "delete"
+  | "cancel"
+  | "pay";
 
 export type TableIconActionsProps = {
   actions: TableIconActionKey[];
@@ -32,6 +39,7 @@ const ICONS: Record<TableIconActionKey, LucideIcon> = {
   add: Plus,
   delete: Trash2,
   cancel: X,
+  pay: Wallet,
 };
 
 const TONE: Record<TableIconActionKey, ButtonIconTone> = {
@@ -40,6 +48,7 @@ const TONE: Record<TableIconActionKey, ButtonIconTone> = {
   add: "add",
   delete: "delete",
   cancel: "delete",
+  pay: "add",
 };
 
 export function TableIconActions({
@@ -57,6 +66,7 @@ export function TableIconActions({
     if (key === "edit") return tCrud("btn.edit");
     if (key === "delete") return tCrud("btn.delete");
     if (key === "cancel") return tCrud("btn.cancel");
+    if (key === "pay") return tCrud("btn.pay");
     return tCrud("btn.create");
   };
 

@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	pkgauth "github.com/lMikadal/warehouse/backend/internal/auth"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
 	"github.com/lMikadal/warehouse/backend/internal/module/system"
+	"github.com/labstack/echo/v5"
 )
 
 type Handler struct {

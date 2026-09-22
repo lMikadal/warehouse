@@ -9,13 +9,13 @@ import (
 )
 
 type RelationRow struct {
-	ID         int64  `json:"id"`
-	CreditID   int64  `json:"credit_id"`
-	GroupID    int64  `json:"group_id"`
-	BusinessID int64  `json:"business_id"`
-	IsActive   bool   `json:"is_active"`
-	CreditName string `json:"credit_name,omitempty"`
-	GroupName  string `json:"group_name,omitempty"`
+	ID         int64     `json:"id"`
+	CreditID   int64     `json:"credit_id"`
+	GroupID    int64     `json:"group_id"`
+	BusinessID int64     `json:"business_id"`
+	IsActive   bool      `json:"is_active"`
+	CreditName string    `json:"credit_name,omitempty"`
+	GroupName  string    `json:"group_name,omitempty"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 

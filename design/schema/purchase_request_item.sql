@@ -27,7 +27,9 @@ CREATE TABLE purchase_request_item (
     created_at                   TIMESTAMPTZ                  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                   TIMESTAMPTZ                  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by                   BIGINT                       REFERENCES admin_user(id) ON DELETE SET NULL,
-    updated_by                   BIGINT                       REFERENCES admin_user(id) ON DELETE SET NULL
+    updated_by                   BIGINT                       REFERENCES admin_user(id) ON DELETE SET NULL,
+    CONSTRAINT chk_purchase_request_item_catalog CHECK (type <> 'catalog' OR product_item_id IS NOT NULL),
+    CONSTRAINT chk_purchase_request_item_custom  CHECK (type <> 'custom'  OR (name IS NOT NULL AND length(btrim(name)) > 0))
 );
 
 CREATE INDEX idx_purchase_request_item_request  ON purchase_request_item (purchase_request_id)  WHERE deleted_at IS NULL;

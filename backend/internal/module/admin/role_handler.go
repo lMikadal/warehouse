@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type RoleHandler struct {
@@ -85,9 +85,9 @@ func (h *RoleHandler) get(c *echo.Context) error {
 }
 
 type roleWriteBody struct {
-	IsActive      *bool    `json:"is_active"`
+	IsActive      *bool      `json:"is_active"`
 	Names         *roleNames `json:"names"`
-	PermissionIDs []int64  `json:"permission_ids"`
+	PermissionIDs []int64    `json:"permission_ids"`
 }
 
 func (h *RoleHandler) create(c *echo.Context) error {
@@ -158,4 +158,3 @@ func (h *RoleHandler) delete(c *echo.Context) error {
 	}
 	return c.NoContent(http.StatusNoContent)
 }
-

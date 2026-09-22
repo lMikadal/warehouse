@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
+	applog "github.com/lMikadal/warehouse/backend/internal/log"
 	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	"github.com/lMikadal/warehouse/backend/internal/module/supplier"
 	"github.com/lMikadal/warehouse/backend/internal/module/warehouse"
-	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type FiltersHandler struct {
@@ -51,6 +51,11 @@ func (h *FiltersHandler) ItemBrowseFilters(c *echo.Context) error {
 // CarFilters serves GET .../filters?facet=cars (type_car, parent_id query params).
 func (h *FiltersHandler) CarFilters(c *echo.Context) error {
 	return h.respondCarFilters(c)
+}
+
+// SupplierFilters serves GET .../filters?facet=suppliers for the purchase pages.
+func (h *FiltersHandler) SupplierFilters(c *echo.Context) error {
+	return h.respondSupplierFilters(c)
 }
 
 func (h *FiltersHandler) respondListFacet(c *echo.Context, facet string) error {
@@ -280,8 +285,8 @@ func (h *FiltersHandler) respondWarehouseBinFilters(c *echo.Context) error {
 	active := true
 	f := warehouse.ListFilter{
 		Page: q.Page, Limit: q.Limit, Locale: locale,
-		Search: strings.TrimSpace(c.QueryParam("search")),
-		Type:   "bin",
+		Search:   strings.TrimSpace(c.QueryParam("search")),
+		Type:     "bin",
 		IsActive: &active,
 	}
 	if id, ok := filterQueryID(c); ok {

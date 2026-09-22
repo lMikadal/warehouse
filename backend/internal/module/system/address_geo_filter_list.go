@@ -10,12 +10,12 @@ type GeoFilterListItem struct {
 
 // GeoFilterListParams drives active geo rows for filter comboboxes.
 type GeoFilterListParams struct {
-	Page, Limit    int
-	Locale, Search string
+	Page, Limit      int
+	Locale, Search   string
 	SystemCountryID  *int64
 	SystemProvinceID *int64
 	SystemDistrictID *int64
-	ID int64 // when > 0, resolve label for one row (ignores Search)
+	ID               int64 // when > 0, resolve label for one row (ignores Search)
 }
 
 // GeoFilterListResult holds items and list meta for filter responses.

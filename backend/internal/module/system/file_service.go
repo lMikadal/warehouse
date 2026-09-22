@@ -17,7 +17,7 @@ import (
 
 var ErrValidation = errors.New("validation")
 
-const maxUploadBytes = 5 << 20 // 5MB
+const maxUploadBytes = 5 << 20          // 5MB
 const maxDocumentUploadBytes = 10 << 20 // 10MB — member_document, purchase_order_attachment
 
 var allowedImageTypes = map[string]string{
@@ -43,9 +43,9 @@ func uploadTypeAndMaxBytes(purpose string) (allowed map[string]string, maxBytes 
 }
 
 type FileService struct {
-	repo   *FileRepository
-	store  s3.ObjectStore
-	cfg    config.Config
+	repo  *FileRepository
+	store s3.ObjectStore
+	cfg   config.Config
 }
 
 func NewFileService(repo *FileRepository, store s3.ObjectStore, cfg config.Config) *FileService {

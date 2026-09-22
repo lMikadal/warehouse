@@ -11,9 +11,9 @@ const (
 )
 
 type langSpec struct {
-	table    string
+	table     string
 	langTable string
-	langFK   string
+	langFK    string
 }
 
 func langSpecFor(k LangKind) langSpec {

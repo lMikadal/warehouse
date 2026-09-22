@@ -13,6 +13,13 @@ import enPageMemberUser from "./en/page-member-user.json";
 import enPageOrderCompare from "./en/page-order-compare.json";
 import enPageOrderStore from "./en/page-order-store.json";
 import enPageOrderQuotation from "./en/page-order-quotation.json";
+import enPageOrderClaim from "./en/page-order-claim.json";
+import enPageOrderPurchase from "./en/page-order-purchase.json";
+import enPageOrderReceive from "./en/page-order-receive.json";
+import enPageOrderPicking from "./en/page-order-picking.json";
+import enPageOrderSalesClaim from "./en/page-order-sales-claim.json";
+import enPageOrderStoreClaim from "./en/page-order-store-claim.json";
+import enPageOrderTicket from "./en/page-order-ticket.json";
 import enPageSetting from "./en/page-setting.json";
 import enPageLocation from "./en/page-location.json";
 import enPageProduct from "./en/page-product.json";
@@ -40,6 +47,13 @@ import thPageMemberUser from "./th/page-member-user.json";
 import thPageOrderCompare from "./th/page-order-compare.json";
 import thPageOrderStore from "./th/page-order-store.json";
 import thPageOrderQuotation from "./th/page-order-quotation.json";
+import thPageOrderClaim from "./th/page-order-claim.json";
+import thPageOrderPurchase from "./th/page-order-purchase.json";
+import thPageOrderReceive from "./th/page-order-receive.json";
+import thPageOrderPicking from "./th/page-order-picking.json";
+import thPageOrderSalesClaim from "./th/page-order-sales-claim.json";
+import thPageOrderStoreClaim from "./th/page-order-store-claim.json";
+import thPageOrderTicket from "./th/page-order-ticket.json";
 import thPageSetting from "./th/page-setting.json";
 import thPageLocation from "./th/page-location.json";
 import thPageProduct from "./th/page-product.json";
@@ -96,6 +110,13 @@ const FRAGMENTS: MessageTree[] = [
   thPageOrderCompare,
   thPageOrderStore,
   thPageOrderQuotation,
+  thPageOrderClaim,
+  thPageOrderPurchase,
+  thPageOrderReceive,
+  thPageOrderPicking,
+  thPageOrderSalesClaim,
+  thPageOrderStoreClaim,
+  thPageOrderTicket,
   thPageLocation,
   thPageWarehouse,
   thPageProduct,
@@ -126,6 +147,13 @@ const FRAGMENTS_EN: MessageTree[] = [
   enPageOrderCompare,
   enPageOrderStore,
   enPageOrderQuotation,
+  enPageOrderClaim,
+  enPageOrderPurchase,
+  enPageOrderReceive,
+  enPageOrderPicking,
+  enPageOrderSalesClaim,
+  enPageOrderStoreClaim,
+  enPageOrderTicket,
   enPageLocation,
   enPageWarehouse,
   enPageProduct,

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type Handler struct {
@@ -189,7 +189,7 @@ func (h *Handler) create(c *echo.Context) error {
 	in := CreateInput{
 		Type: nodeType, SKU: body.SKU, ParentID: body.ParentID,
 		Capacity: body.Capacity, IsActive: body.IsActive,
-		Names: map[string]string{"th": body.Names.Th, "en": body.Names.En},
+		Names:   map[string]string{"th": body.Names.Th, "en": body.Names.En},
 		ActorID: httputil.ActorID(c),
 	}
 	if nodeType == "zone" {

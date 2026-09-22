@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	ErrGeoNotFound        = errors.New("geo row not found")
-	ErrGeoInvalidReorder  = errors.New("invalid reorder")
-	ErrGeoValidation      = errors.New("validation")
+	ErrGeoNotFound       = errors.New("geo row not found")
+	ErrGeoInvalidReorder = errors.New("invalid reorder")
+	ErrGeoValidation     = errors.New("validation")
 )
 
 type GeoRow struct {

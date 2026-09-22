@@ -26,12 +26,12 @@ type categoryRow struct {
 }
 
 type TreeNode struct {
-	ID             int64      `json:"id"`
-	Name           string     `json:"name"`
-	SystemFileID   *int64     `json:"system_file_id,omitempty"`
-	CategoryCount  int        `json:"category_count,omitempty"`
-	IsDefined      bool       `json:"is_defined"`
-	Children       []TreeNode `json:"children"`
+	ID            int64      `json:"id"`
+	Name          string     `json:"name"`
+	SystemFileID  *int64     `json:"system_file_id,omitempty"`
+	CategoryCount int        `json:"category_count,omitempty"`
+	IsDefined     bool       `json:"is_defined"`
+	Children      []TreeNode `json:"children"`
 }
 
 type brandListRow struct {
@@ -57,14 +57,14 @@ type RuleWrite struct {
 }
 
 type ExportRow struct {
-	ID                      int64    `json:"id"`
-	BrandID                 int64    `json:"brand_id"`
-	BrandName               string   `json:"brand_name"`
-	CategoryID              *int64   `json:"category_id"`
-	CategoryName            string   `json:"category_name"`
-	MemberSettingRelationID int64    `json:"member_setting_relation_id"`
-	Discount                float64  `json:"discount"`
-	DiscountType            string   `json:"discount_type"`
+	ID                      int64     `json:"id"`
+	BrandID                 int64     `json:"brand_id"`
+	BrandName               string    `json:"brand_name"`
+	CategoryID              *int64    `json:"category_id"`
+	CategoryName            string    `json:"category_name"`
+	MemberSettingRelationID int64     `json:"member_setting_relation_id"`
+	Discount                float64   `json:"discount"`
+	DiscountType            string    `json:"discount_type"`
 	UpdatedAt               time.Time `json:"updated_at"`
 }
 

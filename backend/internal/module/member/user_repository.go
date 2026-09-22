@@ -15,77 +15,77 @@ import (
 )
 
 type UserRow struct {
-	ID                   int64
-	SKU                  *string
-	MemberTierID         *int64
-	Type                 string
-	SettingPrefixID      *int64
-	Name                 string
-	StoreName            *string
-	TaxNumber            *string
-	Branch               *string
-	BranchName           *string
-	Tel                  *string
-	Email                *string
-	Address              *string
-	WebsiteProvinceID    *int64
-	WebsiteDistrictID    *int64
-	WebsiteSubDistrictID *int64
-	Postcode             *string
-	SystemFileID         *int64
-	Note                 *string
-	IsActive             bool
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	BusinessLabel        string
-	SettingPrefixName    sql.NullString
-	WebsiteProvinceName  sql.NullString
-	WebsiteDistrictName  sql.NullString
+	ID                     int64
+	SKU                    *string
+	MemberTierID           *int64
+	Type                   string
+	SettingPrefixID        *int64
+	Name                   string
+	StoreName              *string
+	TaxNumber              *string
+	Branch                 *string
+	BranchName             *string
+	Tel                    *string
+	Email                  *string
+	Address                *string
+	WebsiteProvinceID      *int64
+	WebsiteDistrictID      *int64
+	WebsiteSubDistrictID   *int64
+	Postcode               *string
+	SystemFileID           *int64
+	Note                   *string
+	IsActive               bool
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+	BusinessLabel          string
+	SettingPrefixName      sql.NullString
+	WebsiteProvinceName    sql.NullString
+	WebsiteDistrictName    sql.NullString
 	WebsiteSubDistrictName sql.NullString
 }
 
 type UserListFilter struct {
-	Page, Limit       int
-	Search            string
-	IsActive          *bool
-	MemberTierID      *int64
-	BusinessID        *int64
-	CreatedFrom       string
-	CreatedTo         string
-	Sort, Order       string
+	Page, Limit  int
+	Search       string
+	IsActive     *bool
+	MemberTierID *int64
+	BusinessID   *int64
+	CreatedFrom  string
+	CreatedTo    string
+	Sort, Order  string
 }
 
 type UserStats struct {
-	TotalCustomers   int64
-	ActiveMembers    int64
-	NewThisMonth     int64
-	SalesThisMonth   float64
+	TotalCustomers int64
+	ActiveMembers  int64
+	NewThisMonth   int64
+	SalesThisMonth float64
 }
 
 type AddressInput struct {
-	Type                 string  `json:"type"`
-	MemberType           string  `json:"member_type"`
-	SettingPrefixID      *int64  `json:"setting_prefix_id"`
-	Name                 *string `json:"name"`
-	StoreName            *string `json:"store_name"`
-	TaxNumber            *string `json:"tax_number"`
-	Branch               *string `json:"branch"`
-	BranchName           *string `json:"branch_name"`
-	Address              *string `json:"address"`
-	WebsiteProvinceID    *int64  `json:"website_province_id"`
-	WebsiteDistrictID    *int64  `json:"website_district_id"`
-	WebsiteSubDistrictID *int64  `json:"website_sub_district_id"`
-	SettingPrefixName    *string `json:"setting_prefix_name,omitempty"`
-	WebsiteProvinceName  *string `json:"website_province_name,omitempty"`
-	WebsiteDistrictName  *string `json:"website_district_name,omitempty"`
-	WebsiteSubDistrictName *string `json:"website_sub_district_name,omitempty"`
-	Postcode             *string `json:"postcode"`
-	Tel                  *string `json:"tel"`
-	Email                *string `json:"email"`
-	CreditLimit          *float64 `json:"credit_limit"`
-	CreditDate           *int     `json:"credit_date"`
-	Relationship         *string  `json:"relationship"`
-	IsSameInformation    bool     `json:"is_same_information"`
+	Type                   string   `json:"type"`
+	MemberType             string   `json:"member_type"`
+	SettingPrefixID        *int64   `json:"setting_prefix_id"`
+	Name                   *string  `json:"name"`
+	StoreName              *string  `json:"store_name"`
+	TaxNumber              *string  `json:"tax_number"`
+	Branch                 *string  `json:"branch"`
+	BranchName             *string  `json:"branch_name"`
+	Address                *string  `json:"address"`
+	WebsiteProvinceID      *int64   `json:"website_province_id"`
+	WebsiteDistrictID      *int64   `json:"website_district_id"`
+	WebsiteSubDistrictID   *int64   `json:"website_sub_district_id"`
+	SettingPrefixName      *string  `json:"setting_prefix_name,omitempty"`
+	WebsiteProvinceName    *string  `json:"website_province_name,omitempty"`
+	WebsiteDistrictName    *string  `json:"website_district_name,omitempty"`
+	WebsiteSubDistrictName *string  `json:"website_sub_district_name,omitempty"`
+	Postcode               *string  `json:"postcode"`
+	Tel                    *string  `json:"tel"`
+	Email                  *string  `json:"email"`
+	CreditLimit            *float64 `json:"credit_limit"`
+	CreditDate             *int     `json:"credit_date"`
+	Relationship           *string  `json:"relationship"`
+	IsSameInformation      bool     `json:"is_same_information"`
 }
 
 type UserCreateInput struct {
@@ -762,15 +762,15 @@ ORDER BY muf.sort_order, muf.id`, userID)
 }
 
 type DiscountRow struct {
-	ID              int64      `json:"id"`
-	MemberCreditID  *int64     `json:"member_credit_id"`
-	ProductItemID   int64      `json:"product_item_id"`
-	MinimumQty      float64    `json:"minimum_qty"`
-	Discount        float64    `json:"discount"`
-	DiscountType    string     `json:"discount_type"`
-	DateStart       *time.Time `json:"date_start,omitempty"`
-	DateEnd         *time.Time `json:"date_end,omitempty"`
-	IsActive        bool       `json:"is_active"`
+	ID             int64      `json:"id"`
+	MemberCreditID *int64     `json:"member_credit_id"`
+	ProductItemID  int64      `json:"product_item_id"`
+	MinimumQty     float64    `json:"minimum_qty"`
+	Discount       float64    `json:"discount"`
+	DiscountType   string     `json:"discount_type"`
+	DateStart      *time.Time `json:"date_start,omitempty"`
+	DateEnd        *time.Time `json:"date_end,omitempty"`
+	IsActive       bool       `json:"is_active"`
 }
 
 func (r *UserRepository) loadDiscounts(ctx context.Context, userID int64) ([]DiscountRow, error) {

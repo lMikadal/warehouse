@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	ErrCodePrefixNotFound  = errors.New("system code prefix not found")
-	ErrCodePrefixInactive  = errors.New("system code prefix inactive")
-	ErrCodePrefixOverflow  = errors.New("system code sequence overflow")
+	ErrCodePrefixNotFound    = errors.New("system code prefix not found")
+	ErrCodePrefixInactive    = errors.New("system code prefix inactive")
+	ErrCodePrefixOverflow    = errors.New("system code sequence overflow")
 	ErrCodePrefixUnsupported = errors.New("system code format unsupported")
 )
 

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type SettingHandler struct {
@@ -76,11 +76,11 @@ func (h *SettingHandler) get(c *echo.Context) error {
 }
 
 type settingCreateBody struct {
-	SKU      *string   `json:"sku"`
-	IsActive bool      `json:"is_active"`
-	Names    namesBody `json:"names"`
-	CreditIDs []int64  `json:"credit_ids,omitempty"`
-	GroupIDs  []int64  `json:"group_ids,omitempty"`
+	SKU       *string   `json:"sku"`
+	IsActive  bool      `json:"is_active"`
+	Names     namesBody `json:"names"`
+	CreditIDs []int64   `json:"credit_ids,omitempty"`
+	GroupIDs  []int64   `json:"group_ids,omitempty"`
 }
 
 func (h *SettingHandler) create(c *echo.Context) error {

@@ -54,27 +54,27 @@ type StoreSalesItemInput struct {
 }
 
 type StoreSalesCreateInput struct {
-	Status                 string                  `json:"status"`
-	ParentID               *int64                  `json:"parent_id,omitempty"`
-	MemberUserID           *int64                  `json:"member_user_id,omitempty"`
-	MemberSettingCreditID  *int64                  `json:"member_setting_credit_id,omitempty"`
-	MemberName             *string                 `json:"member_name,omitempty"`
-	MemberTel              *string                 `json:"member_tel,omitempty"`
-	MemberEmail            *string                 `json:"member_email,omitempty"`
-	Shipping               *StoreSalesShippingInput `json:"shipping,omitempty"`
-	Items                  []StoreSalesItemInput   `json:"items"`
+	Status                string                   `json:"status"`
+	ParentID              *int64                   `json:"parent_id,omitempty"`
+	MemberUserID          *int64                   `json:"member_user_id,omitempty"`
+	MemberSettingCreditID *int64                   `json:"member_setting_credit_id,omitempty"`
+	MemberName            *string                  `json:"member_name,omitempty"`
+	MemberTel             *string                  `json:"member_tel,omitempty"`
+	MemberEmail           *string                  `json:"member_email,omitempty"`
+	Shipping              *StoreSalesShippingInput `json:"shipping,omitempty"`
+	Items                 []StoreSalesItemInput    `json:"items"`
 }
 
 type StoreSalesUpdateInput struct {
-	Status                string                  `json:"status"`
-	ParentID              *int64                  `json:"parent_id,omitempty"`
-	MemberUserID          *int64                  `json:"member_user_id,omitempty"`
-	MemberSettingCreditID *int64                  `json:"member_setting_credit_id,omitempty"`
-	MemberName            *string                 `json:"member_name,omitempty"`
-	MemberTel             *string                 `json:"member_tel,omitempty"`
-	MemberEmail           *string                 `json:"member_email,omitempty"`
+	Status                string                   `json:"status"`
+	ParentID              *int64                   `json:"parent_id,omitempty"`
+	MemberUserID          *int64                   `json:"member_user_id,omitempty"`
+	MemberSettingCreditID *int64                   `json:"member_setting_credit_id,omitempty"`
+	MemberName            *string                  `json:"member_name,omitempty"`
+	MemberTel             *string                  `json:"member_tel,omitempty"`
+	MemberEmail           *string                  `json:"member_email,omitempty"`
 	Shipping              *StoreSalesShippingInput `json:"shipping,omitempty"`
-	Items                 []StoreSalesItemInput   `json:"items"`
+	Items                 []StoreSalesItemInput    `json:"items"`
 }
 
 type StoreSalesStatusInput struct {

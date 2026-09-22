@@ -700,3 +700,52 @@ func boolDefault(v *bool, def bool) bool {
 	}
 	return *v
 }
+
+// BankFilterRow is one payee account as the purchase payment combobox needs it: the label carries the
+// bank name and the SKU field carries the masked-free account number for disambiguation. AccountName
+// and Branch feed the "transfer to" panel the payment form shows once an account is picked.
+type BankFilterRow struct {
+	ID          int64
+	Name        string
+	SKU         string
+	AccountName string
+	Branch      string
+}
+
+// ListBankFilters returns the active bank accounts of one supplier. A positive id narrows to that row
+// so a saved selection can still resolve its label after the account is deactivated.
+func (r *Repository) ListBankFilters(ctx context.Context, supplierID int64, search string, id int64) ([]BankFilterRow, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT b.id,
+  TRIM(COALESCE(NULLIF(TRIM(sbl.name), ''), b.name, '')) AS bank_name,
+  COALESCE(b.number, '') AS number,
+  COALESCE(b.name, '') AS account_name,
+  COALESCE(b.branch, '') AS branch
+FROM supplier_bank b
+LEFT JOIN setting_bank_language sbl ON sbl.setting_bank_id = b.setting_bank_id AND sbl.locale = 'th'
+WHERE b.supplier_user_id = $1 AND b.deleted_at IS NULL
+  AND ($2 = 0 OR b.id = $2)
+  AND ($2 > 0 OR b.is_active = TRUE)
+  AND ($3 = '' OR LOWER(COALESCE(b.name, '')) LIKE '%' || LOWER($3) || '%'
+       OR LOWER(COALESCE(b.number, '')) LIKE '%' || LOWER($3) || '%')
+ORDER BY b.is_default DESC, b.sort_order ASC, b.id ASC
+LIMIT 100`, supplierID, id, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []BankFilterRow
+	for rows.Next() {
+		var row BankFilterRow
+		if err := rows.Scan(&row.ID, &row.Name, &row.SKU, &row.AccountName, &row.Branch); err != nil {
+			return nil, err
+		}
+		if row.Name == "" {
+			row.Name = row.SKU
+		} else if row.SKU != "" {
+			row.Name = row.Name + " — " + row.SKU
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}

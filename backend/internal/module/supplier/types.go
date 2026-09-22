@@ -19,41 +19,41 @@ type UserRow struct {
 	IsActive       bool
 	UpdatedAt      time.Time
 	// list display from contact information
-	TaxNumber        sql.NullString
-	CompanyName      sql.NullString
-	SettingPrefixID  sql.NullInt64
-	CompanyAddress   sql.NullString
-	ContactTel       sql.NullString
-	ContactEmail     sql.NullString
+	TaxNumber       sql.NullString
+	CompanyName     sql.NullString
+	SettingPrefixID sql.NullInt64
+	CompanyAddress  sql.NullString
+	ContactTel      sql.NullString
+	ContactEmail    sql.NullString
 }
 
 type InformationRow struct {
-	Type                string
-	SettingPrefixID     sql.NullInt64
-	SettingPrefixName   sql.NullString
-	Name                sql.NullString
-	Branch              sql.NullString
-	BranchName          sql.NullString
-	TaxNumber           sql.NullString
-	Address             sql.NullString
-	WebsiteProvinceID   sql.NullInt64
-	WebsiteProvinceName sql.NullString
-	WebsiteDistrictID   sql.NullInt64
-	WebsiteDistrictName sql.NullString
-	WebsiteSubDistrictID sql.NullInt64
+	Type                   string
+	SettingPrefixID        sql.NullInt64
+	SettingPrefixName      sql.NullString
+	Name                   sql.NullString
+	Branch                 sql.NullString
+	BranchName             sql.NullString
+	TaxNumber              sql.NullString
+	Address                sql.NullString
+	WebsiteProvinceID      sql.NullInt64
+	WebsiteProvinceName    sql.NullString
+	WebsiteDistrictID      sql.NullInt64
+	WebsiteDistrictName    sql.NullString
+	WebsiteSubDistrictID   sql.NullInt64
 	WebsiteSubDistrictName sql.NullString
-	Postcode            sql.NullString
-	Tel                 sql.NullString
-	Email               sql.NullString
-	IsSameInformation   bool
+	Postcode               sql.NullString
+	Tel                    sql.NullString
+	Email                  sql.NullString
+	IsSameInformation      bool
 }
 
 type ContactRow struct {
-	ID       int64
-	Name     string
-	Email    sql.NullString
-	Tel      sql.NullString
-	Position sql.NullString
+	ID        int64
+	Name      string
+	Email     sql.NullString
+	Tel       sql.NullString
+	Position  sql.NullString
 	SortOrder int
 }
 

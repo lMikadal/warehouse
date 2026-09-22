@@ -21,13 +21,13 @@ type PermissionMatrixRow struct {
 }
 
 type matrixMenuRow struct {
-	id       int64
-	parentID sql.NullInt64
-	path     sql.NullString
+	id        int64
+	parentID  sql.NullInt64
+	path      sql.NullString
 	sortOrder int
-	isDialog bool
-	label    string
-	perms    map[string]int64
+	isDialog  bool
+	label     string
+	perms     map[string]int64
 }
 
 func (r *MenuPermissionRepository) PermissionMatrix(ctx context.Context, locale string) ([]PermissionMatrixGroup, error) {

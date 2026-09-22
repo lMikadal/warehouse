@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
-	"github.com/lMikadal/warehouse/backend/internal/module/setting"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/lMikadal/warehouse/backend/internal/module/setting"
+	"github.com/labstack/echo/v5"
 )
 
 type filterItem struct {

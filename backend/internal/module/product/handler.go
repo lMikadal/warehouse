@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
 	"github.com/lMikadal/warehouse/backend/internal/httputil"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/labstack/echo/v5"
 )
 
 type Handler struct {
@@ -23,14 +23,14 @@ func NewHandler(repo *Repository, attrType string) *Handler {
 }
 
 type listItem struct {
-	ID        int64   `json:"id"`
-	ParentID  *int64  `json:"parent_id"`
-	TypeCar   *string `json:"type_car,omitempty"`
-	TreePath  string  `json:"tree_path,omitempty"`
-	Name      string  `json:"name"`
-	SortOrder int     `json:"sort_order"`
-	IsActive  bool    `json:"is_active"`
-	IsStopped bool    `json:"is_stopped,omitempty"`
+	ID        int64     `json:"id"`
+	ParentID  *int64    `json:"parent_id"`
+	TypeCar   *string   `json:"type_car,omitempty"`
+	TreePath  string    `json:"tree_path,omitempty"`
+	Name      string    `json:"name"`
+	SortOrder int       `json:"sort_order"`
+	IsActive  bool      `json:"is_active"`
+	IsStopped bool      `json:"is_stopped,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 

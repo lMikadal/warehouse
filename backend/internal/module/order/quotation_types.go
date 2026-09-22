@@ -14,17 +14,17 @@ type QuotationListQuery struct {
 }
 
 type QuotationListItem struct {
-	ID              int64     `json:"id"`
-	SKU             string    `json:"sku,omitempty"`
-	Status          string    `json:"status"`
-	MemberName      *string   `json:"member_name,omitempty"`
-	GrandTotal      float64   `json:"grand_total"`
-	ItemCount       float64   `json:"item_count"`
-	Fulfilled       bool      `json:"fulfilled"`
-	ReceiptLocked   bool      `json:"receipt_locked"`
-	IsOverdue       bool      `json:"is_overdue"`
-	CreatedAt       time.Time `json:"created_at"`
-	CreatedByName   *string   `json:"created_by_name,omitempty"`
+	ID            int64     `json:"id"`
+	SKU           string    `json:"sku,omitempty"`
+	Status        string    `json:"status"`
+	MemberName    *string   `json:"member_name,omitempty"`
+	GrandTotal    float64   `json:"grand_total"`
+	ItemCount     float64   `json:"item_count"`
+	Fulfilled     bool      `json:"fulfilled"`
+	ReceiptLocked bool      `json:"receipt_locked"`
+	IsOverdue     bool      `json:"is_overdue"`
+	CreatedAt     time.Time `json:"created_at"`
+	CreatedByName *string   `json:"created_by_name,omitempty"`
 }
 
 type QuotationListResponse struct {
@@ -94,8 +94,8 @@ type QuotationPaymentMethodInput struct {
 }
 
 type QuotationPaymentInput struct {
-	Methods            []QuotationPaymentMethodInput `json:"methods"`
-	CreditApprovedBy   *int64                        `json:"credit_approved_by,omitempty"`
+	Methods          []QuotationPaymentMethodInput `json:"methods"`
+	CreditApprovedBy *int64                        `json:"credit_approved_by,omitempty"`
 }
 
 type QuotationPickingInput struct {
@@ -103,16 +103,16 @@ type QuotationPickingInput struct {
 }
 
 type QuotationPickingResponse struct {
-	OrderListID      int64    `json:"order_list_id,omitempty"`
-	Warnings         []string `json:"warnings,omitempty"`
-	Partial          bool     `json:"partial"`
-	PriceChanged     bool     `json:"price_changed"`
-	OutOfStockCount  int      `json:"out_of_stock_count"`
+	OrderListID     int64    `json:"order_list_id,omitempty"`
+	Warnings        []string `json:"warnings,omitempty"`
+	Partial         bool     `json:"partial"`
+	PriceChanged    bool     `json:"price_changed"`
+	OutOfStockCount int      `json:"out_of_stock_count"`
 }
 
 type QuotationDuplicateInput struct {
-	ItemIDs           []int64 `json:"item_ids,omitempty"`
-	UseCurrentPrices  bool    `json:"use_current_prices,omitempty"`
+	ItemIDs          []int64 `json:"item_ids,omitempty"`
+	UseCurrentPrices bool    `json:"use_current_prices,omitempty"`
 }
 
 type QuotationFulfillCheckResponse struct {
@@ -132,8 +132,8 @@ type QuotationFulfillInput struct {
 }
 
 type QuotationFulfillResponse struct {
-	OrderListID  int64  `json:"order_list_id"`
-	QuotationID  *int64 `json:"quotation_id,omitempty"`
+	OrderListID int64  `json:"order_list_id"`
+	QuotationID *int64 `json:"quotation_id,omitempty"`
 }
 
 type QuotationReturnInput struct {
@@ -168,37 +168,37 @@ type QuotationLatestReject struct {
 }
 
 type QuotationDetail struct {
-	ID                    int64                   `json:"id"`
-	SKU                   string                  `json:"sku,omitempty"`
-	Status                string                  `json:"status"`
-	ParentID              *int64                  `json:"parent_id,omitempty"`
-	MemberUserID          *int64                  `json:"member_user_id,omitempty"`
-	MemberSettingCreditID *int64                  `json:"member_setting_credit_id,omitempty"`
-	MemberName            *string                 `json:"member_name,omitempty"`
-	MemberTel             *string                 `json:"member_tel,omitempty"`
-	MemberEmail           *string                 `json:"member_email,omitempty"`
-	IssueDate             *string                 `json:"issue_date,omitempty"`
-	ValidUntil            *string                 `json:"valid_until,omitempty"`
-	ReserveStock          bool                    `json:"reserve_stock"`
-	Notes                 *string                 `json:"notes,omitempty"`
-	AcceptMode            *string                 `json:"accept_mode,omitempty"`
-	AcceptedAt            *time.Time              `json:"accepted_at,omitempty"`
-	CreditDate            *string                 `json:"credit_date,omitempty"`
-	VatType               string                  `json:"vat_type"`
-	VatRate               float64                 `json:"vat_rate"`
-	SubtotalExVat         float64                 `json:"subtotal_ex_vat"`
-	DiscountTotal         float64                 `json:"discount_total"`
-	VatAmount             float64                 `json:"vat_amount"`
-	GrandTotal            float64                 `json:"grand_total"`
-	Fulfilled             bool                    `json:"fulfilled"`
-	ReceiptLocked         bool                    `json:"receipt_locked"`
-	IsOverdue             bool                    `json:"is_overdue"`
-	Items                 []QuotationItemDetail   `json:"items"`
-	Files                 []QuotationFileDetail   `json:"files"`
-	CreatedAt             time.Time               `json:"created_at"`
-	UpdatedAt             time.Time               `json:"updated_at"`
-	CreatedByName         *string                 `json:"created_by_name,omitempty"`
-	LatestReject          *QuotationLatestReject  `json:"latest_reject,omitempty"`
+	ID                    int64                  `json:"id"`
+	SKU                   string                 `json:"sku,omitempty"`
+	Status                string                 `json:"status"`
+	ParentID              *int64                 `json:"parent_id,omitempty"`
+	MemberUserID          *int64                 `json:"member_user_id,omitempty"`
+	MemberSettingCreditID *int64                 `json:"member_setting_credit_id,omitempty"`
+	MemberName            *string                `json:"member_name,omitempty"`
+	MemberTel             *string                `json:"member_tel,omitempty"`
+	MemberEmail           *string                `json:"member_email,omitempty"`
+	IssueDate             *string                `json:"issue_date,omitempty"`
+	ValidUntil            *string                `json:"valid_until,omitempty"`
+	ReserveStock          bool                   `json:"reserve_stock"`
+	Notes                 *string                `json:"notes,omitempty"`
+	AcceptMode            *string                `json:"accept_mode,omitempty"`
+	AcceptedAt            *time.Time             `json:"accepted_at,omitempty"`
+	CreditDate            *string                `json:"credit_date,omitempty"`
+	VatType               string                 `json:"vat_type"`
+	VatRate               float64                `json:"vat_rate"`
+	SubtotalExVat         float64                `json:"subtotal_ex_vat"`
+	DiscountTotal         float64                `json:"discount_total"`
+	VatAmount             float64                `json:"vat_amount"`
+	GrandTotal            float64                `json:"grand_total"`
+	Fulfilled             bool                   `json:"fulfilled"`
+	ReceiptLocked         bool                   `json:"receipt_locked"`
+	IsOverdue             bool                   `json:"is_overdue"`
+	Items                 []QuotationItemDetail  `json:"items"`
+	Files                 []QuotationFileDetail  `json:"files"`
+	CreatedAt             time.Time              `json:"created_at"`
+	UpdatedAt             time.Time              `json:"updated_at"`
+	CreatedByName         *string                `json:"created_by_name,omitempty"`
+	LatestReject          *QuotationLatestReject `json:"latest_reject,omitempty"`
 }
 
 type QuotationFilterItem struct {

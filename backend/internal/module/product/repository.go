@@ -34,13 +34,13 @@ type ListFilter struct {
 }
 
 type CreateInput struct {
-	AttrType  string
-	TypeCar   *string
-	ParentID  *int64
-	IsActive  bool
-	Names     map[string]string
-	BrandIDs  []int64
-	ActorID   int64
+	AttrType string
+	TypeCar  *string
+	ParentID *int64
+	IsActive bool
+	Names    map[string]string
+	BrandIDs []int64
+	ActorID  int64
 }
 
 type Patch struct {

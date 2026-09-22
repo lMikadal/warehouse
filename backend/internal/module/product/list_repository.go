@@ -68,39 +68,39 @@ type itemFileBody struct {
 }
 
 type listItemBody struct {
-	ID                 *int64                 `json:"id,omitempty"`
-	SKU                string                 `json:"sku,omitempty"`
-	Barcode            string                 `json:"barcode,omitempty"`
-	Qrcode             string                 `json:"qrcode,omitempty"`
-	Price              float64                `json:"price"`
-	PriceWholesale     float64                `json:"price_wholesale"`
-	PriceVat           float64                `json:"price_vat"`
+	ID                   *int64                 `json:"id,omitempty"`
+	SKU                  string                 `json:"sku,omitempty"`
+	Barcode              string                 `json:"barcode,omitempty"`
+	Qrcode               string                 `json:"qrcode,omitempty"`
+	Price                float64                `json:"price"`
+	PriceWholesale       float64                `json:"price_wholesale"`
+	PriceVat             float64                `json:"price_vat"`
 	PriceWholesaleVat    float64                `json:"price_wholesale_vat"`
 	AmountPriceWholesale int                    `json:"amount_price_wholesale"`
 	VatType              string                 `json:"vat_type,omitempty"`
-	VatRate            float64                `json:"vat_rate,omitempty"`
-	TypePrice          string                 `json:"type_price"`
-	Unit               string                 `json:"unit"`
-	QtyPerUnit         int                    `json:"qty_per_unit"`
-	Weight             *float64               `json:"weight,omitempty"`
-	Width              *float64               `json:"width,omitempty"`
-	Length             *float64               `json:"length,omitempty"`
-	Height             *float64               `json:"height,omitempty"`
-	MinimumStock       int                    `json:"minimum_stock"`
-	OldProductItemID   *int64                 `json:"old_product_item_id,omitempty"`
-	IsNew              bool                   `json:"is_new"`
-	IsActive           bool                   `json:"is_active"`
-	IsStopped          bool                   `json:"is_stopped"`
-	IsAuthentic        bool                   `json:"is_authentic"`
-	Promotion          string                 `json:"promotion,omitempty"`
-	TotalStock         float64                `json:"total_stock,omitempty"`
-	WarehouseRootCount int                    `json:"warehouse_root_count,omitempty"`
-	LowStock           bool                   `json:"low_stock,omitempty"`
-	Names              itemLangNames          `json:"names"`
-	ChannelPrices      []itemChannelPriceBody `json:"channel_prices,omitempty"`
-	Suppliers          []itemSupplierBody     `json:"suppliers,omitempty"`
-	Warehouses         []itemWarehouseBody    `json:"warehouse_placements,omitempty"`
-	Files              []itemFileBody         `json:"files,omitempty"`
+	VatRate              float64                `json:"vat_rate,omitempty"`
+	TypePrice            string                 `json:"type_price"`
+	Unit                 string                 `json:"unit"`
+	QtyPerUnit           int                    `json:"qty_per_unit"`
+	Weight               *float64               `json:"weight,omitempty"`
+	Width                *float64               `json:"width,omitempty"`
+	Length               *float64               `json:"length,omitempty"`
+	Height               *float64               `json:"height,omitempty"`
+	MinimumStock         int                    `json:"minimum_stock"`
+	OldProductItemID     *int64                 `json:"old_product_item_id,omitempty"`
+	IsNew                bool                   `json:"is_new"`
+	IsActive             bool                   `json:"is_active"`
+	IsStopped            bool                   `json:"is_stopped"`
+	IsAuthentic          bool                   `json:"is_authentic"`
+	Promotion            string                 `json:"promotion,omitempty"`
+	TotalStock           float64                `json:"total_stock,omitempty"`
+	WarehouseRootCount   int                    `json:"warehouse_root_count,omitempty"`
+	LowStock             bool                   `json:"low_stock,omitempty"`
+	Names                itemLangNames          `json:"names"`
+	ChannelPrices        []itemChannelPriceBody `json:"channel_prices,omitempty"`
+	Suppliers            []itemSupplierBody     `json:"suppliers,omitempty"`
+	Warehouses           []itemWarehouseBody    `json:"warehouse_placements,omitempty"`
+	Files                []itemFileBody         `json:"files,omitempty"`
 }
 
 type listAggregateBody struct {

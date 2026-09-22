@@ -22,7 +22,13 @@ import {
 } from "@/lib/product-filters-api";
 import { memberFilterItemsToOptions } from "@/lib/member-user-filters-api";
 
-export type OrderSalesFormResource = "store-sales" | "quotations";
+export type OrderSalesFormResource =
+  | "store-sales"
+  | "quotations"
+  | "tickets"
+  | "purchases"
+  | "orders"
+  | "store-claims";
 
 function proxyBase(resource: OrderSalesFormResource) {
   return `/api/v1/auth/proxy/order/${resource}`;
@@ -109,6 +115,9 @@ export async function fetchOrderSalesFormItems(
   }
   if (params.carYear != null) q.set("car_year", String(params.carYear));
   if (params.oem?.trim()) q.set("oem", params.oem.trim());
+  if (params.refillFilter?.trim()) {
+    q.set("refill_filter", params.refillFilter.trim());
+  }
   if (params.sort) q.set("sort", params.sort);
   if (params.order) q.set("order", params.order);
   if (params.ids?.length) {

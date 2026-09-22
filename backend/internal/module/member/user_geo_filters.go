@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v5"
 	"github.com/lMikadal/warehouse/backend/internal/api"
-	"github.com/lMikadal/warehouse/backend/internal/module/system"
 	applog "github.com/lMikadal/warehouse/backend/internal/log"
+	"github.com/lMikadal/warehouse/backend/internal/module/system"
+	"github.com/labstack/echo/v5"
 )
 
 func memberUserGeoFilterLevel(facet string) (system.GeoLevel, bool) {

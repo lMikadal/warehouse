@@ -18,7 +18,7 @@ func TestRootMenuID(t *testing.T) {
 
 func TestIsMatrixMenuRow(t *testing.T) {
 	ok := &matrixMenuRow{
-		path: sql.NullString{String: "/admin/foo", Valid: true},
+		path:  sql.NullString{String: "/admin/foo", Valid: true},
 		perms: map[string]int64{"view": 1},
 	}
 	if !isMatrixMenuRow(ok) {

@@ -1,0 +1,218 @@
+{
+  "page": {
+    "orderClaim": {
+      "pageTitle": "Return / claim list",
+      "pageSubtitle": "Manage and review return or claim requests",
+      "searchPlaceholder": "Search by claim number...",
+      "filterDateRange": "Date range",
+      "filterDateRangePlaceholder": "Select date range",
+      "clearDateRange": "Clear dates",
+      "filterTypeLabel": "Type",
+      "filterTypeAll": "All",
+      "exportButton": "Export",
+      "exportComingSoon": "Export will be available soon",
+      "tabAll": "All",
+      "colClaimNumber": "Claim no.",
+      "colClaimDate": "Claim date",
+      "colPurchaseNumber": "PO number",
+      "colType": "Type",
+      "colRequester": "Requester",
+      "colProgress": "Received / sent",
+      "colStatus": "Status",
+      "resolution": {
+        "claim": "Claim",
+        "return": "Return",
+        "accept_loss": "Reject"
+      },
+      "status": {
+        "pending": "Pending",
+        "in_progress": "In review",
+        "completed": "Completed",
+        "cancelled": "Rejected"
+      },
+      "empty": "No records found",
+      "loadFailed": "Failed to load list",
+      "updateFailed": "Save failed",
+      "updateSuccess": "Saved successfully",
+      "cancelFailed": "Failed to cancel",
+      "cancelSuccess": "Cancelled",
+      "ariaHistory": "Activity history",
+      "ariaView": "View details",
+      "ariaEdit": "Edit row",
+      "ariaCancel": "Cancel row",
+      "editTitle": "Manage claim / return",
+      "noteTypeRejectLabel": "Requester note",
+      "noteProcessLabel": "Process note",
+      "historyModalTitle": "Activity log",
+      "historyEmpty": "No history yet",
+      "historyLoadError": "Could not load history",
+      "historyClose": "Close",
+      "historyActorUnknown": "—",
+      "historyUntitled": "Action",
+      "edit": {
+        "backToList": "Back to claim list",
+        "loadError": "Could not load details.",
+        "notFound": "Record not found.",
+        "updateFailed": "Save failed.",
+        "updateSuccess": "Saved successfully.",
+        "draftSaved": "Draft saved.",
+        "confirmSuccess": "Confirmed.",
+        "rejectSuccess": "Item rejected.",
+        "rejectReasonRequired": "Please enter a rejection reason.",
+        "rowClickHint": "Click a row to choose an action.",
+        "rightPanelTitle": "Create claim/return",
+        "rightPanelEmpty": "Select a product to create claim/return",
+        "progressTitle": "Receiving progress",
+        "progressReceived": "Received",
+        "progressRemaining": "Remaining",
+        "progressReceivedValue": "Received value",
+        "progressTotalValue": "Total value",
+        "typePicker": {
+          "title": "Select topic",
+          "subtitle": "Choose how to handle the issue after receiving goods",
+          "topics": {
+            "return": {
+              "title": "Return goods",
+              "description": "Create a return document"
+            },
+            "claim": {
+              "title": "Claim",
+              "description": "Create a claim document"
+            },
+            "accept_loss": {
+              "title": "Reject",
+              "description": "Specify the reason for rejection"
+            }
+          }
+        },
+        "rejectModal": {
+          "title": "Reject",
+          "subtitle": "Specify the reason for rejection",
+          "reasonLabel": "Reason"
+        },
+        "returnConfirmModal": {
+          "title": "Confirm product return?",
+          "subtitle": "After confirming, the system will email the supplier immediately. No further confirmation is required."
+        },
+        "process": {
+          "download": "Download",
+          "ariaCopyClaimNumber": "Copy claim number",
+          "metaCreateReturn": "Return document created",
+          "metaCreateClaim": "Claim document created",
+          "metaSendToPartner": "Sent to partner",
+          "vendorLabel": "Supplier",
+          "refPoLabel": "Reference (PO)",
+          "orderDateLabel": "Order date",
+          "receiveDateLabel": "Received date",
+          "quantityReturnLabel": "Return quantity",
+          "quantityClaimLabel": "Claim quantity",
+          "valueReturnLabel": "Return value",
+          "valueClaimLabel": "Claim value",
+          "noteLabel": "Note",
+          "editNoteAria": "Edit note",
+          "editNoteComingSoon": "Note editing will be available soon.",
+          "itemsTitleReturn": "Return items",
+          "itemsTitleClaim": "Claim items",
+          "colItem": "Item",
+          "colBrand": "Brand",
+          "colQty": "Qty",
+          "colUnit": "Unit",
+          "colUnitPrice": "Unit price",
+          "colDiscount": "Discount",
+          "colTotal": "Total",
+          "colIssue": "Issue",
+          "colPartnerReview": "Partner review",
+          "approveAria": "Approve",
+          "rejectAria": "Reject",
+          "rerouteClaim": "Re-route as claim",
+          "rerouteReturn": "Re-route as return",
+          "timelineTitle": "Operation status",
+          "stepsReturn": {
+            "createDoc": "Create return document",
+            "sendToPartner": "Sent to partner",
+            "waitPartnerReview": "Awaiting partner review",
+            "partnerReply": "Partner reply",
+            "confirmAll": "Confirm all review results",
+            "close": "Close case"
+          },
+          "stepsClaim": {
+            "createDoc": "Create claim document",
+            "sendToPartner": "Sent to partner",
+            "waitPartnerReview": "Awaiting partner review",
+            "partnerReply": "Partner reply",
+            "confirmAll": "Confirm all review results",
+            "close": "Close case"
+          },
+          "partnerReviewModal": {
+            "title": "Partner status details",
+            "noteLabel": "Details",
+            "notePlaceholder": "Enter partner status details",
+            "noteRequired": "Please enter details"
+          },
+          "partnerApproved": "Confirmed by partner: {note}",
+          "partnerRejected": "Rejected by partner: {note}",
+          "reviewSuccess": "Review result saved.",
+          "stepsAcceptLoss": {
+            "createDoc": "Create claim document",
+            "sendToPartner": "Sent to partner",
+            "waitPartnerReview": "Awaiting partner review",
+            "partnerReply": "Partner reply",
+            "confirmAll": "Confirm all review results",
+            "close": "Close case"
+          }
+        },
+        "panel": {
+          "claimNumberPrefix": "Claim",
+          "returnTitle": "Goods receipt note",
+          "claimTitle": "Claim form",
+          "panelSubtitle": "Review items to process",
+          "supplierLabel": "Supplier",
+          "orderDateLabel": "Order date",
+          "receiveDateLabel": "Received date",
+          "colItem": "Item",
+          "colQty": "Qty",
+          "colUnit": "Unit",
+          "colManage": "Manage",
+          "removeItemAria": "Remove item from form",
+          "noteProcessLabel": "Note",
+          "noteProcessPlaceholder": "Enter a note (optional)",
+          "saveDraft": "Save draft",
+          "summaryItems": "{count} item(s)",
+          "summaryNet": "Net"
+        }
+      },
+      "itemsHeading": "Items",
+      "emptyCell": "-",
+      "currencySuffix": "THB",
+      "confirm": "OK",
+      "claimDocLabel": "Claim / return document",
+      "claimDocStatus": {
+        "draft": "Draft",
+        "success": "Success",
+        "cancelled": "Cancelled"
+      },
+      "kpiTotal": "All items",
+      "kpiPending": "Pending",
+      "kpiInProgress": "Under review",
+      "kpiCompleted": "Completed",
+      "kpiCancelled": "Rejected",
+      "kpiSubtitleUnit": "items",
+      "filterStatusLabel": "Status",
+      "colSupplier": "Supplier",
+      "colQty": "Qty",
+      "colProduct": "Product",
+      "issue": {
+        "overage": "Overage",
+        "shortage": "Shortage",
+        "damaged": "Damaged / broken",
+        "wrong": "Wrong model",
+        "other": "Other"
+      },
+      "unit": {
+        "piece": "Piece",
+        "box": "Box",
+        "set": "Set"
+      }
+    }
+  }
+}

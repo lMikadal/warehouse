@@ -156,8 +156,8 @@ func (r *StoreSalesRepository) List(ctx context.Context, q StoreSalesListQuery) 
 	args = append(args, q.Limit, offset)
 	query := fmt.Sprintf(`
 SELECT d.id, d.sku, d.status::text, d.ordered_at, d.parent_id, d.member_name,
-  (SELECT COALESCE(SUM(i.amount), 0) FROM order_list_item i` + orderListItemFamilyScope + `) AS item_count,
-  (SELECT COALESCE(SUM(COALESCE(NULLIF(i.total_price, 0), ` + orderListItemLineTotalExpr + `)), 0) FROM order_list_item i` + orderListItemFamilyScope + `) AS total_price,
+  (SELECT COALESCE(SUM(i.amount), 0) FROM order_list_item i`+orderListItemFamilyScope+`) AS item_count,
+  (SELECT COALESCE(SUM(COALESCE(NULLIF(i.total_price, 0), `+orderListItemLineTotalExpr+`)), 0) FROM order_list_item i`+orderListItemFamilyScope+`) AS total_price,
   (SELECT COUNT(*) FROM order_list c WHERE c.parent_id = d.id AND c.deleted_at IS NULL) AS child_count,
   d.created_at, au.username
 %s WHERE %s ORDER BY d.created_at DESC, d.id DESC LIMIT $%d OFFSET $%d`,
