@@ -364,12 +364,24 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Ticket-created | Receive submit with `status: pending` + `purchase_request_id` → list shows edit → approve shell with request tab. |
 | Phase checklist (create) | [`document/checklist/frontend/phase-frontend-order-purchase-create.md`](../checklist/frontend/phase-frontend-order-purchase-create.md) |
 
+### Sales / purchase ticket detail
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/sales/ticket/[id]/detail` and `/admin/order/purchase/ticket/[id]/detail` share [`ticket-detail-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/sales/ticket/_shared/ticket-detail-page.tsx) |
+| Header | SKU + status left; **created date \| creator** muted meta on the right (`detail.created_at` / `created_by_name`) |
+| Footer | Fixed bottom bar (`useSidebar` inset + `pb-20`): history left; draft edit + print request / deposit right. When `embedded` (PO approve/payment tabs), same actions as a non-fixed row — no fixed bar |
+| Sidebar cards | Customer + note use `CardAction` top-right ghost **Edit** (`SquarePen`); note is read-only until dialog save via `patchTicketNote` |
+| Purchase detail right rail | `showLinkedPurchases` on the purchase `/ticket/[id]/detail` route — right column is [`purchase-ticket-existing-pos-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-existing-pos-panel.tsx) (accordion PO cards: status, line items, money summary); customer / deposit / note move under the items column |
+| Pending rejects | Inline on the product table row (rose/error tint + **มีปัญหา** badge): problem panel with detected date, issue text, accept-condition hint, and **ไม่ยอมรับ** / **ยอมรับ** bottom-right — not a separate top banner |
+| i18n | `page.orderTicket.detail` in [`page-order-ticket.json`](../../frontend/messages/th/page-order-ticket.json) |
+
 ### Purchase ticket receive (คำร้อง → PO)
 
 | Item | Detail |
 |------|--------|
 | Route | `/admin/order/purchase/ticket/[id]` = **receive** (not sales edit form). Create stays `/ticket/new`; read-only view `/ticket/[id]/detail`. |
-| UI | [`purchase-ticket-receive-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-form.tsx) — resizable split (`purchase-ticket-receive-desktop-split.tsx`, `ssr: false`); left [`purchase-ticket-receive-left-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-left-panel.tsx) (header + catalog/custom tabs + พิจารณา + history); right existing POs + draft cards / empty state [`draftPoEmptyState`](../../frontend/messages/th/page-order-purchase.json). |
+| UI | [`purchase-ticket-receive-form.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-form.tsx) — resizable split (`purchase-ticket-receive-desktop-split.tsx`, `ssr: false`); left [`purchase-ticket-receive-left-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-receive-left-panel.tsx) (header + catalog/custom tabs + พิจารณา + history); right existing POs ([`purchase-ticket-existing-pos-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/purchase/_shared/purchase-ticket-existing-pos-panel.tsx) accordion with line items + totals) + draft cards / empty state [`draftPoEmptyState`](../../frontend/messages/th/page-order-purchase.json). |
 | Line types | API `catalog` / `custom` → UI tabs สินค้าที่ซื้อ / สินค้าใหม่. |
 | Consider | Topics dialog → stock-history select partner, supplier pick (`GET /purchases/filters?facet=suppliers`), `createTicketItemReject` (`change`/`wait`/`stop`; `wait.date` is `YYYY-MM-DD`), `patchTicketItemStatus` rejected (cancel), `patchProductItemStopped` (stop). Ticket `product_item_name` / reject name = `product_item_language` then `product_list_language` (th) — same fallback as product browse. |
 | Create PO | Draft cards → `createPurchase` with `purchase_request_id` + `items[].purchase_request_item_id`. Shared summary panel also supports standalone create (omit ticket ids). |

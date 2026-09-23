@@ -106,6 +106,10 @@
         "title": "Request detail",
         "customerCard": "Customer",
         "editCustomer": "Edit customer",
+        "editNote": "Edit note",
+        "editAction": "Edit",
+        "createdDate": "Created",
+        "creatorLabel": "Creator",
         "noteCard": "Note",
         "saveNote": "Save note",
         "itemsExisting": "Catalog products",
@@ -117,21 +121,19 @@
         "depositReceiptNo": "Deposit slip no.",
         "edit": "Edit request",
         "rejectsTitle": "Lines needing review",
+        "problemInLineTitle": "Issue found on this line",
+        "problemDetectedAt": "Detected on",
+        "problemFoundPrefix": "Issue:",
+        "acceptConditionHint": "*Please accept the terms to continue",
+        "hasProblemBadge": "Has issue",
         "acceptReject": "Accept",
         "declineReject": "Decline",
         "rejectType": {
           "change": "Change product",
-          "wait": "Wait for stock",
-          "stop": "Stop ordering",
-          "reject": "Reject"
+          "wait": "Out of stock — waiting for restock",
+          "stop": "Temporarily stop ordering",
+          "reject": "Cancel line"
         }
-      },
-      "print": {
-        "title": "Print documents",
-        "hint": "Choose a document to print",
-        "request": "Request form",
-        "deposit": "Deposit slip",
-        "close": "Close"
       }
     }
   }

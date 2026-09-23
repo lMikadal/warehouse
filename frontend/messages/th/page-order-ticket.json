@@ -106,6 +106,10 @@
         "title": "รายละเอียดคำร้อง",
         "customerCard": "ข้อมูลลูกค้า",
         "editCustomer": "แก้ไขข้อมูลลูกค้า",
+        "editNote": "แก้ไขหมายเหตุ",
+        "editAction": "แก้ไข",
+        "createdDate": "วันที่สร้าง",
+        "creatorLabel": "ผู้สร้าง",
         "noteCard": "หมายเหตุ",
         "saveNote": "บันทึกหมายเหตุ",
         "itemsExisting": "สินค้าในระบบ",
@@ -117,21 +121,19 @@
         "depositReceiptNo": "เลขที่ใบมัดจำ",
         "edit": "แก้ไขคำร้อง",
         "rejectsTitle": "รายการที่ต้องตรวจสอบ",
+        "problemInLineTitle": "พบปัญหาในรายการสินค้า",
+        "problemDetectedAt": "วันที่ตรวจพบปัญหา",
+        "problemFoundPrefix": "ปัญหาที่พบ:",
+        "acceptConditionHint": "*โปรดตอบรับเงื่อนไข เพื่อดำเนินการต่อ",
+        "hasProblemBadge": "มีปัญหา",
         "acceptReject": "ยอมรับ",
-        "declineReject": "ปฏิเสธ",
+        "declineReject": "ไม่ยอมรับ",
         "rejectType": {
           "change": "เปลี่ยนสินค้า",
-          "wait": "รอสินค้า",
-          "stop": "หยุดสั่ง",
-          "reject": "ไม่อนุมัติ"
+          "wait": "ไม่มีสินค้า — รอสินค้าเข้า",
+          "stop": "หยุดสั่งสินค้าชั่วคราว",
+          "reject": "ยกเลิกรายการ"
         }
-      },
-      "print": {
-        "title": "พิมพ์เอกสาร",
-        "hint": "เลือกเอกสารที่ต้องการพิมพ์",
-        "request": "ใบคำร้อง",
-        "deposit": "ใบมัดจำ",
-        "close": "ปิด"
       }
     }
   }

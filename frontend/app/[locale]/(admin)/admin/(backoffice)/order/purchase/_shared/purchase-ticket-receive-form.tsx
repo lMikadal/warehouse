@@ -8,7 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 import {
   fetchPurchaseDetail,
   fetchPurchaseList,
-  type PurchaseListItem,
+  type PurchaseDetail,
 } from "@/lib/order-purchase-api";
 import {
   fetchTicketDetail,
@@ -44,7 +44,7 @@ export function PurchaseTicketReceiveForm({ ticketId }: { ticketId: number }) {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detail, setDetail] = useState<TicketDetail | null>(null);
   const [draftCards, setDraftCards] = useState<ReceiveDraftCard[]>([]);
-  const [existingOrders, setExistingOrders] = useState<PurchaseListItem[]>([]);
+  const [existingOrders, setExistingOrders] = useState<PurchaseDetail[]>([]);
   const [lockedLineIds, setLockedLineIds] = useState<Set<number>>(
     () => new Set()
   );
@@ -99,24 +99,27 @@ export function PurchaseTicketReceiveForm({ ticketId }: { ticketId: number }) {
           signal: ac.signal,
         });
         if (ac.signal.aborted) return;
-        setExistingOrders(list.items);
         const locked = new Set<number>();
-        await Promise.all(
-          list.items.map(async (row) => {
-            try {
-              const detailPo = await fetchPurchaseDetail(row.id);
-              if (ac.signal.aborted) return;
-              for (const item of detailPo.items) {
-                if (item.purchase_request_item_id) {
-                  locked.add(item.purchase_request_item_id);
+        const details = (
+          await Promise.all(
+            list.items.map(async (row) => {
+              try {
+                const detailPo = await fetchPurchaseDetail(row.id);
+                if (ac.signal.aborted) return null;
+                for (const item of detailPo.items) {
+                  if (item.purchase_request_item_id) {
+                    locked.add(item.purchase_request_item_id);
+                  }
                 }
+                return detailPo;
+              } catch {
+                return null;
               }
-            } catch {
-              /* keep list row even if detail fails */
-            }
-          })
-        );
+            })
+          )
+        ).filter((d): d is PurchaseDetail => d != null);
         if (ac.signal.aborted) return;
+        setExistingOrders(details);
         setLockedLineIds(locked);
         setExistingPoLoading(false);
       } catch {

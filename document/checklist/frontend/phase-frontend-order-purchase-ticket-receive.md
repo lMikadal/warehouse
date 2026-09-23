@@ -6,7 +6,7 @@
 - [x] Resizable left/right split (`ssr: false`) + co-located loading skeleton
 - [x] Left panel: ticket header, catalog/custom tabs, พิจารณา, inline history
 - [x] Consider topics: compare prices, select partner, change brand, wait, cancel, stop
-- [x] Right rail: existing POs + draft partner cards + empty state
+- [x] Right rail: existing POs (accordion with line items + money summary) + draft partner cards + empty state
 - [x] Create PO from draft via `createPurchase` + `purchase_request_id` / item ids
 - [x] th/en `page.orderPurchase.receive` messages
 - [x] Knowledge note in `document/knowledge/frontend.md`

@@ -1,17 +1,22 @@
 "use client";
 
-import { AlertTriangle, History, Pencil, Printer } from "lucide-react";
+import { History, Printer, SquarePen } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudPageHeader } from "@/components/molecules/crud-page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -19,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -30,7 +36,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "@/i18n/navigation";
 import { useResourcePermissions } from "@/lib/admin-backoffice-actor-context";
-import { type DisplayLocale, formatDateTime } from "@/lib/format-datetime";
+import {
+  type DisplayLocale,
+  formatDate,
+  formatDateTime,
+} from "@/lib/format-datetime";
+import {
+  fetchPurchaseDetail,
+  fetchPurchaseList,
+  type PurchaseDetail,
+} from "@/lib/order-purchase-api";
 import {
   fetchTicketDetail,
   fetchTicketHistory,
@@ -41,8 +56,11 @@ import {
   type TicketDetail,
   type TicketHistoryEntry,
   type TicketItemDetail,
+  type TicketItemReject,
 } from "@/lib/order-ticket-api";
+import { cn } from "@/lib/utils";
 
+import { PurchaseTicketExistingPosPanel } from "../../../order/purchase/_shared/purchase-ticket-existing-pos-panel";
 import { toDepositReceiptNo } from "../_lib/ticket-line-helpers";
 import { ticketStatusPillClass } from "./ticket-status-styles";
 
@@ -57,21 +75,34 @@ type Props = {
   ticketId: number;
   /** Inside the PO approve/payment tabs the page is a panel, so it drops its own page header. */
   embedded?: boolean;
+  /**
+   * Purchase ticket detail: right rail shows linked POs (ใบสั่งซื้อจากคำร้องนี้)
+   * instead of stacking only customer / deposit / note cards.
+   */
+  showLinkedPurchases?: boolean;
 };
 
-export function TicketDetailPage({ ticketId, embedded = false }: Props) {
+export function TicketDetailPage({
+  ticketId,
+  embedded = false,
+  showLinkedPurchases = false,
+}: Props) {
   const locale = useLocale() as DisplayLocale;
   const tPage = useTranslations("page.orderTicket");
   const tDetail = useTranslations("page.orderTicket.detail");
   const tForm = useTranslations("page.orderTicket.form");
-  const tPrint = useTranslations("page.orderTicket.print");
   const tCrud = useTranslations("crud");
   const tError = useTranslations("error");
+  const tFormI18n = useTranslations("form");
   const perms = useResourcePermissions("order", "order_ticket");
+  const { open: sidebarOpen, isMobile: sidebarMobile } = useSidebar();
+  const footerInsetLeft = !sidebarMobile && sidebarOpen;
 
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<TicketDetail | null>(null);
   const [note, setNote] = useState("");
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [customerDraft, setCustomerDraft] = useState({
@@ -84,8 +115,10 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
   const [savingCustomer, setSavingCustomer] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<TicketHistoryEntry[]>([]);
-  const [printOpen, setPrintOpen] = useState(false);
   const [busyRejectId, setBusyRejectId] = useState<number | null>(null);
+  const [linkedPos, setLinkedPos] = useState<PurchaseDetail[]>([]);
+  const [linkedPosLoading, setLinkedPosLoading] = useState(false);
+  const [linkedPosError, setLinkedPosError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!perms.view) {
@@ -117,6 +150,49 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!showLinkedPurchases || !perms.view) {
+      setLinkedPos([]);
+      setLinkedPosError(null);
+      setLinkedPosLoading(false);
+      return;
+    }
+    const ac = new AbortController();
+    setLinkedPosLoading(true);
+    setLinkedPosError(null);
+    void (async () => {
+      try {
+        const list = await fetchPurchaseList({
+          page: 1,
+          limit: 100,
+          purchase_request_id: String(ticketId),
+          signal: ac.signal,
+        });
+        if (ac.signal.aborted) return;
+        const details = (
+          await Promise.all(
+            list.items.map(async (row) => {
+              try {
+                return await fetchPurchaseDetail(row.id);
+              } catch {
+                return null;
+              }
+            })
+          )
+        ).filter((d): d is PurchaseDetail => d != null);
+        if (ac.signal.aborted) return;
+        setLinkedPos(details);
+        setLinkedPosLoading(false);
+      } catch {
+        if (ac.signal.aborted) return;
+        setLinkedPos([]);
+        setLinkedPosError(tError("loadFailed"));
+        setLinkedPosLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [showLinkedPurchases, perms.view, ticketId, tError]);
+
   const openHistory = async () => {
     setHistoryOpen(true);
     try {
@@ -127,11 +203,18 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
     }
   };
 
+  const openNoteEdit = () => {
+    setNoteDraft(note);
+    setNoteOpen(true);
+  };
+
   const saveNote = async () => {
     setSavingNote(true);
     try {
-      await patchTicketNote(locale, ticketId, note);
+      await patchTicketNote(locale, ticketId, noteDraft);
+      setNote(noteDraft);
       toast.success(tCrud("toast.saved"));
+      setNoteOpen(false);
       void load();
     } catch (e) {
       toast.error(
@@ -205,10 +288,56 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
 
   const catalogItems = detail.items.filter((i) => i.type === "catalog");
   const customItems = detail.items.filter((i) => i.type === "custom");
-  const pendingRejects = detail.items.flatMap((item) =>
-    item.rejects
-      .filter((r) => r.status === "pending")
-      .map((r) => ({ item, reject: r }))
+
+  const showDraftEdit = perms.update && detail.status === "draft";
+  const noteLabel = tDetail("noteCard");
+
+  const pendingRejectFor = (item: TicketItemDetail) =>
+    item.rejects.find((r) => r.status === "pending") ?? null;
+
+  const rejectProblemText = (reject: TicketItemReject) => {
+    const parts = [
+      tDetail(`rejectType.${reject.type}`),
+      reject.note?.trim() || null,
+      reject.product_item_name?.trim() || null,
+      reject.date ? formatDate(reject.date, locale) : null,
+    ].filter(Boolean);
+    return parts.join(" — ");
+  };
+
+  const footerActions = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => void openHistory()}
+      >
+        <History className="text-current" aria-hidden />
+        {tDetail("openHistory")}
+      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        {showDraftEdit ? (
+          <Button asChild variant="outline">
+            <Link href={`/admin/sales/ticket/${detail.id}`}>
+              <SquarePen className="text-current" aria-hidden />
+              {tDetail("edit")}
+            </Link>
+          </Button>
+        ) : null}
+        <Button type="button" variant="outline" onClick={() => window.print()}>
+          <Printer className="text-current" aria-hidden />
+          {tDetail("printRequest")}
+        </Button>
+        <Button
+          type="button"
+          disabled={detail.total_deposit <= 0}
+          onClick={() => window.print()}
+        >
+          <Printer className="text-current" aria-hidden />
+          {tDetail("printDeposit")}
+        </Button>
+      </div>
+    </>
   );
 
   const itemsTable = (heading: string, items: TicketItemDetail[]) => {
@@ -231,56 +360,145 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="min-w-0 space-y-0.5">
-                      <p className="font-medium">
-                        {(item.type === "catalog"
-                          ? item.product_item_name
-                          : item.name) || "—"}
-                      </p>
-                      {item.product_item_sku ? (
-                        <p className="text-xs text-muted-foreground">
-                          SKU: {item.product_item_sku}
-                        </p>
-                      ) : null}
-                      {item.brand_name || item.model_name ? (
-                        <p className="text-xs text-muted-foreground">
-                          {[item.brand_name, item.model_name, item.engine_name]
-                            .filter(Boolean)
-                            .join(" ")}
-                        </p>
-                      ) : null}
-                      {item.identification_number ? (
-                        <p className="text-xs text-muted-foreground">
-                          {tForm("newChassis")}: {item.identification_number}
-                        </p>
-                      ) : null}
-                      {item.note ? (
-                        <p className="text-xs text-muted-foreground">
-                          {item.note}
-                        </p>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center tabular-nums">
-                    {item.qty_sell}
-                  </TableCell>
-                  <TableCell className="text-center tabular-nums">
-                    {item.qty_reorder}
-                  </TableCell>
-                  <TableCell className="text-center">{item.unit}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {money(item.deposit, locale)}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className={ticketStatusPillClass(item.status)}>
-                      {tPage(`status.${item.status}`)}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {items.map((item) => {
+                const pendingReject = pendingRejectFor(item);
+                const rowTone = pendingReject
+                  ? "bg-warehouse-error-bg/60 hover:bg-warehouse-error-bg/60"
+                  : undefined;
+                return (
+                  <Fragment key={item.id}>
+                    <TableRow className={rowTone}>
+                      <TableCell>
+                        <div className="min-w-0 space-y-0.5">
+                          <p className="font-medium">
+                            {(item.type === "catalog"
+                              ? item.product_item_name
+                              : item.name) || "—"}
+                          </p>
+                          {item.product_item_sku ? (
+                            <p className="text-xs text-muted-foreground">
+                              SKU: {item.product_item_sku}
+                            </p>
+                          ) : null}
+                          {item.brand_name || item.model_name ? (
+                            <p className="text-xs text-muted-foreground">
+                              {[
+                                item.brand_name,
+                                item.model_name,
+                                item.engine_name,
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                            </p>
+                          ) : null}
+                          {item.identification_number ? (
+                            <p className="text-xs text-muted-foreground">
+                              {tForm("newChassis")}:{" "}
+                              {item.identification_number}
+                            </p>
+                          ) : null}
+                          {item.note ? (
+                            <p className="text-xs text-muted-foreground">
+                              {item.note}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center tabular-nums">
+                        {item.qty_sell}
+                      </TableCell>
+                      <TableCell className="text-center tabular-nums">
+                        {item.qty_reorder}
+                      </TableCell>
+                      <TableCell className="text-center">{item.unit}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {money(item.deposit, locale)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {pendingReject ? (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-md border border-warehouse-error-border bg-warehouse-error-bg px-2 py-0.5 text-xs font-medium text-warehouse-error-fg"
+                            )}
+                          >
+                            <span
+                              className="size-1.5 shrink-0 rounded-full bg-warehouse-error-fg"
+                              aria-hidden
+                            />
+                            {tDetail("hasProblemBadge")}
+                          </span>
+                        ) : (
+                          <span className={ticketStatusPillClass(item.status)}>
+                            {tPage(`status.${item.status}`)}
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {pendingReject ? (
+                      <TableRow className={rowTone}>
+                        <TableCell colSpan={6} className="pt-0">
+                          <div className="rounded-md border border-warehouse-error-border bg-warehouse-error-bg/80 px-3 py-3">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <p className="text-sm font-semibold text-warehouse-error-fg">
+                                {tDetail("problemInLineTitle")}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {tDetail("problemDetectedAt")}:{" "}
+                                <span className="tabular-nums">
+                                  {formatDate(
+                                    pendingReject.created_at,
+                                    locale
+                                  )}
+                                </span>
+                              </p>
+                            </div>
+                            <p className="mt-1.5 text-sm">
+                              <span className="text-muted-foreground">
+                                {tDetail("problemFoundPrefix")}{" "}
+                              </span>
+                              {rejectProblemText(pendingReject)}
+                            </p>
+                            <p className="mt-1 text-xs text-warehouse-error-fg">
+                              {tDetail("acceptConditionHint")}
+                            </p>
+                            {perms.update ? (
+                              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={busyRejectId === pendingReject.id}
+                                  onClick={() =>
+                                    void decideReject(
+                                      pendingReject.id,
+                                      "cancelled"
+                                    )
+                                  }
+                                >
+                                  {tDetail("declineReject")}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={busyRejectId === pendingReject.id}
+                                  onClick={() =>
+                                    void decideReject(
+                                      pendingReject.id,
+                                      "approved"
+                                    )
+                                  }
+                                >
+                                  {tDetail("acceptReject")}
+                                </Button>
+                              </div>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -288,103 +506,163 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
     );
   };
 
-  return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
-      {embedded ? null : (
-      <CrudPageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-2">
-            <span>{detail.sku?.trim() || "—"}</span>
-            <span className={ticketStatusPillClass(detail.status)}>
-              {tPage(`status.${detail.status}`)}
-            </span>
-          </span>
-        }
-        description={tDetail("title")}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => void openHistory()}>
-              <History className="text-current" aria-hidden />
-              {tDetail("openHistory")}
-            </Button>
+  const customerCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{tDetail("customerCard")}</CardTitle>
+        {perms.update ? (
+          <CardAction>
             <Button
               type="button"
-              variant="outline"
-              onClick={() => setPrintOpen(true)}
+              variant="ghost"
+              size="sm"
+              onClick={() => setCustomerOpen(true)}
             >
-              <Printer className="text-current" aria-hidden />
-              {tPrint("title")}
+              <SquarePen className="text-current" aria-hidden />
+              {tDetail("editAction")}
             </Button>
-            {perms.update && detail.status === "draft" ? (
-              <Button asChild>
-                <Link href={`/admin/sales/ticket/${detail.id}`}>
-                  <Pencil className="text-current" aria-hidden />
-                  {tDetail("edit")}
-                </Link>
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
+          </CardAction>
+        ) : null}
+      </CardHeader>
+      <CardContent className="space-y-1.5 text-sm">
+        <p>
+          <span className="text-muted-foreground">
+            {tForm("customerSku")}:{" "}
+          </span>
+          {detail.customer?.sku?.trim() || "—"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            {tForm("customerName")}:{" "}
+          </span>
+          {detail.customer?.name?.trim() || "—"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            {tForm("customerTel")}:{" "}
+          </span>
+          {detail.customer?.tel?.trim() || "—"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            {tForm("customerEmail")}:{" "}
+          </span>
+          {detail.customer?.email?.trim() || "—"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            {tForm("customerDateReceive")}:{" "}
+          </span>
+          {detail.customer?.date_receive
+            ? formatDateTime(detail.customer.date_receive, locale)
+            : "—"}
+        </p>
+        <p>
+          <span className="text-muted-foreground">
+            {tDetail("depositReceiptNo")}:{" "}
+          </span>
+          {toDepositReceiptNo(detail.sku) || "—"}
+        </p>
+      </CardContent>
+    </Card>
+  );
+
+  const depositCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{tForm("depositGrand")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">
+            {tForm("depositExisting")}
+          </span>
+          <span className="tabular-nums">
+            {money(detail.total_deposit_old, locale)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">{tForm("depositNew")}</span>
+          <span className="tabular-nums">
+            {money(detail.total_deposit_new, locale)}
+          </span>
+        </div>
+        <div className="flex justify-between border-t pt-2 font-medium">
+          <span>{tForm("depositGrand")}</span>
+          <span className="tabular-nums">
+            {money(detail.total_deposit, locale)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">{tPage("colTotalQty")}</span>
+          <span className="tabular-nums">{detail.total_qty}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const noteCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{tDetail("noteCard")}</CardTitle>
+        {perms.update ? (
+          <CardAction>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={openNoteEdit}
+            >
+              <SquarePen className="text-current" aria-hidden />
+              {tDetail("editAction")}
+            </Button>
+          </CardAction>
+        ) : null}
+      </CardHeader>
+      <CardContent>
+        <p className="whitespace-pre-wrap text-sm">{note.trim() || "—"}</p>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex w-full min-w-0 flex-col gap-4",
+        embedded ? undefined : "pb-20"
+      )}
+    >
+      {embedded ? null : (
+        <CrudPageHeader
+          title={
+            <span className="flex flex-wrap items-center gap-2">
+              <span>{detail.sku?.trim() || "—"}</span>
+              <span className={ticketStatusPillClass(detail.status)}>
+                {tPage(`status.${detail.status}`)}
+              </span>
+            </span>
+          }
+          description={tDetail("title")}
+          actions={
+            <p className="text-sm text-muted-foreground">
+              {tDetail("createdDate")}{" "}
+              <span className="tabular-nums">
+                {formatDateTime(detail.created_at, locale)}
+              </span>
+              <span className="mx-1 text-muted-foreground/70" aria-hidden>
+                |
+              </span>
+              {tDetail("creatorLabel")}:{" "}
+              <span className="tabular-nums">
+                {detail.created_by_name?.trim() || "—"}
+              </span>
+            </p>
+          }
+        />
       )}
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[3fr_2fr]">
         <div className="flex min-w-0 flex-col gap-4">
-          {pendingRejects.length > 0 ? (
-            <Card className="border-warehouse-error-border">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base text-warehouse-error-fg">
-                  <AlertTriangle className="size-4" aria-hidden />
-                  {tDetail("rejectsTitle")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {pendingRejects.map(({ item, reject }) => (
-                  <div
-                    key={reject.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
-                  >
-                    <div className="min-w-0 space-y-0.5">
-                      <p className="font-medium">
-                        {(item.type === "catalog"
-                          ? item.product_item_name
-                          : item.name) || "—"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {tDetail(`rejectType.${reject.type}`)}
-                        {reject.note ? ` — ${reject.note}` : ""}
-                      </p>
-                      {reject.product_item_name ? (
-                        <p className="text-xs text-muted-foreground">
-                          {reject.product_item_name}
-                        </p>
-                      ) : null}
-                    </div>
-                    {perms.update ? (
-                      <div className="flex shrink-0 gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={busyRejectId === reject.id}
-                          onClick={() => void decideReject(reject.id, "cancelled")}
-                        >
-                          {tDetail("declineReject")}
-                        </Button>
-                        <Button
-                          type="button"
-                          disabled={busyRejectId === reject.id}
-                          onClick={() => void decideReject(reject.id, "approved")}
-                        >
-                          {tDetail("acceptReject")}
-                        </Button>
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ) : null}
-
           <Card>
             <CardHeader>
               <CardTitle className="text-base">{tDetail("itemsExisting")}</CardTitle>
@@ -399,132 +677,49 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
               ) : null}
             </CardContent>
           </Card>
+          {showLinkedPurchases ? (
+            <>
+              {customerCard}
+              {depositCard}
+              {noteCard}
+            </>
+          ) : null}
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <Card>
-            <CardHeader className="flex-row items-center justify-between gap-2">
-              <CardTitle className="text-base">{tDetail("customerCard")}</CardTitle>
-              {perms.update ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCustomerOpen(true)}
-                >
-                  <Pencil className="text-current" aria-hidden />
-                  {tDetail("editCustomer")}
-                </Button>
-              ) : null}
-            </CardHeader>
-            <CardContent className="space-y-1.5 text-sm">
-              <p>
-                <span className="text-muted-foreground">
-                  {tForm("customerSku")}:{" "}
-                </span>
-                {detail.customer?.sku?.trim() || "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {tForm("customerName")}:{" "}
-                </span>
-                {detail.customer?.name?.trim() || "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {tForm("customerTel")}:{" "}
-                </span>
-                {detail.customer?.tel?.trim() || "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {tForm("customerEmail")}:{" "}
-                </span>
-                {detail.customer?.email?.trim() || "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {tForm("customerDateReceive")}:{" "}
-                </span>
-                {detail.customer?.date_receive
-                  ? formatDateTime(detail.customer.date_receive, locale)
-                  : "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {tPage("colSeller")}:{" "}
-                </span>
-                {detail.created_by_name?.trim() || "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">
-                  {tDetail("depositReceiptNo")}:{" "}
-                </span>
-                {toDepositReceiptNo(detail.sku) || "—"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{tForm("depositGrand")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {tForm("depositExisting")}
-                </span>
-                <span className="tabular-nums">
-                  {money(detail.total_deposit_old, locale)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{tForm("depositNew")}</span>
-                <span className="tabular-nums">
-                  {money(detail.total_deposit_new, locale)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-2 font-medium">
-                <span>{tForm("depositGrand")}</span>
-                <span className="tabular-nums">
-                  {money(detail.total_deposit, locale)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {tPage("colTotalQty")}
-                </span>
-                <span className="tabular-nums">{detail.total_qty}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{tDetail("noteCard")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                aria-label={tDetail("noteCard")}
-                rows={4}
-                value={note}
-                disabled={!perms.update}
-                onChange={(e) => setNote(e.target.value)}
-              />
-              {perms.update ? (
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    disabled={savingNote || note === (detail.note ?? "")}
-                    onClick={() => void saveNote()}
-                  >
-                    {tDetail("saveNote")}
-                  </Button>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
+          {showLinkedPurchases ? (
+            <PurchaseTicketExistingPosPanel
+              orders={linkedPos}
+              loading={linkedPosLoading}
+              error={linkedPosError}
+              showEmpty
+            />
+          ) : (
+            <>
+              {customerCard}
+              {depositCard}
+              {noteCard}
+            </>
+          )}
         </div>
       </div>
+
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+          {footerActions}
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "fixed bottom-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+            footerInsetLeft ? "left-(--sidebar-width)" : "left-0"
+          )}
+        >
+          <div className="mx-auto flex w-full max-w-crud-page flex-wrap items-center justify-between gap-2 px-admin-content py-3">
+            {footerActions}
+          </div>
+        </div>
+      )}
 
       <Dialog open={customerOpen} onOpenChange={setCustomerOpen}>
         <DialogContent>
@@ -539,6 +734,9 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
               <Input
                 id="ticket-edit-customer-name"
                 value={customerDraft.name}
+                placeholder={tFormI18n("placeholder.input", {
+                  label: tForm("customerName"),
+                })}
                 onChange={(e) =>
                   setCustomerDraft((d) => ({ ...d, name: e.target.value }))
                 }
@@ -552,7 +750,11 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
                 id="ticket-edit-customer-tel"
                 type="tel"
                 inputMode="tel"
+                autoComplete="tel"
                 value={customerDraft.tel}
+                placeholder={tFormI18n("placeholder.input", {
+                  label: tForm("customerTel"),
+                })}
                 onChange={(e) =>
                   setCustomerDraft((d) => ({ ...d, tel: e.target.value }))
                 }
@@ -567,6 +769,9 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
                 type="email"
                 inputMode="email"
                 value={customerDraft.email}
+                placeholder={tFormI18n("placeholder.input", {
+                  label: tForm("customerEmail"),
+                })}
                 onChange={(e) =>
                   setCustomerDraft((d) => ({ ...d, email: e.target.value }))
                 }
@@ -612,6 +817,40 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tDetail("editNote")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-1">
+            <Label htmlFor="ticket-edit-note">{noteLabel}</Label>
+            <Textarea
+              id="ticket-edit-note"
+              rows={4}
+              value={noteDraft}
+              placeholder={tFormI18n("placeholder.input", { label: noteLabel })}
+              onChange={(e) => setNoteDraft(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setNoteOpen(false)}
+            >
+              {tCrud("btn.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={savingNote || noteDraft === (detail.note ?? "")}
+              onClick={() => void saveNote()}
+            >
+              {tDetail("saveNote")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -643,49 +882,6 @@ export function TicketDetailPage({ ticketId, embedded = false }: Props) {
               ))
             )}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{tPrint("title")}</DialogTitle>
-            <DialogDescription>{tPrint("hint")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setPrintOpen(false);
-                window.print();
-              }}
-            >
-              <Printer className="text-current" aria-hidden />
-              {tPrint("request")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={detail.total_deposit <= 0}
-              onClick={() => {
-                setPrintOpen(false);
-                window.print();
-              }}
-            >
-              <Printer className="text-current" aria-hidden />
-              {tPrint("deposit")}
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPrintOpen(false)}
-            >
-              {tPrint("close")}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
