@@ -472,35 +472,158 @@ export async function patchProductItemFull(
   if (!res.ok) throw await parseError(res);
 }
 
-export type HistoryResponse = {
-  summary: Record<string, unknown>;
-  groups: unknown[];
+export type HistoryGroupBy = "day" | "month" | "year";
+
+export type PurchaseHistoryMetrics = {
+  qty_ordered_pieces: number;
+  qty_free_pieces: number;
+  qty_received_pieces: number;
+  cost_per_unit: number;
+  discount_per_unit: number;
+  net_cost_baht: number;
+  discount_baht: number;
+  net_cost_per_piece: number;
+  sell_price_per_piece: number;
+  profit_per_piece: number;
+  profit_pct: number;
+};
+
+export type PurchaseHistoryChild = {
+  product_item_id: number;
+  sku: string;
+  name: string;
+  supplier_id?: number;
+  supplier_name: string;
+  unit: string;
+  qty_per_unit: number;
+  lot_count: number;
+  date?: string;
+  metrics: PurchaseHistoryMetrics;
+};
+
+export type PurchaseHistoryGroup = {
+  period_key: string;
+  partner_count: number;
+  metrics: PurchaseHistoryMetrics;
+  children: PurchaseHistoryChild[];
+};
+
+export type PurchaseHistorySummary = {
+  total_received_pieces: number;
+  total_value_baht: number;
+  min_net_cost_per_piece: number;
+  max_net_cost_per_piece: number;
+  total_free_pieces: number;
+};
+
+export type PurchaseHistoryResponse = {
+  group_by: HistoryGroupBy | string;
+  summary: PurchaseHistorySummary;
+  groups: PurchaseHistoryGroup[];
   meta: { total: number; page: number; limit: number };
 };
+
+export type SalesHistoryMetrics = {
+  qty: number;
+  net_cost_per_unit: number;
+  net_sell_per_unit: number;
+  net_sell_total: number;
+  net_profit_per_unit: number;
+  net_profit_total: number;
+  profit_pct: number;
+};
+
+export type SalesHistoryChild = {
+  product_item_id: number;
+  sku: string;
+  name: string;
+  date?: string;
+  bill_no: string;
+  customer: string;
+  metrics: SalesHistoryMetrics;
+};
+
+export type SalesHistoryGroup = {
+  period_key: string;
+  partner_count: number;
+  metrics: SalesHistoryMetrics;
+  children: SalesHistoryChild[];
+};
+
+export type SalesHistorySummary = {
+  total_sold_pieces: number;
+  total_value_baht: number;
+  min_sell_per_piece: number;
+  max_sell_per_piece: number;
+};
+
+export type SalesHistoryResponse = {
+  group_by: HistoryGroupBy | string;
+  summary: SalesHistorySummary;
+  groups: SalesHistoryGroup[];
+  meta: { total: number; page: number; limit: number };
+};
+
+/** @deprecated use PurchaseHistoryResponse / SalesHistoryResponse */
+export type HistoryResponse = PurchaseHistoryResponse | SalesHistoryResponse;
+
+function historyQuery(params: Record<string, string>): string {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== "") q.set(k, v);
+  }
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
 
 export async function fetchProductItemHistoryPurchase(
   locale: string,
   itemId: number,
   params: Record<string, string> = {}
-): Promise<HistoryResponse> {
-  const q = new URLSearchParams(params);
+): Promise<PurchaseHistoryResponse> {
   const res = await authFetch(
-    `${BFF}/items/${itemId}/history/purchase?${q}`,
+    `${BFF}/items/${itemId}/history/purchase${historyQuery(params)}`,
     { headers: { Accept: "application/json", "Accept-Language": locale } }
   );
   if (!res.ok) throw await parseError(res);
-  return (await res.json()) as HistoryResponse;
+  return (await res.json()) as PurchaseHistoryResponse;
 }
 
 export async function fetchProductItemHistorySales(
   locale: string,
   itemId: number,
   params: Record<string, string> = {}
-): Promise<HistoryResponse> {
-  const q = new URLSearchParams(params);
-  const res = await authFetch(`${BFF}/items/${itemId}/history/sales?${q}`, {
-    headers: { Accept: "application/json", "Accept-Language": locale },
-  });
+): Promise<SalesHistoryResponse> {
+  const res = await authFetch(
+    `${BFF}/items/${itemId}/history/sales${historyQuery(params)}`,
+    { headers: { Accept: "application/json", "Accept-Language": locale } }
+  );
   if (!res.ok) throw await parseError(res);
-  return (await res.json()) as HistoryResponse;
+  return (await res.json()) as SalesHistoryResponse;
+}
+
+export async function fetchProductListHistoryPurchase(
+  locale: string,
+  listId: number,
+  params: Record<string, string> = {}
+): Promise<PurchaseHistoryResponse> {
+  const res = await authFetch(
+    `${BFF}/lists/${listId}/history/purchase${historyQuery(params)}`,
+    { headers: { Accept: "application/json", "Accept-Language": locale } }
+  );
+  if (!res.ok) throw await parseError(res);
+  return (await res.json()) as PurchaseHistoryResponse;
+}
+
+export async function fetchProductListHistorySales(
+  locale: string,
+  listId: number,
+  params: Record<string, string> = {}
+): Promise<SalesHistoryResponse> {
+  const res = await authFetch(
+    `${BFF}/lists/${listId}/history/sales${historyQuery(params)}`,
+    { headers: { Accept: "application/json", "Accept-Language": locale } }
+  );
+  if (!res.ok) throw await parseError(res);
+  return (await res.json()) as SalesHistoryResponse;
 }

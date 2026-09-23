@@ -45,6 +45,8 @@ func RegisterRoutes(g *echo.Group, db *sql.DB) {
 	lists.PATCH("/:id", listH.patch)
 	lists.DELETE("/:id", listH.delete)
 	lists.GET("/:id/cars", listH.listCars)
+	lists.GET("/:id/history/purchase", listH.historyPurchase)
+	lists.GET("/:id/history/sales", listH.historySales)
 }
 
 func registerResource(g *echo.Group, repo *Repository, attrType string, allowMove bool) {

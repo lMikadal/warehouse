@@ -1283,10 +1283,21 @@
               }
             },
             {
-              "name": "Item history purchase (stub)",
+              "name": "Item history purchase",
               "request": {
                 "method": "GET",
-                "url": "{{baseUrl}}/product/items/1/history/purchase?page=1&limit=10"
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items/1/history/purchase?group_by=day&date_from=2026-01-01&date_to=2026-12-31",
+                "description": "Grouped purchase history from product_item_stock. Params: group_by=day|month|year, date_from/date_to or month_from/month_to or year_from/year_to, optional supplier_id, sort_by=period&sort_order=asc|desc."
+              }
+            },
+            {
+              "name": "Item history sales",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/items/1/history/sales?group_by=month&month_from=2026-01&month_to=2026-12",
+                "description": "Grouped sales history from order_list_item. Optional customer= exact member_name match."
               }
             },
             {
@@ -1322,6 +1333,24 @@
                 "method": "GET",
                 "header": [{ "key": "Accept-Language", "value": "th" }],
                 "url": "{{baseUrl}}/product/lists/1/cars"
+              }
+            },
+            {
+              "name": "List history purchase",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/lists/1/history/purchase?group_by=day&date_from=2026-01-01&date_to=2026-12-31",
+                "description": "Grouped purchase history for all variants under the list. Optional product_item_id, supplier_id."
+              }
+            },
+            {
+              "name": "List history sales",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Accept-Language", "value": "th" }],
+                "url": "{{baseUrl}}/product/lists/1/history/sales?group_by=year&year_from=2025&year_to=2026",
+                "description": "Grouped sales history for all variants under the list. Optional product_item_id, customer."
               }
             },
             {

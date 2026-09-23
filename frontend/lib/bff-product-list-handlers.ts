@@ -163,6 +163,30 @@ export async function handleProductListCars(
   return proxyAuthedBackendJson(request, `${listsBase}/${id}/cars`);
 }
 
+export async function handleProductListHistoryPurchase(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = qs
+    ? `${listsBase}/${id}/history/purchase?${qs}`
+    : `${listsBase}/${id}/history/purchase`;
+  return proxyAuthedBackendJson(request, path);
+}
+
+export async function handleProductListHistorySales(
+  request: Request,
+  id: string
+): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = qs
+    ? `${listsBase}/${id}/history/sales?${qs}`
+    : `${listsBase}/${id}/history/sales`;
+  return proxyAuthedBackendJson(request, path);
+}
+
 export async function handleProductListPatchBody(
   request: Request,
   id: string

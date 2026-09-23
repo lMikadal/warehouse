@@ -18,7 +18,7 @@ Production **สินค้า → รายการ** — parity with design 
 - [x] View-only form: skip `setting/vat` + `system/files` fetches (no cross-module RBAC); channel/item thumbs show placeholders
 - [x] List grain = `product_item`; no DnD column
 - [x] Forms: placeholders, required asterisk fields, create vs edit leave labels
-- [x] History tab label **ประวัติ**; panel shows **รอ phase ถัดไป** until PO/order history ships
+- [x] History tab: purchase + sales sub-tabs, filters (day/month/year), KPI cards, expandable grouped tables (`GET …/lists/:id/history/…`); create mode keeps pending copy
 - [ ] Manual QA th/en with `make backend-seed-dev` + `14_product_demo.sql`
 
 ## Known gaps vs design (documented)
@@ -27,4 +27,4 @@ Production **สินค้า → รายการ** — parity with design 
 - Category **overlay cascade** picker → flat searchable combobox with tree indent
 - Warehouse **bin cascade** picker → bin-type warehouse list combobox
 - Pricing tab: collapsible variant summary + five expanded sections; **section 3 storefront VAT axis** (`setting_vat` include/exclude) — done; **section 3 `amount_price_wholesale`** (min qty for wholesale) — done; **section 4 channel prices** (default `is_default` channels, inline ex/VAT/incl, add/delete, margin row sell vs is_used lot cost_per_unit) — done; section 2 → three FormCards (2 / 2.1 / 2.2); barcode/QR **generate** buttons (`ITEM-BC-{random}` / `ITEM-QR-{random}` on frontend; design mock still uses GS1 / `WH:sku` demo strings); lot stock dialog parity with design (grouped table, stats, CRUD); unified add/edit lot form dialog (bin from variant placements only; no table inline edit); lot partner picker scoped to list **`supplier_ids`** on data tab
-- History grouped tables populate when purchase/order modules migrate
+- History tab: purchase + sales grouped tables live (list history APIs); export toast only

@@ -453,27 +453,39 @@ func (h *ItemHandler) warehousePlacements(c *echo.Context) error {
 }
 
 func (h *ItemHandler) historyPurchase(c *echo.Context) error {
-	_, err := httputil.PathID(c, "id")
+	itemID, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, emptyHistoryResponse())
+	f, err := parseHistoryFilter(c)
+	if err != nil {
+		return historyFilterBadRequest(c, err)
+	}
+	f.ProductItemID = &itemID
+	resp, err := h.repo.HistoryPurchase(c.Request().Context(), f)
+	if err != nil {
+		applog.HTTPError(c, "product item history purchase", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load purchase history"})
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (h *ItemHandler) historySales(c *echo.Context) error {
-	_, err := httputil.PathID(c, "id")
+	itemID, err := httputil.PathID(c, "id")
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, emptyHistoryResponse())
-}
-
-func emptyHistoryResponse() map[string]any {
-	return map[string]any{
-		"summary": map[string]any{},
-		"groups":  []any{},
-		"meta":    map[string]any{"total": 0, "page": 1, "limit": 10},
+	f, err := parseHistoryFilter(c)
+	if err != nil {
+		return historyFilterBadRequest(c, err)
 	}
+	f.ProductItemID = &itemID
+	resp, err := h.repo.HistorySales(c.Request().Context(), f)
+	if err != nil {
+		applog.HTTPError(c, "product item history sales", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load sales history"})
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 type ListHandler struct {
@@ -483,6 +495,42 @@ type ListHandler struct {
 
 func NewListHandler(itemRepo *ItemRepository, listRepo *ListRepository) *ListHandler {
 	return &ListHandler{itemRepo: itemRepo, listRepo: listRepo}
+}
+
+func (h *ListHandler) historyPurchase(c *echo.Context) error {
+	listID, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	f, err := parseHistoryFilter(c)
+	if err != nil {
+		return historyFilterBadRequest(c, err)
+	}
+	f.ProductListID = &listID
+	resp, err := h.itemRepo.HistoryPurchase(c.Request().Context(), f)
+	if err != nil {
+		applog.HTTPError(c, "product list history purchase", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load purchase history"})
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *ListHandler) historySales(c *echo.Context) error {
+	listID, err := httputil.PathID(c, "id")
+	if err != nil {
+		return err
+	}
+	f, err := parseHistoryFilter(c)
+	if err != nil {
+		return historyFilterBadRequest(c, err)
+	}
+	f.ProductListID = &listID
+	resp, err := h.itemRepo.HistorySales(c.Request().Context(), f)
+	if err != nil {
+		applog.HTTPError(c, "product list history sales", err)
+		return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: "failed to load sales history"})
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (h *ListHandler) listCars(c *echo.Context) error {

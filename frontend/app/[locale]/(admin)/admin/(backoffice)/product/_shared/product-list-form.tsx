@@ -2,7 +2,7 @@
 
 import { Info, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CrudTabbedFormPageSkeleton } from "@/components/molecules/crud-tabbed-form-page-skeleton";
@@ -317,14 +317,6 @@ export function ProductListForm({
       cancelled = true;
     };
   }, [draft.product_category_id, locale]);
-
-  const itemIds = useMemo(
-    () =>
-      draft.items
-        .map((it) => it.id)
-        .filter((id): id is number => id != null && id > 0),
-    [draft.items]
-  );
 
   const handleExpandVariantHandled = useCallback(
     () => setExpandVariantKey(null),
@@ -905,7 +897,15 @@ export function ProductListForm({
             </TabsContent>
 
             <TabsContent value="history" className="mt-0">
-              <ProductListFormHistory itemIds={itemIds} />
+              <ProductListFormHistory
+                listId={isEdit ? listId : undefined}
+                items={draft.items}
+                listSku={draft.sku}
+                listSupplierIds={draft.supplier_ids ?? []}
+                canMutateLots={isEdit && perms.update}
+                loadSuppliers={loadSuppliers}
+                onStockChanged={() => void refreshItemStockTotals()}
+              />
             </TabsContent>
           </div>
 
