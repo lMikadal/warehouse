@@ -127,6 +127,8 @@
           "rerouteClaim": "Re-route as claim",
           "rerouteReturn": "Re-route as return",
           "timelineTitle": "Operation status",
+          "actionsTitle": "Actions",
+          "actionCancel": "Cancel claim / return",
           "stepsReturn": {
             "createDoc": "Create return document",
             "sendToPartner": "Sent to partner",

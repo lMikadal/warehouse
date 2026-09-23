@@ -397,7 +397,23 @@ Port more keys from `design/js/i18n/` into the matching fragment as pages ship.
 | Item | Detail |
 |------|--------|
 | Route | `/admin/order/receive`, `/[id]` proceed, `/[id]/detail` |
-| Proceed UI | [`receive-proceed-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-proceed-page.tsx) — PO meta + progress cards; items with labeled **คลัง** / **พบปัญหา**; right [`receive-placement-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-placement-panel.tsx) warehouse→bin cascade (`WarehousePlacementCascadeRow` `layout="stack"`) + qty/free + Cancel/Receive. API still posts `bin_id` only. Custom (`type=custom`) lines without `product_item_id` are allowed — backend creates catalog rows on receive (v1 parity). |
+| Proceed UI | [`receive-proceed-page.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-proceed-page.tsx) — PO meta + progress cards; items with labeled **คลัง** / **พบปัญหา**; right [`receive-placement-panel.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-placement-panel.tsx) warehouse→bin cascade (`WarehousePlacementCascadeRow` `layout="stack"` + `filterBinOptions` via `GET /order/receives/bins?product_item_id=` — `0` = free bins only for custom lines) + qty/free + Cancel/Receive. API still posts `bin_id` only. Occupied-bin reject surfaces as i18n `errBinOccupied` (not generic `invalid input`). Custom (`type=custom`) lines without `product_item_id` are allowed — backend creates catalog rows on receive (v1 parity). Reject dialog [`receive-reject-dialog.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/receive/_shared/receive-reject-dialog.tsx): note optional; price max check compares `roundMoney` values so seeded `toFixed(2)` does not falsely exceed `price_per_unit`. |
+
+### Order claim (เคลม / คืนสินค้า — purchase desk)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/order/claim`, `/[id]` process, `/[id]/detail` read-only |
+| Layout parity | Same chrome as [`order/sales-claim`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/sales-claim/): slim list (`CrudPageHeader` + search/date + resolution select + status chips + 6-col table); one [`ClaimDetailPage`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/claim/_shared/claim-detail-page.tsx) with `readOnly`; process [`ClaimProcessView`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/claim/_shared/claim-process-view.tsx) resizable 68/32 — left doc+items, right swaps **pending** [`ClaimDocumentPanel`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/claim/_shared/claim-document-panel.tsx) vs note+timeline+actions. Workflow helpers in [`_lib/claim-workflow.ts`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/claim/_lib/claim-workflow.ts). |
+| API / table | Separate from sales-claim: [`order-claim-api.ts`](../../frontend/lib/order-claim-api.ts) → `/order/claims` → `purchase_order_item_reject` (not `order_claim`). |
+| i18n | `page.orderClaim` in [`page-order-claim.json`](../../frontend/messages/th/page-order-claim.json) |
+
+### Order sales claim (เคลมฝั่งจัดซื้อ — shop-filed)
+
+| Item | Detail |
+|------|--------|
+| Route | `/admin/order/sales-claim`, `/[id]`, `/[id]/detail` |
+| UI | List + unified detail/process with supplier right-rail; see [`sales-claim-process-view.tsx`](../../frontend/app/[locale]/(admin)/admin/(backoffice)/order/sales-claim/_shared/sales-claim-process-view.tsx). API [`order-sales-claim-api.ts`](../../frontend/lib/order-sales-claim-api.ts) → `/order/sales-claims` → `order_claim`. |
 | i18n | `page.orderReceive` in [`page-order-receive.json`](../../frontend/messages/th/page-order-receive.json) |
 
 ### Order compare (catalog special price)

@@ -5,6 +5,7 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  FilePlus2,
   Pencil,
   RotateCcw,
   ShoppingCart,
@@ -12,7 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { ButtonIcon } from "@/components/ui/button-icon";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -39,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "@/i18n/navigation";
 import { type DisplayLocale, formatDateTime } from "@/lib/format-datetime";
 import {
   CLAIM_WRITE_OFF,
@@ -47,18 +50,17 @@ import {
   type ClaimDetail,
   type ClaimListItem,
 } from "@/lib/order-claim-api";
+import type { ReceiveRejectResolution } from "@/lib/order-receive-api";
 import { cn } from "@/lib/utils";
 
+import {
+  CLAIM_TIMELINE_STEPS,
+  claimActions,
+  claimTimeline,
+} from "../_lib/claim-workflow";
+import { ClaimDocumentPanel } from "./claim-document-panel";
 import { claimNetIncVat, claimStatusPillClass } from "./claim-status-styles";
-
-const TIMELINE_STEPS = [
-  "createDoc",
-  "sendToPartner",
-  "waitPartnerReview",
-  "partnerReply",
-  "confirmAll",
-  "close",
-] as const;
+import { ClaimTypePickerDialog } from "./claim-type-picker-dialog";
 
 function money(n: number, locale: string): string {
   return n.toLocaleString(locale === "th" ? "th-TH" : "en-US", {
@@ -67,31 +69,16 @@ function money(n: number, locale: string): string {
   });
 }
 
-/**
- * v1's timeline: filing is always done, sending is what a waiting line is about to do, and once the
- * line has moved on the desk is waiting on the supplier. A settled or dead line lights everything.
- */
-function timelineState(status: ClaimListItem["status"]): {
-  done: number;
-  current: number;
-} {
-  if (status === "completed" || status === "cancelled") {
-    return { done: TIMELINE_STEPS.length, current: -1 };
-  }
-  if (status === "pending") return { done: 1, current: 1 };
-  return { done: 2, current: 2 };
-}
-
 export type ClaimProcessViewProps = {
   detail: ClaimDetail;
-  /** Read-only on the detail route; the edit route lets the desk record the supplier's answer. */
+  /** Detail route takes controls away; process route keeps them when the actor can update. */
   readOnly?: boolean;
   onMutated: () => void;
 };
 
 /**
- * The claim/return process screen: the document on the left, the note and the timeline on the right.
- * v1 split its labels by `type_reject`, so a return reads "return" everywhere a claim reads "claim".
+ * Same layout shell as sales-claim: document + items on the left; right rail swaps between the
+ * pending claim/return draft panel and note / timeline / actions after send.
  */
 export function ClaimProcessView({
   detail,
@@ -99,11 +86,23 @@ export function ClaimProcessView({
   onMutated,
 }: ClaimProcessViewProps) {
   const locale = useLocale() as DisplayLocale;
+  const router = useRouter();
   const t = useTranslations("page.orderClaim.edit.process");
   const tClaim = useTranslations("page.orderClaim");
   const tEdit = useTranslations("page.orderClaim.edit");
   const tCrud = useTranslations("crud");
 
+  const [panelResolution, setPanelResolution] = useState<"claim" | "return" | null>(
+    () =>
+      detail.resolution === "return" || detail.resolution === "claim"
+        ? detail.resolution
+        : null
+  );
+  const [noteProcess, setNoteProcess] = useState(detail.note_process);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [writeOffOpen, setWriteOffOpen] = useState(false);
+  const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
+  const [writeOffReason, setWriteOffReason] = useState("");
   const [reviewTarget, setReviewTarget] = useState<{
     row: ClaimListItem;
     approve: boolean;
@@ -112,17 +111,35 @@ export function ClaimProcessView({
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const isReturn = detail.resolution === "return";
-  const steps = isReturn ? "stepsReturn" : "stepsClaim";
-  const timeline = timelineState(detail.status);
+  useEffect(() => {
+    setNoteProcess(detail.note_process);
+    setPanelResolution(
+      detail.resolution === "return" || detail.resolution === "claim"
+        ? detail.resolution
+        : null
+    );
+  }, [detail.id, detail.note_process, detail.resolution, detail.status]);
 
-  // The document covers this line plus every sibling the desk is chasing under the same outcome.
+  const isReturn =
+    panelResolution === "return" || detail.resolution === "return";
+  const steps = isReturn ? "stepsReturn" : "stepsClaim";
+  const timeline = claimTimeline(detail.status);
+  const actions = claimActions(detail.status);
+  const showDocumentPanel =
+    !readOnly && detail.status === "pending" && panelResolution != null;
+  const showPickResolution =
+    !readOnly && detail.status === "pending" && panelResolution == null;
+
   const rows = useMemo(
     () => [
       detail as ClaimListItem,
-      ...detail.siblings.filter((s) => s.resolution === detail.resolution),
+      ...detail.siblings.filter((s) =>
+        panelResolution
+          ? s.resolution === panelResolution
+          : s.resolution === detail.resolution
+      ),
     ],
-    [detail]
+    [detail, panelResolution]
   );
 
   const itemById = useMemo(() => {
@@ -138,6 +155,54 @@ export function ClaimProcessView({
     }),
     [rows]
   );
+
+  const save = async (
+    body: Parameters<typeof updateClaim>[2],
+    successMessage: string,
+    thenBackToList = false
+  ) => {
+    setSubmitting(true);
+    try {
+      await updateClaim(locale, detail.id, body);
+      toast.success(successMessage);
+      if (thenBackToList) {
+        router.push("/admin/order/claim");
+        return;
+      }
+      onMutated();
+    } catch (e) {
+      toast.error(
+        e instanceof OrderClaimApiError ? e.message : tEdit("updateFailed")
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const pickResolution = (resolution: ReceiveRejectResolution) => {
+    setPickerOpen(false);
+    if (resolution === CLAIM_WRITE_OFF) {
+      setWriteOffReason(detail.note_resolution ?? "");
+      setWriteOffOpen(true);
+      return;
+    }
+    setPanelResolution(resolution === "return" ? "return" : "claim");
+  };
+
+  const confirmDocument = () => {
+    if (panelResolution === "return") {
+      setReturnConfirmOpen(true);
+      return;
+    }
+    void save(
+      {
+        resolution: panelResolution ?? "claim",
+        status: "in_progress",
+        note_process: noteProcess,
+      },
+      tEdit("confirmSuccess")
+    );
+  };
 
   const submitReview = async () => {
     if (!reviewTarget) return;
@@ -164,7 +229,6 @@ export function ClaimProcessView({
     }
   };
 
-  // v1 let a written-off line be picked back up as a claim or a return.
   const reroute = async (row: ClaimListItem, resolution: "claim" | "return") => {
     setSubmitting(true);
     try {
@@ -200,7 +264,9 @@ export function ClaimProcessView({
             <div className="rounded-xl border bg-card p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-lg font-semibold tabular-nums">
-                  {detail.purchase_claim_sku?.trim() || detail.sku || tClaim("emptyCell")}
+                  {detail.purchase_claim_sku?.trim() ||
+                    detail.sku ||
+                    tClaim("emptyCell")}
                 </span>
                 <ButtonIcon
                   variant="outline"
@@ -234,7 +300,7 @@ export function ClaimProcessView({
                 )}`}
               </p>
 
-              <div className="mt-4 grid gap-4 border-t pt-4 text-sm sm:grid-cols-3">
+              <div className="mt-4 grid gap-4 border-t pt-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground">
                     {t("vendorLabel")}
@@ -258,13 +324,17 @@ export function ClaimProcessView({
                     }`}
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 sm:text-right">
+                <div className="flex flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground">
-                    {isReturn ? t("quantityReturnLabel") : t("quantityClaimLabel")}
+                    {isReturn
+                      ? t("quantityReturnLabel")
+                      : t("quantityClaimLabel")}
                   </span>
                   <span className="font-medium tabular-nums">
                     {totals.qty.toLocaleString()}
                   </span>
+                </div>
+                <div className="flex flex-col gap-0.5 sm:text-right">
                   <span className="text-xs text-muted-foreground">
                     {isReturn ? t("valueReturnLabel") : t("valueClaimLabel")}
                   </span>
@@ -283,7 +353,9 @@ export function ClaimProcessView({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[200px]">{t("colItem")}</TableHead>
+                      <TableHead className="min-w-[200px]">
+                        {t("colItem")}
+                      </TableHead>
                       <TableHead className="text-center">{t("colQty")}</TableHead>
                       <TableHead className="text-center">{t("colUnit")}</TableHead>
                       <TableHead className="text-right tabular-nums">
@@ -355,7 +427,9 @@ export function ClaimProcessView({
                               {row.note_process.trim() ? (
                                 <span className="text-xs text-muted-foreground">
                                   {row.status === "completed"
-                                    ? t("partnerApproved", { note: row.note_process })
+                                    ? t("partnerApproved", {
+                                        note: row.note_process,
+                                      })
                                     : t("partnerRejected", {
                                         note: row.note_process,
                                       })}
@@ -364,7 +438,9 @@ export function ClaimProcessView({
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
-                            {writtenOff && row.status === "cancelled" && !readOnly ? (
+                            {writtenOff &&
+                            row.status === "cancelled" &&
+                            !readOnly ? (
                               <span className="flex items-center justify-center gap-1">
                                 <ButtonIcon
                                   aria-label={t("rerouteClaim")}
@@ -436,56 +512,234 @@ export function ClaimProcessView({
         <ResizableHandle withHandle className="mx-2 w-1.5" />
         <ResizablePanel defaultSize={32} minSize={22} className="min-w-0">
           <div className="flex h-full flex-col gap-4 overflow-y-auto pl-1">
-            <div className="rounded-xl border bg-card p-5">
-              <div className="mb-2 flex items-center gap-2">
-                <Pencil className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <h2 className="text-base font-semibold">{t("noteLabel")}</h2>
+            {showDocumentPanel && panelResolution ? (
+              <ClaimDocumentPanel
+                key={`${detail.id}-${detail.status}-${panelResolution}-${detail.note_process}`}
+                detail={detail}
+                resolution={panelResolution}
+                noteProcess={noteProcess}
+                onNoteProcessChange={setNoteProcess}
+                submitting={submitting}
+                onCancel={() => setPanelResolution(null)}
+                onSaveDraft={() =>
+                  void save(
+                    { resolution: panelResolution, note_process: noteProcess },
+                    tEdit("draftSaved")
+                  )
+                }
+                onConfirm={confirmDocument}
+              />
+            ) : showPickResolution ? (
+              <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card p-5 text-center">
+                <h2 className="text-base font-semibold">
+                  {tEdit("rightPanelTitle")}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {tEdit("rightPanelEmpty")}
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  disabled={submitting}
+                >
+                  <FilePlus2 className="size-4" />
+                  {tEdit("typePicker.title")}
+                </Button>
               </div>
-              <p className="text-sm whitespace-pre-line text-muted-foreground">
-                {detail.note_process.trim() ||
-                  detail.note_resolution.trim() ||
-                  detail.note.trim() ||
-                  tClaim("emptyCell")}
-              </p>
-            </div>
+            ) : (
+              <>
+                <div className="rounded-xl border bg-card p-5">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Pencil
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <h2 className="text-base font-semibold">{t("noteLabel")}</h2>
+                  </div>
+                  <p className="text-sm whitespace-pre-line text-muted-foreground">
+                    {detail.note_process.trim() ||
+                      detail.note_resolution.trim() ||
+                      detail.note.trim() ||
+                      tClaim("emptyCell")}
+                  </p>
+                </div>
 
-            <div className="rounded-xl border bg-card p-5">
-              <h2 className="mb-4 text-base font-semibold">{t("timelineTitle")}</h2>
-              <ol className="flex flex-col gap-3">
-                {TIMELINE_STEPS.map((step, index) => {
-                  const done = index < timeline.done;
-                  const current = index === timeline.current;
-                  return (
-                    <li key={step} className="flex items-start gap-3">
-                      <span
-                        className={cn(
-                          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
-                          done
-                            ? "border-warehouse-success-border bg-warehouse-success-bg text-warehouse-success-fg"
-                            : current
-                              ? "border-primary bg-primary/15 text-primary"
-                              : "border-border bg-muted text-muted-foreground"
-                        )}
-                        aria-hidden
-                      >
-                        {done ? <Check className="size-3" /> : index + 1}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-sm",
-                          current ? "font-semibold text-foreground" : "text-muted-foreground"
-                        )}
-                      >
-                        {t(`${steps}.${step}`)}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
+                <div className="rounded-xl border bg-card p-5">
+                  <h2 className="mb-4 text-base font-semibold">
+                    {t("timelineTitle")}
+                  </h2>
+                  <ol className="flex flex-col gap-3">
+                    {CLAIM_TIMELINE_STEPS.map((step, index) => {
+                      const done = index < timeline.done;
+                      const current = index === timeline.current;
+                      return (
+                        <li key={step} className="flex items-start gap-3">
+                          <span
+                            className={cn(
+                              "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
+                              done
+                                ? "border-warehouse-success-border bg-warehouse-success-bg text-warehouse-success-fg"
+                                : current
+                                  ? "border-primary bg-primary/15 text-primary"
+                                  : "border-border bg-muted text-muted-foreground"
+                            )}
+                            aria-hidden
+                          >
+                            {done ? <Check className="size-3" /> : index + 1}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-sm",
+                              current
+                                ? "font-semibold text-foreground"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {t(`${steps}.${step}`)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+
+                {readOnly || actions.length === 0 ? null : (
+                  <div className="rounded-xl border bg-card p-5">
+                    <h2 className="mb-3 text-base font-semibold">
+                      {t("actionsTitle")}
+                    </h2>
+                    <div className="flex flex-col gap-2">
+                      {actions.map((action) => (
+                        <Button
+                          key={action.status}
+                          type="button"
+                          variant="outline"
+                          disabled={submitting}
+                          onClick={() => {
+                            if (action.status === "cancelled") {
+                              setWriteOffReason(detail.note_resolution ?? "");
+                              setWriteOffOpen(true);
+                            }
+                          }}
+                        >
+                          {t("actionCancel")}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      <ClaimTypePickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        activeResolution={
+          detail.resolution === CLAIM_WRITE_OFF ? null : detail.resolution
+        }
+        onSelect={pickResolution}
+      />
+
+      <Dialog open={writeOffOpen} onOpenChange={setWriteOffOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tEdit("rejectModal.title")}</DialogTitle>
+            <DialogDescription>{tEdit("rejectModal.subtitle")}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-1.5">
+            <Label htmlFor="claim-write-off-reason">
+              {tEdit("rejectModal.reasonLabel")}
+            </Label>
+            <Textarea
+              id="claim-write-off-reason"
+              rows={4}
+              value={writeOffReason}
+              onChange={(e) => setWriteOffReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setWriteOffOpen(false)}
+              disabled={submitting}
+            >
+              {tCrud("btn.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                if (!writeOffReason.trim()) {
+                  toast.error(tEdit("rejectReasonRequired"));
+                  return;
+                }
+                setWriteOffOpen(false);
+                void save(
+                  {
+                    resolution: CLAIM_WRITE_OFF,
+                    status: "cancelled",
+                    note_resolution: writeOffReason.trim(),
+                  },
+                  tEdit("rejectSuccess"),
+                  true
+                );
+              }}
+            >
+              {tCrud("btn.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={returnConfirmOpen} onOpenChange={setReturnConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex flex-col items-center gap-3 text-center">
+              <span
+                className="flex size-12 items-center justify-center rounded-full bg-warehouse-warning-bg text-warehouse-warning-fg"
+                aria-hidden
+              >
+                <AlertTriangle className="size-6" />
+              </span>
+              <DialogTitle>{tEdit("returnConfirmModal.title")}</DialogTitle>
+              <DialogDescription>
+                {tEdit("returnConfirmModal.subtitle")}
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReturnConfirmOpen(false)}
+              disabled={submitting}
+            >
+              {tCrud("btn.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                setReturnConfirmOpen(false);
+                void save(
+                  {
+                    resolution: "return",
+                    status: "in_progress",
+                    note_process: noteProcess,
+                  },
+                  tEdit("confirmSuccess")
+                );
+              }}
+            >
+              {tCrud("btn.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={reviewTarget != null}

@@ -22,8 +22,14 @@ import type { TicketHistoryEntry } from "@/lib/order-ticket-api";
 import { PurchaseHistoryDialog } from "../../purchase/_shared/purchase-history-dialog";
 import { ClaimProcessView } from "./claim-process-view";
 
-/** Read-only twin of the edit screen: v1's detail page rendered the same process view. */
-export function ClaimDetailPage({ claimId }: { claimId: number }) {
+/** One screen for both routes: `[id]` processes the claim, `[id]/detail` only reads it. */
+export function ClaimDetailPage({
+  claimId,
+  readOnly = false,
+}: {
+  claimId: number;
+  readOnly?: boolean;
+}) {
   const locale = useLocale() as DisplayLocale;
   const router = useRouter();
   const t = useTranslations("page.orderClaim.edit");
@@ -83,7 +89,7 @@ export function ClaimDetailPage({ claimId }: { claimId: number }) {
       <CrudPageHeader
         title={`${tClaim("colClaimNumber")} ${detail.sku || tClaim("emptyCell")}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={openHistory}>
               <History className="size-4" />
               {tClaim("historyModalTitle")}
@@ -98,7 +104,11 @@ export function ClaimDetailPage({ claimId }: { claimId: number }) {
           </div>
         }
       />
-      <ClaimProcessView detail={detail} readOnly onMutated={() => void load()} />
+      <ClaimProcessView
+        detail={detail}
+        readOnly={readOnly || !perms.update}
+        onMutated={() => void load()}
+      />
       <PurchaseHistoryDialog
         open={historyOpen}
         onOpenChange={setHistoryOpen}

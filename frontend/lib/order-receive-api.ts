@@ -217,7 +217,8 @@ export async function fetchReceiveRejects(
   return res.json() as Promise<{ items: ReceiveRejectDetail[] }>;
 }
 
-/** Bins the placement picker may offer: free ones plus the ones already holding this item. */
+/** Bins the placement picker may offer: free ones plus the ones already holding this item.
+ * Pass `product_item_id: 0` for custom receive lines (free bins only). */
 export async function fetchReceiveBins(params: {
   product_item_id: number;
   search?: string;

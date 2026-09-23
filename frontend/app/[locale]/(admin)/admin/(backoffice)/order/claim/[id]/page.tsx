@@ -1,8 +1,8 @@
-import { ClaimEditPage } from "../_shared/claim-edit-page";
+import { ClaimDetailPage } from "../_shared/claim-detail-page";
 
 type Props = { params: Promise<{ id: string }> };
 
-export default async function OrderClaimEditRoute({ params }: Props) {
+export default async function OrderClaimProcessRoute({ params }: Props) {
   const { id } = await params;
-  return <ClaimEditPage claimId={Number(id)} />;
+  return <ClaimDetailPage claimId={Number(id)} />;
 }

@@ -242,7 +242,8 @@
         "sellPriceLabel": "Sell price",
         "sellPriceVatLabel": "Sell price incl. VAT",
         "errSellPriceRequired": "Enter a sell price above 0.",
-        "errPlacementRequired": "Choose at least one placement."
+        "errPlacementRequired": "Choose at least one placement.",
+        "errBinOccupied": "This bin already holds another item. Choose an empty bin."
       },
       "files": {
         "sectionTitle": "Attachments",

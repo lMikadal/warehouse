@@ -127,6 +127,8 @@
           "rerouteClaim": "เปลี่ยนเป็นเคลม",
           "rerouteReturn": "เปลี่ยนเป็นคืนสินค้า",
           "timelineTitle": "สถานะการดำเนินการ",
+          "actionsTitle": "ดำเนินการ",
+          "actionCancel": "ยกเลิกเคลม / คืนสินค้า",
           "stepsReturn": {
             "createDoc": "สร้างใบคืนสินค้า",
             "sendToPartner": "ส่งเรื่องให้คู่ค้า",

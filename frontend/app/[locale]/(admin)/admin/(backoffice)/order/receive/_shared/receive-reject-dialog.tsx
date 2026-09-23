@@ -45,7 +45,7 @@ import {
   uploadSystemFile,
 } from "@/lib/system-file-api";
 
-import { priceIncVat } from "../../purchase/_lib/purchase-totals";
+import { priceIncVat, roundMoney } from "../../purchase/_lib/purchase-totals";
 
 const MAX_IMAGES = 3;
 
@@ -135,7 +135,7 @@ export function ReceiveRejectDialog({
     setOverageChoice("receive");
     setQty("");
     setUnit(item.unit);
-    setPrice(item.price_per_unit > 0 ? item.price_per_unit.toFixed(2) : "");
+    setPrice(item.price_per_unit > 0 ? roundMoney(item.price_per_unit).toFixed(2) : "");
     setPriceVat(
       item.price_per_unit > 0
         ? priceIncVat(item.price_per_unit, vatRate).toFixed(2)
@@ -216,12 +216,8 @@ export function ReceiveRejectDialog({
       toast.error(t("errPriceRequired"));
       return;
     }
-    if (priceValue > item.price_per_unit) {
+    if (roundMoney(priceValue) > roundMoney(item.price_per_unit)) {
       toast.error(t("errPriceMax"));
-      return;
-    }
-    if (!note.trim()) {
-      toast.error(t("errNetPriceRequired"));
       return;
     }
     setSubmitting(true);

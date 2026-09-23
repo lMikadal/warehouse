@@ -330,7 +330,13 @@ func ticketError(c *echo.Context, op string, err error, msg string) error {
 		return c.JSON(http.StatusNotFound, api.ErrorBody{Code: "not_found", Message: "not found"})
 	}
 	if errors.Is(err, ErrValidation) {
-		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: "invalid input"})
+		// Bare ErrValidation stays generic; wrapped reasons (fmt.Errorf("%w: …", ErrValidation))
+		// surface so the UI can map them (e.g. occupied bin on receive).
+		message := "invalid input"
+		if detail := strings.TrimPrefix(err.Error(), ErrValidation.Error()+": "); detail != "" && detail != err.Error() {
+			message = detail
+		}
+		return c.JSON(http.StatusBadRequest, api.ErrorBody{Code: "validation_error", Message: message})
 	}
 	applog.HTTPError(c, op, err)
 	return c.JSON(http.StatusInternalServerError, api.ErrorBody{Code: "internal_error", Message: msg})

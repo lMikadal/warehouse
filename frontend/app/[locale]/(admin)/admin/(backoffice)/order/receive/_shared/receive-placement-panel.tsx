@@ -1,15 +1,17 @@
 "use client";
 
 import { Package, Warehouse } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { RemoteComboboxOption } from "@/hooks/use-remote-combobox-options";
 import type { PurchaseItemDetail } from "@/lib/order-purchase-api";
 import {
+  fetchReceiveBins,
   OrderReceiveApiError,
   receiveItem,
 } from "@/lib/order-receive-api";
@@ -51,6 +53,24 @@ export function ReceivePlacementPanel({
   const [stockQty, setStockQty] = useState("");
   const [bonusQty, setBonusQty] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const filterBinOptions = useCallback(
+    async (options: RemoteComboboxOption[]) => {
+      // 0 = free bins only (custom lines create catalog rows on receive).
+      const allowedId = item?.product_item_id ?? 0;
+      try {
+        const { items } = await fetchReceiveBins({
+          product_item_id: allowedId,
+          limit: 200,
+        });
+        const allow = new Set(items.map((b) => String(b.id)));
+        return options.filter((o) => allow.has(o.value));
+      } catch {
+        return options;
+      }
+    },
+    [item?.product_item_id]
+  );
 
   useEffect(() => {
     setBinId(0);
@@ -106,21 +126,29 @@ export function ReceivePlacementPanel({
     }
     const base = item.price_per_unit ?? 0;
     const sellPrice = base > 0 ? base : 0.01;
+    const body = {
+      sell_price: sellPrice,
+      sell_price_vat: priceIncVat(sellPrice, vatRate),
+      bonus_qty: bonus,
+      note: "",
+      placements: [{ bin_id: binId, stock_qty: qty }],
+    };
     setSubmitting(true);
     try {
-      await receiveItem(locale, purchaseId, item.id, {
-        sell_price: sellPrice,
-        sell_price_vat: priceIncVat(sellPrice, vatRate),
-        bonus_qty: bonus,
-        note: "",
-        placements: [{ bin_id: binId, stock_qty: qty }],
-      });
+      await receiveItem(locale, purchaseId, item.id, body);
       toast.success(t("confirmSuccess"));
       onReceived();
     } catch (e) {
-      toast.error(
-        e instanceof OrderReceiveApiError ? e.message : t("confirmFailed")
-      );
+      const apiMsg = e instanceof OrderReceiveApiError ? e.message : "";
+      if (apiMsg.includes("bin already holds another item")) {
+        toast.error(t("errBinOccupied"));
+      } else if (apiMsg.includes("bin capacity exceeded")) {
+        toast.error(t("capacityPlacementExceeds"));
+      } else {
+        toast.error(
+          e instanceof OrderReceiveApiError ? e.message : t("confirmFailed")
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -154,6 +182,7 @@ export function ReceivePlacementPanel({
           binId={binId}
           onBinChange={setBinId}
           disabled={locked}
+          filterBinOptions={filterBinOptions}
         />
 
         <div className="grid gap-1.5">

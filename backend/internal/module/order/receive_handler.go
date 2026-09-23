@@ -128,9 +128,10 @@ func (h *ReceiveHandler) history(c *echo.Context) error {
 }
 
 // bins lists the placement candidates for one product item: free bins plus the bins already holding it.
+// product_item_id=0 means free bins only (custom receive lines that do not have a catalog id yet).
 func (h *ReceiveHandler) bins(c *echo.Context) error {
 	productItemID, perr := strconv.ParseInt(strings.TrimSpace(c.QueryParam("product_item_id")), 10, 64)
-	if perr != nil || productItemID <= 0 {
+	if perr != nil || productItemID < 0 {
 		return ticketError(c, "receive bins", ErrValidation, "product_item_id required")
 	}
 	limit, _ := strconv.Atoi(strings.TrimSpace(c.QueryParam("limit")))

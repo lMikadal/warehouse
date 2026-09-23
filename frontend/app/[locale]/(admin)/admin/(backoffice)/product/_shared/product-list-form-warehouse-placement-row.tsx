@@ -21,6 +21,13 @@ type Props = {
   layout?: "grid" | "table" | "stack";
   pathHints?: Partial<Record<WarehouseCascadeLevel, string>>;
   disabled?: boolean;
+  /**
+   * Optional filter for bin-level options (e.g. receive one-bin-one-item: drop bins
+   * already holding a different product). Applied after the warehouse list load.
+   */
+  filterBinOptions?: (
+    options: RemoteComboboxOption[]
+  ) => Promise<RemoteComboboxOption[]>;
 };
 
 type Level = WarehouseCascadeLevel;
@@ -42,6 +49,7 @@ export function WarehousePlacementCascadeRow({
   layout = "grid",
   pathHints,
   disabled: formDisabled = false,
+  filterBinOptions,
 }: Props) {
   const locale = useLocale();
   const tList = useTranslations("productList");
@@ -155,12 +163,17 @@ export function WarehousePlacementCascadeRow({
           parentId: parentId ?? undefined,
         });
         if (ctx.signal.aborted) return [];
-        return res.items.map((r) => ({
+        let options: RemoteComboboxOption[] = res.items.map((r) => ({
           value: String(r.id),
           label: r.name || r.sku,
         }));
+        if (level === "bin" && filterBinOptions) {
+          options = await filterBinOptions(options);
+          if (ctx.signal.aborted) return [];
+        }
+        return options;
       },
-    [locale]
+    [locale, filterBinOptions]
   );
 
   const setLevel = (level: Level, value: string) => {

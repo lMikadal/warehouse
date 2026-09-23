@@ -242,7 +242,8 @@
         "sellPriceLabel": "ราคาขาย",
         "sellPriceVatLabel": "ราคาขายรวมภาษี",
         "errSellPriceRequired": "กรุณากรอกราคาขายให้มากกว่า 0",
-        "errPlacementRequired": "กรุณาเลือกตำแหน่งจัดเก็บอย่างน้อย 1 ตำแหน่ง"
+        "errPlacementRequired": "กรุณาเลือกตำแหน่งจัดเก็บอย่างน้อย 1 ตำแหน่ง",
+        "errBinOccupied": "ช่องเก็บนี้มีสินค้าอื่นอยู่แล้ว กรุณาเลือก Bin ที่ว่าง"
       },
       "files": {
         "sectionTitle": "แนบไฟล์",
