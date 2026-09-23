@@ -409,6 +409,7 @@
         "editCancel": "Cancel",
         "editSaveSuccess": "Line saved",
         "downloadPo": "Download PO",
+        "downloadPoComingSoon": "PO download is not available yet",
         "convertUnitTitle": "Convert unit",
         "convertUnitQty": "Qty to convert",
         "convertUnitFromRatio": "Old units",

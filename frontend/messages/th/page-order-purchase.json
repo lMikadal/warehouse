@@ -409,6 +409,7 @@
         "editCancel": "ยกเลิก",
         "editSaveSuccess": "บันทึกรายการแล้ว",
         "downloadPo": "ดาวน์โหลด PO",
+        "downloadPoComingSoon": "การดาวน์โหลด PO ยังไม่พร้อมใช้งาน",
         "convertUnitTitle": "แปลงหน่วย",
         "convertUnitQty": "จำนวนที่แปลง",
         "convertUnitFromRatio": "จำนวนหน่วยเดิม",

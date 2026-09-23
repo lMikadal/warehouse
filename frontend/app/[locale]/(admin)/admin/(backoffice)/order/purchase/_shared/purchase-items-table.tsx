@@ -34,6 +34,11 @@ export type PurchaseItemsTableProps = {
   onSelectItem?: (item: PurchaseItemDetail) => void;
   /** Extra markup under the product name (placement summary, reject note, …). */
   renderProductExtra?: (item: PurchaseItemDetail) => ReactNode;
+  /** Inline edit: replace the read-only qty / price / discount / net cells. */
+  renderQty?: (item: PurchaseItemDetail) => ReactNode;
+  renderPrice?: (item: PurchaseItemDetail) => ReactNode;
+  renderDiscount?: (item: PurchaseItemDetail) => ReactNode;
+  renderLineNet?: (item: PurchaseItemDetail) => ReactNode;
 };
 
 /** Line table shared by the PO detail, approve and payment screens. */
@@ -44,6 +49,10 @@ export function PurchaseItemsTable({
   selectedItemId = null,
   onSelectItem,
   renderProductExtra,
+  renderQty,
+  renderPrice,
+  renderDiscount,
+  renderLineNet,
 }: PurchaseItemsTableProps) {
   const locale = useLocale();
   const tPage = useTranslations("page.orderPurchase");
@@ -131,31 +140,43 @@ export function PurchaseItemsTable({
                     </div>
                   </TableCell>
                   <TableCell className="text-center tabular-nums">
-                    {item.qty.toLocaleString()}
-                    {item.free_gift > 0 ? (
-                      <span className="ml-1 text-xs text-warehouse-success-fg">
-                        +{item.free_gift}
-                      </span>
-                    ) : null}
+                    {renderQty ? (
+                      renderQty(item)
+                    ) : (
+                      <>
+                        {item.qty.toLocaleString()}
+                        {item.free_gift > 0 ? (
+                          <span className="ml-1 text-xs text-warehouse-success-fg">
+                            +{item.free_gift}
+                          </span>
+                        ) : null}
+                      </>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     {tPage(`unit.${item.unit}`)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {money(item.price_per_unit, locale)}
+                    {renderPrice
+                      ? renderPrice(item)
+                      : money(item.price_per_unit, locale)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {money(item.discount, locale)}
+                    {renderDiscount
+                      ? renderDiscount(item)
+                      : money(item.discount, locale)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {money(
-                      lineNet({
-                        qty: item.qty,
-                        price_per_unit: item.price_per_unit,
-                        discount: item.discount,
-                      }),
-                      locale
-                    )}
+                    {renderLineNet
+                      ? renderLineNet(item)
+                      : money(
+                          lineNet({
+                            qty: item.qty,
+                            price_per_unit: item.price_per_unit,
+                            discount: item.discount,
+                          }),
+                          locale
+                        )}
                   </TableCell>
                   <TableCell className="text-center">
                     <span className={purchaseItemStatusPillClass(item.status)}>
