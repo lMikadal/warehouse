@@ -1,8 +1,16 @@
 const DEFAULT_API = "http://localhost:1323/api";
 
-/** Origin + `/api` (no version segment). */
+/**
+ * Origin + `/api` (no version segment).
+ * Prefer API_INTERNAL_URL for server-side BFF → Go (absolute Docker/host URL).
+ * NEXT_PUBLIC_API_URL may be a browser-relative `/api/v1` which Node cannot fetch.
+ */
 export function apiBaseUrl(): string {
-  const raw = (process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API).replace(/\/$/, "");
+  const raw = (
+    process.env.API_INTERNAL_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    DEFAULT_API
+  ).replace(/\/$/, "");
   return raw.replace(/\/v1$/, "");
 }
 

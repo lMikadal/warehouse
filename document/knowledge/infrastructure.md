@@ -25,7 +25,60 @@ Prefer `make` targets over raw `docker compose` from `infrastructure/`.
 
 TLS is out of scope for now (HTTP `:80` only).
 
+## Small VPS (~2GiB RAM)
+
+Use **prod overlay** (`make docker-prod-up`), not `--profile dev`. Dev images (air + `next dev` + pgAdmin + nginx-ui) OOM a 2GiB host that already runs other containers.
+
+Prod overlay sets `mem_limit` (~1.1GiB combined) and small Postgres/Redis settings. Enable host swap (4GiB recommended) if the machine has none. Remap `NGINX_PORT` when host `:80` is taken (e.g. Plesk Apache). Frontend `Dockerfile.prod` sets `SKIP_TYPECHECK=1` so `next build` skips `tsc` (the typecheck step OOM-kills a 2GiB host).
+
+Seed after first boot (distroless has `/seed` + SQL files). Geo init (`08_system_address_geo.sql`) needs `admin_user` id 1, so run **bootstrap → init → bootstrap** (second bootstrap attaches permissions created by init):
+
+```bash
+docker exec warehouse-backend /seed bootstrap
+docker exec warehouse-backend /seed init
+docker exec warehouse-backend /seed bootstrap
+```
+
+Do not run `dev` seed when `APP_ENV=production`.
+
+## Plesk / shared host domain
+
+On a Plesk Apache host, point the domain at the warehouse nginx gateway with extra Apache directives (same pattern as other reverse-proxied sites on the box):
+
+- `HTTP` → `/var/www/vhosts/system/<domain>/conf/vhost.conf`
+- `HTTPS` → `…/vhost_ssl.conf`
+
+```
+<Location /.well-known>
+	ProxyPass !
+</Location>
+ProxyPreserveHost On
+ProxyPass / http://127.0.0.1:3080/
+ProxyPassReverse / http://127.0.0.1:3080/
+RequestHeader set X-Forwarded-Proto "https"   # ssl conf only; use "http" on plain vhost
+```
+
+Exclude `/.well-known` so Let's Encrypt HTTP-01 challenges are not proxied into the app. Then `plesk sbin httpdmng --reconfigure-domain <domain>` and assign/renew the LE cert in Plesk (`Certificate: Lets Encrypt <domain>`). Remap `NGINX_PORT` in `.env` when `:80` is taken (default shared-host example: `3080`). Do not change ports of other Docker stacks.
+
 **Do not mix stacks without the right images:** `docker-prod-up` builds `:prod` tags; `docker-up` / `docker-up-d` always pass `--build` so they recreate `:dev` (air / `next dev`). After a prod run, tear down with `make docker-prod-down` (or `make docker-down` if you were on the dev profile), then `make docker-up-d`. If frontend hot reload fails after a prod build left a root-owned `frontend/.next` on the host, delete that directory and restart the frontend container.
+
+## Host port remaps (`.env`)
+
+Compose publishes host ports via env (defaults match local dev). On a shared host, remap only **our** stack — never change other containers’ ports.
+
+| Env | Default | Example when taken |
+|-----|---------|-------------------|
+| `NGINX_PORT` | `80` | `3080` |
+| `NGINX_UI_PORT` | `9000` | — |
+| `FRONTEND_PORT` | `3000` | `3100` |
+| `BACKEND_PORT` | `1323` | — |
+| `POSTGRES_PORT` | `5432` | `5433` |
+| `REDIS_PORT` | `6379` | — |
+| `DESIGN_PORT` | `8080` | — |
+| `MINIO_API_PORT` / `MINIO_CONSOLE_PORT` | `9002` / `9003` | — |
+| `PGADMIN_PORT` / `REDIS_COMMANDER_PORT` | `5050` / `8081` | — |
+
+Also update host-facing URLs in `.env` (`DATABASE_URL`, `S3_PUBLIC_BASE_URL`) when remap Postgres/MinIO host ports.
 
 ## Dev services (`--profile dev`)
 
@@ -45,6 +98,8 @@ Network: `warehouse_network`. Timezone: `Asia/Bangkok`.
 
 `design` and `nginx-ui` are on `profiles: [dev]` (same as pgAdmin / redis-commander).
 
+MinIO images use `quay.io/minio/minio` and `quay.io/minio/mc` (Docker Hub `minio/*` returns pull denied on some hosts).
+
 ## Dev gateway routes (nginx-ui on :80)
 
 | Path | Upstream |
@@ -61,12 +116,15 @@ Seed config: [`infrastructure/nginx/nginx.conf`](../../infrastructure/nginx/ngin
 
 | Path | Upstream |
 |------|----------|
+| `/warehouse-files/` | minio:9000 (public bucket objects; same-origin under the HTTPS domain) |
 | `/api/v1/auth/` | frontend:3000 (Next BFF) |
 | `/api/v1/system/` | frontend:3000 (Next BFF) |
 | `/` | frontend:3000 |
 | `/api/v1/` | backend:1323 |
 
 Config: [`infrastructure/nginx/nginx.prod.conf`](../../infrastructure/nginx/nginx.prod.conf). No `/design/`, no nginx-ui admin port.
+
+**Prod object URLs:** set `S3_PUBLIC_BASE_URL=https://warehouse.autocentric.net` (or the public origin). Backend builds `url` as `{base}/{bucket}/{key}`. Do **not** use `http://IP:9002` — browsers block mixed content on HTTPS pages. MinIO host port can stay remapped for admin; browsers should load objects via the nginx path above.
 
 App, postgres, and redis ports are **not** published — containers talk on `warehouse_network` only.
 
@@ -79,9 +137,11 @@ App, postgres, and redis ports are **not** published — containers talk on `war
 
 Compose `frontend` defaults `NEXT_PUBLIC_API_URL` to `http://backend:1323/api`; BFF builds Go URLs as `{base}/v1/…`. Host `make frontend-dev` uses `http://localhost:1323/api` from `frontend/env.example`.
 
+**Prod BFF:** set runtime `API_INTERNAL_URL=http://backend:1323/api` (see prod overlay). Do not rely on `NEXT_PUBLIC_API_URL=/api/v1` alone for server-side `backendFetch` — relative URLs throw and login returns `503 backend unreachable`.
+
 **Backend crash loop:** If `warehouse-backend` is **unhealthy** / connection reset on `:1323`, check `docker logs warehouse-backend` — startup runs goose migrations; invalid SQL (e.g. GIST index must be `CREATE INDEX … ON table USING GIST (col)`, not `… USING GIST ON table`) exits the process and breaks admin login (BFF `POST /api/v1/auth/login` → 503/500). Fix migration SQL, ensure DB version, then `docker restart warehouse-backend` or `make backend-migrate-up` + restart.
 
-Prod overlay hardcodes `NEXT_PUBLIC_API_URL=/api/v1` (build arg + runtime).
+Prod overlay also sets build arg `NEXT_PUBLIC_API_URL=/api/v1` for client; server uses `API_INTERNAL_URL`.
 
 ## Migrations
 
